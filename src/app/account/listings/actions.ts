@@ -1,0 +1,257 @@
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import { logger } from "@/lib/logger";
+import { draftListingSchema, ListingCondition, ListingPriceType } from "@/types/listing";
+import type { Json } from "@/types/database";
+
+export type ListingActionResult = {
+  error?: string;
+  success?: boolean;
+  listingId?: string;
+  message?: string;
+};
+
+export async function createDraftListingAction(
+  prevState: ListingActionResult | null,
+  formData: FormData
+): Promise<ListingActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You must be signed in to create a listing." };
+  }
+
+  const rawAttributes = formData.get("category_attributes") as string;
+  let categoryAttributes: Record<string, unknown> = {};
+  try {
+    if (rawAttributes) {
+      categoryAttributes = JSON.parse(rawAttributes);
+    }
+  } catch {
+    categoryAttributes = {};
+  }
+
+  const rawData = {
+    title: formData.get("title") as string,
+    category_id: formData.get("category_id") as string,
+    city_id: (formData.get("city_id") as string) || null,
+    locality_id: (formData.get("locality_id") as string) || null,
+    description: (formData.get("description") as string) || null,
+    condition: (formData.get("condition") as ListingCondition) || null,
+    price_type: (formData.get("price_type") as ListingPriceType) || null,
+    price_paise: formData.get("price_paise") ? parseInt(formData.get("price_paise") as string, 10) : null,
+    pin_code: (formData.get("pin_code") as string) || null,
+    category_attributes: categoryAttributes,
+  };
+
+  const validation = draftListingSchema.safeParse(rawData);
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
+  }
+
+  logger.info("listing.draft_save_initiated", {
+    operation: "create_draft_listing",
+    extra: { title: validation.data.title },
+  });
+
+  const { data, error } = await supabase
+    .from("listings")
+    .insert({
+      title: validation.data.title,
+      category_id: validation.data.category_id,
+      city_id: validation.data.city_id!,
+      locality_id: validation.data.locality_id,
+      description: validation.data.description,
+      condition: validation.data.condition,
+      price_type: validation.data.price_type,
+      price_paise: validation.data.price_paise,
+      pin_code: validation.data.pin_code,
+      category_attributes: validation.data.category_attributes as unknown as Json,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    logger.warn("listing.draft_save_failed", {
+      operation: "create_draft_listing",
+      error_code: error?.code || "INSERT_ERROR",
+    });
+    return { error: error?.message || "Failed to create draft listing." };
+  }
+
+  revalidatePath("/account/listings");
+  return { success: true, listingId: data.id, message: "Draft listing created successfully." };
+}
+
+export async function updateListingAction(
+  listingId: string,
+  formData: FormData
+): Promise<ListingActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You must be signed in." };
+  }
+
+  const rawAttributes = formData.get("category_attributes") as string;
+  let categoryAttributes: Record<string, unknown> = {};
+  try {
+    if (rawAttributes) {
+      categoryAttributes = JSON.parse(rawAttributes);
+    }
+  } catch {
+    categoryAttributes = {};
+  }
+
+  const rawData = {
+    title: formData.get("title") as string,
+    category_id: formData.get("category_id") as string,
+    city_id: (formData.get("city_id") as string) || null,
+    locality_id: (formData.get("locality_id") as string) || null,
+    description: (formData.get("description") as string) || null,
+    condition: (formData.get("condition") as ListingCondition) || null,
+    price_type: (formData.get("price_type") as ListingPriceType) || null,
+    price_paise: formData.get("price_paise") ? parseInt(formData.get("price_paise") as string, 10) : null,
+    pin_code: (formData.get("pin_code") as string) || null,
+    category_attributes: categoryAttributes,
+  };
+
+  const validation = draftListingSchema.safeParse(rawData);
+  if (!validation.success) {
+    return { error: validation.error.issues[0].message };
+  }
+
+  logger.info("listing.update_initiated", {
+    operation: "update_listing",
+    extra: { listing_id: listingId },
+  });
+
+  const { error } = await supabase
+    .from("listings")
+    .update({
+      title: validation.data.title,
+      category_id: validation.data.category_id,
+      city_id: validation.data.city_id!,
+      locality_id: validation.data.locality_id,
+      description: validation.data.description,
+      condition: validation.data.condition,
+      price_type: validation.data.price_type,
+      price_paise: validation.data.price_paise,
+      pin_code: validation.data.pin_code,
+      category_attributes: validation.data.category_attributes as unknown as Json,
+    })
+    .eq("id", listingId);
+
+  if (error) {
+    logger.warn("listing.update_failed", {
+      operation: "update_listing",
+      error_code: error.code || "UPDATE_ERROR",
+    });
+    return { error: error.message };
+  }
+
+  revalidatePath(`/account/listings/${listingId}/edit`);
+  revalidatePath("/account/listings");
+  return { success: true, listingId, message: "Listing updated successfully." };
+}
+
+export async function submitListingAction(listingId: string): Promise<ListingActionResult> {
+  const supabase = await createClient();
+
+  logger.info("listing.submit_initiated", {
+    operation: "submit_listing",
+    extra: { listing_id: listingId },
+  });
+
+  const { error } = await supabase.rpc("seller_submit_listing", {
+    listing_id: listingId,
+  });
+
+  if (error) {
+    logger.warn("listing.submit_failed", {
+      operation: "submit_listing",
+      error_code: error.code || "RPC_ERROR",
+    });
+    return { error: error.message };
+  }
+
+  revalidatePath("/account/listings");
+  return { success: true, listingId, message: "Listing submitted for review." };
+}
+
+export async function transitionListingAction(
+  listingId: string,
+  action: string
+): Promise<ListingActionResult> {
+  const supabase = await createClient();
+
+  logger.info("listing.transition_initiated", {
+    operation: "transition_listing",
+    extra: { listing_id: listingId, action },
+  });
+
+  const { error } = await supabase.rpc("seller_transition_listing", {
+    listing_id: listingId,
+    action,
+  });
+
+  if (error) {
+    logger.warn("listing.transition_failed", {
+      operation: "transition_listing",
+      error_code: error.code || "RPC_ERROR",
+    });
+    return { error: error.message };
+  }
+
+  revalidatePath("/account/listings");
+  return { success: true, listingId, message: `Listing transition '${action}' successful.` };
+}
+
+export async function reorderMediaAction(
+  listingId: string,
+  items: { id: string; display_order: number }[]
+): Promise<ListingActionResult> {
+  const supabase = await createClient();
+
+  for (const item of items) {
+    const { error } = await supabase
+      .from("listing_media")
+      .update({ display_order: item.display_order })
+      .eq("id", item.id)
+      .eq("listing_id", listingId);
+
+    if (error) {
+      return { error: error.message };
+    }
+  }
+
+  revalidatePath(`/account/listings/${listingId}/edit`);
+  return { success: true, message: "Photos reordered." };
+}
+
+export async function setCoverPhotoAction(
+  listingId: string,
+  mediaId: string
+): Promise<ListingActionResult> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("listings")
+    .update({ cover_photo_id: mediaId })
+    .eq("id", listingId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/account/listings/${listingId}/edit`);
+  return { success: true, message: "Cover photo set." };
+}
