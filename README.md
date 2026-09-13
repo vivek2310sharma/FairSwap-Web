@@ -24,23 +24,23 @@ FairSwap.in is a hyperlocal discovery and communication platform enabling buyers
 
 ### Installation
 
-Clone the repository and install dependencies at the project root:
+Clone the repository and install dependencies at the project root using Corepack:
 
 ```bash
-pnpm install
+corepack pnpm install
 ```
 
 ### Running Locally
 
 ```bash
 # Start the local development server on http://localhost:3000
-pnpm dev
+corepack pnpm dev
 
 # Build the production bundle
-pnpm build
+corepack pnpm build
 
 # Start the production server on http://localhost:3000
-pnpm start
+corepack pnpm start
 ```
 
 ---
@@ -49,13 +49,13 @@ pnpm start
 
 | Command | Description |
 |---|---|
-| `pnpm dev` | Starts Next.js development server with hot reload |
-| `pnpm build` | Compiles production Next.js App Router bundle |
-| `pnpm start` | Runs production Next.js server |
-| `pnpm lint` | Runs ESLint flat configuration across the project |
-| `pnpm typecheck` | Runs TypeScript compiler verification (`tsc --noEmit`) |
-| `pnpm test:unit` | Executes Vitest component & unit tests in jsdom environment |
-| `pnpm test:e2e` | Runs Playwright Chromium desktop & mobile smoke tests |
+| `corepack pnpm dev` | Starts Next.js development server with hot reload |
+| `corepack pnpm build` | Compiles production Next.js App Router bundle |
+| `corepack pnpm start` | Runs production Next.js server |
+| `corepack pnpm lint` | Runs ESLint flat configuration across the project |
+| `corepack pnpm typecheck` | Runs TypeScript compiler verification (`tsc --noEmit`) |
+| `corepack pnpm test:unit` | Executes Vitest component & unit tests in jsdom environment |
+| `corepack pnpm test:e2e` | Runs Playwright Chromium desktop & mobile smoke tests |
 
 ---
 

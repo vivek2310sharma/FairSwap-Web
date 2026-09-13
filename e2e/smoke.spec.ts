@@ -119,6 +119,93 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
     }
   });
 
+  test("keyboard navigation operates accessible controls for current viewport", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/");
+
+    if (testInfo.project.name === "mobile-chromium") {
+      // 1. Tab to home brand link
+      await page.keyboard.press("Tab");
+      const homeLink = page.getByRole("link", { name: /fairswap home/i });
+      await expect(homeLink).toBeFocused();
+
+      // 2. Tab to mobile menu toggle button
+      await page.keyboard.press("Tab");
+      const openBtn = page.getByRole("button", { name: /open menu/i });
+      await expect(openBtn).toBeFocused();
+      await expect(openBtn).toHaveAttribute("aria-expanded", "false");
+
+      // 3. Open menu using Enter key
+      await page.keyboard.press("Enter");
+      const closeBtn = page.getByRole("button", { name: /close menu/i });
+      await expect(closeBtn).toBeVisible();
+      await expect(closeBtn).toHaveAttribute("aria-expanded", "true");
+      const mobileNav = page.getByRole("navigation", {
+        name: "Mobile navigation",
+      });
+      await expect(mobileNav).toBeVisible();
+
+      // 4. Close menu using Space key while toggle button is focused
+      await page.keyboard.press("Space");
+      await expect(mobileNav).not.toBeVisible();
+      await expect(openBtn).toBeVisible();
+      await expect(openBtn).toHaveAttribute("aria-expanded", "false");
+
+      // 5. Re-open menu using Enter key
+      await page.keyboard.press("Enter");
+      await expect(closeBtn).toBeVisible();
+      await expect(closeBtn).toHaveAttribute("aria-expanded", "true");
+      await expect(mobileNav).toBeVisible();
+
+      // 6. Tab into mobile menu links
+      await page.keyboard.press("Tab");
+      const firstLink = mobileNav.getByRole("link", { name: "How It Works" });
+      await expect(firstLink).toBeFocused();
+
+      // 7. Tab to next link
+      await page.keyboard.press("Tab");
+      const secondLink = mobileNav.getByRole("link", { name: "Categories" });
+      await expect(secondLink).toBeFocused();
+
+      // 8. Activate navigation link via Enter key
+      await page.keyboard.press("Enter");
+      await expect(page).toHaveURL(/#categories$/);
+      await expect(page.locator("#categories")).toBeVisible();
+    } else {
+      // 1. Tab to home brand link
+      await page.keyboard.press("Tab");
+      const homeLink = page.getByRole("link", { name: /fairswap home/i });
+      await expect(homeLink).toBeFocused();
+
+      // 2. Tab through desktop nav links
+      const desktopNav = page.getByRole("navigation", {
+        name: "Main navigation",
+      });
+
+      await page.keyboard.press("Tab");
+      const howItWorksLink = desktopNav.getByRole("link", {
+        name: "How It Works",
+      });
+      await expect(howItWorksLink).toBeFocused();
+
+      await page.keyboard.press("Tab");
+      const categoriesLink = desktopNav.getByRole("link", {
+        name: "Categories",
+      });
+      await expect(categoriesLink).toBeFocused();
+
+      await page.keyboard.press("Tab");
+      const safetyLink = desktopNav.getByRole("link", { name: "Safety" });
+      await expect(safetyLink).toBeFocused();
+
+      // 3. Activate navigation link via Enter key
+      await page.keyboard.press("Enter");
+      await expect(page).toHaveURL(/#safety$/);
+      await expect(page.locator("#safety")).toBeVisible();
+    }
+  });
+
   test("unknown route shows intentional 404 page", async ({ page }, testInfo) => {
     await page.goto("/non-existent-route-404-check");
 

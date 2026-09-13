@@ -49,4 +49,16 @@ describe("Header component", () => {
     expect(menuButton).toHaveAttribute("aria-label", "Open menu");
     expect(screen.queryByRole("navigation", { name: "Mobile navigation" })).not.toBeInTheDocument();
   });
+
+  it("supports keyboard focus and interaction on mobile toggle button", () => {
+    render(<Header />);
+    const menuButton = screen.getByRole("button", { name: /open menu/i });
+    menuButton.focus();
+    expect(menuButton).toHaveFocus();
+
+    // Native HTML button fires click on Enter/Space
+    fireEvent.keyDown(menuButton, { key: "Enter", code: "Enter" });
+    fireEvent.click(menuButton);
+    expect(menuButton).toHaveAttribute("aria-expanded", "true");
+  });
 });
