@@ -4,18 +4,18 @@ Starter pack: v4.0 (2026-09-13). This is an initial register, not evidence that 
 
 ## Current authorization
 
-- No application planning/build action has been executed by creating this pack.
-- Next intended user action: send `prompts/00_KICKOFF_PLAN_ONLY.txt` in Antigravity.
-- Authorized milestone/action: NONE RECORDED YET.
-- Current plan revision: none.
-- Workspace rule actual path/activation: to be confirmed in the user's IDE.
-- Detected OS/shell/toolchain: not yet inspected.
+- Authorized milestone/action: **1.1 PLAN ONLY** (kickoff prompt received 2026-09-13).
+- Current plan revision: **r2 PROPOSED** — `docs/plans/1.1-plan.md`.
+- Next intended user action: review plan r2, then send `prompts/01_BUILD_MILESTONE_1_1.txt` if approved.
+- Workspace rule actual path: `.agents/rules/fairswap.md` (confirmed present; user must activate as Always On in IDE).
+- Detected OS: Windows 11 (NT 10.0.26200.0), native x64, PowerShell 5.1.
+- Detected toolchain: Node.js v24.15.0, npm 11.12.1, corepack 0.34.6, Git 2.45.1. **pnpm NOT INSTALLED** (proposed via corepack during BUILD).
 
 ## Milestone register
 
 | Milestone | Plan state | Build state | Human build approval | Human acceptance |
 | --- | --- | --- | --- | --- |
-| 1.1 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
+| 1.1 | **PLAN READY FOR REVIEW (r2)** | NOT STARTED | Not recorded | Not recorded |
 | 1.2 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
 | 1.3 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
 | 1.4 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
@@ -26,11 +26,16 @@ Future scope documents are reference contracts, not approved plans. Pack validat
 
 ## Authorization and review history
 
-No entries yet. Record only actual human requests/reviews, with milestone, action (PLAN/BUILD/FIX/ACCEPT), plan revision, and an accurate message or review reference. Do not fabricate dates/quotes. Keep plan approval separate from acceptance of implemented work.
+| Date | Milestone | Action | Plan revision | Reference |
+| --- | --- | --- | --- | --- |
+| 2026-09-13 | 1.1 | PLAN ONLY kickoff | r1 proposed | User sent kickoff prompt in Antigravity conversation |
+| 2026-09-13 | 1.1 | Plan review — r1→r2 | r2 proposed | User reviewed r1, requested six corrections: (1) safe rollback, (2) ESLint flat config, (3) pnpm setup sequence, (4) version-consistent config/assets, (5) verification/cleanup order, (6) sync r2 |
+
+Record only actual human requests/reviews. Keep plan approval separate from acceptance of implemented work.
 
 ## Current batch and next task
 
-None started. After reading the kickoff, inspect the existing workspace and prerequisites, write the proposed 1.1 plan and stop for review. Do not install or scaffold during planning.
+Plan r2 proposed (revised from r1 per user review). Awaiting human review and BUILD approval. No application code, installs, or scaffold actions taken.
 
 ## Verification evidence
 
@@ -44,7 +49,9 @@ Use PASS, FAIL, BLOCKED or NOT RUN honestly. Add command/working directory, envi
 
 ## Blockers and external prerequisites
 
-No user-machine checks have occurred. Compatibility/installation permissions are unknown until kickoff. Supabase and Docker are deferred until 1.2, not blockers for 1.1.
+- **pnpm**: Not installed. Proposed install via `corepack enable pnpm` during BUILD. Not a planning blocker.
+- Supabase and Docker are deferred until 1.2, not blockers for 1.1.
+- Playwright Chromium binary download deferred to BUILD approval.
 
 ## Scope and business decisions
 
