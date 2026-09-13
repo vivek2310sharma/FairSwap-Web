@@ -6,25 +6,23 @@ FairSwap.in is a hyperlocal discovery and communication platform enabling buyers
 
 ---
 
-## Current Status: Milestone 1.3 (Listings, Photographs & Moderation)
+## Current Status: Milestone 1.4 (Public Browsing, Discovery & Favourites)
 
-This repository contains the verified implementation through **Milestone 1.3**:
+This repository contains the verified implementation through **Milestone 1.4**:
 - **Milestone 1.1 (Foundation)**: Core responsive design system, Tailwind CSS v4 tokens, accessible layouts, system font stack, and multi-viewport test harnesses.
 - **Milestone 1.2 (Accounts & Security)**: PostgreSQL schemas, Direct-API RLS policies, two-layer security RPCs, customer auth journeys (sign-up, confirm, sign-in, recovery, TOTP MFA), AAL2-gated staff portal, and privacy request handling.
 - **Logging & Monitoring Baseline**: Zero-dependency structured JSON logger, recursive PII redactor, W3C/UUID request correlation, Next.js 16 instrumentation, and client-error ingestion.
-- **Milestone 1.3 (Listings & Moderation)**:
-  * Categories and structured attribute schemas with staff administration (`/admin/categories`).
-  * Location hierarchy (cities and localities) with staff management (`/admin/locations`).
-  * Full seller listing lifecycle (`/account/listings`, `/account/listings/new`, `/account/listings/[id]/edit`) supporting draft, pending review, active, reserved, paused, sold, rejected, and expired states.
-  * Strict material-edit re-review policy enforcing automatic `pending_review` transition and revision increment on material changes in `active`, `reserved`, or `paused` states.
-  * Documented database-level `rejected -> draft` transition with history preservation.
-  * Private, server-mediated Supabase Storage pipeline (`sharp` v0.35.4) generating WebP thumbnails, medium, and large derivatives, with magic-byte validation, EXIF stripping, and server-controlled deletion.
-  * Staff moderation queue (`/admin/listings`, `/admin/listings/[id]`) with atomic status transitions and audit logging.
-  * Automated technical maintenance jobs for expired listings and orphan media cleanup.
-  * Synthetic 30-listing test fixture seed script with fail-closed local loopback guardrails.
+- **Milestone 1.3 (Listings & Moderation)**: Categories and locations hierarchy, seller listing lifecycle, material-edit re-review policies, private Supabase Storage pipeline (`sharp` v0.35.4 WebP derivatives), staff moderation queue, and automated expiry/cleanup maintenance.
+- **Milestone 1.4 (Public Browsing & Discovery)**:
+  * Full-text PostgreSQL search using weighted `tsvector` (`title` weight A, `description` weight B) and GIN indexing with prefix matching support.
+  * Public discovery RPC (`public.search_public_listings`) with composite filters (category, city, locality, price range), bounded pagination (12/24/48 items, max offset 1,200), and stable tie-breakers.
+  * Canonical listing view (`/listings/[slug]`) and historical slug redirection (`listing_slug_history`), with strict public visibility gating.
+  * Anonymous media delivery endpoint (`/api/listings/[id]/media/[mediaId]/[size]`) serving WebP derivatives (`thumb`, `medium`, `large`) via server-signed URLs with public cache headers; original format strictly restricted.
+  * Authenticated favourites management (`/account/favourites`) with privacy-preserving unavailable item notices (no draft/rejected state leakage).
+  * Hyperlocal homepage (`/`), search explorer (`/search`), and seller public showcase (`/seller/[id]`).
+  * Truthful static policy/guidance pages (`/help`, `/safety`, `/terms`, `/privacy`, `/contact`), dynamic `sitemap.ts`, and non-indexing `robots.ts` for non-production environments.
 
 > **Upcoming Milestones**:
-> - **Milestone 1.4**: Public listing discovery, search, category browsing, location filtering, and public media delivery.
 > - **Milestone 1.5**: Buyer-seller direct messaging, abuse reporting, and privacy export/erasure fulfillment.
 > - **Milestone 1.6**: Trust, safety, and operational production launch hardening.
 
@@ -131,7 +129,16 @@ The server-side service role key is strictly isolated to Route Handlers and back
 ## Route Inventory
 
 ### Customer Routes
-- `/` — Homepage with value proposition, category shortcuts, and safety guidelines
+- `/` — Homepage with value proposition, search bar, category shortcuts, recent listings, and safety guidelines
+- `/search` — Hyperlocal search explorer with full-text search, category/city/locality filters, price ranges, and sorting
+- `/listings/[slug]` — Public canonical listing detail page with photo gallery, seller details, and contact modal
+- `/seller/[id]` — Public seller profile and active listings showcase
+- `/account/favourites` — Saved favourites dashboard with privacy-preserving unavailable item notices
+- `/help` — How It Works, trading guide, and buyer/seller FAQs
+- `/safety` — Meeting location, cash handling, and anti-fraud guidelines
+- `/terms` — Pilot terms of service and acceptable use policy
+- `/privacy` — Privacy notice, data handling, and statutory rights
+- `/contact` — Support and feedback contact channels
 - `/auth/sign-in` — Email/password authentication
 - `/auth/sign-up` — Registration with mandatory Terms of Service & Privacy Policy consent
 - `/auth/forgot-password` / `/auth/reset-password` — Password recovery flow
@@ -143,7 +150,6 @@ The server-side service role key is strictly isolated to Route Handlers and back
 - `/account/listings` — Seller listing dashboard and lifecycle transition actions
 - `/account/listings/new` — Listing creation wizard (saves as draft)
 - `/account/listings/[id]/edit` — Listing editor with photo uploads and review submission
-- `/seller/[id]` — Public seller profile
 
 ### Staff Routes (AAL2 Gated)
 - `/admin` — Staff portal navigation
@@ -155,7 +161,8 @@ The server-side service role key is strictly isolated to Route Handlers and back
 - `/admin/listings/[id]` — Moderator listing inspection and approve/reject/remove actions
 
 ### API Endpoints
+- `GET /api/listings/recent` — Public recent active listings for homepage
+- `GET /api/listings/[id]/media/[mediaId]/[size]` — Authenticated & anonymous WebP derivative media delivery
 - `POST /api/listings/[id]/media` — Authenticated photo upload and asynchronous sharp processing
 - `DELETE /api/listings/[id]/media/[mediaId]` — Server-mediated photo deletion and derivative cleanup
-- `GET /api/listings/[id]/media/[mediaId]/[size]` — Authenticated private signed-URL media delivery
 - `POST /api/monitoring/client-error` — Rate-limited client error telemetry ingestion

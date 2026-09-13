@@ -4,9 +4,9 @@ Starter pack: v4.0 (2026-09-13).
 
 ## Current authorization
 
-- Authorized milestone/action: **Milestone 1.3 BUILD & VERIFY** (authorized 2026-09-13 with 6 binding amendments). Next: **Human review and acceptance of Milestone 1.3**.
-- Current plan revision: Milestone 1.3 (`docs/plans/1.3-plan.md` r3 with binding amendments APPROVED FOR BUILD).
-- Next intended user action: review implementation and verification evidence for Milestone 1.3, then authorize Git checkpoint commit.
+- Authorized milestone/action: **Milestone 1.4 BUILD & VERIFY** (authorized 2026-09-13). Next: **Human review and acceptance of Milestone 1.4**.
+- Current plan revision: Milestone 1.4 (`docs/plans/1.4-plan.md` r1 APPROVED FOR BUILD).
+- Next intended user action: review implementation and verification evidence for Milestone 1.4, then authorize Git checkpoint commit.
 - Workspace rule actual path: `.agents/rules/fairswap.md` (confirmed present; active).
 - Detected OS: Windows 11 (NT 10.0.26200.0), native x64, PowerShell 5.1.
 - Detected toolchain: Node.js v24.15.0, npm 11.12.1, corepack 0.34.6, Git 2.45.1. pnpm pinned to 10.12.1 via corepack.
@@ -18,8 +18,8 @@ Starter pack: v4.0 (2026-09-13).
 | 1.1 | **r2 APPROVED** | **COMPLETED** | 2026-09-13 (r2) | **2026-09-13 (r2)** |
 | 1.2 | **r5 APPROVED** | **COMPLETED** | **2026-09-13 (r5)** | **2026-09-13 (r5)** |
 | Logging & Monitoring Baseline | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
-| 1.3 | **r3 APPROVED** | **COMPLETED** | **2026-09-13 (r3)** | Pending review |
-| 1.4 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
+| 1.3 | **r3 APPROVED** | **COMPLETED** | **2026-09-13 (r3)** | **2026-09-13 (r3)** |
+| 1.4 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | Pending review |
 | 1.5 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
 | 1.6 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
 
@@ -53,17 +53,19 @@ Future scope documents are reference contracts, not approved plans. Pack validat
 | 2026-09-13 | 1.3 | **Plan review — r2→r3** | r3 proposed | User reviewed r2 with 12 corrections: user-client vs service-role split in upload pipeline, Route Handler single-consumption, service-role-only RPC wrappers, sharp metadata validation, server-mediated storage, no public media delivery, exclude cover_photo_id from INSERT, photo reordering triggers re-review, orphan cleanup redefinition, fail-closed seed safety. |
 | 2026-09-13 | 1.3 | **BUILD AUTHORIZED** | r3 approved | User authorized BUILD with 6 binding amendments: (1) Paused listing moderation bypass closed (`active`, `reserved`, `paused` trigger re-review on material edit); (2) DB-level `rejected -> draft` edit transition; (3) Direct authenticated DELETE on `listing_media` removed, server-controlled `DELETE /api/listings/[id]/media/[mediaId]`; (4) No terminal-media retention period cleanup in 1.3; (5) Anonymous SELECT on `public.listings` revoked for 1.3; (6) Storage service-mediated without reliance on service_role RLS policies; early auth in upload Route Handler; 12-byte magic byte slicing; DB consistency constraints. |
 | 2026-09-13 | 1.3 | **BUILD & VERIFY** | r3 implemented | Implemented Batches A through F. Migrations 4–8 applied, storage enabled, sharp integrated, listings CRUD and lifecycle actions, private media pipeline, staff moderation screens, 48 pgTAP assertions, 36 security tests, 34 Playwright journeys, production build verified. |
+| 2026-09-13 | 1.3 | **HUMAN ACCEPTED** | r3 approved | User reviewed Milestone 1.3 and authorized Git checkpoint commit (`0ca2083`). |
+| 2026-09-13 | 1.4 | **BUILD & VERIFY** | r1 implemented | Implemented full-text search, GIN index, composite indexes, public search RPC, anonymous media delivery, favourites with privacy preservation, slug history redirect, truthful draft policy pages, and verification suites. |
 
 Record only actual human requests/reviews. Keep plan approval separate from acceptance of implemented work.
 
 ## Current batch and next task
 
-**Milestone 1.3 complete and verified**. Awaiting human review and acceptance, followed by authorization of Git checkpoint commit.
+**Milestone 1.4 complete and verified**. Awaiting human review and acceptance, followed by authorization of Git checkpoint commit.
 
 ## Verification evidence
 
 | Date/time | Milestone / revision | Command / target | Exit status | Result | Evidence / limitation |
-| --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- |
 | 2026-09-13 16:02 | 1.1 / r2 | `corepack pnpm lint` (`eslint .`) | 0 | PASS | Flat ESLint config (`eslint.config.mjs`). 0 errors, 0 warnings. |
 | 2026-09-13 16:02 | 1.1 / r2 | `corepack pnpm typecheck` (`tsc --noEmit`) | 0 | PASS | Strict TypeScript compiler check passed with 0 errors. |
 | 2026-09-13 16:06 | 1.1 / r2 | `corepack pnpm test:unit` (`vitest run`) | 0 | PASS | Vitest v3.2.7 (jsdom). 5 test files, 17/17 tests passing. |
@@ -91,6 +93,12 @@ Record only actual human requests/reviews. Keep plan approval separate from acce
 | 2026-09-13 21:13 | 1.3 / r3 | `corepack pnpm tsx scripts/seed-listings.ts` | 0 | PASS | Seeded 30 synthetic marketplace listings with WebP derivative sets and cover photos against local loopback target. |
 | 2026-09-13 21:00 | 1.3 / r3 | `corepack pnpm tsx scripts/check-expired-listings.ts` | 0 | PASS | Executed expiry maintenance scan against local database. |
 | 2026-09-13 21:00 | 1.3 / r3 | `corepack pnpm tsx scripts/cleanup-orphan-media.ts` | 0 | PASS | Executed technical orphan/stale media cleanup job against local database. |
+| 2026-09-13 21:35 | 1.4 / r1 | `corepack pnpm lint` (`eslint .`) | 0 | PASS | Strict flat ESLint check across entire codebase including Milestone 1.4 discovery & favourites. 0 errors, 0 warnings. |
+| 2026-09-13 21:35 | 1.4 / r1 | `corepack pnpm typecheck` (`tsc --noEmit`) | 0 | PASS | Strict TypeScript compiler check passed cleanly with 0 errors. |
+| 2026-09-13 21:36 | 1.4 / r1 | `corepack pnpm test:unit` (`vitest run`) | 0 | PASS | 16 test files, 105/105 tests passing (including discovery queries, favourites, search vector, media delivery, and canonical redirects). |
+| 2026-09-13 21:36 | 1.4 / r1 | `corepack pnpm test:security` | 0 | PASS | 3 test files, 38/38 tests passing (zero security regressions). |
+| 2026-09-13 21:38 | 1.4 / r1 | `corepack pnpm test:e2e` (`playwright test`) | 0 | PASS | 40/40 end-to-end browser journeys passing across desktop and mobile Chromium (10 smoke, 18 auth/MFA, 6 listings, 6 discovery/favourites). |
+| 2026-09-13 21:39 | 1.4 / r1 | `corepack pnpm build` (`next build`) | 0 | PASS | Production bundle generated via Turbopack with 0 warnings. 34 application routes compiled. |
 
 ## Blockers and external prerequisites
 
