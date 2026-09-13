@@ -1,0 +1,7 @@
+I have reviewed Milestone [COMPLETED_MILESTONE] and its evidence, and I accept that completed scope. Record this human acceptance with the actual reviewed plan revision.
+
+I authorize PLAN ONLY for Milestone [NEXT_MILESTONE]. Do not implement it yet. These IDs must be explicit valid adjacent milestones in docs/ROADMAP.md; if placeholders remain or they do not match current progress, stop and ask rather than choosing automatically.
+
+Read the active rule, progress, the next milestone contract and only relevant master sections. Inspect the real repository and prior evidence. Propose docs/plans/[NEXT_MILESTONE]-plan.md with a revision, clear in/out scope, small batches, file/dependency/schema changes, prerequisites/permissions, safeguards and acceptance commands. Mirror the same revision in the native Implementation Plan artifact.
+
+Write only the named plan and truthful acceptance/planning entries in progress. Do not install tools, write product code, modify databases, deploy or silently waive unresolved mandatory checks. Flag plan/artifact conflicts and missing prerequisites. Present the plan and stop for my explicit BUILD approval.

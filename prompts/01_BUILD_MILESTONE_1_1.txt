@@ -1,0 +1,17 @@
+I approve the latest Milestone 1.1 plan revision that you presented for my review, with matching scope in docs/plans/1.1-plan.md and the native Implementation Plan artifact. I authorize BUILD AND VERIFICATION OF MILESTONE 1.1 ONLY.
+
+Before editing, confirm the reviewed revision and current repository baseline. If the Markdown and artifact disagree, or no reviewable plan was presented, stop for clarification rather than treating this as blanket permission. Record this actual authorization; it is not acceptance of completed work.
+
+Follow the active workspace rule, the approved plan, docs/milestones/1.1-foundation.md, docs/BOOTSTRAP.md and docs/VERIFICATION.md. Build the real Next.js/TypeScript/Tailwind foundation, original responsive local page, README, substantive docs/FOUNDATION.md, scripts, lockfile, meaningful component tests and Chromium desktop/mobile viewport smoke tests.
+
+Preserve the populated FairSwap root. Use the reviewed fresh in-workspace temporary scaffold and collision-checked transfer, or the specifically approved manual alternative. Set package name fairswap. Do not force copy/overwrite, delete instruction files, create a permanent nested app, or copy unreviewed generated agent rules. Install reviewed dependencies only after transfer/root review. Cleanup is restricted to the exact newly created temporary path after root verification and the applicable approval.
+
+You may install reviewed PROJECT dependencies and Chromium test binaries subject to terminal review. Separate approval is required for global tools, OS dependencies/security changes, Git initialization/commits, or other machine-wide changes. Explain requested permissions; never disable safeguards globally. If tools are missing, propose the exact environment-appropriate prerequisite rather than faking completion.
+
+The app must build/start without Supabase credentials or Docker. Do not implement Auth, migrations/RLS, Storage, Realtime, listings, functional search, messaging, customer/admin dashboards, payments or empty future service stubs.
+
+After each coherent change: implement -> run relevant terminal checks -> inspect actual output and exit status -> fix -> rerun. Before handoff run lint, types, meaningful unit/component tests, production build/startup, and Chromium desktop/mobile viewport tests against the current real root app. Capture screenshots and record whether they were actually inspected. Native browser artifacts supplement, not replace, automated tests.
+
+Record exact commands, results, revision, coverage, limitations and sanitized evidence in docs/PROGRESS.md. Do not claim an unexecuted check passed or weaken tests. If blocked, record BLOCKED / NOT RUN and continue only independent 1.1 work.
+
+Present an evidence-based Walkthrough and repository handoff with actual changes, startup commands, checks and blockers. Mark READY FOR REVIEW only when mandatory checks pass, otherwise BLOCKED / INCOMPLETE. Do not mark HUMAN ACCEPTED. Stop for my review without beginning 1.2, deploying, modifying hosted databases or promising background work.

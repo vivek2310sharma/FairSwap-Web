@@ -1,0 +1,10 @@
+Milestone 1.1 is NOT accepted yet. I authorize corrections only for the review notes below and directly related tests/documentation, within the existing approved 1.1 scope.
+
+REVIEW NOTES (replace before sending):
+[Describe the actual problems to fix.]
+
+Inspect current files and evidence. If these notes require a material scope/dependency/privilege change, propose a revised plan and stop for approval before that change. Otherwise implement only the requested corrections, run relevant checks after each coherent change, and rerun the full 1.1 acceptance suite before handoff.
+
+Update docs/PROGRESS.md and the Walkthrough with actual changes/results. Preserve the Project Bible, keep permissions enabled, and do not fake test results or mark human acceptance.
+
+If the review-notes placeholder is still present, ask for concrete notes instead of inventing issues. Stop for my review again; do not begin 1.2.

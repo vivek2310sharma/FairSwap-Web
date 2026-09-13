@@ -1,0 +1,7 @@
+Resume only the previously authorized Milestone 1.1 action. Do not start over, overwrite progress, or advance to 1.2.
+
+Read the active rule, docs/PROGRESS.md, actual 1.1 plan and milestone contract. Inspect current code/diff, unfinished temporary scaffolding and existing evidence. Identify the last explicit human authorization and reviewed plan revision. If it was PLAN ONLY, finish planning and stop; do not infer BUILD from files that happen to exist. If authorization is missing or ambiguous, request the specific clarification rather than inventing approval.
+
+For a previously approved unfinished build, finish the next small in-scope batch, run the relevant checks, then perform the required final verification. Preserve existing work and use normal permission reviews. Record new evidence, blocked checks and exact next tasks.
+
+If 1.1 is already ready for review or accepted, report its current state and stop rather than adding features. Do not install new unreviewed tools, deploy, modify hosted data or promise background work.

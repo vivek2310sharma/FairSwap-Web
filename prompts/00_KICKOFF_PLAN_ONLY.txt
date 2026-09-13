@@ -1,0 +1,17 @@
+We are starting FairSwap.in in this already-open FairSwap folder using Antigravity. It is an India-focused classifieds marketplace built with Next.js and Supabase. Buyers and sellers arrange item payment and exchange independently.
+
+I authorize PLAN ONLY for Milestone 1.1. Do not create application code, scaffold, install packages or browsers, initialize Git, connect Supabase, or begin any later milestone.
+
+Read the actual FairSwap workspace rule (normally .agents/rules/fairswap.md), docs/PROGRESS.md, FAIRSWAP_SPEC.md section 0, docs/milestones/1.1-foundation.md, docs/BOOTSTRAP.md, and the relevant workflow/verification sections. Read other master sections selectively. Confirm the paths found; do not assume a rule is active merely because a filename exists.
+
+Inspect the folder and detect the actual OS, shell, and native/WSL/container environment. With normal approvals, check already-installed Node.js, npm, pnpm and Git using read-only commands. Report missing prerequisites and proposed setup without installing anything or printing secrets. Do not download a CLI merely to run its help during this planning-only step.
+
+Prepare a bounded plan for a runnable Next.js/TypeScript/Tailwind foundation, original responsive FairSwap layout, focused architecture/design documentation, meaningful component tests and Chromium desktop/mobile viewport smoke tests. Explicitly exclude Auth, SQL/RLS, Storage, Realtime, real listings/search/chat, staff dashboards and payments. The scaffold must run without Supabase credentials or Docker.
+
+The populated FairSwap root already contains project instructions. Plan a fresh lowercase temporary scaffold directory INSIDE the workspace, inspect CLI options before eventual execution, and specify a collision-checked transfer of required application files to the existing root with package name fairswap. Preserve all existing work. Do not assume create-next-app . will work, force overwrites, or blindly answer prompts. Skip temporary dependency installs/Git initialization and unreviewed generated agent rules where supported. Include root verification and narrowly scoped cleanup after approval. A controlled manual scaffold is an alternative only if justified in the reviewed plan.
+
+For Playwright, distinguish the Chromium binary download from OS dependencies. Identify any separate system-level permissions; do not propose turning off review controls. Viewport smoke tests are not full real-device or cross-browser coverage.
+
+Write docs/plans/1.1-plan.md with revision r1 (or increment an existing proposed plan without losing history), proposed files/dependencies, small batches, commands, acceptance criteria and blockers. Present the SAME scope and revision in Antigravity's Implementation Plan artifact when available. Synchronize review changes before any build approval; flag discrepancies rather than choosing silently. Within the repository, you may write only that plan and planning-status notes in docs/PROGRESS.md. Do not reset prior progress if work already exists.
+
+Stop after presenting the plan. Wait for my explicit approval to BUILD Milestone 1.1. Do not treat this planning request or the roadmap as permission to implement.

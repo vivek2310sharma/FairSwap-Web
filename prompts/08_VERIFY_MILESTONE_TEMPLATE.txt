@@ -1,0 +1,7 @@
+Verify ONLY Milestone [MILESTONE_ID] against its actual approved plan and acceptance contract. Do not begin the next milestone. If the ID placeholder remains or there is no reviewed implementation, stop for clarification.
+
+Read current files, rules and progress, then run existing applicable acceptance/regression checks against current code under normal permissions. A prior summary is not evidence. For database tests confirm a disposable local target; no remote reset or hosted mutation is authorized. Do not install dependencies, change source/tests/configuration, or repair failures under this verification-only request.
+
+Update only expected generated verification outputs and progress. Record exact commands, test counts where useful, exit status, environment/revision, real outcomes and blockers. Inspect screenshots where available and distinguish capture from inspection. Do not call an unexecuted check successful.
+
+Present a PASS/FAIL/BLOCKED table and proposed corrections, then stop. Do not mark human acceptance or expand scope.

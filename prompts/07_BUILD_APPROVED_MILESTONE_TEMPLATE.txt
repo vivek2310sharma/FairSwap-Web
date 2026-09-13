@@ -1,0 +1,11 @@
+I approve Milestone [MILESTONE_ID], plan revision [PLAN_REVISION], as reviewed in docs/plans/[MILESTONE_ID]-plan.md and the matching native Implementation Plan artifact. I authorize BUILD AND VERIFICATION OF THAT MILESTONE ONLY.
+
+If placeholders remain, the referenced revision does not exist, the two plans disagree, or required prior acceptance is missing, stop for clarification. Do not infer another milestone or rewrite approval history.
+
+Inspect the actual repository, active rule, progress and milestone acceptance contract. Implement only the reviewed scope in small coherent batches. Add needed migrations/permissions/integration tests only when in scope. Apply destructive test setup only to a verified disposable local target; this prompt does not authorize hosted data changes.
+
+Use the implement -> execute -> inspect -> fix -> rerun loop. Respect terminal review; new system/global tools, unreviewed dependencies, extra privileges, deployments and external actions require separate approval. Any material plan change must be reviewed, not silently added.
+
+Run the complete applicable acceptance and regression checks against final code. Record exact commands, real outcomes, revision and sanitized evidence in docs/PROGRESS.md. Native Walkthroughs summarize evidence, not substitute for tests. If blocked, label BLOCKED / NOT RUN; never weaken RLS, tests, privacy or scope to claim success.
+
+Report real functionality, changed files, executed checks, setup commands and blockers. Mark READY FOR REVIEW only when required checks pass, otherwise BLOCKED / INCOMPLETE. Stop for my review. Do not mark human acceptance, start the next milestone, deploy, commit/push without permission or claim background continuation.

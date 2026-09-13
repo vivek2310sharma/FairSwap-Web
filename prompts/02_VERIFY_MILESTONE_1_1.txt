@@ -1,0 +1,11 @@
+Verify the current Milestone 1.1 implementation only. This is VERIFY ONLY, not permission for new features, source/test/configuration fixes, new dependencies, or Milestone 1.2.
+
+Read the active rule, actual reviewed 1.1 plan, milestone acceptance criteria, docs/VERIFICATION.md and current progress. Inspect current files and diff; do not trust a prior summary as proof.
+
+Run the existing required checks against the current real app: lint, type checking, meaningful unit tests, production build/startup and Chromium desktop/mobile viewport smoke tests. Confirm startup without Supabase credentials/Docker. Check preserved specification files, final root/package name, leftover temporary paths, honest development notice, and absence of out-of-scope functionality. Record screenshot capture versus actual visual inspection.
+
+Use normal terminal approvals. If a required script/dependency/browser is missing, report the gap; do not install or repair it under this verification-only request. Test commands may generate expected build/report outputs and use their reviewed local test server. Do not kill unrelated processes.
+
+Update only evidence and docs/PROGRESS.md with exact commands, time/revision, exit status, actual test counts/results, limitations and blockers. Provide a PASS/FAIL/BLOCKED table and concise native Walkthrough when available. Do not mark human acceptance or convert unknown/unexecuted checks to PASS.
+
+Stop with findings and any proposed corrective work. Do not begin 1.2.
