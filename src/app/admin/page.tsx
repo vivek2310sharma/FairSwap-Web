@@ -53,6 +53,51 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">Moderation Queue</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Review pending marketplace listings, inspect photographs, and approve or reject submissions.
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/admin/listings"
+              className="inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              Review Listings &rarr;
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">Categories & Schemas</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Configure marketplace categories, sort orders, and typed dynamic attributes.
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/admin/categories"
+              className="inline-block rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Manage Categories &rarr;
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">Locations</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            View available pilot cities and neighborhood localities for listing placement.
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/admin/locations"
+              className="inline-block rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              View Locations &rarr;
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">Security Invariants</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-gray-600">
             <li>All mutations require verified AAL2 MFA.</li>

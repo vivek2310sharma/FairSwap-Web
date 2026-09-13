@@ -60,7 +60,23 @@ export default async function AccountPage() {
         </div>
       )}
 
-      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Listings Card */}
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">My Listings</h2>
+          <p className="mt-1 text-xs text-gray-600">Manage marketplace items & photos</p>
+          <div className="mt-4 text-sm text-gray-700">
+            Create, edit, pause, or submit listings for review.
+          </div>
+          <div className="mt-6">
+            <Link
+              href="/account/listings"
+              className="inline-block text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            >
+              View Listings &rarr;
+            </Link>
+          </div>
+        </div>
         {/* Profile Card */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">Public Profile</h2>
