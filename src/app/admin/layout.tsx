@@ -48,6 +48,24 @@ export default async function AdminLayout({
             <Link href="/admin" className="text-gray-600 hover:text-gray-900">
               Overview
             </Link>
+            <Link href="/admin/listings" className="text-gray-600 hover:text-gray-900">
+              Listings
+            </Link>
+            {["administrator", "moderator"].includes(staffData.role) && (
+              <Link href="/admin/reports" className="text-gray-600 hover:text-gray-900">
+                Reports
+              </Link>
+            )}
+            {["administrator", "support_agent"].includes(staffData.role) && (
+              <Link href="/admin/support" className="text-gray-600 hover:text-gray-900">
+                Support
+              </Link>
+            )}
+            {staffData.role === "administrator" && (
+              <Link href="/admin/privacy" className="text-gray-600 hover:text-gray-900">
+                Privacy
+              </Link>
+            )}
             {staffData.role === "administrator" && (
               <Link href="/admin/staff" className="text-gray-600 hover:text-gray-900">
                 Staff Roles

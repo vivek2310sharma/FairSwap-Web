@@ -48,7 +48,7 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
 
     // Helper to create test user with active account
     async function setupTestUser(email: string, role?: string) {
-      const { data: existing } = await serviceClient.auth.admin.listUsers();
+      const { data: existing } = await serviceClient.auth.admin.listUsers({ perPage: 1000 });
       let user = existing?.users.find((u) => u.email === email);
 
       if (!user) {
@@ -62,12 +62,21 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
             privacy_policy_version: "2026-09-01",
           },
         });
-        user = created.user!;
+        if (created?.user) {
+          user = created.user;
+        } else {
+          const { data: retryList } = await serviceClient.auth.admin.listUsers({ perPage: 1000 });
+          user = retryList?.users.find((u) => u.email === email);
+        }
       } else {
         await serviceClient.auth.admin.updateUserById(user.id, {
           password: "TestPassword123!",
           email_confirm: true,
         });
+      }
+
+      if (!user) {
+        throw new Error(`Failed to find or create test user: ${email}`);
       }
 
       if (role) {
