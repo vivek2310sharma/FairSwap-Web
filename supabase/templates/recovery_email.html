@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Reset your FairSwap Password</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #111827; margin: 0; padding: 24px;">
+  <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 32px;">
+    <h1 style="color: #047857; font-size: 24px; margin-top: 0;">FairSwap.in</h1>
+    <h2 style="font-size: 18px; color: #111827;">Password Reset Request</h2>
+    <p>We received a request to reset your FairSwap account password. Click the button below to choose a new password:</p>
+    <div style="margin: 24px 0;">
+      <a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password"
+         style="display: inline-block; background: #059669; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600;">
+        Reset Password
+      </a>
+    </div>
+    <p style="color: #6b7280; font-size: 14px;">If you did not request a password reset, you can safely ignore this email.</p>
+  </div>
+</body>
+</html>
