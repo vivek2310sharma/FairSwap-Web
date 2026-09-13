@@ -125,6 +125,59 @@ export interface ListingStatusTransition {
   created_at: string;
 }
 
+export interface PublicListingCard {
+  id: string;
+  seller_id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  condition: ListingCondition | null;
+  price_type: ListingPriceType | null;
+  price_paise: number | null;
+  pin_code: string | null;
+  category_attributes: Record<string, unknown>;
+  status: ListingStatus;
+  created_at: string;
+  published_at: string | null;
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    icon: string | null;
+  };
+  city: {
+    id: string;
+    name: string;
+    state: string;
+  };
+  locality: {
+    id: string;
+    name: string;
+  } | null;
+  cover_photo: {
+    id: string;
+    thumbnail_storage_path: string | null;
+    medium_storage_path: string | null;
+    width: number | null;
+    height: number | null;
+  } | null;
+}
+
+export interface SearchListingsResult {
+  items: PublicListingCard[];
+  total_count: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export interface Favourite {
+  user_id: string;
+  listing_id: string;
+  created_at: string;
+  listing?: PublicListingCard | null;
+}
+
 // Validation Schemas
 export const draftListingSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(150, "Title must be at most 150 characters"),
@@ -158,5 +211,18 @@ export const submitListingSchema = draftListingSchema.extend({
   }
 );
 
+export const searchFiltersSchema = z.object({
+  q: z.string().max(100).optional().default(""),
+  category: z.string().max(100).optional().default(""),
+  city: z.string().max(100).optional().default(""),
+  locality: z.string().max(100).optional().default(""),
+  condition: z.enum(["new", "like_new", "good", "fair", "poor"]).optional(),
+  price_min: z.coerce.number().min(0).max(100000000).optional(),
+  price_max: z.coerce.number().min(0).max(100000000).optional(),
+  sort: z.enum(["newest", "price_asc", "price_desc", "relevance"]).optional().default("newest"),
+  page: z.coerce.number().int().min(1).max(1000).optional().default(1),
+});
+
 export type DraftListingInput = z.infer<typeof draftListingSchema>;
 export type SubmitListingInput = z.infer<typeof submitListingSchema>;
+export type SearchFilters = z.input<typeof searchFiltersSchema>;

@@ -152,6 +152,32 @@ export type Database = {
         }
         Relationships: []
       }
+      favourites: {
+        Row: {
+          created_at: string
+          listing_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          listing_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          listing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favourites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_media: {
         Row: {
           content_type: string
@@ -210,6 +236,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "listing_media_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_slug_history: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_slug_history_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings"
@@ -290,6 +345,7 @@ export type Database = {
           removed_by: string | null
           renewal_count: number
           revision: number
+          search_vector: unknown
           seller_id: string
           slug: string
           sold_at: string | null
@@ -322,6 +378,7 @@ export type Database = {
           removed_by?: string | null
           renewal_count?: number
           revision?: number
+          search_vector?: unknown
           seller_id?: string
           slug?: string
           sold_at?: string | null
@@ -354,6 +411,7 @@ export type Database = {
           removed_by?: string | null
           renewal_count?: number
           revision?: number
+          search_vector?: unknown
           seller_id?: string
           slug?: string
           sold_at?: string | null
@@ -631,6 +689,22 @@ export type Database = {
         }
         Returns: Json
       }
+      search_public_listings: {
+        Args: {
+          category_id?: string
+          category_slug?: string
+          city_id?: string
+          condition?: string
+          locality_id?: string
+          page?: number
+          per_page?: number
+          price_max?: number
+          price_min?: number
+          query?: string
+          sort?: string
+        }
+        Returns: Json
+      }
       seller_submit_listing: { Args: { listing_id: string }; Returns: Json }
       seller_transition_listing: {
         Args: { action: string; listing_id: string }
@@ -843,4 +917,3 @@ export const Constants = {
     },
   },
 } as const
-

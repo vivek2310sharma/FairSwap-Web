@@ -1,28 +1,99 @@
+import Link from "next/link";
+
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
     <footer className="mt-auto border-t border-border bg-surface">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
-          <div className="text-center sm:text-left">
-            <p className="text-sm font-semibold text-foreground">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
+          {/* Brand & Mission */}
+          <div>
+            <p className="text-base font-bold text-foreground">
               <span className="text-brand-600">Fair</span>Swap
               <span className="text-muted">.in</span>
             </p>
-            <p className="mt-1 text-xs text-muted">
+            <p className="mt-2 text-xs text-muted leading-relaxed">
               India&apos;s local classifieds marketplace
             </p>
           </div>
 
-          <div className="text-center sm:text-right">
-            <p className="text-xs text-muted">
-              &copy; {currentYear} FairSwap. Development foundation.
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              This is a development build. Not a live service.
-            </p>
+          {/* Discovery Links */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+              Discovery
+            </h3>
+            <ul className="mt-3 space-y-2 text-xs text-muted">
+              <li>
+                <Link href="/search" className="hover:text-foreground">
+                  Browse All Listings
+                </Link>
+              </li>
+              <li>
+                <Link href="/account/favourites" className="hover:text-foreground">
+                  Saved Favourites
+                </Link>
+              </li>
+              <li>
+                <Link href="/account/listings/new" className="hover:text-foreground">
+                  Post an Advertisement
+                </Link>
+              </li>
+            </ul>
           </div>
+
+          {/* Help & Safety */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+              Guidance &amp; Safety
+            </h3>
+            <ul className="mt-3 space-y-2 text-xs text-muted">
+              <li>
+                <Link href="/help" className="hover:text-foreground">
+                  Help Center &amp; FAQ
+                </Link>
+              </li>
+              <li>
+                <Link href="/safety" className="hover:text-foreground">
+                  In-Person Safety Tips
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-foreground">
+                  Contact Guidance
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Policy Drafts */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+              Policy Drafts
+            </h3>
+            <ul className="mt-3 space-y-2 text-xs text-muted">
+              <li>
+                <Link href="/terms" className="hover:text-foreground">
+                  Terms of Service (Draft)
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-foreground">
+                  Privacy Policy (Draft)
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Development notice and copyright */}
+        <div className="mt-8 border-t border-border/60 pt-6 flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
+          <p className="text-xs text-muted">
+            &copy; {currentYear} FairSwap. Development foundation.
+          </p>
+          <p className="text-xs text-muted">
+            This is a development build. Not a live service.
+          </p>
         </div>
       </div>
     </footer>
