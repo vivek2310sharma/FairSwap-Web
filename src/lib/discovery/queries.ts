@@ -14,7 +14,7 @@ import {
 
 export interface PublicListingDetail {
   id: string;
-  seller_id: string;
+  seller_id: string | null;
   slug: string;
   title: string;
   description: string | null;
@@ -42,7 +42,7 @@ export interface PublicListingDetail {
     name: string;
   } | null;
   seller: {
-    id: string;
+    id: string | null;
     display_name: string;
     avatar_url: string | null;
     bio: string | null;
@@ -280,11 +280,23 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
   }
 
   // Fetch seller profile
-  const { data: sellerProfile } = await serviceClient
-    .from("profiles")
-    .select("id, display_name, avatar_url, bio, city, state, created_at")
-    .eq("id", listing.seller_id)
-    .single();
+  let sellerProfile: {
+    id: string;
+    display_name: string;
+    avatar_url: string | null;
+    bio: string | null;
+    city: string | null;
+    state: string | null;
+    created_at: string;
+  } | null = null;
+  if (listing.seller_id) {
+    const { data } = await serviceClient
+      .from("profiles")
+      .select("id, display_name, avatar_url, bio, city, state, created_at")
+      .eq("id", listing.seller_id)
+      .single();
+    sellerProfile = data;
+  }
 
   // Fetch media derivatives
   const { data: mediaItems } = await serviceClient
@@ -314,7 +326,7 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
     locality: Array.isArray(listing.locality) ? listing.locality[0] : listing.locality,
     seller: sellerProfile || {
       id: listing.seller_id,
-      display_name: "Seller",
+      display_name: "Deleted User",
       avatar_url: null,
       bio: null,
       city: null,

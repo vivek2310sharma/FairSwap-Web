@@ -98,6 +98,53 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">User & Content Reports</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Moderate flagged listings, abusive users, and inspect case-scoped reported messages.
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/admin/reports"
+              className="inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              Reports Queue &rarr;
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">Support & Appeals</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Handle customer service inquiries, disputes, and account moderation appeals.
+          </p>
+          <div className="mt-4">
+            <Link
+              href="/admin/support"
+              className="inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+            >
+              Support Queue &rarr;
+            </Link>
+          </div>
+        </div>
+
+        {roleData?.role === "administrator" && (
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900">Privacy & GDPR Fulfillment</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Process data export requests and orchestrate account deletion workflows.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/admin/privacy"
+                className="inline-block rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Privacy Requests &rarr;
+              </Link>
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">Security Invariants</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-gray-600">
             <li>All mutations require verified AAL2 MFA.</li>

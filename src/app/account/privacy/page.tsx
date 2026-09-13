@@ -41,10 +41,10 @@ export default async function PrivacyPage() {
             Select the type of request. Submissions are limited to 3 requests per 30-day window.
           </p>
 
-          <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
-            <span className="font-semibold">Milestone Notice:</span> Submitting here creates a tracked record
-            in our database. Manual or automated export and account deletion processing will be fulfilled in
-            Milestone 1.5.
+          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+            <span className="font-semibold">Privacy Rights Active:</span> Data exports are generated as structured JSON
+            containing your account profile, listings, and messages. Account deletions permanently remove your Auth credentials
+            and anonymize marketplace history.
           </div>
 
           <PrivacyForm />
@@ -65,7 +65,7 @@ export default async function PrivacyPage() {
                     <th className="py-2">Type</th>
                     <th className="py-2">Status</th>
                     <th className="py-2">Requested At</th>
-                    <th className="py-2">Notes</th>
+                    <th className="py-2">Download / Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -77,11 +77,11 @@ export default async function PrivacyPage() {
                       <td className="py-3">
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                            req.status === "resolved"
+                            (req.status as string) === "resolved" || (req.status as string) === "completed"
                               ? "bg-green-100 text-green-800"
-                              : req.status === "rejected"
+                              : (req.status as string) === "rejected"
                               ? "bg-red-100 text-red-800"
-                              : req.status === "in_progress"
+                              : (req.status as string) === "in_progress" || (req.status as string) === "processing"
                               ? "bg-blue-100 text-blue-800"
                               : "bg-amber-100 text-amber-800"
                           }`}
@@ -92,8 +92,18 @@ export default async function PrivacyPage() {
                       <td className="py-3 text-gray-500">
                         {new Date(req.requested_at).toLocaleDateString()}
                       </td>
-                      <td className="py-3 text-xs text-gray-600">
-                        {req.resolution_notes || "—"}
+                      <td className="py-3 text-xs">
+                        {req.request_type === "export_data" &&
+                        ((req.status as string) === "resolved" || (req.status as string) === "completed") ? (
+                          <a
+                            href={`/api/privacy/export/${req.id}`}
+                            className="inline-flex items-center gap-1 font-semibold text-emerald-600 hover:text-emerald-700 underline"
+                          >
+                            Download Export (JSON)
+                          </a>
+                        ) : (
+                          <span className="text-gray-500">{req.resolution_notes || "—"}</span>
+                        )}
                       </td>
                     </tr>
                   ))}

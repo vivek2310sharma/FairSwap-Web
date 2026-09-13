@@ -152,6 +152,80 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_read_states: {
+        Row: {
+          conversation_id: string
+          last_read_at: string
+          last_read_message_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          last_read_at?: string
+          last_read_message_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          last_read_at?: string
+          last_read_message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_read_states_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_read_state_message"
+            columns: ["conversation_id", "last_read_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["conversation_id", "id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          buyer_id: string | null
+          created_at: string
+          id: string
+          last_message_at: string
+          listing_id: string
+          seller_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          listing_id: string
+          seller_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          listing_id?: string
+          seller_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favourites: {
         Row: {
           created_at: string
@@ -194,7 +268,7 @@ export type Database = {
           processing_error: string | null
           processing_status: Database["public"]["Enums"]["media_processing_status_enum"]
           thumbnail_storage_path: string | null
-          uploader_id: string
+          uploader_id: string | null
           width: number | null
         }
         Insert: {
@@ -212,7 +286,7 @@ export type Database = {
           processing_error?: string | null
           processing_status?: Database["public"]["Enums"]["media_processing_status_enum"]
           thumbnail_storage_path?: string | null
-          uploader_id?: string
+          uploader_id?: string | null
           width?: number | null
         }
         Update: {
@@ -230,7 +304,7 @@ export type Database = {
           processing_error?: string | null
           processing_status?: Database["public"]["Enums"]["media_processing_status_enum"]
           thumbnail_storage_path?: string | null
-          uploader_id?: string
+          uploader_id?: string | null
           width?: number | null
         }
         Relationships: [
@@ -346,7 +420,7 @@ export type Database = {
           renewal_count: number
           revision: number
           search_vector: unknown
-          seller_id: string
+          seller_id: string | null
           slug: string
           sold_at: string | null
           status: Database["public"]["Enums"]["listing_status_enum"]
@@ -379,7 +453,7 @@ export type Database = {
           renewal_count?: number
           revision?: number
           search_vector?: unknown
-          seller_id?: string
+          seller_id?: string | null
           slug?: string
           sold_at?: string | null
           status?: Database["public"]["Enums"]["listing_status_enum"]
@@ -412,7 +486,7 @@ export type Database = {
           renewal_count?: number
           revision?: number
           search_vector?: unknown
-          seller_id?: string
+          seller_id?: string | null
           slug?: string
           sold_at?: string | null
           status?: Database["public"]["Enums"]["listing_status_enum"]
@@ -486,6 +560,74 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          client_request_id: string
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          sender_id: string | null
+        }
+        Insert: {
+          client_request_id: string
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          sender_id?: string | null
+        }
+        Update: {
+          client_request_id?: string
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type_enum"]
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type_enum"]
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type_enum"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       privacy_requests: {
         Row: {
           id: string
@@ -495,7 +637,7 @@ export type Database = {
           resolved_at: string | null
           resolved_by: string | null
           status: Database["public"]["Enums"]["privacy_request_status_enum"]
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           id?: string
@@ -505,7 +647,7 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           status?: Database["public"]["Enums"]["privacy_request_status_enum"]
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           id?: string
@@ -515,7 +657,7 @@ export type Database = {
           resolved_at?: string | null
           resolved_by?: string | null
           status?: Database["public"]["Enums"]["privacy_request_status_enum"]
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -552,6 +694,51 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by_staff_id: string | null
+          status: Database["public"]["Enums"]["report_status_enum"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["report_target_type_enum"]
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_staff_id?: string | null
+          status?: Database["public"]["Enums"]["report_status_enum"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["report_target_type_enum"]
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by_staff_id?: string | null
+          status?: Database["public"]["Enums"]["report_status_enum"]
+          target_id?: string
+          target_type?: Database["public"]["Enums"]["report_target_type_enum"]
+        }
+        Relationships: []
+      }
       staff_roles: {
         Row: {
           assigned_at: string
@@ -570,6 +757,77 @@ export type Database = {
           assigned_by?: string | null
           role?: Database["public"]["Enums"]["staff_role_enum"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_internal_note: boolean
+          sender_id: string | null
+          ticket_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_internal_note?: boolean
+          sender_id?: string | null
+          ticket_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_internal_note?: boolean
+          sender_id?: string | null
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          category: Database["public"]["Enums"]["support_ticket_category_enum"]
+          created_at: string
+          id: string
+          priority: Database["public"]["Enums"]["support_ticket_priority_enum"]
+          status: Database["public"]["Enums"]["support_ticket_status_enum"]
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          category: Database["public"]["Enums"]["support_ticket_category_enum"]
+          created_at?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["support_ticket_priority_enum"]
+          status?: Database["public"]["Enums"]["support_ticket_status_enum"]
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: Database["public"]["Enums"]["support_ticket_category_enum"]
+          created_at?: string
+          id?: string
+          priority?: Database["public"]["Enums"]["support_ticket_priority_enum"]
+          status?: Database["public"]["Enums"]["support_ticket_status_enum"]
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -609,11 +867,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_add_ticket_internal_note: {
+        Args: { content: string; ticket_id: string }
+        Returns: string
+      }
       admin_assign_staff_role: {
         Args: {
           p_new_role: Database["public"]["Enums"]["staff_role_enum"]
@@ -621,6 +907,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_begin_account_deletion: {
+        Args: { request_id: string }
+        Returns: Json
+      }
+      admin_finalize_account_deletion: {
+        Args: { request_id: string }
+        Returns: undefined
+      }
+      admin_fulfill_data_export: { Args: { request_id: string }; Returns: Json }
+      admin_get_report_evidence: { Args: { report_id: string }; Returns: Json }
       admin_manage_category: {
         Args: {
           action: string
@@ -646,6 +942,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_reply_support_ticket: {
+        Args: { content: string; ticket_id: string }
+        Returns: string
+      }
       admin_resolve_privacy_request: {
         Args: {
           p_new_status: Database["public"]["Enums"]["privacy_request_status_enum"]
@@ -654,8 +954,25 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_resolve_report: {
+        Args: {
+          new_status: Database["public"]["Enums"]["report_status_enum"]
+          report_id: string
+          resolution_notes?: string
+        }
+        Returns: undefined
+      }
       admin_revoke_staff_role: {
         Args: { p_target_user_id: string }
+        Returns: undefined
+      }
+      admin_update_ticket_status: {
+        Args: {
+          assigned_to?: string
+          priority: Database["public"]["Enums"]["support_ticket_priority_enum"]
+          status: Database["public"]["Enums"]["support_ticket_status_enum"]
+          ticket_id: string
+        }
         Returns: undefined
       }
       admin_update_user_account_status: {
@@ -666,14 +983,60 @@ export type Database = {
         }
         Returns: undefined
       }
+      block_user: {
+        Args: { blocked_user_id: string; reason?: string }
+        Returns: undefined
+      }
+      create_report: {
+        Args: {
+          details?: string
+          reason: string
+          target_id: string
+          target_type: Database["public"]["Enums"]["report_target_type_enum"]
+        }
+        Returns: string
+      }
+      create_support_ticket: {
+        Args: {
+          category: Database["public"]["Enums"]["support_ticket_category_enum"]
+          message: string
+          subject: string
+        }
+        Returns: string
+      }
+      customer_reply_support_ticket: {
+        Args: { content: string; ticket_id: string }
+        Returns: string
+      }
       delete_listing_media_internal: {
         Args: { listing_id: string; media_id: string }
         Returns: Json
       }
       expire_listing: { Args: { listing_id: string }; Returns: Json }
+      get_my_reports: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          reason: string
+          resolved_at: string
+          status: Database["public"]["Enums"]["report_status_enum"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["report_target_type_enum"]
+        }[]
+      }
       is_listing_publicly_visible: {
         Args: { listing_id: string }
         Returns: boolean
+      }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
+      mark_conversation_read: {
+        Args: { conversation_id: string; message_id: string }
+        Returns: undefined
+      }
+      mark_notification_read: {
+        Args: { notification_id: string }
+        Returns: undefined
       }
       moderate_listing: {
         Args: { action: string; listing_id: string; reason?: string }
@@ -710,6 +1073,19 @@ export type Database = {
         Args: { action: string; listing_id: string }
         Returns: Json
       }
+      send_message: {
+        Args: {
+          client_request_id: string
+          content: string
+          conversation_id: string
+        }
+        Returns: Json
+      }
+      start_conversation: {
+        Args: { client_request_id: string; content: string; listing_id: string }
+        Returns: Json
+      }
+      unblock_user: { Args: { blocked_user_id: string }; Returns: undefined }
     }
     Enums: {
       account_status_enum:
@@ -735,17 +1111,38 @@ export type Database = {
         | "processing"
         | "ready"
         | "failed"
+      notification_type_enum:
+        | "new_message"
+        | "listing_approved"
+        | "listing_rejected"
+        | "report_update"
+        | "support_reply"
       privacy_request_status_enum:
         | "pending"
         | "in_progress"
         | "resolved"
         | "rejected"
       privacy_request_type_enum: "export_data" | "delete_account"
+      report_status_enum: "pending" | "investigating" | "resolved" | "dismissed"
+      report_target_type_enum: "listing" | "user" | "message"
       staff_role_enum:
         | "administrator"
         | "moderator"
         | "support_agent"
         | "content_editor"
+      support_ticket_category_enum:
+        | "general"
+        | "account"
+        | "moderation_appeal"
+        | "safety"
+        | "bug"
+      support_ticket_priority_enum: "low" | "normal" | "high" | "urgent"
+      support_ticket_status_enum:
+        | "open"
+        | "in_progress"
+        | "awaiting_user"
+        | "resolved"
+        | "closed"
       transition_actor_kind_enum: "seller" | "moderator" | "system"
     }
     CompositeTypes: {
@@ -900,6 +1297,13 @@ export const Constants = {
         "ready",
         "failed",
       ],
+      notification_type_enum: [
+        "new_message",
+        "listing_approved",
+        "listing_rejected",
+        "report_update",
+        "support_reply",
+      ],
       privacy_request_status_enum: [
         "pending",
         "in_progress",
@@ -907,13 +1311,30 @@ export const Constants = {
         "rejected",
       ],
       privacy_request_type_enum: ["export_data", "delete_account"],
+      report_status_enum: ["pending", "investigating", "resolved", "dismissed"],
+      report_target_type_enum: ["listing", "user", "message"],
       staff_role_enum: [
         "administrator",
         "moderator",
         "support_agent",
         "content_editor",
       ],
+      support_ticket_category_enum: [
+        "general",
+        "account",
+        "moderation_appeal",
+        "safety",
+        "bug",
+      ],
+      support_ticket_priority_enum: ["low", "normal", "high", "urgent"],
+      support_ticket_status_enum: [
+        "open",
+        "in_progress",
+        "awaiting_user",
+        "resolved",
+        "closed",
+      ],
       transition_actor_kind_enum: ["seller", "moderator", "system"],
     },
   },
-} as const
+} as const;

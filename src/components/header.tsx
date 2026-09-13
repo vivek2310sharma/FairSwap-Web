@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import { Menu, X, Search, Heart, PlusCircle, User } from "lucide-react";
+import { Menu, X, Search, Heart, PlusCircle, User, MessageSquare, Bell, LifeBuoy } from "lucide-react";
+import { NotificationBell } from "@/components/communication/NotificationBell";
 
 const navLinks = [
   { label: "How It Works", href: "#how-it-works" },
@@ -58,6 +59,15 @@ export function Header() {
 
         {/* Action buttons */}
         <div className="hidden items-center gap-3 sm:flex">
+          <Link
+            href="/account/messages"
+            className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-foreground p-1.5 rounded-lg hover:bg-surface"
+            aria-label="Messages"
+            title="Messages"
+          >
+            <MessageSquare className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <NotificationBell />
           <Link
             href="/account"
             className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
@@ -132,6 +142,30 @@ export function Header() {
             >
               <PlusCircle className="h-4 w-4" aria-hidden="true" />
               Post a Listing
+            </Link>
+            <Link
+              href="/account/messages"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+            >
+              <MessageSquare className="h-4 w-4" aria-hidden="true" />
+              Messages
+            </Link>
+            <Link
+              href="/account/notifications"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+            >
+              <Bell className="h-4 w-4" aria-hidden="true" />
+              Notifications
+            </Link>
+            <Link
+              href="/account/support"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+            >
+              <LifeBuoy className="h-4 w-4" aria-hidden="true" />
+              Help & Support
             </Link>
             <Link
               href="/account"

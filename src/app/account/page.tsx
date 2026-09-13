@@ -143,6 +143,61 @@ export default async function AccountPage() {
           </div>
         </div>
 
+        {/* Messages Card */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">Messages</h2>
+          <p className="mt-1 text-xs text-gray-500">Buyer and seller chats</p>
+          <div className="mt-4 text-sm text-gray-600">
+            View active conversations, reply to inquiries, and communicate securely.
+          </div>
+          <div className="mt-6">
+            <Link
+              href="/account/messages"
+              className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
+            >
+              View Inbox &rarr;
+            </Link>
+          </div>
+        </div>
+
+        {/* Notifications Card */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">Notifications</h2>
+          <p className="mt-1 text-xs text-gray-500">Activity and alerts</p>
+          <div className="mt-4 text-sm text-gray-600">
+            Stay updated on listing moderation, incoming messages, and support updates.
+          </div>
+          <div className="mt-6">
+            <Link
+              href="/account/notifications"
+              className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
+            >
+              Notification Center &rarr;
+            </Link>
+          </div>
+        </div>
+
+        {/* Support Card */}
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">Help & Support</h2>
+          <p className="mt-1 text-xs text-gray-500">
+            {isSuspended ? "Appeals & Inquiries" : "Customer assistance"}
+          </p>
+          <div className="mt-4 text-sm text-gray-600">
+            {isSuspended
+              ? "Submit a formal moderation appeal to the FairSwap review team."
+              : "Contact customer support or follow up on existing inquiries."}
+          </div>
+          <div className="mt-6">
+            <Link
+              href="/account/support"
+              className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
+            >
+              {isSuspended ? "Submit Appeal &rarr;" : "Support Tickets &rarr;"}
+            </Link>
+          </div>
+        </div>
+
         {/* Privacy Card */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">Data & Privacy</h2>

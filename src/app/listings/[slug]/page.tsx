@@ -82,7 +82,9 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
   // 3. Fetch seller's other active listings and favourite state
   const supabase = await createClient();
   const [sellerOtherListings, { data: authData }] = await Promise.all([
-    getSellerPublicListings(listing.seller_id, listing.id),
+    listing.seller_id
+      ? getSellerPublicListings(listing.seller_id, listing.id)
+      : Promise.resolve([]),
     supabase.auth.getUser(),
   ]);
 
@@ -307,7 +309,10 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                 )}
 
                 <div className="mt-6 space-y-3">
-                  <ContactSellerButton sellerName={listing.seller.display_name} />
+                  <ContactSellerButton
+                    sellerName={listing.seller.display_name}
+                    listingId={listing.id}
+                  />
 
                   <Link
                     href={`/seller/${listing.seller.id}`}
