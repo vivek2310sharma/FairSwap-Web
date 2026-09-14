@@ -975,6 +975,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_search_users: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_status?: Database["public"]["Enums"]["account_status_enum"]
+        }
+        Returns: {
+          account_status: Database["public"]["Enums"]["account_status_enum"]
+          created_at: string
+          display_name: string | null
+          email: string
+          listings_count: number
+          role: Database["public"]["Enums"]["staff_role_enum"] | null
+          user_id: string
+        }[]
+      }
       admin_update_user_account_status: {
         Args: {
           p_new_status: Database["public"]["Enums"]["account_status_enum"]

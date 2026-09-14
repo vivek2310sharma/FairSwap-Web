@@ -97,6 +97,23 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
 
+        {["administrator", "moderator"].includes(roleData?.role || "") && (
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900">User Management</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Search and inspect marketplace accounts, view listings and reports, and manage suspensions.
+            </p>
+            <div className="mt-4">
+              <Link
+                href="/admin/users"
+                className="inline-block rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500"
+              >
+                Manage Users &rarr;
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">User & Content Reports</h2>
           <p className="mt-1 text-sm text-gray-600">

@@ -52,6 +52,11 @@ export default async function AdminLayout({
               Listings
             </Link>
             {["administrator", "moderator"].includes(staffData.role) && (
+              <Link href="/admin/users" className="text-gray-600 hover:text-gray-900">
+                Users
+              </Link>
+            )}
+            {["administrator", "moderator"].includes(staffData.role) && (
               <Link href="/admin/reports" className="text-gray-600 hover:text-gray-900">
                 Reports
               </Link>

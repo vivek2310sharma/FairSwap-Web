@@ -19,14 +19,14 @@ export default defineConfig({
       name: "desktop-chromium",
       use: {
         browserName: "chromium",
-        viewport: { width: 1440, height: 900 },
+        viewport: { width: 1280, height: 720 },
       },
     },
     {
       name: "mobile-chromium",
       use: {
         browserName: "chromium",
-        viewport: { width: 390, height: 844 },
+        viewport: { width: 360, height: 640 },
         isMobile: true,
         hasTouch: true,
       },
