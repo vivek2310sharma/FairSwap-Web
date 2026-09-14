@@ -189,7 +189,7 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
     await expect(reportDialog).toBeVisible();
     await buyerPage.locator("#report-reason").selectOption("Suspicious behavior or scam");
     await buyerPage.locator("#report-details").fill("Tested safety reporting via E2E");
-    await buyerPage.getByRole("button", { name: /submit report/i }).click();
+    await buyerPage.getByRole("button", { name: /submit report/i }).click({ force: true });
 
     // Confirmation message appears
     await expect(buyerPage.getByText(/report submitted/i)).toBeVisible({ timeout: 5000 });

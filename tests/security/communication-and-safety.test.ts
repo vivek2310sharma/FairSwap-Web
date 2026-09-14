@@ -80,7 +80,9 @@ describe("Milestone 1.5 Communication, Safety, Moderation & Privacy Fulfillment"
     });
 
     async function setupTestUser(email: string, role?: string) {
-      const { data: existing } = await serviceClient.auth.admin.listUsers();
+      const { data: existing } = await serviceClient.auth.admin.listUsers({
+        perPage: 1000,
+      });
       let user = existing?.users.find((u) => u.email === email);
 
       if (!user) {
@@ -90,8 +92,21 @@ describe("Milestone 1.5 Communication, Safety, Moderation & Privacy Fulfillment"
           email_confirm: true,
           user_metadata: { display_name: email.split("@")[0] },
         });
-        if (error || !created.user) throw error || new Error("Failed to create user");
-        user = created.user;
+        if (error) {
+          if (error.message?.includes("already been registered")) {
+            const { data: retryData } = await serviceClient.auth.admin.listUsers({
+              perPage: 1000,
+            });
+            user = retryData?.users.find((u) => u.email === email);
+            if (!user) throw new Error(`User ${email} exists but cannot be found`);
+          } else {
+            throw error;
+          }
+        } else if (!created.user) {
+          throw new Error("Failed to create user");
+        } else {
+          user = created.user;
+        }
       }
 
       await serviceClient

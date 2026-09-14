@@ -129,6 +129,12 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
       await page.keyboard.press("Tab");
       const homeLink = page.getByRole("link", { name: /fairswap home/i });
       await expect(homeLink).toBeFocused();
+      const mobileOutline = await homeLink.evaluate((el) => {
+        const s = window.getComputedStyle(el);
+        return { style: s.outlineStyle, width: s.outlineWidth };
+      });
+      expect(mobileOutline.style).toBe("solid");
+      expect(parseInt(mobileOutline.width, 10)).toBeGreaterThanOrEqual(1);
 
       // 2. Tab to mobile menu toggle button
       await page.keyboard.press("Tab");
@@ -177,6 +183,12 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
       await page.keyboard.press("Tab");
       const homeLink = page.getByRole("link", { name: /fairswap home/i });
       await expect(homeLink).toBeFocused();
+      const desktopOutline = await homeLink.evaluate((el) => {
+        const s = window.getComputedStyle(el);
+        return { style: s.outlineStyle, width: s.outlineWidth };
+      });
+      expect(desktopOutline.style).toBe("solid");
+      expect(parseInt(desktopOutline.width, 10)).toBeGreaterThanOrEqual(1);
 
       // 2. Tab through desktop nav links
       const desktopNav = page.getByRole("navigation", {

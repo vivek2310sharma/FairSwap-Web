@@ -6,25 +6,27 @@ FairSwap.in is a hyperlocal discovery and communication platform enabling buyers
 
 ---
 
-## Current Status: Milestone 1.4 (Public Browsing, Discovery & Favourites)
+## Current Status: Phase 1 Complete (Controlled-Pilot Code Ready — Public Launch Blocked on External Prerequisites)
 
-This repository contains the verified implementation through **Milestone 1.4**:
+### Release & Readiness Classification
+* **Phase 1 Implementation Readiness**: **COMPLETE** — All Milestones 1.1 through 1.6 are implemented, hardened, and verified locally.
+* **Controlled-Pilot Code Readiness**: **GO** (`v0.1.6-pilot.1` pre-release candidate) — Verified for invitation-only, restricted-scope testing in local/staging sandboxes.
+* **Hosted / Public Pilot Readiness**: **PENDING** — FairSwap is **not yet certified for public production launch** until external operational and statutory prerequisites are fulfilled.
+* **Remaining External Launch Prerequisites**:
+  1. **Production SMTP Provider**: Provision and verify production transactional email (e.g., Amazon SES, SendGrid, or Postmark) with authenticated DKIM/SPF domains.
+  2. **Production Domain & SSL/TLS**: Provision hosting infrastructure and bind custom domain (`fairswap.in`) with automated certificate management.
+  3. **Statutory Grievance Officer**: Formally appoint and publish Grievance Officer details in compliance with the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules of India.
+
+This repository contains the verified implementation through **Milestone 1.6** (Phase 1 complete):
 - **Milestone 1.1 (Foundation)**: Core responsive design system, Tailwind CSS v4 tokens, accessible layouts, system font stack, and multi-viewport test harnesses.
 - **Milestone 1.2 (Accounts & Security)**: PostgreSQL schemas, Direct-API RLS policies, two-layer security RPCs, customer auth journeys (sign-up, confirm, sign-in, recovery, TOTP MFA), AAL2-gated staff portal, and privacy request handling.
 - **Logging & Monitoring Baseline**: Zero-dependency structured JSON logger, recursive PII redactor, W3C/UUID request correlation, Next.js 16 instrumentation, and client-error ingestion.
 - **Milestone 1.3 (Listings & Moderation)**: Categories and locations hierarchy, seller listing lifecycle, material-edit re-review policies, private Supabase Storage pipeline (`sharp` v0.35.4 WebP derivatives), staff moderation queue, and automated expiry/cleanup maintenance.
-- **Milestone 1.4 (Public Browsing & Discovery)**:
-  * Full-text PostgreSQL search using weighted `tsvector` (`title` weight A, `description` weight B) and GIN indexing with prefix matching support.
-  * Public discovery RPC (`public.search_public_listings`) with composite filters (category, city, locality, price range), bounded pagination (12/24/48 items, max offset 1,200), and stable tie-breakers.
-  * Canonical listing view (`/listings/[slug]`) and historical slug redirection (`listing_slug_history`), with strict public visibility gating.
-  * Anonymous media delivery endpoint (`/api/listings/[id]/media/[mediaId]/[size]`) serving WebP derivatives (`thumb`, `medium`, `large`) via server-signed URLs with public cache headers; original format strictly restricted.
-  * Authenticated favourites management (`/account/favourites`) with privacy-preserving unavailable item notices (no draft/rejected state leakage).
-  * Hyperlocal homepage (`/`), search explorer (`/search`), and seller public showcase (`/seller/[id]`).
-  * Truthful static policy/guidance pages (`/help`, `/safety`, `/terms`, `/privacy`, `/contact`), dynamic `sitemap.ts`, and non-indexing `robots.ts` for non-production environments.
+- **Milestone 1.4 (Public Browsing & Discovery)**: Full-text PostgreSQL search with GIN indexing, public discovery RPC with composite filters, canonical listing views with slug history redirects, anonymous WebP media delivery, authenticated favourites, and truthful static policy pages.
+- **Milestone 1.5 (Communication & Safety)**: Direct persistent buyer-seller messaging with Realtime streaming, bidirectional user blocking, report intake and staff resolution, support ticketing and appeals, in-app notifications, and GDPR/DPDP privacy fulfillment (sanitized data export and account deletion preserving counterparty history).
+- **Milestone 1.6 (Release Hardening & Pilot Readiness)**: End-to-end cross-journey regression verification, staff user management portal (`/admin/users`), disaster recovery backup/restore verification, reliability and failure injection testing, WCAG AA accessibility audit, operational production runbooks, and evidence-based Go/No-Go release assessment.
 
-> **Upcoming Milestones**:
-> - **Milestone 1.5**: Buyer-seller direct messaging, abuse reporting, and privacy export/erasure fulfillment.
-> - **Milestone 1.6**: Trust, safety, and operational production launch hardening.
+> **Future Phases**: Phase 2 and beyond will be planned separately. This repository represents the complete Phase 1 controlled-pilot foundation.
 
 ---
 
@@ -94,6 +96,9 @@ corepack pnpm start
 | `corepack pnpm tsx scripts/check-expired-listings.ts` | Runs scheduled expiry check for active listings |
 | `corepack pnpm tsx scripts/cleanup-orphan-media.ts` | Cleans up technical orphan/stale media records |
 | `corepack pnpm tsx scripts/seed-listings.ts` | Populates local environment with 30 synthetic listings |
+| `corepack pnpm tsx scripts/backup-database.ts` | Backs up local database to isolated `fairswap_restore_test` |
+| `corepack pnpm tsx scripts/backup-storage.ts` | Backs up storage buckets to `recovery-test-*` buckets |
+| `corepack pnpm tsx scripts/verify-restore.ts` | Verifies database and storage restore integrity |
 
 ---
 
@@ -109,6 +114,11 @@ Detailed technical specifications are available in the `docs/` directory:
 - [Implementation Progress](docs/PROGRESS.md) (`docs/PROGRESS.md`) — Current milestone register, verified checks, and evidence logs.
 - [Milestone 1.2 Implementation Plan](docs/plans/1.2-plan.md) (`docs/plans/1.2-plan.md`) — Accounts, security, and authentication plan.
 - [Logging & Monitoring Baseline Plan](docs/plans/logging-monitoring-baseline-plan.md) (`docs/plans/logging-monitoring-baseline-plan.md`) — Four-channel observability baseline.
+- [Milestone 1.6 Go/No-Go Report](docs/release/1.6-go-no-go-report.md) (`docs/release/1.6-go-no-go-report.md`) — Evidence-based controlled-pilot release assessment.
+- [Deployment Guide](docs/operations/deployment-guide.md) (`docs/operations/deployment-guide.md`) — Production deployment procedures.
+- [Backup & Restore Runbook](docs/operations/backup-restore-runbook.md) (`docs/operations/backup-restore-runbook.md`) — Disaster recovery procedures.
+- [Incident Response Runbook](docs/operations/incident-response-runbook.md) (`docs/operations/incident-response-runbook.md`) — Incident classification and escalation.
+- [Staff Handbook](docs/operations/staff-handbook.md) (`docs/operations/staff-handbook.md`) — Staff operating guidelines.
 
 ---
 
@@ -134,6 +144,11 @@ The server-side service role key is strictly isolated to Route Handlers and back
 - `/listings/[slug]` — Public canonical listing detail page with photo gallery, seller details, and contact modal
 - `/seller/[id]` — Public seller profile and active listings showcase
 - `/account/favourites` — Saved favourites dashboard with privacy-preserving unavailable item notices
+- `/account/messages` — Direct buyer-seller messaging inbox
+- `/account/messages/[id]` — Conversation thread with Realtime streaming
+- `/account/notifications` — In-app notification centre
+- `/account/support` — Support ticket submission and appeal management
+- `/account/support/[id]` — Individual support ticket detail
 - `/help` — How It Works, trading guide, and buyer/seller FAQs
 - `/safety` — Meeting location, cash handling, and anti-fraud guidelines
 - `/terms` — Pilot terms of service and acceptable use policy
@@ -159,6 +174,13 @@ The server-side service role key is strictly isolated to Route Handlers and back
 - `/admin/locations` — City and locality hierarchy management
 - `/admin/listings` — Moderator review queue
 - `/admin/listings/[id]` — Moderator listing inspection and approve/reject/remove actions
+- `/admin/users` — Staff user search, account inspection, and moderation
+- `/admin/users/[id]` — Individual user detail and suspend/reinstate actions
+- `/admin/reports` — Abuse report management queue
+- `/admin/reports/[id]` — Report investigation and resolution
+- `/admin/support` — Support ticket management
+- `/admin/support/[id]` — Support ticket detail and resolution
+- `/admin/privacy` — Privacy request processing
 
 ### API Endpoints
 - `GET /api/listings/recent` — Public recent active listings for homepage
@@ -166,3 +188,4 @@ The server-side service role key is strictly isolated to Route Handlers and back
 - `POST /api/listings/[id]/media` — Authenticated photo upload and asynchronous sharp processing
 - `DELETE /api/listings/[id]/media/[mediaId]` — Server-mediated photo deletion and derivative cleanup
 - `POST /api/monitoring/client-error` — Rate-limited client error telemetry ingestion
+- `GET /api/privacy/export/[id]` — Sanitized personal data export download

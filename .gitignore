@@ -49,8 +49,8 @@ next-env.d.ts
 # temporary scaffold (if retained)
 /fairswap-bootstrap-001/
 
-# verification evidence
-/artifacts/verification/
+# verification & backup evidence
+/artifacts/
 
 # supabase cli local state
 /supabase/.temp/

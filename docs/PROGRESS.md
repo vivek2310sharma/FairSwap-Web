@@ -4,9 +4,9 @@ Starter pack: v4.0 (2026-09-13).
 
 ## Current authorization
 
-- Authorized milestone/action: **Milestone 1.4 BUILD & VERIFY** (authorized 2026-09-13). Next: **Human review and acceptance of Milestone 1.4**.
-- Current plan revision: Milestone 1.4 (`docs/plans/1.4-plan.md` r1 APPROVED FOR BUILD).
-- Next intended user action: review implementation and verification evidence for Milestone 1.4, then authorize Git checkpoint commit.
+- Authorized milestone/action: **Milestone 1.6 BUILD & VERIFY** (authorized 2026-09-14). Next: **Human final review and acceptance of Milestone 1.6**.
+- Current plan revision: Milestone 1.6 (r4 APPROVED FOR BUILD).
+- Next intended user action: review final verification evidence for Milestone 1.6, then authorize Git checkpoint commit.
 - Workspace rule actual path: `.agents/rules/fairswap.md` (confirmed present; active).
 - Detected OS: Windows 11 (NT 10.0.26200.0), native x64, PowerShell 5.1.
 - Detected toolchain: Node.js v24.15.0, npm 11.12.1, corepack 0.34.6, Git 2.45.1. pnpm pinned to 10.12.1 via corepack.
@@ -19,9 +19,9 @@ Starter pack: v4.0 (2026-09-13).
 | 1.2 | **r5 APPROVED** | **COMPLETED** | **2026-09-13 (r5)** | **2026-09-13 (r5)** |
 | Logging & Monitoring Baseline | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
 | 1.3 | **r3 APPROVED** | **COMPLETED** | **2026-09-13 (r3)** | **2026-09-13 (r3)** |
-| 1.4 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | Pending review |
-| 1.5 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
-| 1.6 | NOT STARTED | NOT STARTED | Not recorded | Not recorded |
+| 1.4 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
+| 1.5 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
+| 1.6 | **r4 APPROVED** | **COMPLETED** | **2026-09-14 (r4)** | Pending final review |
 
 Future scope documents are reference contracts, not approved plans. Pack validation checks concern these instruction files only, not application behavior.
 
@@ -55,12 +55,19 @@ Future scope documents are reference contracts, not approved plans. Pack validat
 | 2026-09-13 | 1.3 | **BUILD & VERIFY** | r3 implemented | Implemented Batches A through F. Migrations 4–8 applied, storage enabled, sharp integrated, listings CRUD and lifecycle actions, private media pipeline, staff moderation screens, 48 pgTAP assertions, 36 security tests, 34 Playwright journeys, production build verified. |
 | 2026-09-13 | 1.3 | **HUMAN ACCEPTED** | r3 approved | User reviewed Milestone 1.3 and authorized Git checkpoint commit (`0ca2083`). |
 | 2026-09-13 | 1.4 | **BUILD & VERIFY** | r1 implemented | Implemented full-text search, GIN index, composite indexes, public search RPC, anonymous media delivery, favourites with privacy preservation, slug history redirect, truthful draft policy pages, and verification suites. |
+| 2026-09-13 | 1.4 | **HUMAN ACCEPTED** | r1 approved | User reviewed Milestone 1.4 and authorized Git checkpoint commit (`626e2c0`). |
+| 2026-09-13 | 1.5 | **BUILD & VERIFY** | r1 implemented | Implemented direct messaging, Realtime streaming, user blocking, report intake and staff resolution, support ticketing, in-app notifications, and GDPR/DPDP privacy fulfillment (sanitized export and account deletion). |
+| 2026-09-13 | 1.5 | **HUMAN ACCEPTED** | r1 approved | User reviewed Milestone 1.5 and authorized Git checkpoint commit (`23b7bd6`). |
+| 2026-09-14 | 1.6 | **PLAN ONLY kickoff** | r1 proposed | User authorized Milestone 1.6 PLAN ONLY. Proposed implementation plan (r1). |
+| 2026-09-14 | 1.6 | **Plan review — r1→r4** | r4 proposed | User reviewed across 4 revisions with corrections for batch numbering, baseline evidence, database-level hardening, NULL validation, and explicit verification gates. |
+| 2026-09-14 | 1.6 | **BUILD AUTHORIZED** | r4 approved | User approved r4 and authorized BUILD for Milestone 1.6. |
+| 2026-09-14 | 1.6 | **BUILD & VERIFY** | r4 implemented | Implemented Migration 16 (staff user moderation hardening), `/admin/users` and `/admin/users/[id]` staff UI, disaster recovery scripts, reliability/failure injection tests, load-smoke benchmarks, accessibility contrast tests, operational runbooks, and Go/No-Go release report. Fixed listUsers pagination bug affecting test reliability. |
 
 Record only actual human requests/reviews. Keep plan approval separate from acceptance of implemented work.
 
 ## Current batch and next task
 
-**Milestone 1.4 complete and verified**. Awaiting human review and acceptance, followed by authorization of Git checkpoint commit.
+**Milestone 1.6 (Phase 1) complete and verified**. Awaiting human final review and acceptance, followed by authorization of Git checkpoint commit. Phase 2 will be planned separately.
 
 ## Verification evidence
 
@@ -99,12 +106,22 @@ Record only actual human requests/reviews. Keep plan approval separate from acce
 | 2026-09-13 21:36 | 1.4 / r1 | `corepack pnpm test:security` | 0 | PASS | 3 test files, 38/38 tests passing (zero security regressions). |
 | 2026-09-13 21:38 | 1.4 / r1 | `corepack pnpm test:e2e` (`playwright test`) | 0 | PASS | 40/40 end-to-end browser journeys passing across desktop and mobile Chromium (10 smoke, 18 auth/MFA, 6 listings, 6 discovery/favourites). |
 | 2026-09-13 21:39 | 1.4 / r1 | `corepack pnpm build` (`next build`) | 0 | PASS | Production bundle generated via Turbopack with 0 warnings. 34 application routes compiled. |
+| 2026-09-14 00:14 | 1.6 / r4 | `corepack pnpm typecheck` (`tsc --noEmit`) | 0 | PASS | Strict TypeScript compiler check passed cleanly with 0 errors. |
+| 2026-09-14 00:14 | 1.6 / r4 | `corepack pnpm lint` (`eslint .`) | 0 | PASS | Flat ESLint check across entire codebase including Milestone 1.6 hardening. 0 errors, 0 warnings. |
+| 2026-09-14 00:15 | 1.6 / r4 | `corepack pnpm test:unit` (`vitest run`) | 0 | PASS | 21 test files, 173/173 tests passing (including reliability, load-smoke, accessibility, and moderation security). |
+| 2026-09-14 00:15 | 1.6 / r4 | `corepack pnpm test:security` | 0 | PASS | 5 test files, 85/85 tests passing (17 Milestone 1.6 moderation RLS + 30 communication/safety + 14 listings RLS + 3 bootstrap + 21 existing). |
+| 2026-09-14 00:16 | 1.6 / r4 | `corepack pnpm test:e2e` (`playwright test`) | 0 | PASS | 58/58 end-to-end browser journeys passing across desktop and mobile Chromium (including 4 Milestone 1.6 user management E2E). |
+| 2026-09-14 00:17 | 1.6 / r4 | `corepack pnpm build` (`next build`) | 0 | PASS | Production bundle generated via Turbopack with 0 warnings. 51 application routes compiled. |
+| 2026-09-14 00:17 | 1.6 / r4 | `corepack pnpm tsx scripts/backup-database.ts` | 0 | PASS | Database backup completed. File: 1706KB, SHA-256: c38a4611... Manifest written. |
+| 2026-09-14 00:18 | 1.6 / r4 | `corepack pnpm tsx scripts/backup-storage.ts` | 0 | PASS | 120/120 storage objects downloaded and backed up. Manifest written. |
+| 2026-09-14 00:18 | 1.6 / r4 | `corepack pnpm tsx scripts/verify-restore.ts` | 0 | PASS | Phase 1: Database restored to `fairswap_restore_test` — schemas, 9 tables, row counts all matched, zero referential integrity violations, disposable database dropped. Phase 2: 120/120 storage objects uploaded to recovery buckets, re-downloaded and 100% SHA-256 verified, active buckets unmodified, recovery buckets purged. |
+| 2026-09-14 00:15 | 1.6 / r4 | Load-smoke benchmark (inside `test:unit`) | 0 | PASS | 100 requests, 25 concurrency, 0 HTTP 5xx, 100 HTTP 2xx, p50=143.73ms, p95=446.59ms, max=514.54ms. Local engineering evidence only. |
 
 ## Blockers and external prerequisites
 
-- None for Milestone 1.3. Local Supabase CLI, PostgreSQL, Auth, and Storage verified and passing all tests.
+- None for Phase 1 implementation. All milestones 1.1–1.6 verified and passing.
 - Evidence directory `artifacts/verification/` is ignored by Git per `.gitignore` line 53; confirmed 0 files tracked.
-- Public listing discovery and anonymous media delivery deferred to Milestone 1.4.
+- External launch blockers documented in `docs/release/1.6-go-no-go-report.md`: custom domain, production transactional email, statutory Grievance Officer appointment, legal counsel review.
 
 ## Scope and business decisions
 
@@ -112,3 +129,4 @@ Record only actual human requests/reviews. Keep plan approval separate from acce
 - Pricing pilot rule: integer paise representation in database with rupees display format.
 - PILOT renewal limit: central fixed limit of 3 renewals for expired listings.
 - Pilot media derivatives: WebP output in 3 formats (200x200 thumb, 800px medium, 1400px large); original private and never publicly served.
+- Staff user moderation restricted to suspend/reinstate transitions only (Milestone 1.6 r4). Direct deletion_pending/deleted transitions require the privacy fulfillment pipeline.
