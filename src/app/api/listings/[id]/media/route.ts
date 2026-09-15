@@ -62,8 +62,14 @@ export async function POST(
   // 4. Require exactly one File
   const files: File[] = [];
   formData.forEach((value) => {
-    if (value instanceof File) {
-      files.push(value);
+    if (
+      value instanceof File ||
+      (typeof value === "object" &&
+        value !== null &&
+        typeof (value as Blob).arrayBuffer === "function" &&
+        "name" in value)
+    ) {
+      files.push(value as File);
     }
   });
 
@@ -98,7 +104,27 @@ export async function POST(
     );
   }
 
-  // 7. Authenticated client INSERT into public.listing_media
+  // 7. Validate elevated Storage credential BEFORE committing listing_media row
+  let serviceClient: ReturnType<typeof createServiceRoleClient>;
+  try {
+    serviceClient = createServiceRoleClient();
+  } catch {
+    return NextResponse.json(
+      { error: "Storage service is temporarily unavailable." },
+      { status: 500 }
+    );
+  }
+
+  // Non-mutating Storage authorization/bucket probe
+  const { error: probeError } = await serviceClient.storage.getBucket("listing-originals");
+  if (probeError) {
+    return NextResponse.json(
+      { error: "Media storage is temporarily unavailable. Please try again later." },
+      { status: 503 }
+    );
+  }
+
+  // 8. Authenticated client INSERT into public.listing_media
   // This preserves auth.uid() trigger, RLS, and column-level grants
   const { data: mediaRecord, error: insertError } = await supabase
     .from("listing_media")
@@ -119,11 +145,14 @@ export async function POST(
   }
 
   const mediaId = mediaRecord.id;
-
-  // 8. Service-role elevated processing & storage operations
-  const serviceClient = createServiceRoleClient();
   const ext = detectedMime === "image/jpeg" ? "jpg" : detectedMime === "image/png" ? "png" : "webp";
   const originalPath = `${listingId}/${mediaId}/original.${ext}`;
+  const thumbPath = `${listingId}/${mediaId}/thumb.webp`;
+  const mediumPath = `${listingId}/${mediaId}/medium.webp`;
+  const largePath = `${listingId}/${mediaId}/large.webp`;
+
+  let originalUploaded = false;
+  const uploadedDerivatives: string[] = [];
 
   try {
     // Upload original to private bucket listing-originals
@@ -135,26 +164,60 @@ export async function POST(
       });
 
     if (uploadOrigError) {
-      throw new Error(`Failed to upload original: ${uploadOrigError.message}`);
+      // Best-effort cleanup of any partially created storage object
+      await serviceClient.storage.from("listing-originals").remove([originalPath]);
+
+      // Remove the media record through the privileged server path so no ghost row remains
+      await serviceClient.from("listing_media").delete().eq("id", mediaId);
+
+      return NextResponse.json(
+        { error: "Failed to upload image. Please try again." },
+        { status: 500 }
+      );
     }
 
+    originalUploaded = true;
+
     // Update status to processing
-    await serviceClient.rpc("record_media_processing_result", {
+    const { error: procError } = await serviceClient.rpc("record_media_processing_result", {
       media_id: mediaId,
       paths: { original: originalPath },
       dimensions: { width: 0, height: 0 },
       status: "processing",
       error: undefined,
     });
+    if (procError) {
+      // RPC error recorded
+    }
 
     // Sharp processing
-    const derivatives = await processImageBuffer(fileBuffer);
+    let derivatives;
+    try {
+      derivatives = await processImageBuffer(fileBuffer);
+    } catch {
+      // Remove original from storage
+      await serviceClient.storage.from("listing-originals").remove([originalPath]);
+
+      // Deterministically mark media record failed
+      await serviceClient.rpc("record_media_processing_result", {
+        media_id: mediaId,
+        paths: { original: originalPath },
+        dimensions: { width: 0, height: 0 },
+        status: "failed",
+        error: "Image derivative processing failed",
+      });
+
+      return NextResponse.json(
+        {
+          id: mediaId,
+          processing_status: "failed",
+          error: "Image processing failed. Please try a different image.",
+        },
+        { status: 422 }
+      );
+    }
 
     // Upload derivatives to private bucket listing-derivatives
-    const thumbPath = `${listingId}/${mediaId}/thumb.webp`;
-    const mediumPath = `${listingId}/${mediaId}/medium.webp`;
-    const largePath = `${listingId}/${mediaId}/large.webp`;
-
     const [uThumb, uMedium, uLarge] = await Promise.all([
       serviceClient.storage.from("listing-derivatives").upload(thumbPath, derivatives.thumb, {
         contentType: "image/webp",
@@ -170,13 +233,39 @@ export async function POST(
       }),
     ]);
 
+    if (!uThumb.error) uploadedDerivatives.push(thumbPath);
+    if (!uMedium.error) uploadedDerivatives.push(mediumPath);
+    if (!uLarge.error) uploadedDerivatives.push(largePath);
+
     if (uThumb.error || uMedium.error || uLarge.error) {
-      const err = uThumb.error || uMedium.error || uLarge.error;
-      throw new Error(`Failed to store derivatives: ${err?.message}`);
+      // Clean up any uploaded derivatives
+      if (uploadedDerivatives.length > 0) {
+        await serviceClient.storage.from("listing-derivatives").remove(uploadedDerivatives);
+      }
+      // Clean up original
+      await serviceClient.storage.from("listing-originals").remove([originalPath]);
+
+      // Deterministically mark media record failed
+      await serviceClient.rpc("record_media_processing_result", {
+        media_id: mediaId,
+        paths: { original: originalPath },
+        dimensions: { width: 0, height: 0 },
+        status: "failed",
+        error: "Failed to store image derivatives",
+      });
+
+      return NextResponse.json(
+        {
+          id: mediaId,
+          processing_status: "failed",
+          error: "Failed to store image derivatives",
+        },
+        { status: 500 }
+      );
     }
 
     // Complete processing via service-role RPC
-    await serviceClient.rpc("record_media_processing_result", {
+    const { error: readyError } = await serviceClient.rpc("record_media_processing_result", {
       media_id: mediaId,
       paths: {
         original: originalPath,
@@ -192,6 +281,17 @@ export async function POST(
       error: undefined,
     });
 
+    if (readyError) {
+      await serviceClient.storage.from("listing-originals").remove([originalPath]);
+      await serviceClient.storage.from("listing-derivatives").remove([thumbPath, mediumPath, largePath]);
+      await serviceClient.from("listing_media").delete().eq("id", mediaId);
+
+      return NextResponse.json(
+        { error: "Failed to finalize media processing" },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       {
         id: mediaId,
@@ -200,25 +300,28 @@ export async function POST(
       },
       { status: 201 }
     );
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Image processing failed";
-
-    // Record failure in DB
-    await serviceClient.rpc("record_media_processing_result", {
-      media_id: mediaId,
-      paths: { original: originalPath },
-      dimensions: { width: 0, height: 0 },
-      status: "failed",
-      error: errorMessage,
-    });
+  } catch {
+    // Best-effort cleanup on unexpected exception
+    if (originalUploaded) {
+      await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
+    }
+    if (uploadedDerivatives.length > 0) {
+      await serviceClient.storage.from("listing-derivatives").remove(uploadedDerivatives).catch(() => {});
+    }
+    try {
+      await serviceClient.from("listing_media").delete().eq("id", mediaId);
+    } catch {
+      // Ignored during best-effort fallback
+    }
 
     return NextResponse.json(
       {
         id: mediaId,
         processing_status: "failed",
-        error: errorMessage,
+        error: "Image processing encountered an unexpected error.",
       },
-      { status: 422 }
+      { status: 500 }
     );
   }
 }
+

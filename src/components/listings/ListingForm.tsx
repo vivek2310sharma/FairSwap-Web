@@ -2,7 +2,17 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Category, CategoryAttribute, City, Locality, Listing, ListingMedia } from "@/types/listing";
+import {
+  Category,
+  CategoryAttribute,
+  City,
+  Locality,
+  Listing,
+  ListingMedia,
+  ListingCondition,
+  ListingPriceType,
+  submitListingSchema,
+} from "@/types/listing";
 import MediaUploader from "./MediaUploader";
 import {
   createDraftListingAction,
@@ -72,14 +82,69 @@ export default function ListingForm({
     const formData = new FormData(form);
 
     // Compute price paise
+    let computedPricePaise: number | null = null;
     if (priceType === "free") {
       formData.set("price_paise", "0");
-    } else if (priceRupees) {
-      const paise = Math.round(parseFloat(priceRupees) * 100);
-      formData.set("price_paise", paise.toString());
+      computedPricePaise = 0;
+    } else if (priceRupees && priceRupees.trim() !== "") {
+      const parsed = parseFloat(priceRupees);
+      if (!isNaN(parsed)) {
+        const paise = Math.round(parsed * 100);
+        formData.set("price_paise", paise.toString());
+        computedPricePaise = paise;
+      }
+    } else {
+      formData.delete("price_paise");
     }
 
     formData.set("category_attributes", JSON.stringify(attributesState));
+
+    // Submit-for-Review Client-Side Validation Gate
+    if (shouldSubmitForReview) {
+      const rawTitle = (formData.get("title") as string)?.trim() || "";
+      const rawDescription = (formData.get("description") as string)?.trim() || "";
+      const rawCondition = (formData.get("condition") as ListingCondition) || null;
+      const rawCityId = (formData.get("city_id") as string) || null;
+      const rawLocalityId = (formData.get("locality_id") as string) || null;
+      const rawPinCode = (formData.get("pin_code") as string)?.trim() || null;
+
+      const normalizedData = {
+        title: rawTitle,
+        category_id: selectedCategory,
+        city_id: rawCityId,
+        locality_id: rawLocalityId,
+        description: rawDescription || null,
+        condition: rawCondition,
+        price_type: priceType as ListingPriceType,
+        price_paise: computedPricePaise,
+        pin_code: rawPinCode,
+        category_attributes: attributesState,
+      };
+
+      const validation = submitListingSchema.safeParse(normalizedData);
+      if (!validation.success) {
+        setFormError(validation.error.issues[0].message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate required category attributes
+      for (const attr of activeCategoryAttributes) {
+        if (attr.is_required) {
+          const v = attributesState[attr.name];
+          if (
+            v === undefined ||
+            v === null ||
+            v === "" ||
+            (typeof v === "string" && v.trim() === "")
+          ) {
+            setFormError(`"${attr.label}" is required before submitting for review.`);
+            setIsSubmitting(false);
+            return;
+          }
+        }
+      }
+    }
 
     try {
       let listingId = initialListing?.id;
@@ -131,7 +196,18 @@ export default function ListingForm({
   const isRejectedNotice = isEditing && initialListing?.status === "rejected";
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); processForm(e.currentTarget, false); }} className="space-y-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        processForm(e.currentTarget, false);
+      }}
+      className="space-y-8 bg-white p-6 rounded-lg border border-gray-200 shadow-sm"
+    >
+      <div className="flex items-center justify-between border-b pb-2">
+        <p className="text-xs text-gray-500 italic">* Required before submitting for review.</p>
+        <span className="text-xs text-gray-400">Save as Draft remains permissive</span>
+      </div>
+
       {isMaterialEditNotice && (
         <div className="rounded-md bg-amber-50 p-4 border border-amber-200 text-sm text-amber-800">
           <span className="font-bold">⚠️ Re-review policy applies:</span> Any change to title,
@@ -177,7 +253,7 @@ export default function ListingForm({
               setSelectedCategory(e.target.value);
               setAttributesState({});
             }}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           >
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
@@ -199,7 +275,7 @@ export default function ListingForm({
                   <select
                     value={(attributesState[attr.name] as string) || ""}
                     onChange={(e) => handleAttributeChange(attr.name, e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   >
                     <option value="">Select {attr.label}...</option>
                     {(attr.options as string[]).map((opt) => (
@@ -212,15 +288,17 @@ export default function ListingForm({
                   <input
                     type="number"
                     value={(attributesState[attr.name] as number) ?? ""}
-                    onChange={(e) => handleAttributeChange(attr.name, e.target.value ? Number(e.target.value) : "")}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    onChange={(e) =>
+                      handleAttributeChange(attr.name, e.target.value ? Number(e.target.value) : "")
+                    }
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                 ) : (
                   <input
                     type="text"
                     value={(attributesState[attr.name] as string) || ""}
                     onChange={(e) => handleAttributeChange(attr.name, e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   />
                 )}
               </div>
@@ -245,13 +323,13 @@ export default function ListingForm({
             maxLength={150}
             defaultValue={initialListing?.title || ""}
             placeholder="e.g. Sony WH-1000XM4 Wireless Headphones"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
         </div>
 
         <div>
           <label htmlFor="description" className="block text-xs font-semibold text-gray-700">
-            Description (min 10 chars for submission)
+            Description * (min 10 characters before submitting)
           </label>
           <textarea
             id="description"
@@ -260,20 +338,20 @@ export default function ListingForm({
             maxLength={5000}
             defaultValue={initialListing?.description || ""}
             placeholder="Describe the item condition, history, included accessories, etc."
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="condition" className="block text-xs font-semibold text-gray-700">
-              Condition
+              Condition *
             </label>
             <select
               id="condition"
               name="condition"
               defaultValue={initialListing?.condition || "good"}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               <option value="new">New (Unopened)</option>
               <option value="like_new">Like New (Barely used)</option>
@@ -295,7 +373,7 @@ export default function ListingForm({
               maxLength={6}
               defaultValue={initialListing?.pin_code || ""}
               placeholder="302017"
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
         </div>
@@ -314,7 +392,7 @@ export default function ListingForm({
               name="city_id"
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               {cities.map((city) => (
                 <option key={city.id} value={city.id}>
@@ -332,7 +410,7 @@ export default function ListingForm({
               id="locality_id"
               name="locality_id"
               defaultValue={initialListing?.locality_id || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               <option value="">Select locality...</option>
               {activeLocalities.map((loc) => (
@@ -351,14 +429,14 @@ export default function ListingForm({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="price_type" className="block text-xs font-semibold text-gray-700">
-              Price Type
+              Price Type *
             </label>
             <select
               id="price_type"
               name="price_type"
               value={priceType}
               onChange={(e) => setPriceType(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               <option value="fixed">Fixed Price</option>
               <option value="negotiable">Negotiable</option>
@@ -380,7 +458,7 @@ export default function ListingForm({
                 value={priceRupees}
                 onChange={(e) => setPriceRupees(e.target.value)}
                 placeholder="2500"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
           )}
@@ -428,3 +506,4 @@ export default function ListingForm({
     </form>
   );
 }
+

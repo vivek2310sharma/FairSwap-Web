@@ -133,7 +133,7 @@ export default function ModerationActions({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={`Explain why this listing is being ${actionType}d...`}
-            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-xs focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
 
           <div className="flex justify-end gap-2">
