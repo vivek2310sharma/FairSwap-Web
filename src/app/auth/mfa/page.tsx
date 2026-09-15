@@ -4,10 +4,35 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+export function getSafeAdminRedirect(nextParam: string | null): string {
+  if (!nextParam) return "/admin";
+  const trimmed = nextParam.trim();
+  // Disallow protocol-relative, backslashes, or non-/admin prefixes
+  if (
+    !trimmed.startsWith("/admin") ||
+    trimmed.startsWith("//") ||
+    trimmed.includes("\\")
+  ) {
+    return "/admin";
+  }
+  try {
+    const url = new URL(trimmed, "http://localhost");
+    if (url.origin !== "http://localhost") {
+      return "/admin";
+    }
+    if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) {
+      return url.pathname + url.search;
+    }
+    return "/admin";
+  } catch {
+    return "/admin";
+  }
+}
+
 function MFAContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/admin";
+  const next = getSafeAdminRedirect(searchParams.get("next"));
 
   const [loading, setLoading] = useState(true);
   const [factorId, setFactorId] = useState<string | null>(null);
@@ -20,6 +45,28 @@ function MFAContent() {
   useEffect(() => {
     async function checkMFA() {
       const supabase = createClient();
+
+      // 1. Confirm authenticated user
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) {
+        router.push(`/auth/sign-in?next=${encodeURIComponent(next)}`);
+        return;
+      }
+
+      // 2. Confirm user has active staff role using AAL1-safe query
+      const { data: staffData, error: staffError } = await supabase
+        .from("staff_roles")
+        .select("role")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+
+      if (staffError || !staffData?.role) {
+        // Non-staff users must never be enrolled or challenged for staff MFA
+        router.push("/");
+        return;
+      }
+
+      // 3. Check AAL2 assurance
       const { data: aalData, error: aalError } =
         await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
@@ -29,13 +76,13 @@ function MFAContent() {
         return;
       }
 
-      // If already at AAL2, redirect to target
+      // If already at AAL2, redirect to safe admin destination
       if (aalData.currentLevel === "aal2") {
         router.push(next);
         return;
       }
 
-      // Check existing enrolled factors
+      // 4. Staff at AAL1: Check existing enrolled factors
       const { data: factorsData, error: factorsError } =
         await supabase.auth.mfa.listFactors();
 
@@ -51,7 +98,7 @@ function MFAContent() {
         setFactorId(totpFactor.id);
         setLoading(false);
       } else {
-        // Enroll a new TOTP factor
+        // Enroll a new TOTP factor strictly for staff
         const { data: enrollData, error: enrollError } =
           await supabase.auth.mfa.enroll({
             factorType: "totp",
