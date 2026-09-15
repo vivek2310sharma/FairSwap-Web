@@ -94,12 +94,16 @@ export default async function PrivacyPage() {
                       </td>
                       <td className="py-3 text-xs">
                         {req.request_type === "export_data" &&
-                        ((req.status as string) === "resolved" || (req.status as string) === "completed") ? (
+                        ((req.status as string) === "pending" ||
+                          (req.status as string) === "resolved" ||
+                          (req.status as string) === "completed") ? (
                           <a
                             href={`/api/privacy/export/${req.id}`}
                             className="inline-flex items-center gap-1 font-semibold text-emerald-600 hover:text-emerald-700 underline"
                           >
-                            Download Export (JSON)
+                            {(req.status as string) === "pending"
+                              ? "Generate & Download Export (JSON)"
+                              : "Download Export (JSON)"}
                           </a>
                         ) : (
                           <span className="text-gray-500">{req.resolution_notes || "—"}</span>
