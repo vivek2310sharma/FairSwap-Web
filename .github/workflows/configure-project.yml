@@ -26,3 +26,5 @@ jobs:
           PROJECT_OWNER: vivek2310sharma
           PROJECT_TITLE: FairSwap-Web
         run: node .github/scripts/configure-fairswap-project.mjs
+
+# This file intentionally changes only when the project schema or views change.
