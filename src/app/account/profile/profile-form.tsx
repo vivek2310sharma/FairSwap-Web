@@ -36,7 +36,7 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
           minLength={2}
           maxLength={50}
           defaultValue={profile?.display_name || ""}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
         <p className="mt-1 text-xs text-gray-500">Your public name or business handle (2–50 characters).</p>
       </div>
@@ -53,7 +53,7 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
             maxLength={100}
             defaultValue={profile?.city || ""}
             placeholder="e.g. Jaipur"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
         </div>
 
@@ -68,7 +68,7 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
             maxLength={100}
             defaultValue={profile?.state || ""}
             placeholder="e.g. Rajasthan"
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
         </div>
       </div>
@@ -83,8 +83,8 @@ export default function ProfileForm({ profile }: { profile: Profile | null }) {
           rows={4}
           maxLength={500}
           defaultValue={profile?.bio || ""}
-          placeholder="Brief description about yourself or what you typically trade."
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          placeholder="Brief introduction for other community members..."
+          className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
         <p className="mt-1 text-xs text-gray-500">Maximum 500 characters.</p>
       </div>

@@ -4,9 +4,9 @@ Starter pack: v4.0 (2026-09-13).
 
 ## Current authorization
 
-- Authorized milestone/action: **Milestone 1.6 BUILD & VERIFY** (authorized 2026-09-14). Next: **Human final review and acceptance of Milestone 1.6**.
-- Current plan revision: Milestone 1.6 (r4 APPROVED FOR BUILD).
-- Next intended user action: review final verification evidence for Milestone 1.6, then authorize Git checkpoint commit.
+- Authorized milestone/action: **Phase 1 Documentation & Closure** (authorized 2026-09-14). Next: **Hosted Phase 1 Baseline Setup (FairSwapTest & Vercel Staging)**.
+- Current plan revision: Milestone 1.6 (r4 APPROVED & VERIFIED).
+- Next intended user action: establish hosted Phase 1 baseline on FairSwapTest and Vercel staging before initiating Phase 2.
 - Workspace rule actual path: `.agents/rules/fairswap.md` (confirmed present; active).
 - Detected OS: Windows 11 (NT 10.0.26200.0), native x64, PowerShell 5.1.
 - Detected toolchain: Node.js v24.15.0, npm 11.12.1, corepack 0.34.6, Git 2.45.1. pnpm pinned to 10.12.1 via corepack.
@@ -21,7 +21,7 @@ Starter pack: v4.0 (2026-09-13).
 | 1.3 | **r3 APPROVED** | **COMPLETED** | **2026-09-13 (r3)** | **2026-09-13 (r3)** |
 | 1.4 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
 | 1.5 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
-| 1.6 | **r4 APPROVED** | **COMPLETED** | **2026-09-14 (r4)** | Pending final review |
+| 1.6 | **r4 APPROVED** | **COMPLETED** | **2026-09-14 (r4)** | **2026-09-14 (HUMAN ACCEPTED)** |
 
 Future scope documents are reference contracts, not approved plans. Pack validation checks concern these instruction files only, not application behavior.
 
@@ -62,12 +62,13 @@ Future scope documents are reference contracts, not approved plans. Pack validat
 | 2026-09-14 | 1.6 | **Plan review — r1→r4** | r4 proposed | User reviewed across 4 revisions with corrections for batch numbering, baseline evidence, database-level hardening, NULL validation, and explicit verification gates. |
 | 2026-09-14 | 1.6 | **BUILD AUTHORIZED** | r4 approved | User approved r4 and authorized BUILD for Milestone 1.6. |
 | 2026-09-14 | 1.6 | **BUILD & VERIFY** | r4 implemented | Implemented Migration 16 (staff user moderation hardening), `/admin/users` and `/admin/users/[id]` staff UI, disaster recovery scripts, reliability/failure injection tests, load-smoke benchmarks, accessibility contrast tests, operational runbooks, and Go/No-Go release report. Fixed listUsers pagination bug affecting test reliability. |
+| 2026-09-14 | 1.6 / Phase 1 | **HUMAN ACCEPTANCE & PHASE 1 CLOSURE** | r4 verified | User reviewed full Milestone 1.6 verification evidence (173 unit, 85 security, 84 E2E, prod build, DR restore test) on commit 79026f2, authorized documentation finalization, and formally accepted Phase 1 completion. Established forward roadmap for hosted staging baseline on FairSwapTest + Vercel before Phase 2. |
 
 Record only actual human requests/reviews. Keep plan approval separate from acceptance of implemented work.
 
 ## Current batch and next task
 
-**Milestone 1.6 (Phase 1) complete and verified**. Awaiting human final review and acceptance, followed by authorization of Git checkpoint commit. Phase 2 will be planned separately.
+**Phase 1 is complete, verified, and formally closed**. All Milestones 1.1 through 1.6 are implemented, hardened, and verified with zero blockers. Documentation finalized. The next operational stage is establishing the **Hosted Phase 1 Baseline** on FairSwapTest (Supabase cloud) and Vercel staging. Phase 2 implementation has NOT started.
 
 ## Verification evidence
 

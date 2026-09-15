@@ -193,10 +193,21 @@ export const draftListingSchema = z.object({
 });
 
 export const submitListingSchema = draftListingSchema.extend({
-  description: z.string().min(10, "Description must be at least 10 characters").max(5000),
-  city_id: z.string().uuid("City is required"),
-  condition: z.enum(["new", "like_new", "good", "fair", "poor"]),
-  price_type: z.enum(["fixed", "negotiable", "free"]),
+  description: z
+    .string({ required_error: "Description must be at least 10 characters", invalid_type_error: "Description must be at least 10 characters" })
+    .min(10, "Description must be at least 10 characters")
+    .max(5000),
+  city_id: z
+    .string({ required_error: "City is required", invalid_type_error: "City is required" })
+    .uuid("City is required"),
+  condition: z.enum(["new", "like_new", "good", "fair", "poor"], {
+    required_error: "Condition is required",
+    invalid_type_error: "Condition is required",
+  }),
+  price_type: z.enum(["fixed", "negotiable", "free"], {
+    required_error: "Price type is required",
+    invalid_type_error: "Price type is required",
+  }),
   price_paise: z.number().int().min(0).max(100000000).optional().nullable(),
 }).refine(
   (data) => {

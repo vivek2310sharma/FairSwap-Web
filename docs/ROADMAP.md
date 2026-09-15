@@ -1,68 +1,98 @@
 # FairSwap.in - complete phased roadmap
 
-This describes the destination and sequencing, not an instruction to execute everything. The first action is PLAN ONLY for Milestone 1.1. Each milestone has a reviewed plan, authorized build, real verification, and separate human acceptance.
+This describes the destination and sequencing, not an instruction to execute everything at once. Each milestone has a reviewed plan, authorized build, real verification, and separate human acceptance.
 
 ## Product boundary
 
-Classifieds only: sellers advertise, buyers discover/contact them, both arrange item payment/exchange independently. One customer account supports both roles. Public, customer and staff interfaces share a coherent Next.js/Supabase application. No marketplace checkout, payouts or shipping in any phase below without a future explicit product change.
+Classifieds only: sellers advertise, buyers discover/contact them, both arrange item payment/exchange independently. One customer account supports both roles. Public, customer and staff interfaces share a coherent Next.js/Supabase application. No marketplace checkout, escrow, payouts, or shipping in any phase below without a future explicit product change.
 
-## Phase 1 - build a complete, controlled-pilot classifieds platform
+## Phase 1 — complete, controlled-pilot classifieds platform (COMPLETED & VERIFIED)
 
-| Milestone | Actual outcome | Key acceptance evidence | External prerequisites |
-| --- | --- | --- | --- |
-| 1.1 Foundation | Original responsive local scaffold, conceptual architecture/design, tooling and tests | Preserved project files; real lint/types/unit/build/startup; Chromium desktop/mobile viewport tests | Compatible Node/pnpm, reviewed package/browser downloads; NOT Supabase/Docker |
-| 1.2 Accounts/security | Local Supabase, confirmed Auth, profile privacy, roles/status, staff MFA | Real local email/session flows, migrations, RLS/direct-API tests, privilege denial | Approved local Supabase CLI/Docker setup; no production service needed |
-| 1.3 Listings/moderation | Typed categories/locations, drafts/photos, submission, staff approval, lifecycle | Real uploads/validation; storage/owner controls; transition/re-review/expiry tests | Working local backend and approved image-processing dependencies |
-| 1.4 Discovery | Real browse/search/listing/seller pages and favourites | Combined filters, stable pagination, private-content/cache denial, mobile UI | Approved listings; no extra search provider required |
-| 1.5 Communication/safety | Persistent chat, notifications, blocks/reports, support/appeals, privacy processing | Two real sessions; RLS/Realtime denial; staff evidence and privacy tests | Local Realtime; optional activity email only if configured |
-| 1.6 Pilot readiness | Regressions, hardening, recovery, operational and release preparation | End-to-end proof, recovery evidence, launch blockers/go-no-go report | Separately approved staging/production/provider setup where needed |
+> **Status**: **COMPLETED & VERIFIED** (2026-09-14)<br>
+> **Verified Baseline Commit**: `79026f28e893f340a7da06e16e00d2f2836013cb` on branch `Phase1`<br>
+> **Classification**: Controlled-Pilot Candidate (`v0.1.6-pilot.1`)
 
-### 1.1 internal batches
+All Milestones 1.1 through 1.6 are implemented, hardened, and verified locally:
 
-Plan/environment checks -> preserve-and-scaffold -> focused architecture/design -> original responsive local page -> actual tooling/tests -> final evidence/review. No account/database code is allowed just because it is planned conceptually.
+| Milestone | Scope & Deliverables | Verification Status | Baseline Evidence |
+|---|---|---|---|
+| **1.1 Foundation** | Original responsive local scaffold, Tailwind v4 design system, accessible landmark layouts, system font stack | **PASS** | Strict types, ESLint flat config, unit tests, Playwright desktop/mobile smoke |
+| **1.2 Accounts & Security** | Supabase Auth, profiles, Direct-API RLS policies, two-layer RPC security, staff MFA (TOTP AAL2) | **PASS** | 22 pgTAP assertions, 24 security/RLS tests, 18 auth/MFA browser journeys |
+| **Logging Baseline** | Structured JSON logging, recursive PII redactor, request correlation, Next.js 16 instrumentation | **PASS** | 24 observability tests, zero-dependency engine, client-error ingestion |
+| **1.3 Listings & Moderation** | Category/location hierarchy, listing lifecycle, Sharp WebP derivatives, staff moderation queue | **PASS** | 50 pgTAP assertions, 38 security tests, 34 Playwright journeys, 24 routes |
+| **1.4 Discovery** | GIN index full-text search, public search RPC, canonical views, slug history, favourites | **PASS** | 105 unit/discovery tests, 38 security tests, 40 Playwright journeys |
+| **1.5 Communication & Safety** | Realtime direct messaging, user blocking, report intake/resolution, support tickets, GDPR/DPDP deletion | **PASS** | Two-session Realtime E2E, FK-safe account deletion, reporter privacy |
+| **1.6 Pilot Readiness** | Staff user management, user suspension cascade, disaster recovery backup/restore, accessibility, Go/No-Go report | **PASS** | 173 unit tests, 85 security tests, 84 Playwright journeys, Turbopack build, DR restore test |
 
-### 1.2 internal batches
+---
 
-Local runtime/schema -> Auth/profile -> trusted permissions -> staff MFA/access -> privacy-request intake -> security/integration/regression tests.
+## Transition Bridge — Hosted Phase 1 Baseline (FairSwapTest & Vercel Staging)
 
-### 1.3 internal batches
+> **Mandatory Next Step**: Before any Phase 2 feature work or code changes begin, the verified Phase 1 application baseline must be deployed and validated in a hosted staging environment.
 
-Categories/locations -> listing draft/submit -> safe photo pipeline -> staff review/state rules -> relevant cleanup -> seller/moderator/storage tests.
+This bridge establishes a known-good, deployed reference baseline using the dedicated **FairSwapTest** Supabase project and **Vercel staging**:
 
-### 1.4 internal batches
+1. **FairSwapTest Supabase Cloud Setup**:
+   - Provision and prepare the remote `FairSwapTest` Supabase cloud project.
+   - Apply and validate the complete Phase 1 migration set (`20260913000001` through `20260914000016`).
+   - Configure required cloud environment variables and secrets.
+   - Verify cloud database schemas, functions, RLS policies, and Auth configuration.
+   - Validate cloud private and public Supabase Storage buckets and permissions.
+   - Execute initial staff administrator bootstrap on the cloud database.
 
-Search/indexes -> public pages -> favourites -> metadata/cache visibility -> responsive/discovery tests.
+2. **Vercel Staging Deployment**:
+   - Deploy the verified Phase 1 codebase (`Phase1` branch baseline) to Vercel staging.
+   - Connect Vercel staging environment variables securely to the `FairSwapTest` Supabase project.
+   - Utilize the default Vercel-generated deployment URL (`*.vercel.app`) initially if no custom staging domain is configured.
 
-### 1.5 internal batches
+3. **Hosted Verification & Stabilization**:
+   - Execute end-to-end smoke tests against the live hosted staging deployment.
+   - Verify authenticated auth flows (sign-up, confirmation email delivery, sign-in, MFA).
+   - Verify listing creation, image upload, Sharp WebP derivative generation in cloud storage.
+   - Verify Realtime message streaming and moderation actions against the hosted stack.
+   - Diagnose and resolve any cloud-specific network, header, cookie, or cold-start blockers.
+   - Tag and establish the confirmed, known-good **Hosted Phase 1 Baseline**.
 
-Persistent messages -> live notifications -> blocks/quotas -> reports/support/case evidence -> privacy completion -> two-session/failure/security tests.
+---
 
-### 1.6 internal batches
+## Phase 2 — Engagement and optional platform-service revenue (PLANNED)
 
-Feature audit -> full regression/security -> failure/recovery -> browser/accessibility/performance -> operations/legal/provider checklist -> go/no-go recommendation.
+> **Status**: NOT YET STARTED — Planned to follow the successful establishment of the Hosted Phase 1 Baseline.
 
-The precise commands and files are proposed when each milestone is planned against actual code. For a large milestone, ask for smaller reviewed batches, not a one-shot forest of unfinished modules. All six task contracts are in `docs/milestones/`; do not load every one into every conversation.
+Use real Phase 1 controlled pilot feedback to prioritize engagement and marketplace utility:
+- Saved searches and matching item alerts.
+- Price-drop notifications for favorited items.
+- Structured, non-binding buyer-to-seller offers within chat.
+- Seller dashboard statistics (views, saves, inquiries).
+- Permitted message attachments and enhanced anti-fraud triage.
+- Optional self-service monetization for FairSwap's OWN service (e.g. promoted listings or additional listing quotas). Billing applies strictly to FairSwap platform features; it does NOT introduce buyer checkout, escrow, or payment collection for items.
 
-## Phase 2 - engagement and optional platform-service revenue (not authorized)
+Do not begin Phase 2 implementation or database migrations until the hosted Phase 1 baseline is accepted.
 
-Use real Phase 1 pilot feedback to prioritize saved searches and matching alerts, price-drop notices, structured non-binding offers, seller statistics, permitted message attachments, better search and fraud triage.
+---
 
-After a reviewed business decision, test one simple paid product such as promoted advertisements or additional listing allowances. Billing would be for FairSwap's OWN service. It does not introduce buyer payment for goods, seller settlement, delivery or buyer protection. Plan payment-provider eligibility, activation/expiry/refund/idempotency and transparent promotion labels before coding.
+## Phase 3 — Wider regional growth (FUTURE DIRECTION)
 
-Success measures: relevant searches, genuine contacts, seller response, repeat use, safety/support workload, and sustainable service revenue where enabled. Label off-platform sales as seller-reported, not verified transaction volume. Do not build Phase 2 tables/screens in Phase 1.
+> **Status**: CONCEPTUAL — Subject to pilot validation and operational capacity.
 
-## Phase 3 - wider growth (not authorized)
+Expand marketplace scale based on evidence from pilot operations:
+- City expansion beyond the Jaipur pilot across verified regional hubs with local moderation capacity.
+- Regional language localization and transliterated search support.
+- Professional seller profiles, bulk inventory tools, and verified business badges.
+- Scaled background job infrastructure and performance optimizations driven by real production metrics.
+- Mobile application evaluation based on actual user demand.
 
-Expand cities and languages only with adequate listing supply and moderation/support capacity. Consider professional seller profiles, bulk listings, seller teams and subscriptions after validating demand. Add regional/transliterated search, optional recommendations and measured infrastructure improvements.
+---
 
-Native apps and a separate search cluster are optional responses to evidence, not requirements to call the website complete. Do not change to microservices simply because the roadmap says 'scale'. Define browser support, privacy and operational capacity as expansion proceeds.
+## Operational Readiness Tiers & Launch Gates
 
-## Release gates
+To maintain strict operational clarity, the platform distinguishes four separate readiness states:
 
-1. PLAN approved is permission to implement that scope, not proof of completion.
-2. Required tests passed means READY FOR REVIEW, not human acceptance.
-3. HUMAN ACCEPTED is recorded from the real user, not a generated artifact.
-4. Next planning/build needs a new explicit request.
-5. Public launch needs separate technical, business/legal and operational sign-off plus deployment authorization.
-
-Security, accessibility, testing and recoverability develop throughout Phase 1. Milestone 1.6 verifies and strengthens them; it is not the first time they are implemented.
+1. **Phase 1 Implementation Completion**: **ACHIEVED** — All functional code, RLS policies, tests, and runbooks are implemented and verified locally against Docker/Supabase containers.
+2. **Hosted / Staging Readiness**: **NEXT GATE** — Full Phase 1 stack deployed and verified on FairSwapTest Supabase + Vercel staging.
+3. **Phase 2 Development**: **DEFERRED** — Feature work commences only after staging baseline is confirmed.
+4. **Public Production Launch Readiness**: **GATED** — Public launch requires external legal and infrastructure sign-offs:
+   - Authenticated production SMTP provider (DKIM/SPF)
+   - Production domain (`fairswap.in`) with automated SSL/TLS
+   - Statutory Grievance Officer appointment published in compliance with Indian IT Rules
+   - Legal counsel review of user-facing agreements

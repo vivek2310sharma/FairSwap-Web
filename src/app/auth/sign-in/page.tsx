@@ -36,6 +36,15 @@ function SignInForm() {
           </div>
         )}
 
+        {messageParam === "confirm_continue" && (
+          <div
+            role="status"
+            className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800"
+          >
+            Please sign in to continue. If you have just confirmed your email, your account is ready to use.
+          </div>
+        )}
+
         {messageParam === "password_reset_success" && (
           <div
             role="alert"
@@ -67,7 +76,7 @@ function SignInForm() {
               type="email"
               required
               autoComplete="email"
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               placeholder="you@example.com"
             />
           </div>
@@ -90,7 +99,7 @@ function SignInForm() {
               type="password"
               required
               autoComplete="current-password"
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
 

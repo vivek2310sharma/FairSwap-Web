@@ -88,6 +88,7 @@ export default function MediaUploader({
               item.id === tempId
                 ? {
                     ...item,
+                    id: data.id || tempId,
                     processing_status: "failed",
                     processing_error: data.error || "Upload failed",
                   }
@@ -124,11 +125,22 @@ export default function MediaUploader({
 
   const handleDelete = async (mediaId: string) => {
     if (isReadOnly) return;
+
+    // A purely optimistic failed card with no persisted server row may be removed safely
+    if (mediaId.startsWith("temp-")) {
+      setMediaList((prev) => prev.filter((m) => m.id !== mediaId));
+      if (activeCoverId === mediaId) {
+        const remaining = mediaList.filter((m) => m.id !== mediaId);
+        setActiveCoverId(remaining.length > 0 ? remaining[0].id : null);
+      }
+      return;
+    }
+
     try {
       const res = await fetch(`/api/listings/${listingId}/media/${mediaId}`, {
         method: "DELETE",
       });
-      if (res.ok) {
+      if (res.ok || res.status === 404) {
         setMediaList((prev) => prev.filter((m) => m.id !== mediaId));
         if (activeCoverId === mediaId) {
           const remaining = mediaList.filter((m) => m.id !== mediaId);
@@ -207,7 +219,7 @@ export default function MediaUploader({
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {mediaList.map((media, index) => {
-            const isCover = activeCoverId === media.id;
+            const isCover = activeCoverId === media.id && media.processing_status === "ready";
             const isTemp = media.id.startsWith("temp-");
 
             return (
@@ -254,47 +266,61 @@ export default function MediaUploader({
                   </div>
                 </div>
 
-                {!isReadOnly && !isTemp && (
+                {!isReadOnly && (
                   <div className="mt-2 flex items-center justify-between border-t border-gray-200 pt-1.5 text-[11px]">
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        disabled={index === 0}
-                        onClick={() => handleMove(index, "up")}
-                        className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
-                        title="Move left/up"
-                      >
-                        ←
-                      </button>
-                      <button
-                        type="button"
-                        disabled={index === mediaList.length - 1}
-                        onClick={() => handleMove(index, "down")}
-                        className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
-                        title="Move right/down"
-                      >
-                        →
-                      </button>
-                    </div>
+                    {media.processing_status === "ready" && !isTemp ? (
+                      <>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => handleMove(index, "up")}
+                            className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
+                            title="Move left/up"
+                          >
+                            ←
+                          </button>
+                          <button
+                            type="button"
+                            disabled={index === mediaList.length - 1}
+                            onClick={() => handleMove(index, "down")}
+                            className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
+                            title="Move right/down"
+                          >
+                            →
+                          </button>
+                        </div>
 
-                    <div className="flex items-center gap-1.5">
-                      {!isCover && media.processing_status === "ready" && (
+                        <div className="flex items-center gap-1.5">
+                          {!isCover && (
+                            <button
+                              type="button"
+                              onClick={() => handleSetCover(media.id)}
+                              className="text-emerald-600 hover:text-emerald-700 font-medium"
+                            >
+                              Cover
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(media.id)}
+                            className="text-red-600 hover:text-red-700 font-medium"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    ) : media.processing_status === "failed" ? (
+                      <div className="flex w-full justify-end">
                         <button
                           type="button"
-                          onClick={() => handleSetCover(media.id)}
-                          className="text-emerald-600 hover:text-emerald-700 font-medium"
+                          onClick={() => handleDelete(media.id)}
+                          className="text-red-600 hover:text-red-700 font-medium"
                         >
-                          Cover
+                          {isTemp ? "Dismiss" : "Remove"}
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(media.id)}
-                        className="text-red-600 hover:text-red-700 font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>

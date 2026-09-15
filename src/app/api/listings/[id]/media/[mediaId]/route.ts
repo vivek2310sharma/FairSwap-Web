@@ -46,11 +46,27 @@ export async function DELETE(
   if (media.large_storage_path) objectsToDeleteFromDerivatives.push(media.large_storage_path);
 
   if (media.original_storage_path) {
-    await serviceClient.storage.from("listing-originals").remove([media.original_storage_path]);
+    const { error: removeOrigError } = await serviceClient.storage
+      .from("listing-originals")
+      .remove([media.original_storage_path]);
+    if (removeOrigError) {
+      return NextResponse.json(
+        { error: "Failed to delete media asset from storage" },
+        { status: 500 }
+      );
+    }
   }
 
   if (objectsToDeleteFromDerivatives.length > 0) {
-    await serviceClient.storage.from("listing-derivatives").remove(objectsToDeleteFromDerivatives);
+    const { error: removeDerivError } = await serviceClient.storage
+      .from("listing-derivatives")
+      .remove(objectsToDeleteFromDerivatives);
+    if (removeDerivError) {
+      return NextResponse.json(
+        { error: "Failed to delete derivative assets from storage" },
+        { status: 500 }
+      );
+    }
   }
 
   // 4. Server-controlled DB deletion via service-role RPC (triggers material re-review and cover reset)

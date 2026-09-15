@@ -1,16 +1,35 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 
 export default async function AdminListingsQueuePage() {
   const supabase = await createClient();
 
-  // Verify moderator or administrator role with AAL2
-  const { data: isStaff } = await supabase.rpc("is_active_staff_aal2", {
-    required_role: "moderator",
-  });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!isStaff) {
+  if (!user) {
+    redirect("/auth/sign-in?next=/admin/listings");
+  }
+
+  // Verify moderator or administrator role
+  const { data: staffData, error: staffError } = await supabase
+    .from("staff_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (staffError) {
+    logger.error("admin.listings_queue_staff_check_failed", {
+      error_code: staffError.code,
+      message: staffError.message,
+    });
+    throw new Error("Failed to verify staff permissions.");
+  }
+
+  if (!staffData || !["administrator", "moderator"].includes(staffData.role)) {
     redirect("/admin");
   }
 
@@ -28,11 +47,39 @@ export default async function AdminListingsQueuePage() {
       seller_id,
       categories(name),
       cities(name),
-      profiles!listings_seller_id_fkey(display_name),
-      listing_media(id, processing_status)
+      listing_media!listing_media_listing_id_fkey(id, processing_status)
     `)
     .eq("status", "pending_review")
     .order("submitted_at", { ascending: true });
+
+  if (error) {
+    logger.error("admin.moderation_queue_query_failed", {
+      error_code: error.code,
+      message: error.message,
+    });
+  }
+
+  // Fetch seller profiles separately
+  let sellerProfilesMap = new Map<string, string>();
+  if (listings && listings.length > 0) {
+    const sellerIds = Array.from(
+      new Set(listings.map((l) => l.seller_id).filter((id): id is string => !!id))
+    );
+    if (sellerIds.length > 0) {
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", sellerIds);
+
+      if (profilesError) {
+        logger.warn("admin.moderation_queue_profiles_fetch_failed", {
+          error_code: profilesError.code,
+        });
+      } else if (profilesData) {
+        sellerProfilesMap = new Map(profilesData.map((p) => [p.id, p.display_name]));
+      }
+    }
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -53,7 +100,7 @@ export default async function AdminListingsQueuePage() {
 
       {error && (
         <div className="mt-6 rounded-md bg-red-50 p-4 text-sm text-red-700">
-          Failed to load queue: {error.message}
+          Failed to load moderation queue. Please try again later.
         </div>
       )}
 
@@ -84,9 +131,9 @@ export default async function AdminListingsQueuePage() {
             const cityName = Array.isArray(listing.cities)
               ? listing.cities[0]?.name
               : (listing.cities as { name?: string } | null)?.name;
-            const sellerName = Array.isArray(listing.profiles)
-              ? listing.profiles[0]?.display_name
-              : (listing.profiles as { display_name?: string } | null)?.display_name;
+            const sellerName =
+              (listing.seller_id && sellerProfilesMap.get(listing.seller_id)) ||
+              "Seller profile unavailable";
 
             return (
               <div
@@ -111,7 +158,7 @@ export default async function AdminListingsQueuePage() {
                     <span>Photos: {readyCount} ready</span>
                     <span>•</span>
                     <span>
-                      Seller: {sellerName || listing.seller_id.slice(0, 8)}
+                      Seller: {sellerName}
                     </span>
                     <span>•</span>
                     <span>

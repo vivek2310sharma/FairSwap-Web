@@ -14,21 +14,21 @@ export default async function AdminLayout({
     redirect("/auth/sign-in?next=/admin");
   }
 
-  // Check MFA AAL2 assurance
-  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aalData?.currentLevel !== "aal2") {
-    redirect("/auth/mfa?next=/admin");
-  }
-
-  // Check staff role
+  // Check staff role first using AAL1-safe query
   const { data: staffData } = await supabase
     .from("staff_roles")
     .select("role")
     .eq("user_id", userData.user.id)
-    .single();
+    .maybeSingle();
 
   if (!staffData || !staffData.role) {
     redirect("/");
+  }
+
+  // Only verified staff are prompted for AAL2 MFA assurance
+  const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aalData?.currentLevel !== "aal2") {
+    redirect("/auth/mfa?next=/admin");
   }
 
   return (

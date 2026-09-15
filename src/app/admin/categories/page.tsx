@@ -1,18 +1,37 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import { manageCategoryAction } from "./actions";
 import type { CategoryAttribute } from "@/types/listing";
 
 export default async function AdminCategoriesPage() {
   const supabase = await createClient();
 
-  // Content editor or administrator with AAL2
-  const { data: isStaff } = await supabase.rpc("is_active_staff_aal2", {
-    required_role: "content_editor",
-  });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!isStaff) {
+  if (!user) {
+    redirect("/auth/sign-in?next=/admin/categories");
+  }
+
+  // Content editor or administrator role required
+  const { data: staffData, error: staffError } = await supabase
+    .from("staff_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (staffError) {
+    logger.error("admin.categories_staff_check_failed", {
+      error_code: staffError.code,
+      message: staffError.message,
+    });
+    throw new Error("Failed to verify staff permissions.");
+  }
+
+  if (!staffData || !["administrator", "content_editor"].includes(staffData.role)) {
     redirect("/admin");
   }
 

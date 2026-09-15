@@ -263,10 +263,17 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
       const isOwner = listing.seller_id === user.id;
       let isStaff = false;
       if (!isOwner) {
-        const { data: staffData } = await supabase.rpc("is_active_staff_aal2", {
-          required_role: "moderator",
-        });
-        isStaff = !!staffData;
+        const { data: staffData } = await supabase
+          .from("staff_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        isStaff =
+          !!staffData &&
+          ["administrator", "moderator"].includes(staffData.role) &&
+          aalData?.currentLevel === "aal2";
       }
 
       if (isOwner || isStaff) {

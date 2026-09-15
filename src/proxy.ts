@@ -65,7 +65,6 @@ export async function proxy(request: NextRequest) {
     claims = null;
   }
   const isAuthenticated = !!claims?.sub;
-  const aal = claims?.aal as string | undefined;
 
   // 2. Enforce Cache-Control: private, no-store on response when mutating auth cookies
   if (cookiesMutated) {
@@ -99,20 +98,6 @@ export async function proxy(request: NextRequest) {
       const signInUrl = new URL("/auth/sign-in", request.url);
       signInUrl.searchParams.set("next", pathname);
       const redirectRes = NextResponse.redirect(signInUrl);
-      redirectRes.headers.set("x-request-id", correlationId);
-      return redirectRes;
-    }
-
-    // Gated by AAL2: if authenticated staff is only at AAL1, redirect to MFA challenge
-    if (aal !== "aal2") {
-      logger.info("auth.redirect_mfa_required", {
-        request_id: correlationId,
-        route: pathname,
-        actor_id: claims?.sub as string,
-      });
-      const mfaUrl = new URL("/auth/mfa", request.url);
-      mfaUrl.searchParams.set("next", pathname);
-      const redirectRes = NextResponse.redirect(mfaUrl);
       redirectRes.headers.set("x-request-id", correlationId);
       return redirectRes;
     }

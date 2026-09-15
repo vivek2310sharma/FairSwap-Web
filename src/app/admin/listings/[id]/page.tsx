@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import ModerationActions from "./ModerationActions";
 
 export default async function AdminListingDetailPage({
@@ -19,12 +20,23 @@ export default async function AdminListingDetailPage({
     redirect(`/auth/sign-in?next=/admin/listings/${id}`);
   }
 
-  // Check moderator/admin with AAL2
-  const { data: isStaff } = await supabase.rpc("is_active_staff_aal2", {
-    required_role: "moderator",
-  });
+  // Verify moderator or administrator role
+  const { data: staffData, error: staffError } = await supabase
+    .from("staff_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  if (!isStaff) {
+  if (staffError) {
+    logger.error("admin.listing_detail_staff_check_failed", {
+      listing_id: id,
+      error_code: staffError.code,
+      message: staffError.message,
+    });
+    throw new Error("Failed to verify staff permissions.");
+  }
+
+  if (!staffData || !["administrator", "moderator"].includes(staffData.role)) {
     redirect("/admin");
   }
 
@@ -34,14 +46,42 @@ export default async function AdminListingDetailPage({
       *,
       categories(name, slug),
       cities(name, state),
-      localities(name),
-      profiles!listings_seller_id_fkey(display_name, avatar_url)
+      localities(name)
     `)
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
-  if (error || !listing) {
+  if (error) {
+    logger.error("admin.moderation_detail_query_failed", {
+      listing_id: id,
+      error_code: error.code,
+      message: error.message,
+    });
+    throw new Error("Failed to load listing for moderation review.");
+  }
+
+  if (!listing) {
     notFound();
+  }
+
+  // Fetch seller profile separately
+  let sellerProfile: { display_name: string; avatar_url: string | null } | null = null;
+  if (listing.seller_id) {
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("display_name, avatar_url")
+      .eq("id", listing.seller_id)
+      .maybeSingle();
+
+    if (profileError) {
+      logger.warn("admin.moderation_seller_profile_fetch_failed", {
+        listing_id: id,
+        seller_id: listing.seller_id,
+        error_code: profileError.code,
+      });
+    } else {
+      sellerProfile = profileData;
+    }
   }
 
   // Fetch photos
@@ -68,6 +108,16 @@ export default async function AdminListingDetailPage({
       : listing.price_paise
       ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
       : "Not set";
+
+  const categoryName = Array.isArray(listing.categories)
+    ? listing.categories[0]?.name
+    : (listing.categories as { name?: string } | null)?.name;
+  const cityName = Array.isArray(listing.cities)
+    ? listing.cities[0]?.name
+    : (listing.cities as { name?: string } | null)?.name;
+  const localityName = Array.isArray(listing.localities)
+    ? listing.localities[0]?.name
+    : (listing.localities as { name?: string } | null)?.name;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 space-y-8">
@@ -175,13 +225,13 @@ export default async function AdminListingDetailPage({
               </div>
               <div className="flex justify-between border-b pb-1">
                 <dt className="text-gray-500">Category</dt>
-                <dd className="font-medium text-gray-900">{listing.categories?.name}</dd>
+                <dd className="font-medium text-gray-900">{categoryName || "N/A"}</dd>
               </div>
               <div className="flex justify-between border-b pb-1">
                 <dt className="text-gray-500">City / Locality</dt>
                 <dd className="font-medium text-gray-900">
-                  {listing.cities?.name}
-                  {listing.localities?.name ? ` (${listing.localities.name})` : ""}
+                  {cityName || "N/A"}
+                  {localityName ? ` (${localityName})` : ""}
                 </dd>
               </div>
               <div className="flex justify-between border-b pb-1">
@@ -191,7 +241,7 @@ export default async function AdminListingDetailPage({
               <div className="flex justify-between border-b pb-1">
                 <dt className="text-gray-500">Seller</dt>
                 <dd className="font-medium text-gray-900">
-                  {listing.profiles?.display_name || listing.seller_id.slice(0, 8)}
+                  {sellerProfile?.display_name || "Seller profile unavailable"}
                 </dd>
               </div>
             </dl>
