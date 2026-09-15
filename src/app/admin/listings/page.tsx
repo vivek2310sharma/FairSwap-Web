@@ -6,12 +6,30 @@ import { logger } from "@/lib/logger";
 export default async function AdminListingsQueuePage() {
   const supabase = await createClient();
 
-  // Verify moderator or administrator role with AAL2
-  const { data: isStaff } = await supabase.rpc("is_active_staff_aal2", {
-    required_role: "moderator",
-  });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!isStaff) {
+  if (!user) {
+    redirect("/auth/sign-in?next=/admin/listings");
+  }
+
+  // Verify moderator or administrator role
+  const { data: staffData, error: staffError } = await supabase
+    .from("staff_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (staffError) {
+    logger.error("admin.listings_queue_staff_check_failed", {
+      error_code: staffError.code,
+      message: staffError.message,
+    });
+    throw new Error("Failed to verify staff permissions.");
+  }
+
+  if (!staffData || !["administrator", "moderator"].includes(staffData.role)) {
     redirect("/admin");
   }
 

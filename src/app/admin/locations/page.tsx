@@ -1,18 +1,37 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import { manageLocationAction } from "./actions";
 import type { Locality } from "@/types/listing";
 
 export default async function AdminLocationsPage() {
   const supabase = await createClient();
 
-  // Administrator with AAL2
-  const { data: isStaff } = await supabase.rpc("is_active_staff_aal2", {
-    required_role: "administrator",
-  });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!isStaff) {
+  if (!user) {
+    redirect("/auth/sign-in?next=/admin/locations");
+  }
+
+  // Administrator role required
+  const { data: staffData, error: staffError } = await supabase
+    .from("staff_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (staffError) {
+    logger.error("admin.locations_staff_check_failed", {
+      error_code: staffError.code,
+      message: staffError.message,
+    });
+    throw new Error("Failed to verify staff permissions.");
+  }
+
+  if (!staffData || staffData.role !== "administrator") {
     redirect("/admin");
   }
 

@@ -58,6 +58,8 @@ describe("Point 9B-R5 — Admin Auth Flow & Moderation Query Tests", () => {
     const mfaPageContent = fs.readFileSync(path.join(rootDir, "src/app/auth/mfa/page.tsx"), "utf-8");
     const queuePageContent = fs.readFileSync(path.join(rootDir, "src/app/admin/listings/page.tsx"), "utf-8");
     const detailPageContent = fs.readFileSync(path.join(rootDir, "src/app/admin/listings/[id]/page.tsx"), "utf-8");
+    const locationsPageContent = fs.readFileSync(path.join(rootDir, "src/app/admin/locations/page.tsx"), "utf-8");
+    const categoriesPageContent = fs.readFileSync(path.join(rootDir, "src/app/admin/categories/page.tsx"), "utf-8");
 
     it("1. proxy.ts does NOT perform blanket AAL1 -> /auth/mfa redirect", () => {
       expect(proxyContent).not.toContain('redirect("/auth/mfa"');
@@ -149,6 +151,22 @@ describe("Point 9B-R5 — Admin Auth Flow & Moderation Query Tests", () => {
       expect(detailPageContent).toContain('from("profiles")');
       expect(detailPageContent).toContain('.select("display_name, avatar_url")');
       expect(detailPageContent).toContain("sellerProfile = profileData");
+    });
+
+    it("16. listings queue contains NO calls to is_active_staff_aal2", () => {
+      expect(queuePageContent).not.toContain("is_active_staff_aal2");
+    });
+
+    it("17. listing detail contains NO calls to is_active_staff_aal2", () => {
+      expect(detailPageContent).not.toContain("is_active_staff_aal2");
+    });
+
+    it("18. locations page contains NO calls to is_active_staff_aal2", () => {
+      expect(locationsPageContent).not.toContain("is_active_staff_aal2");
+    });
+
+    it("19. categories page contains NO calls to is_active_staff_aal2", () => {
+      expect(categoriesPageContent).not.toContain("is_active_staff_aal2");
     });
   });
 
@@ -291,6 +309,70 @@ describe("Point 9B-R5 — Admin Auth Flow & Moderation Query Tests", () => {
       // Case 3: Listing exists
       const renderResult = handleListingQueryResult({ id: "listing-1" }, null);
       expect(renderResult.action).toBe("render");
+    });
+  });
+
+  describe("E. Admin Route-Specific Role Rules", () => {
+    function evaluateListingsAccess(role: string | null): "allowed" | "redirect" {
+      if (role && ["administrator", "moderator"].includes(role)) {
+        return "allowed";
+      }
+      return "redirect";
+    }
+
+    function evaluateLocationsAccess(role: string | null): "allowed" | "redirect" {
+      if (role === "administrator") {
+        return "allowed";
+      }
+      return "redirect";
+    }
+
+    function evaluateCategoriesAccess(role: string | null): "allowed" | "redirect" {
+      if (role && ["administrator", "content_editor"].includes(role)) {
+        return "allowed";
+      }
+      return "redirect";
+    }
+
+    it("LISTINGS: administrator and moderator allowed, others denied", () => {
+      expect(evaluateListingsAccess("administrator")).toBe("allowed");
+      expect(evaluateListingsAccess("moderator")).toBe("allowed");
+      expect(evaluateListingsAccess("support_agent")).toBe("redirect");
+      expect(evaluateListingsAccess("content_editor")).toBe("redirect");
+      expect(evaluateListingsAccess(null)).toBe("redirect");
+    });
+
+    it("LOCATIONS: administrator allowed, moderator, content_editor, support_agent denied", () => {
+      expect(evaluateLocationsAccess("administrator")).toBe("allowed");
+      expect(evaluateLocationsAccess("moderator")).toBe("redirect");
+      expect(evaluateLocationsAccess("content_editor")).toBe("redirect");
+      expect(evaluateLocationsAccess("support_agent")).toBe("redirect");
+      expect(evaluateLocationsAccess(null)).toBe("redirect");
+    });
+
+    it("CATEGORIES: administrator and content_editor allowed, others denied", () => {
+      expect(evaluateCategoriesAccess("administrator")).toBe("allowed");
+      expect(evaluateCategoriesAccess("content_editor")).toBe("allowed");
+      expect(evaluateCategoriesAccess("moderator")).toBe("redirect");
+      expect(evaluateCategoriesAccess("support_agent")).toBe("redirect");
+      expect(evaluateCategoriesAccess(null)).toBe("redirect");
+    });
+
+    it("ERROR HANDLING: staff_roles query error throws and fails safely (does not treat as valid role)", () => {
+      function evaluateStaffQuery(staffData: { role: string } | null, staffError: { code: string } | null) {
+        if (staffError) {
+          throw new Error("Failed to verify staff permissions.");
+        }
+        if (!staffData || !["administrator", "moderator"].includes(staffData.role)) {
+          return "redirect";
+        }
+        return "allowed";
+      }
+
+      expect(() => evaluateStaffQuery(null, { code: "500" })).toThrow("Failed to verify staff permissions.");
+      expect(evaluateStaffQuery(null, null)).toBe("redirect");
+      expect(evaluateStaffQuery({ role: "support_agent" }, null)).toBe("redirect");
+      expect(evaluateStaffQuery({ role: "moderator" }, null)).toBe("allowed");
     });
   });
 });

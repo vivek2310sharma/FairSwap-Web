@@ -20,12 +20,23 @@ export default async function AdminListingDetailPage({
     redirect(`/auth/sign-in?next=/admin/listings/${id}`);
   }
 
-  // Check moderator/admin with AAL2
-  const { data: isStaff } = await supabase.rpc("is_active_staff_aal2", {
-    required_role: "moderator",
-  });
+  // Verify moderator or administrator role
+  const { data: staffData, error: staffError } = await supabase
+    .from("staff_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
 
-  if (!isStaff) {
+  if (staffError) {
+    logger.error("admin.listing_detail_staff_check_failed", {
+      listing_id: id,
+      error_code: staffError.code,
+      message: staffError.message,
+    });
+    throw new Error("Failed to verify staff permissions.");
+  }
+
+  if (!staffData || !["administrator", "moderator"].includes(staffData.role)) {
     redirect("/admin");
   }
 
