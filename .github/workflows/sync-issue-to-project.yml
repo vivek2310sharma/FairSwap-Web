@@ -1,0 +1,33 @@
+name: Sync FairSwap Issue To Project
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to sync
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  sync-project:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync issue to FairSwap-Web project
+        env:
+          GH_PROJECT_TOKEN: ${{ secrets.FAIRSWAP_PROJECT_TOKEN }}
+          GH_REPO_TOKEN: ${{ github.token }}
+          PROJECT_OWNER: vivek2310sharma
+          PROJECT_TITLE: FairSwap-Web
+          REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+        run: node .github/scripts/sync-issue-to-project.mjs
