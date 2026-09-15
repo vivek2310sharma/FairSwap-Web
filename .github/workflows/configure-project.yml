@@ -1,6 +1,12 @@
 name: Configure FairSwap GitHub Project
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/configure-fairswap-project.mjs
+      - .github/workflows/configure-project.yml
   workflow_dispatch:
 
 permissions:
