@@ -1,0 +1,28 @@
+name: Configure FairSwap GitHub Project
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/scripts/configure-fairswap-project.mjs
+      - .github/workflows/configure-project.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  configure-project:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure FairSwap-Web project
+        env:
+          GH_PROJECT_TOKEN: ${{ secrets.FAIRSWAP_PROJECT_TOKEN }}
+          PROJECT_OWNER: vivek2310sharma
+          PROJECT_TITLE: FairSwap-Web
+        run: node .github/scripts/configure-fairswap-project.mjs
