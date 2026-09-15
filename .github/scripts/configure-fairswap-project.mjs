@@ -111,17 +111,22 @@ function visibleIds(project, customFields) {
   return [title, ...ordered.map((name) => customFields.get(name)?.id)].filter(Boolean);
 }
 
+function viewConfiguration(definition, ids) {
+  return definition.layout === "ROADMAP_LAYOUT" ? undefined : { visibleFieldIds: ids };
+}
+
 async function createView(project, definition, ids) {
+  const configuration = viewConfiguration(definition, ids);
+  const input = {
+    projectId: project.id,
+    name: definition.name,
+    layout: definition.layout,
+    ...(configuration ? { configuration } : {}),
+  };
+
   const data = await graphql(`mutation($input:CreateProjectV2ViewInput!){
     createProjectV2View(input:$input){projectV2View{id name layout filter}}
-  }`, {
-    input: {
-      projectId: project.id,
-      name: definition.name,
-      layout: definition.layout,
-      configuration: { visibleFieldIds: ids },
-    },
-  });
+  }`, { input });
 
   const view = data.createProjectV2View.projectV2View;
   if (definition.filter) {
@@ -133,17 +138,18 @@ async function createView(project, definition, ids) {
 }
 
 async function updateView(view, definition, ids) {
+  const configuration = viewConfiguration(definition, ids);
+  const input = {
+    viewId: view.id,
+    name: definition.name,
+    layout: definition.layout,
+    filter: definition.filter,
+    ...(configuration ? { configuration } : {}),
+  };
+
   await graphql(`mutation($input:UpdateProjectV2ViewInput!){
     updateProjectV2View(input:$input){projectV2View{id name layout filter}}
-  }`, {
-    input: {
-      viewId: view.id,
-      name: definition.name,
-      layout: definition.layout,
-      filter: definition.filter,
-      configuration: { visibleFieldIds: ids },
-    },
-  });
+  }`, { input });
   console.log(`Updated view: ${definition.name}`);
 }
 
