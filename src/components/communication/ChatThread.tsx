@@ -117,28 +117,34 @@ export function ChatThread({
 
     const clientRequestId = crypto.randomUUID();
 
-    const result = await sendMessageAction(conversation.id, clean, clientRequestId);
-    setIsSending(false);
+    try {
+      const result = await sendMessageAction(conversation.id, clean, clientRequestId);
 
-    if (result.error) {
-      setErrorMessage(result.error);
-    } else {
-      if (result.messageId) {
-        const localMsg: Message = {
-          id: result.messageId,
-          conversation_id: conversation.id,
-          sender_id: currentUserId,
-          content: clean,
-          client_request_id: clientRequestId,
-          created_at: new Date().toISOString(),
-        };
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === localMsg.id)) return prev;
-          return [...prev, localMsg];
-        });
+      if (result.error) {
+        setErrorMessage(result.error);
+      } else {
+        if (result.messageId) {
+          const localMsg: Message = {
+            id: result.messageId,
+            conversation_id: conversation.id,
+            sender_id: currentUserId,
+            content: clean,
+            client_request_id: clientRequestId,
+            created_at: new Date().toISOString(),
+          };
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === localMsg.id)) return prev;
+            return [...prev, localMsg];
+          });
+        }
+        setInputText("");
+        setTimeout(() => scrollToBottom(true), 50);
       }
-      setInputText("");
-      setTimeout(() => scrollToBottom(true), 50);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send message. Please check your network.";
+      setErrorMessage(msg);
+    } finally {
+      setIsSending(false);
     }
   };
 

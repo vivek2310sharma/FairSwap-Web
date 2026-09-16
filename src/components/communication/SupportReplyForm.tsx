@@ -22,20 +22,25 @@ export function SupportReplyForm({ ticketId }: SupportReplyFormProps) {
     setIsSubmitting(true);
     setError(null);
 
-    const res = await customerReplySupportTicketAction({
-      ticketId,
-      content: content.trim(),
-    });
+    try {
+      const res = await customerReplySupportTicketAction({
+        ticketId,
+        content: content.trim(),
+      });
 
-    setIsSubmitting(false);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
 
-    if (res.error) {
-      setError(res.error);
-      return;
+      setContent("");
+      router.refresh();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send reply. Please check your network.";
+      setError(msg);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setContent("");
-    router.refresh();
   };
 
   return (
