@@ -1,6 +1,6 @@
 # FairSwap — Deployment Guide (Milestone 1.6)
 
-This guide documents the procedures for deploying and operating the **FairSwap** application in staging and production environments, along with required configuration, environment variables, secrets management, and health checks.
+This guide documents the architecture, configuration, secrets management, database migration protocols, and deployment procedures for **FairSwap** across local development, staging, and production environments.
 
 ---
 
@@ -12,87 +12,132 @@ FairSwap is a Next.js (App Router) marketplace application powered by Supabase (
 * **Authoritative Data & Security Layer**: Supabase PostgreSQL with two-tier RPC architecture (`public` SECURITY INVOKER wrappers delegating to unexposed `app_security` SECURITY DEFINER functions)
 * **Object Storage**: Supabase Storage (`listing-originals` and `listing-derivatives` buckets)
 * **Authentication & Session Assurance**: Supabase GoTrue Auth with RFC 6238 TOTP AAL2 Multi-Factor Authentication for staff roles
+* **Hosting Platforms**:
+  * **Staging**: Hosted on Vercel preview branch `Phase1` (`https://fair-swap-git-phase1-fairswap.vercel.app`), connected to Supabase staging project `FairSwapTest` (`wpppxlnbzqynvhpeuavd`).
+  * **Production**: Hosted on Vercel production deployment (`main`), connected to dedicated Production Supabase project.
 
 ---
 
 ## 2. Environment Variables & Secrets Checklist
 
-| Variable Name | Environment | Required | Description |
+| Variable Name | Environment | Tier | Description |
 |---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | All | Yes | Public URL of the Supabase API Gateway (Kong / Cloud API) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | All | Yes | Public publishable anon key for PostgREST & Auth client |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server Only | Yes | Privileged service role secret key. **NEVER expose to client bundles.** |
-| `JWT_SECRET` | Server/DB | Yes | Secret HMAC key used to verify Supabase JWTs (min 32 characters) |
-| `PORT` | Staging/Prod | Optional | HTTP binding port (default: 3000) |
-| `NODE_ENV` | All | Yes | Set to `production` in staging and production deployments |
+| `NEXT_PUBLIC_SUPABASE_URL` | All | Public | Public URL of the Supabase API Gateway / Cloud project endpoint |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | All | Public | Public publishable anon key for PostgREST & Auth client |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server Only | Critical Secret | Privileged service role key. **NEVER expose to client bundles.** |
+| `JWT_SECRET` | Server/DB | Critical Secret | Secret HMAC key used to verify Supabase JWTs (min 32 characters) |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | CI/Runner Only | Secret | Secret token passed via `x-vercel-protection-bypass` for automated test suites |
+| `UPSTASH_REDIS_REST_URL` | Server Only | Secret | Upstash Redis REST endpoint for distributed rate limiting |
+| `UPSTASH_REDIS_REST_TOKEN` | Server Only | Secret | Upstash Redis authentication token |
+| `NODE_ENV` | All | Config | Set to `production` in staging and production deployments |
+| `PORT` | Optional | Config | HTTP binding port (default: 3000) |
 
 ### Secret Management Rules
 * Never commit `.env.local` or raw secret strings to version control.
-* In production, inject secrets via secure environment secret stores (e.g., AWS Secrets Manager, Doppler, Vault, or platform-native secret vaults).
-* In CI/CD pipelines, use masked GitHub Actions / runner secrets.
+* In production, inject secrets exclusively via Vercel Project Settings or dedicated secret management vaults.
+* The `VERCEL_AUTOMATION_BYPASS_SECRET` must be rotated immediately if exposed in test transcripts.
 
 ---
 
-## 3. Database Migration Deployment
+## 3. Database Migration Deployment Protocols
 
 FairSwap uses ordered, immutable PostgreSQL migration scripts located in `supabase/migrations/`.
+As of Milestone 1.6, migrations are sequenced through **Migration 19**:
+* `20260914000001_create_accounts_and_profiles.sql`
+* `20260914000002_create_staff_and_security.sql`
+* `20260914000003_create_audit_and_privacy.sql`
+* `20260914000004_create_categories_and_locations.sql`
+* `20260914000005_create_listings.sql`
+* `20260914000006_create_listing_media.sql`
+* `20260914000007_create_storage_buckets_and_policies.sql`
+* `20260914000008_create_listing_rpcs.sql`
+* `20260914000009_create_discovery_and_favourites.sql`
+* `20260914000010_create_notifications.sql`
+* `20260914000011_create_communication.sql`
+* `20260914000012_create_abuse_controls_and_reports.sql`
+* `20260914000013_create_support_and_appeals.sql`
+* `20260914000014_create_privacy_fulfillment_and_fk_safety.sql`
+* `20260914000015_correct_report_notification_and_permissions.sql`
+* `20260914000016_staff_user_moderation_and_hardening.sql`
+* `20260914000017_fix_report_target_visibility.sql`
+* `20260916000018_performance_and_reliability_indexes.sql`
+* `20260916000019_fix_public_rls_staff_helper_execution.sql`
 
-### Local / Docker Execution
+### A. Local Development Deployment
 ```powershell
-# Check current migration status
-npx supabase migration list
-
 # Apply pending migrations to local stack
 npx supabase migration up
 ```
 
-### Direct Production / Staging Deployment
-When deploying to managed Supabase or standalone PostgreSQL instances:
-1. Ensure the PostgreSQL connection string has superuser or `postgres` administrative privileges.
-2. Apply migrations sequentially using `psql`:
-   ```bash
-   psql "$DATABASE_URL" -f supabase/migrations/20260914000016_staff_user_moderation_and_hardening.sql
-   ```
-3. Verify that all migrations up to `20260914000016_staff_user_moderation_and_hardening.sql` are reflected in `supabase_migrations.schema_migrations`.
+### B. Managed Staging Deployment (`FairSwapTest`)
+When deploying schema updates to staging:
+```bash
+# Link to staging project (ref: wpppxlnbzqynvhpeuavd)
+npx supabase link --project-ref wpppxlnbzqynvhpeuavd
+
+# Safely push pending migrations through official migration tracking
+npx supabase db push
+```
+
+> [!CAUTION]
+> **NO AD-HOC DIRECT SQL BYPASSES**:
+> Do **NOT** execute raw SQL scripts via arbitrary `psql -f` commands that bypass `supabase_migrations.schema_migrations`. All schema changes must be versioned migrations tracked in the migration table.
+
+### C. Managed Production Deployment
+> [!IMPORTANT]
+> **PRODUCTION FREEZE IN EFFECT**:
+> Production deployment requires **explicit written authorization from the Platform Owner**.
+> Under Milestone 1.6, production database and main branch remain untouched.
+> When authorized, production migrations must be applied using:
+> `npx supabase db push --linked` (linked to the production project ref).
 
 ---
 
-## 4. Application Build & Launch
+## 4. Application Build & Quality Gates
 
-### Production Build
+Before any deployment, the application must pass all quality gates locally or in CI:
+
 ```bash
 # 1. Typecheck validation
-corepack pnpm typecheck
+pnpm typecheck
 
 # 2. Linting verification
-corepack pnpm lint
+pnpm lint
 
-# 3. Create optimized production build
-corepack pnpm build
-```
+# 3. Unit, Security, and Reliability Tests
+pnpm test:unit
+pnpm test:security
+pnpm test:reliability
 
-### Launch Service
-```bash
-# Start production Next.js server
-corepack pnpm start -p 3000
+# 4. Production Next.js Build
+pnpm build
 ```
 
 ---
 
-## 5. Health Checks & Observability
+## 5. Rollback Procedures
 
-* **Liveness / Readiness Probe**: `GET /api/listings/recent` (verifies Next.js runtime and read connectivity to PostgreSQL)
-* **Client Error Monitoring**: `POST /api/monitoring/client-error` (accepts structured client error payloads with correlation IDs)
-* **Database Extension Verification**:
-  ```sql
-  SELECT extname, extversion FROM pg_extension WHERE extname IN ('uuid-ossp', 'pgcrypto', 'pgjwt');
-  ```
+### A. Application Rollback (Vercel)
+1. Navigate to the **Deployments** tab in the Vercel dashboard.
+2. Identify the last known-good deployment commit SHA.
+3. Click the deployment menu `...` and select **Instant Rollback**.
+4. Traffic is routed to the prior build artifact within seconds without rebuilding.
+
+### B. Database Forward Corrective Strategy
+* FairSwap enforces a **forward-only corrective migration strategy**.
+* Do **NOT** execute destructive `DROP TABLE` or destructive down-migrations in active production.
+* If a defect is discovered in a deployed migration, write and push a new forward corrective migration (e.g. Migration 20) that safely repairs constraints or functions while preserving data.
+* Full database restore from backup is reserved strictly for catastrophic data loss disaster recovery scenarios.
+
+### C. Storage Media Recovery
+* If specific image assets are accidentally deleted or corrupted, restore missing image bytes by querying the backup manifest and uploading to the affected bucket via `scripts/backup-storage.ts` tooling without overwriting unrelated active objects.
 
 ---
 
-## 6. External Prerequisites for Public Pilot (Caveats)
+## 6. External Launch Prerequisites (India Marketplace Context)
 
-Before opening FairSwap to public traffic outside controlled-pilot sandbox groups:
-1. **Production SMTP Provider**: Transition from local Mailpit (`127.0.0.1:54324`) to a production transactional email service (e.g., Amazon SES, SendGrid, or Postmark) with SPF, DKIM, and DMARC DNS records configured.
-2. **Statutory Grievance Officer**: Under India Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, appoint and publish the legal name and contact details of the Grievance Officer on `/contact` and `/terms`.
-3. **Production Domain & TLS**: Ensure custom domain (`fairswap.in`) is bound to an SSL/TLS certificate with automatic renewal (Let's Encrypt / Cloudflare).
+Before opening FairSwap to public consumer traffic:
+1. **Production Transactional Email (SMTP)**: Switch from development/sandbox email to a verified transactional email provider (SendGrid / Postmark / Amazon SES) with configured SPF, DKIM, and DMARC DNS records.
+2. **Statutory Grievance Officer**: Publish the legal name, contact email, and address of the statutory Grievance Officer on `/contact` and `/terms` pursuant to the India Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules.
+3. **Custom Domain & TLS**: Bind `fairswap.in` with automated HTTPS certificate renewal.
+4. **Dedicated Operations On-Call**: Confirm all positions in `docs/operations/operational-owner-matrix.md` are staffed with 24/7 on-call coverage.

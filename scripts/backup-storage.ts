@@ -1,17 +1,12 @@
-import { execSync } from "child_process";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { createClient } from "@supabase/supabase-js";
 
-const CONTAINER_NAME = "supabase_db_fairswap-local";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+const SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
 const SERVICE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
-
-const STORAGE_BACKUP_DIR = path.resolve(process.cwd(), "artifacts", "backups", "storage");
-const MANIFEST_FILE = path.join(STORAGE_BACKUP_DIR, "manifest.json");
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwcHB4bG5ienF5bnZocGV1YXZkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTMyMzQxNywiZXhwIjoyMTA0ODk5NDE3fQ.V1IHV-8SvzKqqYyQ6fn1UMYyzsaGPO2ho7KQiRObm2U";
 
 interface StorageManifestEntry {
   bucket: string;
@@ -21,90 +16,108 @@ interface StorageManifestEntry {
   localPath: string;
 }
 
-async function main() {
-  console.log("=== FairSwap Disaster Recovery: Storage Backup ===");
-  console.log(`Endpoint: ${SUPABASE_URL}`);
-  console.log(`Local Backup Directory: ${STORAGE_BACKUP_DIR}`);
+async function listAllFiles(supabase: any, bucket: string, prefix = ""): Promise<string[]> {
+  const files: string[] = [];
+  const { data: items, error } = await supabase.storage.from(bucket).list(prefix, { limit: 100 });
+  if (error || !items) throw new Error(`Failed to list ${bucket}/${prefix}: ${error?.message}`);
 
-  if (!fs.existsSync(STORAGE_BACKUP_DIR)) {
-    fs.mkdirSync(STORAGE_BACKUP_DIR, { recursive: true });
+  for (const item of items) {
+    const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+    // In Supabase storage, folders have id = null or metadata = null
+    if (!item.id || item.metadata === null) {
+      // Subdirectory
+      const subFiles = await listAllFiles(supabase, bucket, fullPath);
+      files.push(...subFiles);
+    } else {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const targetArg = args.find((a) => a.startsWith("--target="));
+  const target = targetArg ? targetArg.split("=")[1] : "";
+
+  if (target === "production") {
+    console.error("CRITICAL ERROR: --target=production is forbidden during Point 16 operations.");
+    process.exit(1);
+  }
+
+  if (target !== "staging" && target !== "local") {
+    console.error("CRITICAL ERROR: Explicit target required. Use --target=staging or --target=local. Aborting.");
+    process.exit(1);
+  }
+
+  console.log(`=== FairSwap Disaster Recovery: Storage Backup [Target: ${target}] ===`);
+
+  const backupDir = path.resolve(process.cwd(), "artifacts", "backups", "storage");
+  const manifestFile = path.join(backupDir, "manifest.json");
+
+  if (!fs.existsSync(backupDir)) {
+    fs.mkdirSync(backupDir, { recursive: true });
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // 1. Get authoritative list of all storage objects across all buckets
-  console.log("Querying storage.objects for full inventory...");
-  let rawOutput = "";
-  try {
-    rawOutput = execSync(
-      `docker exec ${CONTAINER_NAME} psql -U postgres -d postgres -t -A -c "SELECT bucket_id, name FROM storage.objects ORDER BY bucket_id, name;"`,
-      { encoding: "utf-8" }
-    ).trim();
-  } catch (err) {
-    console.error("Failed to query storage.objects from container:", err);
-    process.exit(1);
-  }
-
-  const lines = rawOutput.split("\n").map((l) => l.trim()).filter(Boolean);
-  console.log(`Discovered ${lines.length} objects across buckets.`);
-
+  const buckets = ["listing-originals", "listing-derivatives"];
   const manifestEntries: StorageManifestEntry[] = [];
-  let downloadedCount = 0;
+  let totalDownloaded = 0;
 
-  for (const line of lines) {
-    const [bucket, ...nameParts] = line.split("|");
-    const name = nameParts.join("|");
+  for (const bucket of buckets) {
+    console.log(`Enumerating bucket '${bucket}'...`);
+    const files = await listAllFiles(supabase, bucket);
+    console.log(`Found ${files.length} objects in '${bucket}'. Downloading...`);
 
-    if (!bucket || !name) continue;
+    for (const file of files) {
+      const localDest = path.join(backupDir, bucket, ...file.split("/"));
+      const localFolder = path.dirname(localDest);
+      if (!fs.existsSync(localFolder)) {
+        fs.mkdirSync(localFolder, { recursive: true });
+      }
 
-    const localDest = path.join(STORAGE_BACKUP_DIR, bucket, ...name.split("/"));
-    const localDir = path.dirname(localDest);
-    if (!fs.existsSync(localDir)) {
-      fs.mkdirSync(localDir, { recursive: true });
-    }
+      const { data: blob, error } = await supabase.storage.from(bucket).download(file);
+      if (error || !blob) {
+        throw new Error(`Failed to download ${bucket}/${file}: ${error?.message}`);
+      }
 
-    // Download object from Supabase Storage
-    const { data: blob, error } = await supabase.storage.from(bucket).download(name);
-    if (error || !blob) {
-      console.error(`Failed to download ${bucket}/${name}:`, error?.message);
-      process.exit(1);
-    }
+      const arrayBuf = await blob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuf);
+      fs.writeFileSync(localDest, buffer);
 
-    const arrayBuffer = await blob.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+      const hash = crypto.createHash("sha256").update(buffer).digest("hex");
+      manifestEntries.push({
+        bucket,
+        name: file,
+        sizeBytes: buffer.length,
+        sha256: hash,
+        localPath: path.relative(backupDir, localDest).replace(/\\/g, "/"),
+      });
 
-    fs.writeFileSync(localDest, buffer);
-
-    const hash = crypto.createHash("sha256").update(buffer).digest("hex");
-
-    manifestEntries.push({
-      bucket,
-      name,
-      sizeBytes: buffer.length,
-      sha256: hash,
-      localPath: path.relative(STORAGE_BACKUP_DIR, localDest).replace(/\\/g, "/"),
-    });
-
-    downloadedCount++;
-    if (downloadedCount % 25 === 0 || downloadedCount === lines.length) {
-      console.log(`Downloaded ${downloadedCount} / ${lines.length} objects...`);
+      totalDownloaded++;
+      if (totalDownloaded % 10 === 0 || totalDownloaded === files.length) {
+        console.log(`  Downloaded ${totalDownloaded} objects...`);
+      }
     }
   }
 
   const manifest = {
+    targetEnvironment: target,
+    projectRef: "wpppxlnbzqynvhpeuavd",
     timestamp: new Date().toISOString(),
     totalObjects: manifestEntries.length,
-    buckets: ["listing-originals", "listing-derivatives"],
+    buckets,
     objects: manifestEntries,
   };
 
-  fs.writeFileSync(MANIFEST_FILE, JSON.stringify(manifest, null, 2), "utf-8");
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2), "utf-8");
 
-  console.log("=== Storage Backup Completed Successfully ===");
+  console.log(`\n=== Storage Backup Completed Successfully ===`);
   console.log(`Total Objects: ${manifestEntries.length}`);
-  console.log(`Manifest written to: ${MANIFEST_FILE}`);
+  console.log(`Manifest File: ${manifestFile}`);
 }
 
 main().catch((err) => {
