@@ -102,7 +102,7 @@ export function StaffSupportReplyForm({
             >
               <option value="open">Open</option>
               <option value="in_progress">In Progress</option>
-              <option value="waiting_customer">Waiting for User</option>
+              <option value="awaiting_user">Waiting for User</option>
               <option value="resolved">Resolved</option>
               <option value="closed">Closed</option>
             </select>

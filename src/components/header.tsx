@@ -24,7 +24,7 @@ export function Header() {
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-2" aria-label="FairSwap home">
           <span className="text-xl font-bold tracking-tight sm:text-2xl">
-            <span className="text-brand-600">Fair</span>
+            <span className="text-brand-link">Fair</span>
             <span className="text-foreground">Swap</span>
             <span className="text-sm font-normal text-muted">.in</span>
           </span>
@@ -43,7 +43,7 @@ export function Header() {
           ))}
           <Link
             href="/search"
-            className="flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-500"
+            className="flex items-center gap-1.5 text-sm font-medium text-brand-link hover:underline"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             Browse
@@ -138,7 +138,7 @@ export function Header() {
             <Link
               href="/account/listings/new"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-brand-600 hover:bg-surface"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-brand-link hover:bg-surface"
             >
               <PlusCircle className="h-4 w-4" aria-hidden="true" />
               Post a Listing

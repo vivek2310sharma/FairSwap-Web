@@ -11,12 +11,12 @@ export default function SignUpPage() {
   );
 
   return (
-    <div className="mx-auto max-w-md px-4 py-12">
+    <main className="mx-auto max-w-md px-4 py-12">
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
         <h1 className="text-2xl font-bold text-gray-900">Create your FairSwap account</h1>
         <p className="mt-2 text-sm text-gray-600">
           Already have an account?{" "}
-          <Link href="/auth/sign-in" className="font-semibold text-emerald-600 hover:text-emerald-500">
+          <Link href="/auth/sign-in" className="font-semibold text-emerald-700 hover:text-emerald-800">
             Sign in
           </Link>
         </p>
@@ -84,15 +84,15 @@ export default function SignUpPage() {
                 name="termsAccepted"
                 type="checkbox"
                 required
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
               />
-              <label htmlFor="termsAccepted" className="ml-2 block text-xs text-gray-600">
+              <label htmlFor="termsAccepted" className="ml-2 block text-xs text-gray-700">
                 I accept the{" "}
-                <Link href="/terms" className="text-emerald-600 underline" target="_blank">
+                <Link href="/terms" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
                   Terms of Service (v2026-09-13-draft)
                 </Link>{" "}
                 and acknowledge the{" "}
-                <Link href="/privacy" className="text-emerald-600 underline" target="_blank">
+                <Link href="/privacy" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
                   Privacy Policy (v2026-09-13-draft)
                 </Link>
                 .
@@ -103,12 +103,12 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full rounded-md bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50"
+            className="w-full rounded-md bg-emerald-700 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50"
           >
             {isPending ? "Creating account..." : "Sign Up"}
           </button>
         </form>
       </div>
-    </div>
+    </main>
   );
 }

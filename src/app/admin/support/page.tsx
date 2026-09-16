@@ -84,6 +84,7 @@ export default async function AdminSupportPage({
             In Progress
           </span>
         );
+      case "awaiting_user":
       case "waiting_customer":
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
@@ -141,7 +142,7 @@ export default async function AdminSupportPage({
   const tabs = [
     { label: "Open", value: "open" },
     { label: "In Progress", value: "in_progress" },
-    { label: "Waiting User", value: "waiting_customer" },
+    { label: "Waiting User", value: "awaiting_user" },
     { label: "Resolved", value: "resolved" },
     { label: "All", value: "all" },
   ];

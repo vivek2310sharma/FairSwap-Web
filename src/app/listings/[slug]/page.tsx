@@ -324,21 +324,21 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
               </div>
 
               {/* Safety Card */}
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-6 dark:border-emerald-900 dark:bg-emerald-950/20">
-                <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-300 text-sm">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 dark:border-emerald-800 dark:bg-emerald-950">
+                <div className="flex items-center gap-2 font-bold text-emerald-900 dark:text-emerald-200 text-sm">
                   <ShieldCheck className="h-5 w-5" aria-hidden="true" />
                   <span>FairSwap Safety Advice</span>
                 </div>
-                <ul className="mt-3 space-y-2 text-xs text-emerald-900/80 dark:text-emerald-300/80">
+                <ul className="mt-3 space-y-2 text-xs text-emerald-950 dark:text-emerald-100 font-medium">
                   <li>&bull; Always meet the seller in a public, crowded place.</li>
                   <li>&bull; Inspect and test the item thoroughly in person.</li>
                   <li>&bull; Do not send advance payments or token money online.</li>
                   <li>&bull; Bring a friend along when inspecting valuable items.</li>
                 </ul>
-                <div className="mt-4 pt-3 border-t border-emerald-200 dark:border-emerald-900">
+                <div className="mt-4 pt-3 border-t border-emerald-200 dark:border-emerald-800">
                   <Link
                     href="/safety"
-                    className="text-xs font-semibold text-emerald-700 hover:text-emerald-600 dark:text-emerald-400"
+                    className="text-xs font-semibold text-emerald-800 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-200"
                   >
                     Learn more safety tips &rarr;
                   </Link>
@@ -356,7 +356,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                 </h2>
                 <Link
                   href={`/seller/${listing.seller.id}`}
-                  className="text-xs font-semibold text-brand-600 hover:text-brand-500"
+                  className="text-xs font-semibold text-brand-link hover:underline"
                 >
                   View all &rarr;
                 </Link>

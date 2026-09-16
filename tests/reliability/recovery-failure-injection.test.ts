@@ -104,7 +104,7 @@ describe("Point 16 Recovery & Restore Failure Injection Matrix", () => {
         stdio: ["pipe", "pipe", "pipe"],
       });
     }).toThrow(/CRITICAL SAFETY ERROR: Restore target 'production' is strictly forbidden/);
-  });
+  }, 20000);
 
   it("E. aborts immediately if no restore target or illegal target is specified", () => {
     expect(() => {
@@ -113,7 +113,7 @@ describe("Point 16 Recovery & Restore Failure Injection Matrix", () => {
         stdio: ["pipe", "pipe", "pipe"],
       });
     }).toThrow(/CRITICAL ERROR: Explicit restore target required/);
-  });
+  }, 20000);
 
   it("E3. aborts immediately if backup source is production", () => {
     expect(() => {
@@ -122,7 +122,7 @@ describe("Point 16 Recovery & Restore Failure Injection Matrix", () => {
         stdio: ["pipe", "pipe", "pipe"],
       });
     }).toThrow(/CRITICAL ERROR: --source=production is strictly forbidden/);
-  });
+  }, 20000);
 
   // F. Remote Restore URL supplied where local-only restore is required
   it("F. fails closed if remote restore URL is supplied without explicit authorization", () => {

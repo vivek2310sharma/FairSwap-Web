@@ -11,7 +11,7 @@ export default function ForgotPasswordPage() {
   );
 
   return (
-    <div className="mx-auto max-w-md px-4 py-12">
+    <main className="mx-auto max-w-md px-4 py-12">
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
         <h1 className="text-2xl font-bold text-gray-900">Reset your password</h1>
         <p className="mt-2 text-sm text-gray-600">
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={isPending}
-              className="w-full rounded-md bg-emerald-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50"
+              className="w-full rounded-md bg-emerald-700 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50"
             >
               {isPending ? "Sending link..." : "Send Reset Link"}
             </button>
@@ -64,11 +64,11 @@ export default function ForgotPasswordPage() {
         )}
 
         <div className="mt-6 text-center">
-          <Link href="/auth/sign-in" className="text-sm font-medium text-emerald-600 hover:text-emerald-500">
+          <Link href="/auth/sign-in" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
             Back to Sign In
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

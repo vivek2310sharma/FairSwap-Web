@@ -121,7 +121,6 @@ export type SupportTicketCategory =
 export type SupportTicketStatus =
   | 'open'
   | 'in_progress'
-  | 'waiting_customer'
   | 'awaiting_user'
   | 'resolved'
   | 'closed';
