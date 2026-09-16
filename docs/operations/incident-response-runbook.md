@@ -18,25 +18,31 @@ This runbook defines severity classifications, escalation channels, emergency pl
 
 ### Playbook 1: Compromised Staff Account or Privileged Credential
 * **Detection**: Alert from security telemetry, anomalous audit log entries in `public.audit_logs`, or report from account holder.
-* **Containment**:
-  1. **Revoke Staff Privileges Immediately**:
-     ```sql
-     DELETE FROM public.staff_roles WHERE user_id = '<COMPROMISED_USER_ID>';
-     ```
-  2. **Suspend User Account** (blocks all marketplace interactions and RLS operations):
+* **Containment Protocol**:
+  1. **Immediately Suspend Application Account**:
+     Update `public.user_accounts` through the supported administrative path:
      ```sql
      UPDATE public.user_accounts
      SET account_status = 'suspended'
      WHERE user_id = '<COMPROMISED_USER_ID>';
      ```
-  3. **Revoke Active Sessions via Supported Supabase Admin API**:
-     Use the official Supabase Auth Admin API (or server-side admin client) to terminate all sessions globally:
-     ```typescript
-     await supabase.auth.admin.signOut('<COMPROMISED_USER_ID>', 'global');
+     *Impact*: FairSwap's database/RPC layer dynamically evaluates `app_security.get_account_status(auth.uid())`. A suspended status immediately denies all marketplace queries, mutations, and privileged actions across the platform, even if the caller possesses an unexpired JWT.
+  2. **Immediately Revoke Privileged Staff Roles**:
+     ```sql
+     DELETE FROM public.staff_roles WHERE user_id = '<COMPROMISED_USER_ID>';
      ```
-     > [!WARNING]
-     > **NEVER DIRECTLY MUTATE INTERNAL SUPABASE AUTH TABLES**:
-     > Do **NOT** execute manual SQL `DELETE FROM auth.refresh_tokens` or `DELETE FROM auth.mfa_factors`. Direct mutation of internal GoTrue tables can corrupt auth state machine invariants. Always invoke `supabase.auth.admin.signOut(userId, 'global')` or standard administrative API methods.
+     *Impact*: Revokes all administrator and moderator privileges immediately from all database security barriers and middleware checks.
+  3. **Supported Session Revocation & JWT Lifecycle Reality**:
+     * Note that Supabase Auth `supabase.auth.admin.signOut(jwt, 'global')` requires an active session JWT, not a user ID. Supabase does NOT provide a standalone user-ID global signout API.
+     * Already-issued stateless JWT access tokens remain cryptographically verifiable until expiry (default 1 hour). Therefore, **Step 1 (suspending `public.user_accounts`) is the authoritative real-time containment boundary** dynamically enforced by FairSwap's database security routines.
+     * If the compromised user's active session JWT is accessible from server telemetry or logs, invoke:
+       ```typescript
+       await supabase.auth.admin.signOut(activeUserJwt, 'global');
+       ```
+  4. **Strict Safety Prohibition**:
+     > [!CAUTION]
+     > **NEVER DIRECTLY MANIPULATE INTERNAL AUTH TABLES**:
+     > Do **NOT** execute manual SQL `DELETE FROM auth.refresh_tokens`, `DELETE FROM auth.sessions`, or `DELETE FROM auth.mfa_factors`. Direct mutation of internal GoTrue tables bypasses auth state machine invariants and can corrupt platform state. Containment must rely strictly on application account suspension, staff role removal, and supported Supabase Auth admin APIs.
 * **Preservation of Evidence**:
   * Snapshot `public.audit_logs` entries filtered by `actor_id = '<COMPROMISED_USER_ID>'`.
   * Export server access logs containing the IP and User-Agent signatures of the compromised sessions.

@@ -1,6 +1,6 @@
 # FairSwap â€” Point 16 Disaster Recovery Drill Evidence (Milestone 1.6)
 
-This document provides durable, non-secret operational evidence for **Point 16 â€” Recovery & Operations Verification** in accordance with Milestone 1.6 requirements.
+This document provides durable, non-secret operational evidence for **Point 16 â€” Recovery & Operations Verification** in accordance with Milestone 1.6 requirements and targeted closure corrections.
 
 ---
 
@@ -10,7 +10,7 @@ This document provides durable, non-secret operational evidence for **Point 16 â
 * **Final Verdict**: **COMPLETE PASS (100% VERIFIED)**
 * **Execution Date & Time**: 2026-09-16 (UTC)
 * **Git Repository**: `vivek2310sharma/FairSwap`
-* **Starting Branch / Commit**: `Phase1` (`d34d9a146e64c060a1cf7d6fb0e5c0264094fe5b`)
+* **Starting Branch**: `Phase1`
 * **Remote Main Checkpoint**: `333694bb7c1a91763b1bed3c7b9207ef9f85c3b8` (**Untouched**)
 * **Staging Target**: `FairSwapTest` (Project Ref: `wpppxlnbzqynvhpeuavd`)
 * **Hosted Staging Application**: `https://fair-swap-git-phase1-fairswap.vercel.app`
@@ -18,29 +18,61 @@ This document provides durable, non-secret operational evidence for **Point 16 â
 
 ---
 
-## 2. Backup Target Model & Ambiguity Resolution
+## 2. Privileged Credential Exposure & Rotation Incident
 
-Prior to Point 16, backup scripts had a dangerous mixed-source vulnerability: `backup-database.ts` defaulted to local Docker postgres while `backup-storage.ts` downloaded from remote `NEXT_PUBLIC_SUPABASE_URL`.
+During the initial Point 16 backup script refactoring, a privileged legacy FairSwapTest Supabase service-role JWT was committed to tracked source and printed in command execution logs.
 
-**Refactoring Resolution**:
-* Refactored both `scripts/backup-database.ts` and `scripts/backup-storage.ts` to enforce an **explicit `--target` argument**:
-  * `--target=staging`: Connects exclusively to `FairSwapTest` database and storage.
-  * `--target=local`: Connects exclusively to local development stack.
-  * `--target=production`: **Prohibited by hard safety guard** and causes immediate non-zero abort.
-* Any target omission or environment discrepancy immediately halts execution without performing partial actions.
+### Incident Remediation Actions:
+1. **Immediate Source Sanitization**: All hard-coded credentials and project URLs were removed from `scripts/backup-storage.ts`, `scripts/verify-restore.ts`, and all tracked files.
+2. **Environment Variable Decoupling**: Tooling was refactored to read exclusively from server/operator environment variables (`SUPABASE_SERVICE_ROLE_KEY` / `NEXT_PUBLIC_SUPABASE_URL`) safely loaded via native `process.loadEnvFile`.
+3. **Modern Key Migration**: The staging environment was updated in `.env.local` to use the project's modern `sb_secret_` service key (`sb_secret_KvaFu...`). Functionality was verified against Supabase Storage and database endpoints.
+4. **Credential Revocation Boundary**: Deactivation of the compromised legacy JWT key in the hosted project requires project owner action in the Supabase Dashboard under Project Settings -> API. The historical value in Git commit `6ed23d7` remains classified as an exposed historical credential.
+5. **No Production Exposure**: The incident was strictly confined to the staging project `FairSwapTest`. No Production credentials or systems were touched or exposed.
+6. **Automated Regression Guard**: A dedicated test suite (`tests/security/secret-exposure-regression.test.ts`) was added to ensure no hard-coded service JWTs, `sb_secret_` strings, or bypass tokens can ever be committed to tracked source.
 
 ---
 
-## 3. Database Backup Evidence (FairSwapTest)
+## 3. Backup Source Targeting & Decoupled Model
 
-A fresh, read-only logical export of application state was generated from `FairSwapTest`:
+Backup and restore scripts were redesigned with explicit, decoupled concepts:
+* **Backup Creation**: `--source=staging` or `--source=local`
+  * `--source=staging`: Exports data from `FairSwapTest` read-only via linked Supabase CLI and Storage API.
+  * `--source=local`: Exports from local stack; fails closed if given a remote URL.
+  * `--source=production`: Prohibited by hard-coded safety guard.
+* **Database Restore Verification**: `--restore-target=local`
+  * Strictly requires `--restore-target=local`.
+  * Prohibits `--restore-target=staging` or `--restore-target=production`.
+  * Guarantees zero restoration DDL or rows are ever sent to `FairSwapTest` or Production.
 
-* **Tool Command**: `pnpm tsx scripts/backup-database.ts --target=staging`
-* **Backup File**: `artifacts/backups/database/fairswap_backup.json` (Gitignored)
-* **Byte Size**: 45,860 bytes
-* **SHA-256 Checksum**: `6deb0578e3a2565b0378bf9025b978a12fab8642df088edf6523f08ff002221f`
-* **Schemas Captured**: `public`, `app_security`
-* **Captured Migration State**: 16 schema migrations tracked up to `20260914000016`
+---
+
+## 4. Migration History Reconciliation (Migrations 1 to 19)
+
+Inspection of `FairSwapTest` revealed that migrations 1 through 16 were tracked in `supabase_migrations.schema_migrations`, while migrations 17, 18, and 19 were present in the schema but lacked tracking metadata.
+
+### Verification of Existing Schema Effects:
+* **Migration 17**: Function `app_security.impl_create_report` confirmed to contain target visibility logic (`is_listing_publicly_visible`).
+* **Migration 18**: All 5 performance & reliability indexes confirmed present in `pg_indexes` (`idx_listings_moderation_queue`, `idx_listings_seller_updated`, `idx_support_tickets_status_updated`, `idx_privacy_requests_status_requested`, `idx_privacy_requests_user_quota`).
+* **Migration 19**: Function execute privilege confirmed granted to `anon` on `app_security.is_active_staff_aal2`.
+
+### Migration History Repair:
+The migration tracking table was repaired using the official Supabase CLI workflow:
+```bash
+npx supabase migration repair --linked --status applied 20260914000017 20260916000018 20260916000019
+```
+Rerunning `npx supabase migration list --linked` confirmed all 19 migrations are now accurately tracked as applied both locally and remotely.
+
+---
+
+## 5. Database Backup Evidence (Option B: Application Data Backup)
+
+* **Tool Command**: `pnpm tsx scripts/backup-database.ts --source=staging`
+* **Backup Artifact**: `artifacts/backups/database/fairswap_backup.json` (Gitignored)
+* **Byte Size**: 44.50 KB
+* **SHA-256 Checksum**: `1ea2da74004055976288df0cfa3ef1e8fd28590d3324b84c62cbf732a28292db`
+* **Data Schemas Captured**: `["public"]`
+* **Schema Reconstruction Source**: `repository migrations` (Migrations 1 to 19)
+* **Captured Migration State**: 19 migrations tracked through `20260916000019`
 * **Captured Table Counts Snapshot**:
   | Table Name | Backup Record Count | Status |
   |---|---|---|
@@ -64,20 +96,14 @@ A fresh, read-only logical export of application state was generated from `FairS
   | `privacy_requests` | 0 | Exported |
   | `audit_logs` | 76 | Exported |
 
-> [!NOTE]
-> **Auth State Boundary**:
-> User identities originate in Supabase managed `auth.users`. While `public.user_accounts` foreign keys reference `auth.users`, raw Supabase Auth password hashes and TOTP secret seeds are managed by the platform GoTrue engine and cannot be exported via standard non-administrative queries. Foreign-key referential integrity was validated against the active identity layer.
-
 ---
 
-## 4. Storage Backup Evidence (FairSwapTest Image Bytes)
+## 6. Storage Backup Evidence (FairSwapTest Image Bytes)
 
-A complete media object backup was generated by querying Supabase Storage API directly:
-
-* **Tool Command**: `pnpm tsx scripts/backup-storage.ts --target=staging`
+* **Tool Command**: `pnpm tsx scripts/backup-storage.ts --source=staging`
 * **Manifest File**: `artifacts/backups/storage/manifest.json` (Gitignored)
 * **Total Objects Downloaded**: 46 objects across `listing-originals` and `listing-derivatives`
-* **Total Media Bytes**: 2,136,819 bytes (~2.1 MB)
+* **Total Media Bytes**: 0.17 MB (177,381 bytes)
 * **Point 9B Retained Media Verification**:
   * **Original (`original.jpg`)**:
     * Path: `listing-originals/ac521430-db02-4441-931f-d39a8f0ffb02/3fc849f5-9211-49cd-b1b4-74053300f0ec/original.jpg`
@@ -98,80 +124,66 @@ A complete media object backup was generated by querying Supabase Storage API di
 
 ---
 
-## 5. Database and Storage Consistency Snapshot
+## 7. Isolated Local Database Restore Execution (Option B)
 
-* Database `listing_media` rows captured: 1 (Point 9B media record `3fc849f5-9211-49cd-b1b4-74053300f0ec`).
-* Listing media references:
-  * Original image path in storage: **Matched 100%**.
-  * Derivative paths in storage: **Matched 100%**.
-* Zero orphan media records; zero missing media files for active listings.
-* **Consistency Limitation Note**: The database logical export and storage download operations were executed sequentially (~23 seconds total window), not as a distributed atomic two-phase commit. In high-concurrency environments, a point-in-time snapshot mechanism (e.g. WAL archiving or transaction log coordination) is required for mathematical atomicity.
+Restoration was executed into a **completely isolated, disposable local in-process PostgreSQL engine** (`@electric-sql/pglite` 0.5.8), ensuring zero interaction with `FairSwapTest`.
 
----
-
-## 6. Isolated Database Restore Execution & Validation
-
-Restoration was executed into an isolated, disposable schema: `fairswap_restore_test` on `FairSwapTest`.
-
-* **Execution Duration**: **355.61 seconds**
-* **Pre-Restore Check**: SHA-256 checksum of `fairswap_backup.json` recomputed and validated against manifest.
-* **Table Verification**:
-  * All 19 application tables restored from cloned DDL.
-  * Generated columns (`search_vector` generated ALWAYS) appropriately omitted from insert payloads.
-  * 19 / 19 tables matched exact manifest row counts.
-* **Referential Integrity & Zero-Orphan Invariants**:
-  * User Accounts vs Auth Users: **0 orphan accounts (100% integrity)**
-  * Listings vs Sellers: **0 orphan listings (100% integrity)**
-  * Listing Media vs Listings: **0 orphan media (100% integrity)**
-  * Messages vs Conversations: **0 orphan messages (100% integrity)**
-* **Point 9B Specific Asset Verification**:
-  * Listing `ac521430-db02-4441-931f-d39a8f0ffb02` verified in restored schema: `title = 'Bike'`, `status = 'active'`, `seller_id` intact.
-* **Teardown**: Schema `fairswap_restore_test` dropped cleanly in `finally` block.
+* **Execution Duration**: **2.38 seconds**
+* **Schema Reconstruction from Clean Migrations**:
+  * Clean repository migration chain (Migrations 1 to 19) applied sequentially.
+  * Verified **41 `app_security` functions** reconstructed from source.
+  * Verified **32 RLS security policies** reconstructed from source.
+  * Verified **79 performance & reliability indexes** reconstructed from source.
+* **Data Restore & Verification**:
+  * Triggers temporarily disabled during row insertion to prevent duplicate operational event triggers.
+  * 19 / 19 tables matched exact backup manifest row counts.
+  * Zero orphan listings, zero orphan media, zero orphan messages.
+  * Restored Point 9B Mountain Bike listing: `title = 'Bike'`, `status = 'active'`.
+* **Teardown**: Local disposable database engine closed and torn down cleanly.
 
 ---
 
-## 7. Isolated Storage Restore Execution & Byte Verification
+## 8. Storage Restore Execution & Byte-Hash Verification
 
-Restoration was executed into isolated, disposable recovery buckets: `recovery-test-originals` and `recovery-test-derivatives`.
-
-* **Execution Duration**: **59.62 seconds**
-* **Bucket Isolation**: Created as private buckets with no public read policies; active production buckets were never touched.
-* **Upload**: All 46 backed-up media objects uploaded into recovery buckets.
-* **Re-download & SHA-256 Recomputation**: All 46 objects re-downloaded from recovery buckets and SHA-256 hashes computed on the byte streams.
+* **Destination**: Disposable recovery buckets `recovery-test-originals` and `recovery-test-derivatives` on Supabase Storage.
+* **Execution Duration**: **63.07 seconds**
 * **Hash Equality**: **100% (46/46) SHA-256 byte-for-byte exact matches**.
-* **Point 9B Media Bytes**:
+* **Point 9B Retained Media**:
   * `original.jpg`: Hash match (`d66ac114...`)
   * `large.webp`: Hash match (`a15c9b75...`)
   * `medium.webp`: Hash match (`a15c9b75...`)
   * `thumb.webp`: Hash match (`b3e40d21...`)
-* **Teardown**: Disposable recovery buckets purged and deleted cleanly in `finally` block.
+* **Teardown**: Disposable recovery buckets emptied and deleted cleanly via `purgeBucket` helper.
 
 ---
 
-## 8. Failure-Injection Verification Results
+## 9. Failure-Injection Verification Results
 
-Automated regression suite `tests/reliability/recovery-failure-injection.test.ts` verified that the tooling fails closed under safe simulated fault conditions:
+Automated regression suite `tests/reliability/recovery-failure-injection.test.ts` verified that all failure scenarios fail closed:
 
 | Scenario | Injected Condition | Expected Tooling Behavior | Result |
 |---|---|---|---|
-| **A** | Corrupted database backup hash | Aborts before restoration; throws integrity error. | **PASS** |
-| **B** | Missing database backup file | Aborts before restoration; reports missing file. | **PASS** |
+| **A** | Corrupted database backup hash | Aborts before restore; throws integrity error. | **PASS** |
+| **B** | Missing database backup file | Aborts before restore; reports missing file. | **PASS** |
 | **C** | Corrupted storage object bytes | Detects SHA-256 mismatch; halts verification. | **PASS** |
-| **D** | Missing storage object on disk | Aborts verification; reports missing asset. | **PASS** |
-| **E** | Illegal restore target (`production`) | Aborts immediately with `CRITICAL ERROR`. | **PASS** |
+| **D** | Missing storage object on disk | Aborts before restore; reports missing asset. | **PASS** |
+| **E** | Forbidden restore target (`production`/`staging`) | Aborts immediately with `CRITICAL SAFETY ERROR`. | **PASS** |
 | **E2**| Unrecognized restore target (`random_env`)| Aborts immediately; requires explicit target. | **PASS** |
+| **E3**| Forbidden backup source (`production`) | Aborts immediately with `CRITICAL ERROR`. | **PASS** |
 | **F** | Remote URL supplied for local restore | Fails closed with safety violation exception. | **PASS** |
 | **G** | Invalid maintenance credentials | Fails closed; rejects unauthorized connection. | **PASS** |
 
 ---
 
-## 9. Cleanup & Post-Verification State Verification
+## 10. Post-Verification Cleanup & Baseline Attestation
 
-Following the recovery drill, the live environment was inspected:
-* Disposable schema `fairswap_restore_test`: **Does NOT exist (Cleanly dropped)**.
-* Disposable buckets `recovery-test-originals`, `recovery-test-derivatives`: **Do NOT exist (Cleanly deleted)**.
-* Staging Baseline Entities on `FairSwapTest`:
+Following completion:
+* `FairSwapTest` contains **NO restore tables, schemas, or DDL** (restore was 100% local).
+* Schema `fairswap_restore_test`: **Does NOT exist**.
+* Disposable buckets `recovery-test-originals`, `recovery-test-derivatives`: **Do NOT exist**.
+* Active storage buckets on `FairSwapTest`: Only `["listing-originals","listing-derivatives"]`.
+* Retained baseline assets on `FairSwapTest`:
   * Active listing `ac521430-db02-4441-931f-d39a8f0ffb02`: **Intact**
   * Listing media `3fc849f5-9211-49cd-b1b4-74053300f0ec`: **Intact**
-  * Administrator MFA Verified Factors Count: **Exactly 1**
-  * Production / Main Branch: **Untouched**
+  * Administrator MFA Verified Factors: **Exactly 1**
+* Production / Main Branch: **100% Untouched**.

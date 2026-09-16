@@ -4,9 +4,10 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-const SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
-const SERVICE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwcHB4bG5ienF5bnZocGV1YXZkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTMyMzQxNywiZXhwIjoyMTA0ODk5NDE3fQ.V1IHV-8SvzKqqYyQ6fn1UMYyzsaGPO2ho7KQiRObm2U";
+// Load local environment variables safely
+if (process.loadEnvFile && fs.existsSync(path.resolve(process.cwd(), ".env.local"))) {
+  process.loadEnvFile(path.resolve(process.cwd(), ".env.local"));
+}
 
 interface StorageManifestEntry {
   bucket: string;
@@ -23,9 +24,7 @@ async function listAllFiles(supabase: any, bucket: string, prefix = ""): Promise
 
   for (const item of items) {
     const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
-    // In Supabase storage, folders have id = null or metadata = null
     if (!item.id || item.metadata === null) {
-      // Subdirectory
       const subFiles = await listAllFiles(supabase, bucket, fullPath);
       files.push(...subFiles);
     } else {
@@ -37,20 +36,50 @@ async function listAllFiles(supabase: any, bucket: string, prefix = ""): Promise
 
 async function main() {
   const args = process.argv.slice(2);
-  const targetArg = args.find((a) => a.startsWith("--target="));
-  const target = targetArg ? targetArg.split("=")[1] : "";
+  const sourceArg = args.find((a) => a.startsWith("--source=")) || args.find((a) => a.startsWith("--target="));
+  const source = sourceArg ? sourceArg.split("=")[1] : "";
 
-  if (target === "production") {
-    console.error("CRITICAL ERROR: --target=production is forbidden during Point 16 operations.");
+  if (source === "production") {
+    console.error("CRITICAL ERROR: --source=production is strictly forbidden.");
     process.exit(1);
   }
 
-  if (target !== "staging" && target !== "local") {
-    console.error("CRITICAL ERROR: Explicit target required. Use --target=staging or --target=local. Aborting.");
+  if (source !== "staging" && source !== "local") {
+    console.error("CRITICAL ERROR: Explicit source required. Use --source=staging or --source=local. Aborting.");
     process.exit(1);
   }
 
-  console.log(`=== FairSwap Disaster Recovery: Storage Backup [Target: ${target}] ===`);
+  let supabaseUrl = "";
+  let serviceKey = "";
+
+  if (source === "staging") {
+    supabaseUrl =
+      process.env.STAGING_SUPABASE_URL ||
+      (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("wpppxlnbzqynvhpeuavd")
+        ? process.env.NEXT_PUBLIC_SUPABASE_URL
+        : "https://wpppxlnbzqynvhpeuavd.supabase.co");
+    serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "";
+
+    if (!supabaseUrl || !serviceKey) {
+      console.error("CRITICAL ERROR: Staging Supabase URL and SUPABASE_SERVICE_ROLE_KEY required.");
+      process.exit(1);
+    }
+
+    if (!supabaseUrl.includes("wpppxlnbzqynvhpeuavd")) {
+      console.error(`CRITICAL SAFETY ERROR: Staging URL mismatch. Expected 'wpppxlnbzqynvhpeuavd', got '${supabaseUrl}'`);
+      process.exit(1);
+    }
+  } else if (source === "local") {
+    supabaseUrl = process.env.LOCAL_SUPABASE_URL || "http://127.0.0.1:54321";
+    serviceKey = process.env.LOCAL_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+    if (supabaseUrl.includes("supabase.co")) {
+      console.error("CRITICAL SAFETY ERROR: Remote Supabase URL provided for local storage source.");
+      process.exit(1);
+    }
+  }
+
+  console.log(`=== FairSwap Disaster Recovery: Storage Backup [Source: ${source}] ===`);
 
   const backupDir = path.resolve(process.cwd(), "artifacts", "backups", "storage");
   const manifestFile = path.join(backupDir, "manifest.json");
@@ -59,7 +88,7 @@ async function main() {
     fs.mkdirSync(backupDir, { recursive: true });
   }
 
-  const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+  const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
@@ -89,35 +118,38 @@ async function main() {
       fs.writeFileSync(localDest, buffer);
 
       const hash = crypto.createHash("sha256").update(buffer).digest("hex");
+      const relativeLocalPath = path.join(bucket, ...file.split("/"));
+
       manifestEntries.push({
         bucket,
         name: file,
         sizeBytes: buffer.length,
         sha256: hash,
-        localPath: path.relative(backupDir, localDest).replace(/\\/g, "/"),
+        localPath: relativeLocalPath,
       });
 
       totalDownloaded++;
-      if (totalDownloaded % 10 === 0 || totalDownloaded === files.length) {
-        console.log(`  Downloaded ${totalDownloaded} objects...`);
+      if (totalDownloaded % 15 === 0) {
+        console.log(`  Downloaded and hashed ${totalDownloaded} objects...`);
       }
     }
   }
 
   const manifest = {
-    targetEnvironment: target,
-    projectRef: "wpppxlnbzqynvhpeuavd",
+    sourceEnvironment: source === "staging" ? "FairSwapTest" : "local",
+    projectRef: source === "staging" ? "wpppxlnbzqynvhpeuavd" : "local",
     timestamp: new Date().toISOString(),
     totalObjects: manifestEntries.length,
-    buckets,
+    totalBytes: manifestEntries.reduce((acc, curr) => acc + curr.sizeBytes, 0),
     objects: manifestEntries,
   };
 
-  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2), "utf-8");
+  fs.writeFileSync(manifestFile, JSON.stringify(manifest, null, 2), "utf8");
 
-  console.log(`\n=== Storage Backup Completed Successfully ===`);
-  console.log(`Total Objects: ${manifestEntries.length}`);
-  console.log(`Manifest File: ${manifestFile}`);
+  console.log("\n=== Storage Backup Completed Successfully ===");
+  console.log(`Total Objects: ${manifest.totalObjects}`);
+  console.log(`Total Bytes: ${(manifest.totalBytes / (1024 * 1024)).toFixed(2)} MB`);
+  console.log(`Manifest: ${manifestFile}`);
 }
 
 main().catch((err) => {

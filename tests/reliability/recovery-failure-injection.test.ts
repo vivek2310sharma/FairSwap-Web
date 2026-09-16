@@ -97,22 +97,31 @@ describe("Point 16 Recovery & Restore Failure Injection Matrix", () => {
   });
 
   // E. Wrong Restore Target
-  it("E. aborts immediately if target is forbidden (e.g. production)", () => {
+  it("E. aborts immediately if restore target is forbidden (e.g. production or staging)", () => {
     expect(() => {
-      execSync("npx tsx scripts/verify-restore.ts --target=production", {
+      execSync("npx tsx scripts/verify-restore.ts --restore-target=production", {
         encoding: "utf8",
         stdio: ["pipe", "pipe", "pipe"],
       });
-    }).toThrow(/CRITICAL ERROR: Explicit target required/);
+    }).toThrow(/CRITICAL SAFETY ERROR: Restore target 'production' is strictly forbidden/);
   });
 
-  it("E. aborts immediately if no target or illegal target is specified", () => {
+  it("E. aborts immediately if no restore target or illegal target is specified", () => {
     expect(() => {
-      execSync("npx tsx scripts/verify-restore.ts --target=random_env", {
+      execSync("npx tsx scripts/verify-restore.ts --restore-target=random_env", {
         encoding: "utf8",
         stdio: ["pipe", "pipe", "pipe"],
       });
-    }).toThrow(/CRITICAL ERROR: Explicit target required/);
+    }).toThrow(/CRITICAL ERROR: Explicit restore target required/);
+  });
+
+  it("E3. aborts immediately if backup source is production", () => {
+    expect(() => {
+      execSync("npx tsx scripts/backup-database.ts --source=production", {
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+    }).toThrow(/CRITICAL ERROR: --source=production is strictly forbidden/);
   });
 
   // F. Remote Restore URL supplied where local-only restore is required

@@ -30,24 +30,26 @@ During the isolated Point 16 Disaster Recovery drill conducted on FairSwapTest (
 
 ## 2. Backup Architecture & Explicit Target Model
 
-To eliminate environmental ambiguity, all backup and verification tooling requires an **explicit source target**:
-* `--target=staging` (targets staging environment `FairSwapTest`)
-* `--target=local` (targets local isolated Docker development stack)
-* `--target=production` is **strictly forbidden and blocked by safety guards** during automated recovery drills.
+To eliminate environmental ambiguity, backup and verification tooling uses decoupled, explicit concepts:
+* **Backup Creation**: `--source=staging` or `--source=local`
+  * `--source=staging` connects read-only to `FairSwapTest`.
+  * `--source=local` connects to the local development environment.
+  * `--source=production` is **strictly forbidden and blocked by safety guards**.
+* **Database Restore Verification**: `--restore-target=local`
+  * The database restore drill executes exclusively against a clean, isolated local in-process PostgreSQL database.
+  * Restoration into `FairSwapTest`, `production`, or any linked remote database is strictly prohibited.
 
-Both database and storage tools fail closed if target parameters are omitted, ambiguous, or if database inventories and storage endpoints do not point to the same intended environment.
-
-### A. Database Backup
-* **Command**: `pnpm tsx scripts/backup-database.ts --target=staging`
+### A. Database Backup (Option B Architecture)
+* **Command**: `pnpm tsx scripts/backup-database.ts --source=staging`
 * **Mechanism**: Direct read-only table export across all 19 application tables via linked Supabase CLI session.
 * **Output Location**: `artifacts/backups/database/fairswap_backup.json`
 * **Manifest**: `artifacts/backups/database/backup_manifest.json`
-  * Captures: UTC timestamp, source environment (`FairSwapTest`), project ref (`wpppxlnbzqynvhpeuavd`), Git commit SHA, byte size, SHA-256 hash, schema names (`public`, `app_security`), migration version, and per-table record counts.
+  * Captures: UTC timestamp, source environment (`FairSwapTest`), project ref (`wpppxlnbzqynvhpeuavd`), Git commit SHA, byte size, SHA-256 hash, captured schemas (`dataSchemasCaptured = ["public"]`), reconstruction source (`repository migrations`), migration version, and per-table record counts.
 * **Integrity Validation**: Automated SHA-256 verification immediately following export.
 
 ### B. Storage (Media Byte) Backup
-* **Command**: `pnpm tsx scripts/backup-storage.ts --target=staging`
-* **Mechanism**: Direct recursive object enumeration via Supabase Storage API for active buckets `listing-originals` and `listing-derivatives`.
+* **Command**: `pnpm tsx scripts/backup-storage.ts --source=staging`
+* **Mechanism**: Direct recursive object enumeration via Supabase Storage API for active buckets `listing-originals` and `listing-derivatives` using server environment credentials (`SUPABASE_SERVICE_ROLE_KEY`).
 * **Output Location**: `artifacts/backups/storage/<bucket-name>/<object-path>`
 * **Manifest**: `artifacts/backups/storage/manifest.json`
   * Captures: Object path, byte size, SHA-256 hash, local path, and bucket name for every retained asset.
@@ -59,10 +61,11 @@ Both database and storage tools fail closed if target parameters are omitted, am
 
 To prevent accidental data loss or corruption, FairSwap enforces strict automated safeguards:
 
-1. **Target Database / Schema Isolation Guard**:
-   * Verification scripts **MUST NEVER** target `postgres` or any live application schema for restoration.
-   * Target restore destination must be **EXACTLY**: schema `fairswap_restore_test` (or disposable database `fairswap_restore_test` on local engine).
-   * Script aborts immediately if connected to an unauthorized database or illegal target.
+1. **Target Database Local Isolation Guard**:
+   * Verification scripts **MUST NEVER** target `postgres`, `FairSwapTest`, or any live application database for restoration.
+   * Target restore destination must be **EXACTLY**: `--restore-target=local`.
+   * The database restore executes inside an isolated local database engine (`@electric-sql/pglite`) and applies the complete repository migration chain (Migrations 1 to 19).
+   * Script aborts immediately if connected to an unauthorized remote database or illegal target.
 2. **Storage Recovery Isolation Guard**:
    * Restore bytes **MUST NEVER** be written into active buckets `listing-originals` or `listing-derivatives`.
    * Restoration is performed exclusively into temporary disposable test buckets:
@@ -80,28 +83,30 @@ To prevent accidental data loss or corruption, FairSwap enforces strict automate
 To execute an end-to-end disaster recovery verification drill:
 
 ```bash
-# 1. Generate explicit database backup
-pnpm tsx scripts/backup-database.ts --target=staging
+# 1. Generate explicit database application-data backup
+pnpm tsx scripts/backup-database.ts --source=staging
 
 # 2. Generate explicit storage media backup
-pnpm tsx scripts/backup-storage.ts --target=staging
+pnpm tsx scripts/backup-storage.ts --source=staging
 
-# 3. Execute isolated disaster recovery verification
-pnpm tsx scripts/verify-restore.ts --target=staging
+# 3. Execute isolated local disaster recovery verification
+pnpm tsx scripts/verify-restore.ts --restore-target=local
 ```
 
 ### Verification Checklist Performed by `verify-restore.ts`
 * [x] Verifies SHA-256 checksum of `fairswap_backup.json` against `backup_manifest.json`.
-* [x] Provisions isolated schema `fairswap_restore_test`.
-* [x] Restores table schemas and records across all 19 application tables.
-* [x] Compares row counts between manifest snapshot and restored tables.
+* [x] Initializes isolated local in-process PostgreSQL database.
+* [x] Reconstructs full schema by sequentially applying all 19 repository migrations.
+* [x] Validates reconstructed `app_security` functions, RLS policies, and performance indexes.
+* [x] Restores application data rows from backup into reconstructed public tables.
+* [x] Compares row counts between manifest snapshot and restored tables across all 19 tables.
 * [x] Validates referential integrity and zero-orphan invariants (users, listings, media, messages).
 * [x] Verifies Point 9B Mountain Bike listing title, active status, and seller ID.
 * [x] Provisions private disposable buckets `recovery-test-originals` and `recovery-test-derivatives`.
 * [x] Uploads backed up media bytes into disposable recovery buckets.
 * [x] Downloads all restored objects and verifies **100% SHA-256 hash equality**.
 * [x] Validates Point 9B media assets byte-for-byte (original, large, medium, thumb).
-* [x] Purges and drops disposable recovery buckets and restore schema.
+* [x] Purges and drops disposable recovery buckets and tears down local database.
 
 ---
 
