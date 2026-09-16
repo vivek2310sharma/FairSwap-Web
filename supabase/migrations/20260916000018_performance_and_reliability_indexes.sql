@@ -26,7 +26,3 @@ ON public.privacy_requests (status, requested_at DESC);
 -- Accelerates rolling 30-day window quota lookups
 CREATE INDEX IF NOT EXISTS idx_privacy_requests_user_quota
 ON public.privacy_requests (user_id, requested_at DESC);
-
--- 6. Public Table RLS Grant Correction
--- Allows anon role to evaluate public table policies (e.g. categories, cities) that check staff status
-GRANT EXECUTE ON FUNCTION app_security.is_active_staff_aal2(public.staff_role_enum) TO anon;

@@ -10,11 +10,9 @@ export async function createClient() {
     "sbp_local_anon_key_for_testing";
 
   let correlationId: string | undefined;
-  let authHeader: string | undefined;
   try {
     const requestHeaders = await headers();
     correlationId = requestHeaders.get("x-request-id") || undefined;
-    authHeader = requestHeaders.get("authorization") || undefined;
   } catch {
     // Calling outside request context (e.g. build time or unit tests)
   }
@@ -23,7 +21,6 @@ export async function createClient() {
     global: {
       headers: {
         ...(correlationId ? { "x-request-id": correlationId } : {}),
-        ...(authHeader ? { Authorization: authHeader } : {}),
       },
     },
     cookies: {
