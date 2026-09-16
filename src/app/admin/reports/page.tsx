@@ -43,7 +43,6 @@ export default async function AdminReportsPage({
       reason,
       details,
       status,
-      action_taken,
       created_at,
       resolved_at
     `)

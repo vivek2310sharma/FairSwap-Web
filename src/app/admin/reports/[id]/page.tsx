@@ -68,21 +68,27 @@ export default async function AdminReportDetailPage({
       reason,
       details,
       status,
-      action_taken,
       resolution_notes,
-      resolved_by,
+      resolved_by_staff_id,
       resolved_at,
-      created_at,
-      resolver:profiles!reports_resolved_by_fkey (
-        id,
-        display_name
-      )
+      created_at
     `)
     .eq("id", reportId)
     .single();
 
   if (error || !report) {
     notFound();
+  }
+
+  // Fetch resolver profile separately if resolved
+  let resolverProfile: { display_name: string } | null = null;
+  if (report.resolved_by_staff_id) {
+    const { data: prof } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", report.resolved_by_staff_id)
+      .maybeSingle();
+    resolverProfile = prof;
   }
 
   // If target_type is 'message', fetch bounded evidence via privileged case-scoped RPC
@@ -301,9 +307,9 @@ export default async function AdminReportDetailPage({
               <p>
                 Resolved at: {new Date(report.resolved_at).toLocaleString()}
               </p>
-              {report.resolver && (
+              {resolverProfile && (
                 <p>
-                  Staff Member: {Array.isArray(report.resolver) ? (report.resolver[0] as { display_name?: string })?.display_name : (report.resolver as { display_name?: string }).display_name}
+                  Staff Member: {resolverProfile.display_name}
                 </p>
               )}
             </div>
