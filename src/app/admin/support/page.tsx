@@ -44,11 +44,7 @@ export default async function AdminSupportPage({
       status,
       priority,
       created_at,
-      updated_at,
-      user:profiles!support_tickets_user_id_fkey (
-        id,
-        display_name
-      )
+      updated_at
     `)
     .order("updated_at", { ascending: false });
 
@@ -57,6 +53,19 @@ export default async function AdminSupportPage({
   }
 
   const { data: tickets } = await query;
+
+  // Fetch profiles for users in tickets
+  const userIds = Array.from(new Set((tickets || []).map((t) => t.user_id)));
+  const profilesMap: Record<string, { display_name: string }> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", userIds);
+    (profiles || []).forEach((p) => {
+      profilesMap[p.id] = p;
+    });
+  }
 
   const getStatusBadge = (st: string) => {
     switch (st) {
@@ -181,7 +190,7 @@ export default async function AdminSupportPage({
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {tickets.map((t) => {
-                const userObj = Array.isArray(t.user) ? t.user[0] : t.user;
+                const userObj = profilesMap[t.user_id];
                 return (
                   <tr key={t.id} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-6 py-4 font-mono text-xs font-bold text-emerald-700">

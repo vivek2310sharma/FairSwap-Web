@@ -47,12 +47,7 @@ export default async function AdminSupportDetailPage({
       priority,
       assigned_to,
       created_at,
-      updated_at,
-      user:profiles!support_tickets_user_id_fkey (
-        id,
-        display_name,
-        account_status
-      )
+      updated_at
     `)
     .eq("id", ticketId)
     .single();
@@ -60,6 +55,13 @@ export default async function AdminSupportDetailPage({
   if (error || !ticket) {
     notFound();
   }
+
+  // Fetch ticket submitter profile
+  const { data: userObj } = await supabase
+    .from("profiles")
+    .select("id, display_name, account_status")
+    .eq("id", ticket.user_id)
+    .maybeSingle();
 
   // Fetch all messages (staff can see internal notes!)
   const { data: messages } = await supabase
@@ -79,8 +81,6 @@ export default async function AdminSupportDetailPage({
     `)
     .eq("ticket_id", ticketId)
     .order("created_at", { ascending: true });
-
-  const userObj = Array.isArray(ticket.user) ? ticket.user[0] : ticket.user;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
