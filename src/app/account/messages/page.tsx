@@ -46,7 +46,8 @@ export default async function MessagesPage({
       )
     `)
     .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-    .order("last_message_at", { ascending: false });
+    .order("last_message_at", { ascending: false })
+    .limit(50);
 
   const rawConvs = convData || [];
 

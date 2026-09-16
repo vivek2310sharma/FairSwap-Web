@@ -46,7 +46,8 @@ export default async function AdminSupportPage({
       created_at,
       updated_at
     `)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(100);
 
   if (status && status !== "all") {
     query = query.eq("status", status);

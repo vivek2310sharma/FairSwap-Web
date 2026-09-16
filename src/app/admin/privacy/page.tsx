@@ -45,7 +45,8 @@ export default async function AdminPrivacyPage({
       resolved_at,
       resolution_notes
     `)
-    .order("requested_at", { ascending: false });
+    .order("requested_at", { ascending: false })
+    .limit(100);
 
   if (status && status !== "all") {
     query = query.eq("status", status);

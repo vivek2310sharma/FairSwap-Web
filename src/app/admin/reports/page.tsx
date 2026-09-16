@@ -46,7 +46,8 @@ export default async function AdminReportsPage({
       created_at,
       resolved_at
     `)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (status && status !== "all") {
     query = query.eq("status", status);
