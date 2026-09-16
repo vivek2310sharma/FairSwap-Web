@@ -48,7 +48,6 @@ export default async function AdminSupportDetailPage({
       assigned_to,
       created_at,
       updated_at,
-      resolved_at,
       user:profiles!support_tickets_user_id_fkey (
         id,
         display_name,

@@ -40,8 +40,7 @@ export default async function SupportTicketPage({
       status,
       priority,
       created_at,
-      updated_at,
-      resolved_at
+      updated_at
     `)
     .eq("id", ticketId)
     .single();
