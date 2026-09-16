@@ -98,12 +98,23 @@ Rerunning `npx supabase migration list --linked` confirmed all 19 migrations are
 
 ---
 
-## 6. Storage Backup Evidence (FairSwapTest Image Bytes)
+## 6. Storage Backup Evidence & Inventory Reconciliation
 
-* **Tool Command**: `pnpm tsx scripts/backup-storage.ts --source=staging`
+Prior to reconciliation, 46 active objects existed in Supabase Storage. All 46 objects were inspected and classified:
+* **Category A (Point 9B Protected Media)**: 4 objects (`original.jpg`, `large.webp`, `medium.webp`, `thumb.webp`).
+* **Category B (Other Legitimately Retained Media)**: 0 objects.
+* **Category C (Orphaned Test Residue)**: 42 objects from historical pre-closure test runs (no matching listing or media rows in database).
+* **Category D (Unknown)**: 0 objects.
+
+All 42 Category C orphan objects were safely purged using supported Supabase Storage APIs without SQL table mutations or trigger tampering.
+
+### Final Reconciled Storage Inventory:
+* **Tool Command**: `npx tsx scripts/backup-storage.ts --source=staging`
 * **Manifest File**: `artifacts/backups/storage/manifest.json` (Gitignored)
-* **Total Objects Downloaded**: 46 objects across `listing-originals` and `listing-derivatives`
-* **Total Media Bytes**: 0.17 MB (177,381 bytes)
+* **Total Objects**: 4 objects (1 original, 3 derivatives)
+* **Total Media Bytes**: 0.17 MB (175,381 bytes)
+* **Database-Referenced Media Count**: 4 (100% matched)
+* **Orphan Object Count**: 0
 * **Point 9B Retained Media Verification**:
   * **Original (`original.jpg`)**:
     * Path: `listing-originals/ac521430-db02-4441-931f-d39a8f0ffb02/3fc849f5-9211-49cd-b1b4-74053300f0ec/original.jpg`
@@ -128,7 +139,7 @@ Rerunning `npx supabase migration list --linked` confirmed all 19 migrations are
 
 Restoration was executed into a **completely isolated, disposable local in-process PostgreSQL engine** (`@electric-sql/pglite` 0.5.8), ensuring zero interaction with `FairSwapTest`.
 
-* **Execution Duration**: **2.38 seconds**
+* **Execution Duration**: **2.30 seconds**
 * **Schema Reconstruction from Clean Migrations**:
   * Clean repository migration chain (Migrations 1 to 19) applied sequentially.
   * Verified **41 `app_security` functions** reconstructed from source.
@@ -146,14 +157,14 @@ Restoration was executed into a **completely isolated, disposable local in-proce
 ## 8. Storage Restore Execution & Byte-Hash Verification
 
 * **Destination**: Disposable recovery buckets `recovery-test-originals` and `recovery-test-derivatives` on Supabase Storage.
-* **Execution Duration**: **63.07 seconds**
-* **Hash Equality**: **100% (46/46) SHA-256 byte-for-byte exact matches**.
+* **Execution Duration**: **10.39 seconds**
+* **Hash Equality**: **100% (4/4) SHA-256 byte-for-byte exact matches**.
 * **Point 9B Retained Media**:
   * `original.jpg`: Hash match (`d66ac114...`)
   * `large.webp`: Hash match (`a15c9b75...`)
   * `medium.webp`: Hash match (`a15c9b75...`)
   * `thumb.webp`: Hash match (`b3e40d21...`)
-* **Teardown**: Disposable recovery buckets emptied and deleted cleanly via `purgeBucket` helper.
+* **Teardown**: Disposable recovery buckets emptied and deleted cleanly via recursive `purgeBucket` helper.
 
 ---
 

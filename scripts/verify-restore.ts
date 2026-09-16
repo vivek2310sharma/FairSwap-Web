@@ -288,10 +288,11 @@ async function verifyStorageRestore() {
     (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("wpppxlnbzqynvhpeuavd")
       ? process.env.NEXT_PUBLIC_SUPABASE_URL
       : "https://wpppxlnbzqynvhpeuavd.supabase.co");
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "";
+  // Prefer modern SUPABASE_SECRET_KEY before legacy fallback
+  const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
   if (!supabaseUrl || !serviceKey) {
-    throw new Error("Staging Supabase URL and SUPABASE_SERVICE_ROLE_KEY environment variables required for storage restore.");
+    throw new Error("Staging Supabase URL and SUPABASE_SECRET_KEY environment variables required for storage restore.");
   }
 
   const supabase = createClient(supabaseUrl, serviceKey, {
@@ -300,9 +301,23 @@ async function verifyStorageRestore() {
 
   async function purgeBucket(bucketName: string) {
     try {
-      const { data: files } = await supabase.storage.from(bucketName).list("", { limit: 100 });
-      if (files && files.length > 0) {
-        await supabase.storage.from(bucketName).remove(files.map((f: any) => f.name));
+      async function listAll(prefix = ""): Promise<string[]> {
+        const res: string[] = [];
+        const { data: items } = await supabase.storage.from(bucketName).list(prefix, { limit: 100 });
+        if (!items) return res;
+        for (const item of items) {
+          const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+          if (!item.id || item.metadata === null) {
+            res.push(...await listAll(fullPath));
+          } else {
+            res.push(fullPath);
+          }
+        }
+        return res;
+      }
+      const files = await listAll();
+      if (files.length > 0) {
+        await supabase.storage.from(bucketName).remove(files);
       }
       await supabase.storage.emptyBucket(bucketName);
       await new Promise((r) => setTimeout(r, 500));

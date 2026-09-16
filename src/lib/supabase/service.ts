@@ -2,32 +2,48 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
 /**
- * Creates an elevated Supabase client using the service role key.
+ * Creates an elevated Supabase client using a privileged server secret.
  * 
- * TODO: Legacy JWT service_role compatibility is temporary and must migrate
- * to the modern Supabase secret-key path (SUPABASE_SECRET_KEY) before legacy
- * key retirement, once the selected SDK/Storage path supports modern-key behavior correctly.
+ * In accordance with Point 16 security closure:
+ * - Strictly server-only.
+ * - Prefers modern SUPABASE_SECRET_KEY (sb_secret_...).
+ * - Retains SUPABASE_SERVICE_ROLE_KEY only as temporary backward/local compatibility.
+ * - Accepts modern secret keys without enforcing legacy JWT structure.
+ * - Enforces persistSession: false, autoRefreshToken: false, detectSessionInUrl: false.
  */
 export function createServiceRoleClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required for service-role operations");
+  if (typeof window !== "undefined" && !process.env.VITEST) {
+    throw new Error("createServiceRoleClient must only be called on the server.");
   }
 
-  // Require a JWT-compatible 3-segment structure (header.payload.signature)
-  // Never print or inspect the key or segment values.
-  const segments = serviceRoleKey.split(".");
-  if (segments.length !== 3 || !segments[0] || !segments[1] || !segments[2]) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured with a compatible server credential.");
+  const supabaseUrl =
+    process.env.STAGING_SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "http://127.0.0.1:54321";
+
+  const secretKey =
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!secretKey) {
+    throw new Error("SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY is required for privileged server operations");
   }
 
-  return createClient<Database>(supabaseUrl, serviceRoleKey, {
+  // Accept modern sb_secret_... API keys or legacy/local JWT-compatible 3-segment structure
+  // Never print or expose the secret value.
+  const isModernSecret = secretKey.startsWith("sb_secret_");
+  const segments = secretKey.split(".");
+  const isJwt = segments.length === 3 && Boolean(segments[0]) && Boolean(segments[1]) && Boolean(segments[2]);
+
+  if (!isModernSecret && !isJwt) {
+    throw new Error("Privileged server secret key is not configured with a compatible credential format.");
+  }
+
+  return createClient<Database>(supabaseUrl, secretKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+      detectSessionInUrl: false,
     },
   });
 }
-

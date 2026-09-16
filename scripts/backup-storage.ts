@@ -58,10 +58,11 @@ async function main() {
       (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("wpppxlnbzqynvhpeuavd")
         ? process.env.NEXT_PUBLIC_SUPABASE_URL
         : "https://wpppxlnbzqynvhpeuavd.supabase.co");
-    serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "";
+    // Prefer modern SUPABASE_SECRET_KEY before legacy fallback
+    serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
     if (!supabaseUrl || !serviceKey) {
-      console.error("CRITICAL ERROR: Staging Supabase URL and SUPABASE_SERVICE_ROLE_KEY required.");
+      console.error("CRITICAL ERROR: Staging Supabase URL and SUPABASE_SECRET_KEY required.");
       process.exit(1);
     }
 
@@ -71,10 +72,15 @@ async function main() {
     }
   } else if (source === "local") {
     supabaseUrl = process.env.LOCAL_SUPABASE_URL || "http://127.0.0.1:54321";
-    serviceKey = process.env.LOCAL_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+    // Never fall back to a staging secret for local source
+    serviceKey = process.env.LOCAL_SERVICE_ROLE_KEY || "sbp_local_service_role_key_for_testing";
 
     if (supabaseUrl.includes("supabase.co")) {
       console.error("CRITICAL SAFETY ERROR: Remote Supabase URL provided for local storage source.");
+      process.exit(1);
+    }
+    if (process.env.SUPABASE_SECRET_KEY && serviceKey === process.env.SUPABASE_SECRET_KEY) {
+      console.error("CRITICAL SAFETY ERROR: Staging SUPABASE_SECRET_KEY supplied for local source.");
       process.exit(1);
     }
   }
