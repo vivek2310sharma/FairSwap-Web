@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { sanitizeRedirectPath } from "@/lib/security/redirect";
 
 const SignUpSchema = z.object({
   email: z.string().email("Please provide a valid email address."),
@@ -91,7 +92,8 @@ export async function signInAction(
   }
 
   const { email, password } = parseResult.data;
-  const next = (formData.get("next") as string) || "/account";
+  const rawNext = formData.get("next") as string | null;
+  const next = sanitizeRedirectPath(rawNext, "/account");
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({

@@ -3,15 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { type EmailOtpType } from "@supabase/supabase-js";
 import { resolveCorrelationId, sanitizeUpstreamRequestId } from "@/lib/logger/correlation";
 import { logger } from "@/lib/logger";
-
-function isValidRedirect(url: string | null): boolean {
-  if (!url) return false;
-  // Must be relative path, not protocol-relative (//) and no schemes
-  if (!url.startsWith("/") || url.startsWith("//") || url.includes(":")) {
-    return false;
-  }
-  return true;
-}
+import { sanitizeRedirectPath } from "@/lib/security/redirect";
 
 export async function GET(request: NextRequest) {
   const incomingId = request.headers.get("x-request-id");
@@ -21,7 +13,7 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const nextParam = searchParams.get("next");
-  const next = isValidRedirect(nextParam) ? nextParam! : "/account";
+  const next = sanitizeRedirectPath(nextParam, "/account");
 
   logger.info("auth.callback_received", {
     request_id: requestId,

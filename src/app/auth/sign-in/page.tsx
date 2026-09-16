@@ -4,10 +4,11 @@ import { Suspense, useActionState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signInAction, type AuthActionResult } from "../actions";
+import { sanitizeRedirectPath } from "@/lib/security/redirect";
 
 function SignInForm() {
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") || "/account";
+  const next = sanitizeRedirectPath(searchParams.get("next"), "/account");
   const errorParam = searchParams.get("error");
   const messageParam = searchParams.get("message");
 
