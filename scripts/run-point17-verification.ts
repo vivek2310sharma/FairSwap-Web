@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { chromium, type Page } from "@playwright/test";
 import fs from "fs";
 import path from "path";
@@ -6,6 +6,7 @@ import crypto from "crypto";
 
 const BASE_URL = "http://localhost:3001";
 const EVIDENCE_DIR = path.resolve(process.cwd(), "artifacts", "evidence", "point17");
+const VENDOR_AXE_PATH = path.resolve(process.cwd(), "scripts", "vendor", "axe.min.js");
 
 if (!fs.existsSync(EVIDENCE_DIR)) {
   fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
@@ -39,24 +40,32 @@ const report: TestReport = {
   contentLifecycleFindings: {},
 };
 
+const failures: string[] = [];
+
 function setupMonitoring(page: Page, label: string) {
   page.on("console", (msg) => {
     const text = msg.text();
     const type = msg.type();
     if (type === "error" && !text.includes("Failed to load resource") && !text.includes("favicon")) {
-      report.consoleErrors.push(`[${label}] [${type}] ${text}`);
+      const entry = `[${label}] [${type}] ${text}`;
+      report.consoleErrors.push(entry);
+      failures.push(`Console error: ${entry}`);
     }
   });
 
   page.on("pageerror", (err) => {
-    report.consoleErrors.push(`[${label}] [PAGE_ERROR] ${err.message}`);
+    const entry = `[${label}] [PAGE_ERROR] ${err.message}`;
+    report.consoleErrors.push(entry);
+    failures.push(`Unhandled page exception: ${entry}`);
   });
 
   page.on("response", (res) => {
     const status = res.status();
     const url = res.url();
     if (status >= 400 && !url.includes("favicon") && !url.includes("non-existent") && !url.includes("00000000-0000")) {
-      report.networkErrors.push(`[${label}] HTTP ${status} for ${url}`);
+      const entry = `[${label}] HTTP ${status} for ${url}`;
+      report.networkErrors.push(entry);
+      failures.push(`Unexpected network error: ${entry}`);
     }
   });
 }
@@ -64,20 +73,21 @@ function setupMonitoring(page: Page, label: string) {
 // Injects axe-core script and runs accessibility audit
 async function runAxeScan(page: Page, pageName: string) {
   try {
-    // Inject axe-core from CDN if not already present
-    await page.evaluate(async () => {
-      if ((window as any).axe) return;
-      return new Promise<void>((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js";
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error("Failed to load axe-core from CDN"));
-        document.head.appendChild(script);
-      });
-    });
+    const isAxePresent = await page.evaluate(() => typeof (window as any).axe !== "undefined");
+    if (!isAxePresent) {
+      if (fs.existsSync(VENDOR_AXE_PATH)) {
+        await page.addScriptTag({ path: VENDOR_AXE_PATH });
+      } else {
+        await page.addScriptTag({ url: "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.10.2/axe.min.js" });
+      }
+    }
+
+    const loaded = await page.evaluate(() => typeof (window as any).axe !== "undefined");
+    if (!loaded) {
+      throw new Error(`axe-core failed to load or define window.axe on ${pageName}`);
+    }
 
     const results = await page.evaluate(async () => {
-      if (!(window as any).axe) return null;
       return await (window as any).axe.run(document, {
         runOnly: {
           type: "tag",
@@ -86,26 +96,38 @@ async function runAxeScan(page: Page, pageName: string) {
       });
     });
 
-    if (results && results.violations) {
-      report.axeResults.push({
-        page: pageName,
-        violationsCount: results.violations.length,
-        violations: results.violations.map((v: any) => ({
-          id: v.id,
-          impact: v.impact || "unknown",
-          description: v.description,
-          help: v.help,
-          count: v.nodes?.length || 0,
-          nodes: v.nodes?.map((n: any) => ({
-            target: n.target,
-            html: n.html,
-            summary: n.failureSummary,
-          })),
+    if (!results || !results.violations) {
+      throw new Error(`axe-core returned invalid results on ${pageName}`);
+    }
+
+    const violations = results.violations;
+    report.axeResults.push({
+      page: pageName,
+      violationsCount: violations.length,
+      violations: violations.map((v: any) => ({
+        id: v.id,
+        impact: v.impact || "unknown",
+        description: v.description,
+        help: v.help,
+        count: v.nodes?.length || 0,
+        nodes: v.nodes?.map((n: any) => ({
+          target: n.target,
+          html: n.html,
+          summary: n.failureSummary,
         })),
-      });
+      })),
+    });
+
+    if (violations.length > 0) {
+      for (const v of violations) {
+        failures.push(`Axe WCAG violation on ${pageName}: [${v.id}] ${v.help} (Impact: ${v.impact}, Count: ${v.nodes?.length || 1})`);
+      }
     }
   } catch (err: any) {
-    console.log(`[Axe] Notice: axe scan on ${pageName} skipped: ${err.message}`);
+    const errMsg = `Accessibility scan failed/skipped on ${pageName}: ${err.message}`;
+    failures.push(errMsg);
+    console.error(`[Axe] FAIL: ${errMsg}`);
+    throw err;
   }
 }
 
@@ -114,6 +136,15 @@ async function captureEvidence(page: Page, filename: string) {
   await page.screenshot({ path: targetPath, fullPage: true });
   report.screenshots.push(filename);
   console.log(`Saved screenshot: ${filename}`);
+}
+
+async function checkOverflow(page: Page, viewportLabel: string): Promise<boolean> {
+  const hasOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  console.log(`${viewportLabel} horizontal overflow detected:`, hasOverflow);
+  if (hasOverflow) {
+    failures.push(`Horizontal page overflow detected on ${viewportLabel}`);
+  }
+  return hasOverflow;
 }
 
 async function runVerification() {
@@ -135,23 +166,29 @@ async function runVerification() {
 
     // 1. Homepage & Navigation
     await desktopPage.goto(`${BASE_URL}/`, { waitUntil: "networkidle" });
+    await checkOverflow(desktopPage, "Desktop 1440");
     await captureEvidence(desktopPage, "01_desktop_home.png");
     report.pagesScanned.push("Desktop Homepage");
     await runAxeScan(desktopPage, "Desktop Homepage");
 
     // Verify Header navigation elements
     const brandLink = desktopPage.locator('a[aria-label*="FairSwap home" i], a:has-text("FairSwap")').first();
-    const navSearch = desktopPage.locator('input[placeholder*="search" i], input[type="search"]').first();
-    console.log("Desktop brand link visible:", await brandLink.isVisible());
+    const brandVisible = await brandLink.isVisible();
+    console.log("Desktop brand link visible:", brandVisible);
+    if (!brandVisible) {
+      failures.push("Desktop header brand link is not visible");
+    }
 
     // 2. Search & Discovery
     await desktopPage.goto(`${BASE_URL}/search`, { waitUntil: "networkidle" });
+    await checkOverflow(desktopPage, "Desktop Search 1440");
     await captureEvidence(desktopPage, "02_desktop_search_discovery.png");
     report.pagesScanned.push("Desktop Search");
     await runAxeScan(desktopPage, "Desktop Search");
 
     // 3. Point 9B Active Bike Listing Detail
     await desktopPage.goto(`${BASE_URL}/listings/bike-1694c2`, { waitUntil: "networkidle" });
+    await checkOverflow(desktopPage, "Desktop Listing Detail 1440");
     await captureEvidence(desktopPage, "03_desktop_listing_detail.png");
     report.pagesScanned.push("Desktop Listing Detail (Bike)");
     await runAxeScan(desktopPage, "Desktop Listing Detail (Bike)");
@@ -179,8 +216,7 @@ async function runVerification() {
 
     // Check horizontal page overflow on Mobile 390
     await mobilePage.goto(`${BASE_URL}/`, { waitUntil: "networkidle" });
-    const hasOverflow390 = await mobilePage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-    console.log("Mobile 390 horizontal overflow detected:", hasOverflow390);
+    await checkOverflow(mobilePage, "Mobile 390");
     await captureEvidence(mobilePage, "05_mobile_390_home.png");
 
     // Mobile menu drawer
@@ -198,6 +234,7 @@ async function runVerification() {
 
     // Mobile listing detail
     await mobilePage.goto(`${BASE_URL}/listings/bike-1694c2`, { waitUntil: "networkidle" });
+    await checkOverflow(mobilePage, "Mobile 390 Listing Detail");
     await captureEvidence(mobilePage, "07_mobile_390_listing_detail.png");
 
     // -------------------------------------------------------------
@@ -214,11 +251,11 @@ async function runVerification() {
     setupMonitoring(smallMobilePage, "SmallMobile-320");
 
     await smallMobilePage.goto(`${BASE_URL}/`, { waitUntil: "networkidle" });
-    const hasOverflow320 = await smallMobilePage.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-    console.log("Small Mobile 320 horizontal overflow detected:", hasOverflow320);
+    await checkOverflow(smallMobilePage, "Small Mobile 320");
     await captureEvidence(smallMobilePage, "08_mobile_320_home.png");
 
     await smallMobilePage.goto(`${BASE_URL}/listings/bike-1694c2`, { waitUntil: "networkidle" });
+    await checkOverflow(smallMobilePage, "Small Mobile 320 Listing Detail");
     await captureEvidence(smallMobilePage, "09_mobile_320_listing_detail.png");
 
     // -------------------------------------------------------------
@@ -234,8 +271,10 @@ async function runVerification() {
     setupMonitoring(tabletPage, "Tablet-768");
 
     await tabletPage.goto(`${BASE_URL}/`, { waitUntil: "networkidle" });
+    await checkOverflow(tabletPage, "Tablet 768");
     await captureEvidence(tabletPage, "10_tablet_768_home.png");
     await tabletPage.goto(`${BASE_URL}/listings/bike-1694c2`, { waitUntil: "networkidle" });
+    await checkOverflow(tabletPage, "Tablet 768 Listing Detail");
     await captureEvidence(tabletPage, "11_tablet_768_listing_detail.png");
 
     // -------------------------------------------------------------
@@ -273,15 +312,21 @@ async function runVerification() {
     // PROTECTED ACCOUNT & BUYER/SELLER FLOWS
     // -------------------------------------------------------------
     console.log("\n--- Testing Protected Account Routes & Redirects ---");
-    // Unauthenticated access to /account redirects to /auth/sign-in
     await authPage.goto(`${BASE_URL}/account`, { waitUntil: "networkidle" });
+    const isAccountRedirected = authPage.url().includes("/auth/sign-in");
     console.log("Unauthenticated /account URL:", authPage.url());
-    report.keyboardResults["unauthenticated_redirect_to_signin"] = authPage.url().includes("/auth/sign-in");
+    report.keyboardResults["unauthenticated_redirect_to_signin"] = isAccountRedirected;
+    if (!isAccountRedirected) {
+      failures.push(`Unauthenticated /account failed to redirect to /auth/sign-in (got ${authPage.url()})`);
+    }
 
-    // Unauthenticated access to /admin redirects to /auth/sign-in
     await authPage.goto(`${BASE_URL}/admin`, { waitUntil: "networkidle" });
+    const isAdminRedirected = authPage.url().includes("/auth/sign-in");
     console.log("Unauthenticated /admin URL:", authPage.url());
-    report.keyboardResults["unauthenticated_admin_redirect"] = authPage.url().includes("/auth/sign-in");
+    report.keyboardResults["unauthenticated_admin_redirect"] = isAdminRedirected;
+    if (!isAdminRedirected) {
+      failures.push(`Unauthenticated /admin failed to redirect to /auth/sign-in (got ${authPage.url()})`);
+    }
 
     // -------------------------------------------------------------
     // NOT-FOUND (404) & UNAVAILABLE CONTENT
@@ -335,9 +380,15 @@ async function runVerification() {
         boxShadow: style.boxShadow,
       };
     });
-    console.log("First Tab focused element style:", focusedElement);
-    report.keyboardResults["first_tab_has_visible_focus"] =
-      focusedElement !== null && (focusedElement.outlineStyle === "solid" || focusedElement.boxShadow.includes("rgb"));
+    const hasVisibleFocus = Boolean(
+      focusedElement !== null &&
+        (focusedElement.outlineStyle === "solid" ||
+          (typeof focusedElement.boxShadow === "string" && focusedElement.boxShadow.includes("rgb")))
+    );
+    report.keyboardResults["first_tab_has_visible_focus"] = hasVisibleFocus;
+    if (!hasVisibleFocus) {
+      failures.push("First Tab navigation did not produce a visible focus ring");
+    }
 
     await captureEvidence(keyPage, "34_keyboard_focus_ring.png");
 
@@ -351,6 +402,16 @@ async function runVerification() {
     report.contentLifecycleFindings["sitemap_includes_active_bike"] = sitemapText.includes("bike-1694c2");
     report.contentLifecycleFindings["sitemap_excludes_private_data"] = !sitemapText.includes("password") && !sitemapText.includes("secret");
 
+    if (sitemapRes.status !== 200) {
+      failures.push(`Sitemap returned HTTP ${sitemapRes.status}, expected 200`);
+    }
+    if (!sitemapText.includes("bike-1694c2")) {
+      failures.push("Sitemap does not include active listing slug 'bike-1694c2'");
+    }
+    if (sitemapText.includes("password") || sitemapText.includes("secret")) {
+      failures.push("Sitemap contains private/sensitive keywords");
+    }
+
     // Detail page metadata inspection
     await keyPage.goto(`${BASE_URL}/listings/bike-1694c2`);
     const metaTitle = await keyPage.evaluate(() => document.title);
@@ -360,6 +421,16 @@ async function runVerification() {
     report.contentLifecycleFindings["listing_meta_description"] = metaDescription;
     report.contentLifecycleFindings["listing_og_image"] = ogImage;
 
+    if (!metaTitle || !metaTitle.includes("Bike")) {
+      failures.push(`Listing detail meta title invalid or missing: "${metaTitle}"`);
+    }
+    if (!metaDescription) {
+      failures.push("Listing detail meta description is missing");
+    }
+    if (!ogImage) {
+      failures.push("Listing detail og:image tag is missing");
+    }
+
   } finally {
     await browser.close();
   }
@@ -368,6 +439,31 @@ async function runVerification() {
   const reportFile = path.join(EVIDENCE_DIR, "point17_verification_report.json");
   fs.writeFileSync(reportFile, JSON.stringify(report, null, 2));
   console.log(`\nPoint 17 Verification Complete! Report saved to ${reportFile}`);
+
+  // Summary and Exit Evaluation
+  console.log("\n==================================================");
+  console.log("POINT 17 VERIFICATION SUMMARY & ASSERTIONS");
+  console.log("==================================================");
+  console.log(`Viewports tested: ${report.viewportsTested.length}`);
+  console.log(`Pages scanned for WCAG a11y: ${report.axeResults.length}`);
+  console.log(`Screenshots captured: ${report.screenshots.length}`);
+  console.log(`Console errors: ${report.consoleErrors.length}`);
+  console.log(`Network errors: ${report.networkErrors.length}`);
+  console.log(`Total Failures Recorded: ${failures.length}`);
+
+  if (failures.length > 0) {
+    console.error("\n[FAIL] POINT 17 VERIFICATION FAILED with the following issues:");
+    for (const fail of failures) {
+      console.error(`  - ❌ ${fail}`);
+    }
+    process.exit(1);
+  }
+
+  console.log("\n[PASS] All Point 17 verification checks passed successfully!");
+  process.exit(0);
 }
 
-runVerification().catch(console.error);
+runVerification().catch((err) => {
+  console.error("\n[FATAL] Uncaught verification exception:", err);
+  process.exit(1);
+});
