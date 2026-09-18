@@ -4,6 +4,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { MessageSquare, ArrowRight, Tag } from "lucide-react";
+import { formatMessageDate } from "@/lib/formatters";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -195,10 +196,7 @@ export default async function MessagesPage({
 
                       <div className="text-right shrink-0">
                         <span className="text-[11px] text-muted">
-                          {new Date(conv.last_message_at).toLocaleDateString("en-IN", {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {formatMessageDate(conv.last_message_at)}
                         </span>
                       </div>
                     </div>

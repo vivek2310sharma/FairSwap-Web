@@ -18,6 +18,7 @@ import {
   markNotificationReadAction,
   markAllNotificationsReadAction,
 } from "@/app/account/notifications/actions";
+import { formatNotificationDateTime } from "@/lib/formatters";
 
 interface NotificationListProps {
   initialNotifications: Notification[];
@@ -143,12 +144,7 @@ export function NotificationList({ initialNotifications }: NotificationListProps
                       {n.title}
                     </h4>
                     <span className="text-xs text-stone-400 shrink-0">
-                      {new Date(n.created_at).toLocaleString([], {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatNotificationDateTime(n.created_at)}
                     </span>
                   </div>
 
