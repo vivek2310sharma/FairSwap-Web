@@ -81,7 +81,12 @@ export default function SafetyPage() {
           <p className="mt-2 text-sm text-muted leading-relaxed">
             If you encounter suspicious listings, prohibited items, abusive communication, or fraudulent attempts,
             use the in-app <strong className="text-foreground">Report</strong> and <strong className="text-foreground">Block</strong>{" "}
-            features directly on the relevant listing, user profile, or chat message.
+            features directly on the relevant listing, user profile, or chat message. For full details on prohibited items
+            and community standards, review our{" "}
+            <Link href="/acceptable-use" className="font-medium text-brand-link underline hover:text-brand-hover">
+              Acceptable Use &amp; Prohibited Listings
+            </Link>{" "}
+            policy.
           </p>
           <p className="mt-2 text-sm text-muted leading-relaxed">
             For unresolved platform concerns or formal grievances, you may contact FairSwap&apos;s Grievance Officer.
