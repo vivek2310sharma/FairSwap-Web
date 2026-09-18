@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
+import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
 
 export type MessageActionResult = {
   error?: string;
@@ -10,6 +11,8 @@ export type MessageActionResult = {
   conversationId?: string;
   messageId?: string;
   message?: string;
+  requiresPolicyReview?: boolean;
+  redirectTo?: string;
 };
 
 export async function startConversationAction(
@@ -18,6 +21,15 @@ export async function startConversationAction(
   clientRequestId: string
 ): Promise<MessageActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, `/listings/${listingId}`);
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) {
@@ -65,6 +77,15 @@ export async function sendMessageAction(
   clientRequestId: string
 ): Promise<MessageActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, `/account/messages/${conversationId}`);
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
 
   const cleanContent = content.trim();
   if (!cleanContent) {
@@ -123,6 +144,15 @@ export async function blockUserAction(
   reason?: string
 ): Promise<MessageActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, "/account/messages");
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
 
   const { error } = await supabase.rpc("block_user", {
     blocked_user_id: blockedUserId,

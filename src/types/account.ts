@@ -45,3 +45,14 @@ export interface PrivacyRequest {
   resolved_by: string | null;
   resolution_notes: string | null;
 }
+
+export interface PolicyAcceptanceRecord {
+  id: string;
+  user_id: string;
+  terms_version: string;
+  privacy_policy_version: string;
+  acceptable_use_version: string;
+  minimum_age_confirmed: number;
+  accepted_at: string;
+}
+

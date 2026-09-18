@@ -2,19 +2,34 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
 
-export async function toggleFavouriteAction(listingId: string): Promise<{
+export interface FavouriteActionResult {
   success: boolean;
   isFavourited?: boolean;
   error?: string;
-}> {
+  requiresPolicyReview?: boolean;
+  redirectTo?: string;
+}
+
+export async function toggleFavouriteAction(listingId: string): Promise<FavouriteActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, `/listings/${listingId}`);
+  if (!guard.allowed) {
+    return {
+      success: false,
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   const {
     data: { user },
-    error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError || !user) {
+  if (!user) {
     return { success: false, error: "Please sign in to save favourites" };
   }
 

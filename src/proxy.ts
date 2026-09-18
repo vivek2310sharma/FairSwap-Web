@@ -86,6 +86,34 @@ export async function proxy(request: NextRequest) {
       redirectRes.headers.set("x-request-id", correlationId);
       return redirectRes;
     }
+
+    // Explicitly allow policy review page through to the Server Component
+    if (pathname !== "/account/policy-review") {
+      const { data: hasCurrentPolicy, error: policyError } = await supabase.rpc(
+        "has_current_policy_acceptance"
+      );
+
+      if (policyError) {
+        logger.error("compliance.proxy_policy_check_error", {
+          request_id: correlationId,
+          route: pathname,
+          error_code: policyError.code || "RPC_ERROR",
+        });
+      } else if (hasCurrentPolicy === false) {
+        logger.info("compliance.proxy_redirect_policy_review", {
+          request_id: correlationId,
+          route: pathname,
+        });
+        const reviewUrl = new URL("/account/policy-review", request.url);
+        const targetPath = request.nextUrl.search
+          ? `${pathname}${request.nextUrl.search}`
+          : pathname;
+        reviewUrl.searchParams.set("next", targetPath);
+        const redirectRes = NextResponse.redirect(reviewUrl);
+        redirectRes.headers.set("x-request-id", correlationId);
+        return redirectRes;
+      }
+    }
   }
 
   // 4. Route Guard: Protected Staff Paths (/admin/*)
@@ -98,6 +126,31 @@ export async function proxy(request: NextRequest) {
       const signInUrl = new URL("/auth/sign-in", request.url);
       signInUrl.searchParams.set("next", pathname);
       const redirectRes = NextResponse.redirect(signInUrl);
+      redirectRes.headers.set("x-request-id", correlationId);
+      return redirectRes;
+    }
+
+    const { data: hasCurrentPolicy, error: policyError } = await supabase.rpc(
+      "has_current_policy_acceptance"
+    );
+
+    if (policyError) {
+      logger.error("compliance.proxy_policy_check_error", {
+        request_id: correlationId,
+        route: pathname,
+        error_code: policyError.code || "RPC_ERROR",
+      });
+    } else if (hasCurrentPolicy === false) {
+      logger.info("compliance.proxy_redirect_policy_review", {
+        request_id: correlationId,
+        route: pathname,
+      });
+      const reviewUrl = new URL("/account/policy-review", request.url);
+      const targetPath = request.nextUrl.search
+        ? `${pathname}${request.nextUrl.search}`
+        : pathname;
+      reviewUrl.searchParams.set("next", targetPath);
+      const redirectRes = NextResponse.redirect(reviewUrl);
       redirectRes.headers.set("x-request-id", correlationId);
       return redirectRes;
     }
