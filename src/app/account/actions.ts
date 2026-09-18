@@ -107,6 +107,6 @@ export async function submitPrivacyRequestAction(
   return {
     success: true,
     message:
-      "Your privacy request has been recorded. Note that manual and automated fulfillment workflows are scheduled for Milestone 1.5.",
+      "Your privacy request has been recorded and will be processed according to platform policy. You can monitor the status in your request history.",
   };
 }

@@ -833,8 +833,11 @@ export type Database = {
       }
       user_accounts: {
         Row: {
+          acceptable_use_version: string | null
           account_status: Database["public"]["Enums"]["account_status_enum"]
+          age_confirmed_at: string | null
           created_at: string
+          minimum_age_confirmed: number | null
           notification_preferences: Json
           optional_contact_preferences: Json
           privacy_policy_version: string
@@ -844,8 +847,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          acceptable_use_version?: string | null
           account_status?: Database["public"]["Enums"]["account_status_enum"]
+          age_confirmed_at?: string | null
           created_at?: string
+          minimum_age_confirmed?: number | null
           notification_preferences?: Json
           optional_contact_preferences?: Json
           privacy_policy_version: string
@@ -855,8 +861,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          acceptable_use_version?: string | null
           account_status?: Database["public"]["Enums"]["account_status_enum"]
+          age_confirmed_at?: string | null
           created_at?: string
+          minimum_age_confirmed?: number | null
           notification_preferences?: Json
           optional_contact_preferences?: Json
           privacy_policy_version?: string

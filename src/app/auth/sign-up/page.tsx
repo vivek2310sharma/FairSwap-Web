@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { signUpAction, type AuthActionResult } from "../actions";
+import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
 
 export default function SignUpPage() {
   const [state, formAction, isPending] = useActionState<AuthActionResult | null, FormData>(
@@ -77,7 +78,7 @@ export default function SignUpPage() {
             />
           </div>
 
-          <div className="pt-2">
+          <div className="space-y-3 pt-2">
             <div className="flex items-start">
               <input
                 id="termsAccepted"
@@ -89,13 +90,30 @@ export default function SignUpPage() {
               <label htmlFor="termsAccepted" className="ml-2 block text-xs text-gray-700">
                 I accept the{" "}
                 <Link href="/terms" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
-                  Terms of Service (v2026-09-13-draft)
+                  Terms of Service (v{LEGAL_POLICY.termsVersion})
                 </Link>{" "}
-                and acknowledge the{" "}
+                and{" "}
+                <Link href="/acceptable-use" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
+                  Acceptable Use Policy (v{LEGAL_POLICY.acceptableUseVersion})
+                </Link>
+                , and acknowledge the{" "}
                 <Link href="/privacy" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
-                  Privacy Policy (v2026-09-13-draft)
+                  Privacy Policy (v{LEGAL_POLICY.privacyVersion})
                 </Link>
                 .
+              </label>
+            </div>
+
+            <div className="flex items-start">
+              <input
+                id="ageConfirmed"
+                name="ageConfirmed"
+                type="checkbox"
+                required
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
+              />
+              <label htmlFor="ageConfirmed" className="ml-2 block text-xs text-gray-700">
+                I confirm that I am at least {LEGAL_POLICY.minimumAge} years old.
               </label>
             </div>
           </div>

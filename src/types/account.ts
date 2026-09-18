@@ -23,6 +23,9 @@ export interface UserAccount {
   terms_accepted_at: string;
   terms_version: string;
   privacy_policy_version: string;
+  acceptable_use_version?: string | null;
+  age_confirmed_at?: string | null;
+  minimum_age_confirmed?: number | null;
   notification_preferences: {
     email_notifications?: boolean;
     [key: string]: unknown;
