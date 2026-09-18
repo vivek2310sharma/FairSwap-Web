@@ -63,6 +63,11 @@ export function Footer() {
                   Contact Guidance
                 </Link>
               </li>
+              <li>
+                <Link href="/grievance" className="hover:text-foreground">
+                  Grievance Redressal
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -89,10 +94,10 @@ export function Footer() {
         {/* Development notice and copyright */}
         <div className="mt-8 border-t border-border/60 pt-6 flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
           <p className="text-xs text-muted">
-            &copy; {currentYear} FairSwap. Development foundation.
+            &copy; {currentYear} FairSwap.
           </p>
           <p className="text-xs text-muted">
-            This is a development build. Not a live service.
+            Currently operating as a controlled production pilot.
           </p>
         </div>
       </div>

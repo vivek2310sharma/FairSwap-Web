@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import Link from "next/link";
 import { FileText, AlertCircle } from "lucide-react";
 
 export const metadata = {
@@ -54,6 +55,18 @@ export default function TermsPage() {
             <p>
               FairSwap makes no representations or warranties regarding the condition, safety, merchantability, or legality
               of items listed. Users engage in transactions at their own sole risk and discretion.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-foreground">4. Grievance Redressal</h2>
+            <p>
+              For grievances relating to accounts, content, privacy, safety, intellectual property, or platform use,
+              users may contact FairSwap&apos;s Grievance Officer. Details and submission guidance are available on our{" "}
+              <Link href="/grievance" className="font-medium text-brand-link underline hover:text-brand-hover">
+                Grievance Redressal
+              </Link>{" "}
+              page.
             </p>
           </section>
         </div>
