@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import Link from "next/link";
 import { ShieldCheck, AlertCircle } from "lucide-react";
 
 export const metadata = {
@@ -55,6 +56,18 @@ export default function PrivacyPage() {
             <p>
               Authenticated users can submit privacy requests (including data export and account deletion) directly from their
               account settings under <span className="font-semibold text-foreground">/account/privacy</span>.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-foreground">4. Privacy Inquiries &amp; Grievances</h2>
+            <p>
+              For grievances or formal inquiries relating to your personal data, data protection, or privacy rights,
+              you may contact FairSwap&apos;s Grievance Officer. Further details are published on our{" "}
+              <Link href="/grievance" className="font-medium text-brand-link underline hover:text-brand-hover">
+                Grievance Redressal
+              </Link>{" "}
+              page.
             </p>
           </section>
         </div>
