@@ -87,8 +87,14 @@ export async function proxy(request: NextRequest) {
       return redirectRes;
     }
 
-    // Explicitly allow policy review page through to the Server Component
-    if (pathname !== "/account/policy-review") {
+    // Explicitly allow policy review and safety/privacy exceptions through to Server Components
+    const isPolicyGateExempt =
+      pathname === "/account/policy-review" ||
+      pathname === "/account/privacy" ||
+      pathname === "/account/support" ||
+      pathname.startsWith("/account/support/");
+
+    if (!isPolicyGateExempt) {
       const { data: hasCurrentPolicy, error: policyError } = await supabase.rpc(
         "has_current_policy_acceptance"
       );

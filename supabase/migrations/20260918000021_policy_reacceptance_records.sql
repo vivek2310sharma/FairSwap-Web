@@ -438,20 +438,22 @@ BEGIN
     RAISE EXCEPTION 'MESSAGING_UNAVAILABLE: This conversation is closed due to listing moderation';
   END IF;
 
-  -- Check recipient status
-  IF v_recipient_id IS NOT NULL AND app_security.get_account_status(v_recipient_id) <> 'active' THEN
-    RAISE EXCEPTION 'MESSAGING_UNAVAILABLE: Recipient account is not available';
-  END IF;
-
   -- Check bidirectional block
   IF v_recipient_id IS NOT NULL AND app_security.is_blocked_bidirectional(v_caller_id, v_recipient_id) THEN
-    RAISE EXCEPTION 'MESSAGING_UNAVAILABLE: Unable to send message to this user';
+    RAISE EXCEPTION 'MESSAGING_UNAVAILABLE: Unable to send message to this recipient';
   END IF;
 
-  -- Idempotency check: see if client_request_id was already processed in this conversation
+  -- Check recipient account status
+  IF v_recipient_id IS NOT NULL AND app_security.get_account_status(v_recipient_id) NOT IN ('active', 'suspended') THEN
+    RAISE EXCEPTION 'MESSAGING_UNAVAILABLE: Counterparty account is no longer active';
+  END IF;
+
+  -- Check Idempotency: replay existing message if client_request_id matches
   SELECT * INTO v_existing_msg
   FROM public.messages
-  WHERE conversation_id = p_conversation_id AND client_request_id = p_client_request_id;
+  WHERE conversation_id = p_conversation_id
+    AND sender_id = v_caller_id
+    AND client_request_id = p_client_request_id;
 
   IF v_existing_msg IS NOT NULL THEN
     RETURN jsonb_build_object(
@@ -464,29 +466,35 @@ BEGIN
     );
   END IF;
 
-  -- Rate limit: max 30 messages per minute per user across all conversations
+  -- Acquire transaction-scoped advisory lock for message rate limit
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext('msg_quota_' || v_caller_id::text));
+
+  -- Check rolling quota: max 60 messages per rolling 1 hour
   SELECT count(*) INTO v_recent_msg_count
   FROM public.messages
-  WHERE sender_id = v_caller_id AND created_at > (pg_catalog.clock_timestamp() - interval '1 minute');
+  WHERE sender_id = v_caller_id
+    AND created_at > (pg_catalog.clock_timestamp() - interval '1 hour');
 
-  IF v_recent_msg_count >= 30 THEN
-    RAISE EXCEPTION 'RATE_LIMIT_EXCEEDED: Message rate limit reached. Please wait before sending more messages.';
+  IF v_recent_msg_count >= 60 THEN
+    RAISE EXCEPTION 'RATE_LIMIT_EXCEEDED: Message quota exceeded. Maximum 60 messages per hour';
   END IF;
 
   -- Insert message
   INSERT INTO public.messages (
     conversation_id,
     sender_id,
+    client_request_id,
     content,
-    client_request_id
+    created_at
   ) VALUES (
     p_conversation_id,
     v_caller_id,
+    p_client_request_id,
     v_clean_content,
-    p_client_request_id
+    pg_catalog.clock_timestamp()
   ) RETURNING * INTO v_new_msg;
 
-  -- Update conversation timestamp
+  -- Update conversation last_message_at
   UPDATE public.conversations
   SET last_message_at = v_new_msg.created_at,
       updated_at = v_new_msg.created_at
@@ -615,27 +623,34 @@ BEGIN
     );
   END IF;
 
-  -- Rate limit for new conversations: max 10 new conversations per hour per user
+  -- Rate limit on new conversations: max 10 per rolling 1 hour
   SELECT count(*) INTO v_recent_conv_count
   FROM public.conversations
-  WHERE buyer_id = v_caller_id AND created_at > (pg_catalog.clock_timestamp() - interval '1 hour');
+  WHERE buyer_id = v_caller_id
+    AND created_at > (pg_catalog.clock_timestamp() - interval '1 hour');
 
   IF v_recent_conv_count >= 10 THEN
-    RAISE EXCEPTION 'RATE_LIMIT_EXCEEDED: New conversation limit reached. Please wait before starting more conversations.';
+    RAISE EXCEPTION 'RATE_LIMIT_EXCEEDED: Maximum 10 new conversations per hour';
   END IF;
 
-  -- Create new conversation
+  -- Insert new conversation
   INSERT INTO public.conversations (
     listing_id,
     buyer_id,
-    seller_id
+    seller_id,
+    last_message_at,
+    created_at,
+    updated_at
   ) VALUES (
     p_listing_id,
     v_caller_id,
-    v_seller_id
+    v_seller_id,
+    pg_catalog.clock_timestamp(),
+    pg_catalog.clock_timestamp(),
+    pg_catalog.clock_timestamp()
   ) RETURNING * INTO v_new_conv;
 
-  -- Send the initial message
+  -- Send initial message
   v_msg_result := app_security.impl_send_message(
     v_new_conv.id,
     p_content,

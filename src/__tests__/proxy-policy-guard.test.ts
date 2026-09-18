@@ -127,6 +127,86 @@ describe("Proxy Policy Re-acceptance Route Guard", () => {
     }
   });
 
+  it("allows stale authenticated user to reach /account/privacy without redirect", async () => {
+    mockGetClaims.mockResolvedValue({
+      data: { claims: { sub: "pilot-user-id" } },
+      error: null,
+    });
+
+    const req = new NextRequest("http://localhost:3000/account/privacy");
+    const res = await proxy(req);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("allows stale authenticated user to reach /account/support without redirect", async () => {
+    mockGetClaims.mockResolvedValue({
+      data: { claims: { sub: "pilot-user-id" } },
+      error: null,
+    });
+
+    const req = new NextRequest("http://localhost:3000/account/support");
+    const res = await proxy(req);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("allows stale authenticated user to reach /account/support/<ticket-id> without redirect", async () => {
+    mockGetClaims.mockResolvedValue({
+      data: { claims: { sub: "pilot-user-id" } },
+      error: null,
+    });
+
+    const req = new NextRequest("http://localhost:3000/account/support/ticket-12345");
+    const res = await proxy(req);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("redirects stale authenticated user from /account/profile to /account/policy-review", async () => {
+    mockGetClaims.mockResolvedValue({
+      data: { claims: { sub: "pilot-user-id" } },
+      error: null,
+    });
+    mockRpc.mockResolvedValue({
+      data: false, // Stale policy acceptance
+      error: null,
+    });
+
+    const req = new NextRequest("http://localhost:3000/account/profile");
+    const res = await proxy(req);
+
+    expect(res.status).toBe(307);
+    const location = res.headers.get("location");
+    expect(location).toContain("/account/policy-review");
+    expect(location).toContain("next=%2Faccount%2Fprofile");
+  });
+
+  it("redirects stale authenticated user from /account/messages to /account/policy-review", async () => {
+    mockGetClaims.mockResolvedValue({
+      data: { claims: { sub: "pilot-user-id" } },
+      error: null,
+    });
+    mockRpc.mockResolvedValue({
+      data: false, // Stale policy acceptance
+      error: null,
+    });
+
+    const req = new NextRequest("http://localhost:3000/account/messages");
+    const res = await proxy(req);
+
+    expect(res.status).toBe(307);
+    const location = res.headers.get("location");
+    expect(location).toContain("/account/policy-review");
+    expect(location).toContain("next=%2Faccount%2Fmessages");
+  });
+
   it("handles RPC check error safely without creating a redirect loop", async () => {
     mockGetClaims.mockResolvedValue({
       data: { claims: { sub: "pilot-user-id" } },

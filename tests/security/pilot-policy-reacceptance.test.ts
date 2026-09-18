@@ -628,4 +628,104 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
     expect(exportData.policy_acceptances[0].terms_version).toBe(LEGAL_POLICY.termsVersion);
     expect(exportData.policy_acceptances[0].acceptable_use_version).toBe(LEGAL_POLICY.acceptableUseVersion);
   });
+
+  it("proves messaging security invariants: sender-scoped idempotency, 60/hour quota, and advisory lock", async () => {
+    // 1. Verify advisory lock is present in function source
+    const fnDef: any = await db.query(`
+      SELECT pg_get_functiondef(oid) as src
+      FROM pg_proc
+      WHERE proname = 'impl_send_message';
+    `);
+    expect(fnDef.rows[0].src).toContain("pg_advisory_xact_lock");
+    expect(fnDef.rows[0].src).toContain("msg_quota_");
+    expect(fnDef.rows[0].src).toContain("interval '1 hour'");
+    expect(fnDef.rows[0].src).toContain("v_recent_msg_count >= 60");
+    expect(fnDef.rows[0].src).toContain("sender_id = v_caller_id");
+
+    // Authenticate as re-accepted pilotUserId (buyer)
+    await db.exec(`
+      RESET ROLE;
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${pilotUserId}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+      SET ROLE authenticated;
+    `);
+
+    // Find conversation between pilotUserId and seller
+    const convRow: any = await db.query(`
+      SELECT id FROM public.conversations WHERE buyer_id = '${pilotUserId}' LIMIT 1;
+    `);
+    const convId = convRow.rows[0].id;
+
+    // Send a message with client_request_id = 'req-idempotency-test-01'
+    const msg1Res: any = await db.query(`
+      SELECT app_security.impl_send_message(
+        '${convId}',
+        'Hello from buyer',
+        'req-idempotency-test-01'
+      ) AS res;
+    `);
+    expect(msg1Res.rows[0].res.is_duplicate).toBe(false);
+    const msg1Id = msg1Res.rows[0].res.id;
+
+    // Buyer replaying the same client_request_id gets duplicate replay
+    const msg1Replay: any = await db.query(`
+      SELECT app_security.impl_send_message(
+        '${convId}',
+        'Hello from buyer again',
+        'req-idempotency-test-01'
+      ) AS res;
+    `);
+    expect(msg1Replay.rows[0].res.is_duplicate).toBe(true);
+    expect(msg1Replay.rows[0].res.id).toBe(msg1Id);
+
+    // Switch to seller (currentBetaUserId, who is current and the seller on activeListingId)
+    await db.exec(`
+      RESET ROLE;
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${currentBetaUserId}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+      SET ROLE authenticated;
+    `);
+
+    // Seller sends with the SAME client_request_id ('req-idempotency-test-01')
+    // Because idempotency is sender-scoped (AND sender_id = v_caller_id), it must NOT match buyer's message
+    const sellerMsgRes: any = await db.query(`
+      SELECT app_security.impl_send_message(
+        '${convId}',
+        'Hello from seller',
+        'req-idempotency-test-01'
+      ) AS res;
+    `);
+    expect(sellerMsgRes.rows[0].res.is_duplicate).toBe(false);
+    expect(sellerMsgRes.rows[0].res.id).not.toBe(msg1Id);
+    expect(sellerMsgRes.rows[0].res.sender_id).toBe(currentBetaUserId);
+
+    // Test 60/hour message quota enforcement:
+    // Insert 59 more messages directly for currentBetaUserId within the last hour (total 60)
+    await db.exec(`RESET ROLE;`);
+    for (let i = 0; i < 59; i++) {
+      await db.query(`
+        INSERT INTO public.messages (conversation_id, sender_id, client_request_id, content, created_at)
+        VALUES ('${convId}', '${currentBetaUserId}', 'dummy-req-${i}', 'Message ${i}', clock_timestamp());
+      `);
+    }
+
+    // Now currentBetaUserId has 60 messages in the rolling hour. Attempting to send the 61st message throws RATE_LIMIT_EXCEEDED
+    await db.exec(`
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${currentBetaUserId}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+      SET ROLE authenticated;
+    `);
+
+    await expect(
+      db.query(`
+        SELECT app_security.impl_send_message(
+          '${convId}',
+          'This message should exceed the quota',
+          'req-quota-exceeded-61'
+        );
+      `)
+    ).rejects.toThrow(/RATE_LIMIT_EXCEEDED.*60 messages per hour/);
+
+    await db.exec(`RESET ROLE;`);
+  });
 });
