@@ -25,6 +25,11 @@ async function main() {
 
   console.log("Checking for expired listings...");
 
+  const isDryRun = process.argv.includes("--dry-run");
+  if (isDryRun) {
+    console.log("[DRY RUN MODE ENABLED]");
+  }
+
   const nowIso = new Date().toISOString();
   const { data: expiredListings, error } = await supabase
     .from("listings")
@@ -46,15 +51,26 @@ async function main() {
 
   let expiredCount = 0;
   for (const listing of expiredListings) {
-    const { error: rpcError } = await supabase.rpc("expire_listing", {
+    if (isDryRun) {
+      console.log(`[DRY RUN] Would expire listing: ${listing.id} ("${listing.title}")`);
+      expiredCount++;
+      continue;
+    }
+
+    const { data: rpcData, error: rpcError } = await supabase.rpc("expire_listing", {
       listing_id: listing.id,
     });
 
     if (rpcError) {
       console.error(`Failed to expire listing ${listing.id} (${listing.title}):`, rpcError);
     } else {
-      console.log(`Successfully expired listing: ${listing.id} ("${listing.title}")`);
-      expiredCount++;
+      const res = rpcData as { success?: boolean; reason?: string } | null;
+      if (res && res.success === false) {
+        console.log(`Skipped listing ${listing.id} ("${listing.title}"): ${res.reason}`);
+      } else {
+        console.log(`Successfully expired listing: ${listing.id} ("${listing.title}")`);
+        expiredCount++;
+      }
     }
   }
 

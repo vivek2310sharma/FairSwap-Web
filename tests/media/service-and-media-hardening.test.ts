@@ -17,30 +17,34 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
   });
 
   describe("F. createServiceRoleClient Configuration Guard", () => {
-    it("rejects missing SUPABASE_SERVICE_ROLE_KEY", () => {
+    it("rejects missing server credentials when both keys are unset", () => {
+      delete process.env.SUPABASE_SECRET_KEY;
       delete process.env.SUPABASE_SERVICE_ROLE_KEY;
       expect(() => createServiceRoleClient()).toThrow(
-        "SUPABASE_SERVICE_ROLE_KEY is required for service-role operations"
+        "SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY is required"
       );
     });
 
-    it("rejects modern sb_secret_... key without leaking the secret", () => {
-      const secretKey = "sb_secret_super_secret_production_token_12345";
-      process.env.SUPABASE_SERVICE_ROLE_KEY = secretKey;
-      let caughtError: Error | null = null;
-      try {
-        createServiceRoleClient();
-      } catch (err) {
-        caughtError = err as Error;
-      }
-      expect(caughtError).not.toBeNull();
-      expect(caughtError!.message).toBe(
-        "SUPABASE_SERVICE_ROLE_KEY is not configured with a compatible server credential."
-      );
-      expect(caughtError!.message).not.toContain(secretKey);
+    it("accepts modern sb_secret_... key via SUPABASE_SECRET_KEY", () => {
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      process.env.SUPABASE_SECRET_KEY = "sb_secret_staging_valid_token_mock_1234567890";
+      expect(() => createServiceRoleClient()).not.toThrow();
     });
 
-    it("rejects non-3-segment strings without leaking the credential", () => {
+    it("accepts modern sb_secret_... key via legacy SUPABASE_SERVICE_ROLE_KEY fallback", () => {
+      delete process.env.SUPABASE_SECRET_KEY;
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_secret_legacy_fallback_token_mock_1234567890";
+      expect(() => createServiceRoleClient()).not.toThrow();
+    });
+
+    it("accepts a 3-segment JWT compatible key", () => {
+      delete process.env.SUPABASE_SECRET_KEY;
+      process.env.SUPABASE_SERVICE_ROLE_KEY = "header.payload.signature";
+      expect(() => createServiceRoleClient()).not.toThrow();
+    });
+
+    it("rejects non-secret, non-3-segment strings without leaking the credential", () => {
+      delete process.env.SUPABASE_SECRET_KEY;
       const malformed = "partOne.partTwo";
       process.env.SUPABASE_SERVICE_ROLE_KEY = malformed;
       let caughtError: Error | null = null;
@@ -51,14 +55,22 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
       }
       expect(caughtError).not.toBeNull();
       expect(caughtError!.message).toBe(
-        "SUPABASE_SERVICE_ROLE_KEY is not configured with a compatible server credential."
+        "Privileged server secret key is not configured with a compatible credential format."
       );
       expect(caughtError!.message).not.toContain(malformed);
     });
 
-    it("accepts a 3-segment JWT compatible key", () => {
-      process.env.SUPABASE_SERVICE_ROLE_KEY = "header.payload.signature";
-      expect(() => createServiceRoleClient()).not.toThrow();
+    it("enforces server-only boundary and rejects client-side execution", () => {
+      process.env.SUPABASE_SECRET_KEY = "sb_secret_staging_token";
+      const originalVitest = process.env.VITEST;
+      delete process.env.VITEST;
+      try {
+        expect(() => createServiceRoleClient()).toThrow(
+          "createServiceRoleClient must only be called on the server."
+        );
+      } finally {
+        process.env.VITEST = originalVitest;
+      }
     });
   });
 

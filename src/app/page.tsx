@@ -40,7 +40,7 @@ export default function HomePage() {
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
             Buy &amp; sell locally on{" "}
-            <span className="text-brand-600">FairSwap</span>
+            <span className="text-brand-link">FairSwap</span>
             <span className="text-muted">.in</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
@@ -126,7 +126,7 @@ export default function HomePage() {
             </h2>
             <Link
               href="/search"
-              className="text-xs font-semibold text-brand-600 hover:text-brand-500"
+              className="text-xs font-semibold text-brand-link hover:underline"
             >
               All Categories &rarr;
             </Link>
@@ -141,10 +141,10 @@ export default function HomePage() {
                 href={`/search?category=${cat.slug}`}
                 className="group rounded-lg border border-border p-6 text-center transition-all hover:border-brand-300 hover:shadow-xs"
               >
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 transition-transform group-hover:scale-110 dark:bg-brand-900">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-link transition-transform group-hover:scale-110 dark:bg-brand-900">
                   <cat.icon className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <h3 className="mt-3 text-base font-semibold text-foreground group-hover:text-brand-600">
+                <h3 className="mt-3 text-base font-semibold text-foreground group-hover:text-brand-link">
                   {cat.name}
                 </h3>
                 <p className="mt-1 text-sm text-muted">{cat.description}</p>

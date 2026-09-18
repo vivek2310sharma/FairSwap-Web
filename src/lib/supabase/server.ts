@@ -19,7 +19,9 @@ export async function createClient() {
 
   return createServerClient(supabaseUrl, supabaseKey, {
     global: {
-      headers: correlationId ? { "x-request-id": correlationId } : {},
+      headers: {
+        ...(correlationId ? { "x-request-id": correlationId } : {}),
+      },
     },
     cookies: {
       getAll() {

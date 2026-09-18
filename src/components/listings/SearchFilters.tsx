@@ -302,7 +302,7 @@ export function SearchFilters({
             <button
               type="button"
               onClick={handleReset}
-              className="text-xs font-medium text-brand-600 hover:text-brand-500"
+              className="text-xs font-medium text-brand-link hover:underline"
             >
               Reset
             </button>

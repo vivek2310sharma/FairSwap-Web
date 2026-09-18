@@ -67,10 +67,23 @@ export async function orchestrateAccountDeletion(requestId: string): Promise<Del
     if (userId) {
       // Phase 2: Storage Cleanup (Remove draft or private media attached to user's listings)
       try {
-        const { data: mediaRows } = await serviceClient
+        const { data: mediaRows, error: mediaError } = await serviceClient
           .from("listing_media")
           .select("original_storage_path, thumbnail_storage_path, medium_storage_path, large_storage_path")
           .eq("uploader_id", userId);
+
+        if (mediaError) {
+          logger.error("privacy.deletion_media_query_failed", {
+            operation: "orchestrateAccountDeletion",
+            error_code: mediaError.code || "DB_ERROR",
+            extra: { request_id: requestId, user_id: userId },
+          });
+          return {
+            success: false,
+            error: `Failed to query user media for cleanup: ${mediaError.message}`,
+            requestId,
+          };
+        }
 
         if (mediaRows && mediaRows.length > 0) {
           const originalPaths = mediaRows
@@ -81,18 +94,52 @@ export async function orchestrateAccountDeletion(requestId: string): Promise<Del
             .filter(Boolean) as string[];
 
           if (originalPaths.length > 0) {
-            await serviceClient.storage.from("listing-originals").remove(originalPaths);
+            const { error: origError } = await serviceClient.storage
+              .from("listing-originals")
+              .remove(originalPaths);
+            if (origError) {
+              logger.error("privacy.deletion_storage_orig_cleanup_failed", {
+                operation: "orchestrateAccountDeletion",
+                error_code: (origError as { message?: string; name?: string })?.name || "STORAGE_ERROR",
+                extra: { request_id: requestId, user_id: userId, error: origError.message },
+              });
+              return {
+                success: false,
+                error: `Storage cleanup failed for original media: ${origError.message}`,
+                requestId,
+              };
+            }
           }
+
           if (derivativePaths.length > 0) {
-            await serviceClient.storage.from("listing-derivatives").remove(derivativePaths);
+            const { error: derivError } = await serviceClient.storage
+              .from("listing-derivatives")
+              .remove(derivativePaths);
+            if (derivError) {
+              logger.error("privacy.deletion_storage_deriv_cleanup_failed", {
+                operation: "orchestrateAccountDeletion",
+                error_code: (derivError as { message?: string; name?: string })?.name || "STORAGE_ERROR",
+                extra: { request_id: requestId, user_id: userId, error: derivError.message },
+              });
+              return {
+                success: false,
+                error: `Storage cleanup failed for derivative media: ${derivError.message}`,
+                requestId,
+              };
+            }
           }
         }
-      } catch {
-        // Non-fatal: log warning and continue with identity removal
-        logger.warn("privacy.deletion_storage_cleanup_failed", {
+      } catch (storageErr) {
+        const errorMsg = (storageErr as Error)?.message || "Storage cleanup exception";
+        logger.error("privacy.deletion_storage_cleanup_failed", {
           operation: "orchestrateAccountDeletion",
-          extra: { request_id: requestId, user_id: userId },
+          extra: { request_id: requestId, user_id: userId, error: errorMsg },
         });
+        return {
+          success: false,
+          error: `Storage cleanup failed: ${errorMsg}`,
+          requestId,
+        };
       }
 
       // Phase 3: Supabase Auth Identity Deletion

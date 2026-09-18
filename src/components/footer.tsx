@@ -10,7 +10,7 @@ export function Footer() {
           {/* Brand & Mission */}
           <div>
             <p className="text-base font-bold text-foreground">
-              <span className="text-brand-600">Fair</span>Swap
+              <span className="text-brand-link">Fair</span>Swap
               <span className="text-muted">.in</span>
             </p>
             <p className="mt-2 text-xs text-muted leading-relaxed">

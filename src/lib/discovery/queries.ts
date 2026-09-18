@@ -169,17 +169,34 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
 
   // 1. If UUID, check directly by id
   if (isUuid) {
-    const { data: listingData } = await serviceClient
+    const { data: listingData, error: idError } = await serviceClient
       .from("listings")
       .select("id, slug")
       .eq("id", slugOrId)
       .maybeSingle();
 
+    if (idError) {
+      console.error("[getPublicListingBySlugOrId] Database error querying listing by id:", {
+        slugOrId,
+        code: idError.code,
+        message: idError.message,
+        details: idError.details,
+      });
+    }
+
     if (listingData) {
       // Check visibility
-      const { data: isVisible } = await serviceClient.rpc("is_listing_publicly_visible", {
+      const { data: isVisible, error: visError } = await serviceClient.rpc("is_listing_publicly_visible", {
         listing_id: listingData.id,
       });
+
+      if (visError) {
+        console.error("[getPublicListingBySlugOrId] RPC is_listing_publicly_visible error for id:", {
+          listingId: listingData.id,
+          code: visError.code,
+          message: visError.message,
+        });
+      }
 
       if (isVisible) {
         // Redirect to canonical slug URL
@@ -189,7 +206,7 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
   }
 
   // 2. Check by current slug
-  const { data: listing } = await serviceClient
+  const { data: listing, error: slugError } = await serviceClient
     .from("listings")
     .select(`
       id,
@@ -212,27 +229,61 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
     .eq("slug", slugOrId)
     .maybeSingle();
 
+  if (slugError) {
+    console.error("[getPublicListingBySlugOrId] Database error querying listing by slug:", {
+      slugOrId,
+      code: slugError.code,
+      message: slugError.message,
+      details: slugError.details,
+    });
+  }
+
   // 3. If not found by current slug, check listing_slug_history
   if (!listing) {
-    const { data: history } = await serviceClient
+    const { data: history, error: historyError } = await serviceClient
       .from("listing_slug_history")
       .select("listing_id")
       .eq("slug", slugOrId)
       .maybeSingle();
 
+    if (historyError) {
+      console.error("[getPublicListingBySlugOrId] Database error querying listing_slug_history:", {
+        slugOrId,
+        code: historyError.code,
+        message: historyError.message,
+      });
+    }
+
     if (history) {
       // Check visibility of this listing before redirecting!
-      const { data: isVisible } = await serviceClient.rpc("is_listing_publicly_visible", {
+      const { data: isVisible, error: historyVisError } = await serviceClient.rpc("is_listing_publicly_visible", {
         listing_id: history.listing_id,
       });
 
+      if (historyVisError) {
+        console.error("[getPublicListingBySlugOrId] RPC is_listing_publicly_visible error for history slug:", {
+          slugOrId,
+          listingId: history.listing_id,
+          code: historyVisError.code,
+          message: historyVisError.message,
+        });
+      }
+
       if (isVisible) {
         // Fetch new current slug
-        const { data: currentListing } = await serviceClient
+        const { data: currentListing, error: currentListingError } = await serviceClient
           .from("listings")
           .select("slug")
           .eq("id", history.listing_id)
           .single();
+
+        if (currentListingError) {
+          console.error("[getPublicListingBySlugOrId] Error fetching current slug for redirected listing:", {
+            listingId: history.listing_id,
+            code: currentListingError.code,
+            message: currentListingError.message,
+          });
+        }
 
         if (currentListing?.slug) {
           return { listing: null, redirectSlug: currentListing.slug };
@@ -247,9 +298,18 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
   }
 
   // 4. Listing found by slug: check public visibility
-  const { data: isVisible } = await serviceClient.rpc("is_listing_publicly_visible", {
+  const { data: isVisible, error: visRpcError } = await serviceClient.rpc("is_listing_publicly_visible", {
     listing_id: listing.id,
   });
+
+  if (visRpcError) {
+    console.error("[getPublicListingBySlugOrId] RPC is_listing_publicly_visible error:", {
+      listingId: listing.id,
+      slug: listing.slug,
+      code: visRpcError.code,
+      message: visRpcError.message,
+    });
+  }
 
   let isOwnerOrStaffPreview = false;
 
@@ -297,22 +357,38 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
     created_at: string;
   } | null = null;
   if (listing.seller_id) {
-    const { data } = await serviceClient
+    const { data, error: profileError } = await serviceClient
       .from("profiles")
       .select("id, display_name, avatar_url, bio, city, state, created_at")
       .eq("id", listing.seller_id)
       .single();
+
+    if (profileError) {
+      console.error("[getPublicListingBySlugOrId] Error querying seller profile:", {
+        sellerId: listing.seller_id,
+        code: profileError.code,
+        message: profileError.message,
+      });
+    }
     sellerProfile = data;
   }
 
   // Fetch media derivatives
-  const { data: mediaItems } = await serviceClient
+  const { data: mediaItems, error: mediaQueryError } = await serviceClient
     .from("listing_media")
     .select("id, thumbnail_storage_path, medium_storage_path, large_storage_path, width, height, display_order")
     .eq("listing_id", listing.id)
     .eq("processing_status", "ready")
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
+
+  if (mediaQueryError) {
+    console.error("[getPublicListingBySlugOrId] Error querying listing_media:", {
+      listingId: listing.id,
+      code: mediaQueryError.code,
+      message: mediaQueryError.message,
+    });
+  }
 
   const detail: PublicListingDetail = {
     id: listing.id,

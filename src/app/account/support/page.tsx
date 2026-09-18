@@ -67,6 +67,7 @@ export default async function SupportPage() {
             In Progress
           </span>
         );
+      case "awaiting_user":
       case "waiting_customer":
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-2.5 py-0.5 text-xs font-medium text-purple-400 border border-purple-500/20">

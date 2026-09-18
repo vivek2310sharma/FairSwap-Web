@@ -44,19 +44,29 @@ export default async function AdminSupportPage({
       status,
       priority,
       created_at,
-      updated_at,
-      user:profiles!support_tickets_user_id_fkey (
-        id,
-        display_name
-      )
+      updated_at
     `)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(100);
 
   if (status && status !== "all") {
     query = query.eq("status", status);
   }
 
   const { data: tickets } = await query;
+
+  // Fetch profiles for users in tickets
+  const userIds = Array.from(new Set((tickets || []).map((t) => t.user_id)));
+  const profilesMap: Record<string, { display_name: string }> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", userIds);
+    (profiles || []).forEach((p) => {
+      profilesMap[p.id] = p;
+    });
+  }
 
   const getStatusBadge = (st: string) => {
     switch (st) {
@@ -74,6 +84,7 @@ export default async function AdminSupportPage({
             In Progress
           </span>
         );
+      case "awaiting_user":
       case "waiting_customer":
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-semibold text-purple-800">
@@ -131,7 +142,7 @@ export default async function AdminSupportPage({
   const tabs = [
     { label: "Open", value: "open" },
     { label: "In Progress", value: "in_progress" },
-    { label: "Waiting User", value: "waiting_customer" },
+    { label: "Waiting User", value: "awaiting_user" },
     { label: "Resolved", value: "resolved" },
     { label: "All", value: "all" },
   ];
@@ -181,7 +192,7 @@ export default async function AdminSupportPage({
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
               {tickets.map((t) => {
-                const userObj = Array.isArray(t.user) ? t.user[0] : t.user;
+                const userObj = profilesMap[t.user_id];
                 return (
                   <tr key={t.id} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-6 py-4 font-mono text-xs font-bold text-emerald-700">

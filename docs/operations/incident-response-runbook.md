@@ -1,83 +1,205 @@
 # FairSwap — Incident Response Runbook (Milestone 1.6)
 
-This runbook outlines severity definitions, escalation procedures, containment protocols, and post-incident review workflows for operational and security incidents in FairSwap.
+This runbook defines severity classifications, escalation channels, emergency playbooks, containment procedures, and post-mortem protocols for operational and security incidents across FairSwap.
 
 ---
 
 ## 1. Incident Severity Classifications
 
-| Severity Level | Definition | Response Target | Examples |
-|---|---|---|---|
-| **Sev 1 — Critical** | Total platform outage, critical security vulnerability, unauthorized privileged access, or confirmed data leak. | Immediate (< 15 mins) | Database unavailable, AAL2 MFA bypassed, PostgREST RLS failure, active data exfiltration. |
-| **Sev 2 — Major** | Key feature unavailable or degraded; core user journey blocked for multiple users without immediate workaround. | < 1 hour | Listing creation failing, messaging system broken, media upload/processing stalled. |
-| **Sev 3 — Minor** | Non-critical defect, cosmetic issue, or isolated edge case with viable workaround. | Next business day | Minor styling glitch, non-blocking administrative filter bug, non-critical telemetry issue. |
+| Severity Level | Definition | Target Response | Target Resolution | Example Scenarios |
+|---|---|---|---|---|
+| **Sev 1 — Critical** | Total platform outage, unauthorized privileged access, active data exfiltration, or complete database/storage failure. | < 15 minutes | < 2 hours | Primary database unreachable, bypass of MFA/AAL2 controls, critical RLS bypass, mass data deletion. |
+| **Sev 2 — Major** | Core user journey blocked, major component degraded, or severe partial failure with no viable workaround. | < 30 minutes | < 4 hours | Listing creation/upload failing, chat messages failing to deliver, excessive 5xx errors (> 5%). |
+| **Sev 3 — Minor** | Non-critical component degraded, isolated edge-case bug, or minor operational defect with available workaround. | Next business day | < 48 hours | Non-blocking filter bug, localized UI styling anomaly, minor telemetry delivery delay. |
 
 ---
 
 ## 2. Emergency Incident Playbooks
 
-### Playbook A: Compromised Staff Account or Privileged Credential
-1. **Immediate Containment**:
-   * Revoke staff role immediately via SQL or administrator portal:
-     ```sql
-     DELETE FROM public.staff_roles WHERE user_id = '<COMPROMISED_USER_ID>';
-     ```
-   * Terminate active sessions and invalidate refresh tokens in GoTrue Auth:
-     ```sql
-     DELETE FROM auth.refresh_tokens WHERE user_id = '<COMPROMISED_USER_ID>';
-     ```
-   * Suspend user account to block all marketplace actions:
+### Playbook 1: Compromised Staff Account or Privileged Credential
+* **Detection**: Alert from security telemetry, anomalous audit log entries in `public.audit_logs`, or report from account holder.
+* **Containment Protocol**:
+  1. **Immediately Suspend Application Account**:
+     Update `public.user_accounts` through the supported administrative path:
      ```sql
      UPDATE public.user_accounts
      SET account_status = 'suspended'
      WHERE user_id = '<COMPROMISED_USER_ID>';
      ```
-2. **Forensic Audit**:
-   * Query `public.audit_logs` for all privileged actions initiated by the compromised user ID:
+     *Impact*: FairSwap's database/RPC layer dynamically evaluates `app_security.get_account_status(auth.uid())`. A suspended status immediately denies all marketplace queries, mutations, and privileged actions across the platform, even if the caller possesses an unexpired JWT.
+  2. **Immediately Revoke Privileged Staff Roles**:
      ```sql
-     SELECT created_at, action, target_entity, target_id, details
-     FROM public.audit_logs
-     WHERE actor_id = '<COMPROMISED_USER_ID>'
-     ORDER BY created_at DESC;
+     DELETE FROM public.staff_roles WHERE user_id = '<COMPROMISED_USER_ID>';
      ```
-3. **Remediation**:
-   * Force password reset and re-enroll MFA factor before restoring any privileges.
+     *Impact*: Revokes all administrator and moderator privileges immediately from all database security barriers and middleware checks.
+  3. **Supported Session Revocation & JWT Lifecycle Reality**:
+     * Note that Supabase Auth `supabase.auth.admin.signOut(jwt, 'global')` requires an active session JWT, not a user ID. Supabase does NOT provide a standalone user-ID global signout API.
+     * Already-issued stateless JWT access tokens remain cryptographically verifiable until expiry (default 1 hour). Therefore, **Step 1 (suspending `public.user_accounts`) is the authoritative real-time containment boundary** dynamically enforced by FairSwap's database security routines.
+     * If the compromised user's active session JWT is accessible from server telemetry or logs, invoke:
+       ```typescript
+       await supabase.auth.admin.signOut(activeUserJwt, 'global');
+       ```
+  4. **Strict Safety Prohibition**:
+     > [!CAUTION]
+     > **NEVER DIRECTLY MANIPULATE INTERNAL AUTH TABLES**:
+     > Do **NOT** execute manual SQL `DELETE FROM auth.refresh_tokens`, `DELETE FROM auth.sessions`, or `DELETE FROM auth.mfa_factors`. Direct mutation of internal GoTrue tables bypasses auth state machine invariants and can corrupt platform state. Containment must rely strictly on application account suspension, staff role removal, and supported Supabase Auth admin APIs.
+* **Preservation of Evidence**:
+  * Snapshot `public.audit_logs` entries filtered by `actor_id = '<COMPROMISED_USER_ID>'`.
+  * Export server access logs containing the IP and User-Agent signatures of the compromised sessions.
+* **Escalation**: Notify Security Lead / Platform Owner within 15 minutes.
+* **Recovery**: Reset password through authorized recovery flow; require new TOTP factor enrollment before re-assigning any staff role.
+* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT` (Default: Platform Administrator).
+* **Post-Incident Review**: Conduct 5-Whys root cause analysis; review credential hygiene and MFA enforcement.
 
 ---
 
-### Playbook B: Abusive User Account Containment
-1. Navigate to `/admin/users` or search by user ID/email.
-2. Open user detail page `/admin/users/[id]`.
-3. Under **Moderation Action**, select **Suspend Account**.
-4. Enter mandatory reason (10–500 characters) detailing the violation and evidence.
-5. Click **Confirm Account Suspension**.
-6. **Immediate System Propagation**:
-   * Active listings are hidden from public search immediately.
-   * Listing submission and mutations are blocked.
-   * Sending messages is prohibited.
-   * Target user is presented with the suspended account alert upon viewing `/account`.
+### Playbook 2: Credential Exposure (API Keys, Bypass Secrets, Tokens)
+* **Detection**: Automated scanning (e.g. GitHub secret scanning), transcript review, or developer self-report.
+* **Containment**:
+  1. Rotate the exposed secret immediately at its source (Vercel Project Settings, Supabase Dashboard, or Redis provider).
+  2. Deploy replacement environment variable to staging/production without logging its value.
+  3. Revoke/delete the prior credential version.
+* **Preservation of Evidence**: Note commit SHA or exposure location; log timestamp of exposure vs timestamp of revocation.
+* **Escalation**: Escalate immediately to Security Lead and Platform Owner.
+* **Recovery**: Verify application health and automated test suites with new credentials.
+* **Customer Communication Owner**: Not applicable unless customer data accessed; if customer impact exists, `OWNER REQUIRED BEFORE PUBLIC PILOT`.
+* **Post-Incident Review**: Implement pre-commit hooks and CI lint guards to prevent secret exposure.
 
 ---
 
-### Playbook C: Database or Media Outage
-1. Check Docker container health:
-   ```powershell
-   docker ps --filter "name=supabase"
-   ```
-2. Inspect logs for failing container:
-   ```powershell
-   docker logs supabase_db_fairswap-local --tail 100
-   ```
-3. If data corruption or failure is unrecoverable, follow `docs/operations/backup-restore-runbook.md` to restore from the latest verified backup.
+### Playbook 3: Database Outage or Unavailability
+* **Detection**: Health check endpoint `/api/listings/recent` returns 500/503; Vercel server functions log connection timeouts to Supabase.
+* **Containment**:
+  1. Inspect Supabase platform status (status.supabase.com) for provider-wide incidents.
+  2. Inspect connection pooler (PgBouncer / Supavisor) metrics on Supabase project dashboard.
+  3. Check connection pool saturation; terminate lingering idle transactions if necessary:
+     ```sql
+     SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle in transaction' AND state_change < current_timestamp - INTERVAL '5 minutes';
+     ```
+* **Preservation of Evidence**: Capture connection pooler metrics, active query count, and Postgres error logs.
+* **Escalation**: Escalate to Lead Database Administrator (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
+* **Recovery**: If primary database is unrecoverable, follow `docs/operations/backup-restore-runbook.md` to restore to the latest verified backup.
+* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
+* **Post-Incident Review**: Review connection limits, query timeouts, and pooler settings.
 
 ---
 
-## 3. Post-Mortem Guidelines
+### Playbook 4: Object Storage Outage
+* **Detection**: Image uploads fail; media processing jobs throw 5xx; listing detail pages render fallback placeholder images.
+* **Containment**:
+  1. Verify Supabase Storage API health.
+  2. Check Storage egress and API quotas on Supabase dashboard.
+  3. Inspect client and server logs for storage endpoint error payloads.
+* **Preservation of Evidence**: Save failed upload error bodies and correlation IDs.
+* **Escalation**: Escalate to DevOps / Storage Engineer (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
+* **Recovery**: Re-enable service; if objects were lost, restore from verified storage backup manifest using `scripts/backup-storage.ts` artifacts.
+* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
+* **Post-Incident Review**: Assess storage redundancy, multi-region failover, or CDN caching layer.
 
-Following any Sev 1 or Sev 2 incident, the engineering and operational team must conduct a blameless post-mortem within 48 hours.
+---
 
-The post-mortem document must record:
-1. **Incident Summary**: Exact timeline (UTC) from detection to containment and final resolution.
-2. **Impact Assessment**: Number of affected users, listings, or transactions.
-3. **Root Cause Analysis (RCA)**: 5-Whys analysis identifying the underlying technical or procedural trigger.
-4. **Corrective & Preventive Actions**: Action items assigned to specific owners with ticket references and completion deadlines.
+### Playbook 5: Realtime / WebSocket Outage
+* **Detection**: Chat messages do not update in real-time without manual browser refresh; presence indicators fail.
+* **Containment**:
+  1. Verify Realtime service status in Supabase project dashboard.
+  2. Check whether `supabase_realtime` publication includes expected tables:
+     ```sql
+     SELECT * FROM pg_publication_tables WHERE pubname = 'supabase_realtime';
+     ```
+  3. If publication was dropped or modified, re-add tables:
+     ```sql
+     ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+     ```
+* **Preservation of Evidence**: Capture Realtime client reconnection logs.
+* **Escalation**: Escalate to Realtime / Frontend Lead (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
+* **Recovery**: Restart Realtime listeners; fallback to polling mode in client application if necessary.
+* **Customer Communication Owner**: Not required for Sev 3; if persistent Sev 2, `OWNER REQUIRED BEFORE PUBLIC PILOT`.
+* **Post-Incident Review**: Review database replication slots and Realtime broadcast limits.
+
+---
+
+### Playbook 6: Failed Deployment (Vercel / Next.js)
+* **Detection**: Vercel deployment status is `ERROR` or build fails; production endpoint serves 500 on route loading.
+* **Containment**:
+  1. Immediately navigate to Vercel Deployments dashboard.
+  2. Trigger **Instant Rollback** to the last known-good deployment.
+  3. If database migrations were executed forward, evaluate whether the application is backward-compatible before rolling back frontend.
+* **Preservation of Evidence**: Save full Vercel build and runtime function logs.
+* **Escalation**: Escalate to Release Manager / DevOps Engineer (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
+* **Recovery**: Fix regression on feature branch, run typecheck, lint, and build locally, and redeploy.
+* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
+* **Post-Incident Review**: Enforce automated deployment preflight checks.
+
+---
+
+### Playbook 7: Excessive 5xx Error Rate
+* **Detection**: Vercel runtime telemetry or monitoring endpoint indicates 5xx rate > 1%.
+* **Containment**:
+  1. Query Vercel runtime logs filtering by status code $\ge$ 500.
+  2. Identify failing route (e.g. `/api/listings/create`, `/api/messages/send`).
+  3. If caused by external dependency (e.g. Redis, SMTP), activate circuit breaker or fallback gracefully.
+* **Preservation of Evidence**: Record error stack traces, request paths, and timestamps.
+* **Escalation**: Escalate to On-Call Backend Engineer (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
+* **Recovery**: Patch offending logic or scale serverless memory/timeout allocations.
+* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
+* **Post-Incident Review**: Add regression test suite covering the failure pattern.
+
+---
+
+### Playbook 8: Backup Failure (DB, Storage, or Verification Drill)
+* **Detection**: Scheduled backup script exits with non-zero code or manifest SHA-256 validation fails.
+* **Containment**:
+  1. Quarantine any incomplete or corrupted backup files under `artifacts/backups/`.
+  2. Verify active production/staging database and storage are unaffected.
+  3. Re-execute manual backup with explicit target:
+     ```bash
+     pnpm tsx scripts/backup-database.ts --target=staging
+     pnpm tsx scripts/backup-storage.ts --target=staging
+     ```
+* **Preservation of Evidence**: Save execution logs detailing CLI failure, disk full, or API timeout.
+* **Escalation**: Escalate to Reliability Lead (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
+* **Recovery**: Ensure fresh valid backup and verified manifest exist.
+* **Customer Communication Owner**: Internal only (no customer impact).
+* **Post-Incident Review**: Review disk quotas, network egress limits, and API timeouts.
+
+---
+
+### Playbook 9: Suspected Data Corruption
+* **Detection**: Integrity checks report orphan foreign keys, broken relationships, or users report missing listings.
+* **Containment**:
+  1. Place platform into maintenance mode if corruption is propagating.
+  2. Run read-only referential integrity diagnostic script across all application tables.
+  3. Identify corruption boundary (specific table, user cohort, or time window).
+* **Preservation of Evidence**: Take an immediate read-only snapshot before any remediation.
+* **Escalation**: Escalate immediately to Principal Database Architect and Platform Owner.
+* **Recovery**: Execute forward corrective SQL repair scripts if isolated, or restore from verified backup if widespread.
+* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
+* **Post-Incident Review**: Add database-level constraints or triggers to prevent invalid state transitions.
+
+---
+
+### Playbook 10: Email Provider Outage (SMTP / Transactional Email)
+* **Detection**: User reports of missing verification emails, password resets, or support ticket notifications; mail server returns timeout/auth errors.
+* **Containment**:
+  1. Inspect status of transactional email provider (SendGrid / Postmark / SES).
+  2. Verify application email delivery queue or client logs.
+  3. Enable graceful UI messaging notifying users that email delivery is currently delayed.
+* **Preservation of Evidence**: Save SMTP failure error codes and affected recipient addresses.
+* **Escalation**: Escalate to Operations Engineer (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
+* **Recovery**: Switch to secondary backup SMTP relay or wait for upstream recovery; replay queued notification events.
+* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
+* **Post-Incident Review**: Implement dead-letter queue and automatic retry mechanism for transactional emails.
+
+---
+
+## 3. Post-Mortem & Ownership Requirements
+
+Following any Sev 1 or Sev 2 incident, a blameless post-mortem must be published within 48 hours covering:
+1. Incident timeline (UTC)
+2. Quantitative impact assessment
+3. Root Cause Analysis (RCA)
+4. Preventive action items with designated owners and target completion dates.
+
+> [!IMPORTANT]
+> **Operational Ownership Prerequisite**:
+> All role placeholders marked `OWNER REQUIRED BEFORE PUBLIC PILOT` must be assigned to named staff members with documented 24/7 on-call contact channels before public production launch.

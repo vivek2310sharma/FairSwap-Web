@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
 @theme inline {
   /* FairSwap brand palette — restrained green/teal accent with neutrals */
   --color-brand-50: #ecfdf5;
@@ -7,11 +9,11 @@
   --color-brand-200: #a7f3d0;
   --color-brand-300: #6ee7b7;
   --color-brand-400: #34d399;
-  --color-brand-500: #10b981;
-  --color-brand-600: #059669;
-  --color-brand-700: #047857;
-  --color-brand-800: #065f46;
-  --color-brand-900: #064e3b;
+  --color-brand-500: #059669;
+  --color-brand-600: #047857;
+  --color-brand-700: #065f46;
+  --color-brand-800: #064e3b;
+  --color-brand-900: #022c22;
 
   --color-neutral-50: #fafafa;
   --color-neutral-100: #f5f5f5;
@@ -24,11 +26,24 @@
   --color-neutral-800: #262626;
   --color-neutral-900: #171717;
 
-  --color-background: var(--color-neutral-50);
-  --color-foreground: var(--color-neutral-900);
-  --color-muted: var(--color-neutral-500);
-  --color-border: var(--color-neutral-200);
-  --color-surface: var(--color-neutral-100);
+  --color-background: var(--color-background, #fafafa);
+  --color-foreground: var(--color-foreground, #171717);
+  --color-muted: var(--color-muted, #525252);
+  --color-border: var(--color-border, #e5e5e5);
+  --color-surface: var(--color-surface, #f5f5f5);
+  --color-card: var(--color-card, #ffffff);
+
+  --color-notice-bg: var(--color-notice-bg, #fef3c7);
+  --color-notice-border: var(--color-notice-border, #f59e0b);
+  --color-notice-text: var(--color-notice-text, #92400e);
+}
+
+:root {
+  --color-background: #fafafa;
+  --color-foreground: #171717;
+  --color-muted: #525252;
+  --color-border: #e5e5e5;
+  --color-surface: #f5f5f5;
   --color-card: #ffffff;
 
   --color-notice-bg: #fef3c7;
@@ -37,17 +52,27 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  @theme inline {
-    --color-background: var(--color-neutral-900);
-    --color-foreground: var(--color-neutral-50);
-    --color-muted: var(--color-neutral-400);
-    --color-border: var(--color-neutral-700);
-    --color-surface: var(--color-neutral-800);
-    --color-card: var(--color-neutral-800);
+  :root {
+    --color-background: #171717;
+    --color-foreground: #fafafa;
+    --color-muted: #a3a3a3;
+    --color-border: #404040;
+    --color-surface: #262626;
+    --color-card: #262626;
 
     --color-notice-bg: #451a03;
     --color-notice-border: #b45309;
     --color-notice-text: #fde68a;
+  }
+}
+
+.text-brand-link {
+  color: #047857;
+}
+
+@media (prefers-color-scheme: dark) {
+  .text-brand-link {
+    color: #34d399;
   }
 }
 

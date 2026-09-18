@@ -50,7 +50,8 @@ export default async function AdminListingsQueuePage() {
       listing_media!listing_media_listing_id_fkey(id, processing_status)
     `)
     .eq("status", "pending_review")
-    .order("submitted_at", { ascending: true });
+    .order("submitted_at", { ascending: true })
+    .limit(100);
 
   if (error) {
     logger.error("admin.moderation_queue_query_failed", {

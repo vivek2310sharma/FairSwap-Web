@@ -72,7 +72,7 @@ export default async function AdminUserDetailPage({ params, searchParams }: Admi
   // Tab 2: Fetch reports against this user
   const { data: reports } = await supabase
     .from("reports")
-    .select("id, target_type, target_id, reason, details, status, created_at, action_taken")
+    .select("id, target_type, target_id, reason, details, status, created_at")
     .eq("target_id", targetUserId)
     .order("created_at", { ascending: false })
     .limit(30);

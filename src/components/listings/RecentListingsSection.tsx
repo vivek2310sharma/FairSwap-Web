@@ -29,7 +29,7 @@ export function RecentListingsSection() {
       <section className="border-t border-border bg-surface/50 py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-brand-600" aria-hidden="true" />
+            <Sparkles className="h-5 w-5 text-brand-link" aria-hidden="true" />
             <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
               Recent Verified Listings
             </h2>
@@ -57,7 +57,7 @@ export function RecentListingsSection() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Sparkles className="h-5 w-5 text-brand-link" aria-hidden="true" />
               <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
                 Recent Verified Listings
               </h2>
@@ -68,7 +68,7 @@ export function RecentListingsSection() {
           </div>
           <Link
             href="/search"
-            className="text-xs font-semibold text-brand-600 hover:text-brand-500 flex items-center gap-1"
+            className="text-xs font-semibold text-brand-link hover:underline flex items-center gap-1"
           >
             View all &rarr;
           </Link>

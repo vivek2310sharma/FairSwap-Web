@@ -6,6 +6,7 @@ import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Notification } from "@/types/communication";
 import { markNotificationReadAction, markAllNotificationsReadAction } from "@/app/account/notifications/actions";
+import { formatMessageDate } from "@/lib/formatters";
 
 interface NotificationBellProps {
   userId?: string;
@@ -116,7 +117,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                 <button
                   type="button"
                   onClick={handleMarkAllRead}
-                  className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                  className="flex items-center gap-1 text-xs font-semibold text-brand-link hover:underline"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
                   <span>Mark all read</span>
@@ -140,10 +141,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                     <div className="flex items-start justify-between gap-2">
                       <h4 className="text-xs font-bold text-foreground">{n.title}</h4>
                       <span className="text-[10px] text-muted whitespace-nowrap">
-                        {new Date(n.created_at).toLocaleDateString("en-IN", {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {formatMessageDate(n.created_at)}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-muted leading-relaxed line-clamp-2">
@@ -157,7 +155,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                             if (!n.read_at) handleMarkRead(n.id);
                             setIsOpen(false);
                           }}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-link hover:underline"
                         >
                           <span>View</span>
                           <ExternalLink className="h-3 w-3" />
@@ -184,7 +182,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
               <Link
                 href="/account/notifications"
                 onClick={() => setIsOpen(false)}
-                className="text-xs font-semibold text-brand-600 hover:underline"
+                className="text-xs font-semibold text-brand-link hover:underline"
               >
                 View all notifications &rarr;
               </Link>

@@ -70,7 +70,7 @@ export default function HelpPage() {
               No. FairSwap is strictly a local classifieds bulletin. We never handle payments, provide escrow,
               or guarantee transactions. All exchanges must be conducted directly in person between buyer and seller.
               Please read our{" "}
-              <Link href="/safety" className="font-medium text-brand-600 underline hover:text-brand-500">
+              <Link href="/safety" className="font-medium text-brand-link underline">
                 Safety Tips
               </Link>{" "}
               before meeting.
