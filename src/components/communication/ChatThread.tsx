@@ -234,17 +234,19 @@ export function ChatThread({
                 type="button"
                 onClick={openReportForUser}
                 title="Report User"
+                aria-label="Report User"
                 className="rounded-lg p-2 text-muted hover:bg-surface hover:text-foreground"
               >
-                <Flag className="h-4 w-4" />
+                <Flag className="h-4 w-4" aria-hidden="true" />
               </button>
               <button
                 type="button"
                 onClick={() => setBlockModalOpen(true)}
                 title="Block User"
+                aria-label="Block User"
                 className="rounded-lg p-2 text-muted hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
               >
-                <ShieldAlert className="h-4 w-4" />
+                <ShieldAlert className="h-4 w-4" aria-hidden="true" />
               </button>
             </>
           )}
@@ -311,9 +313,10 @@ export function ChatThread({
                       type="button"
                       onClick={() => openReportForMessage(msg.id)}
                       title="Report Message"
+                      aria-label="Report Message"
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted hover:text-amber-600"
                     >
-                      <Flag className="h-3 w-3" />
+                      <Flag className="h-3 w-3" aria-hidden="true" />
                     </button>
                   )}
                 </div>
@@ -359,10 +362,11 @@ export function ChatThread({
             />
             <button
               type="submit"
+              aria-label="Send message"
               disabled={isSending || !inputText.trim()}
               className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-white shadow-xs hover:bg-brand-500 disabled:opacity-40"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
           <div className="mt-1.5 flex justify-between px-1 text-[10px] text-muted">

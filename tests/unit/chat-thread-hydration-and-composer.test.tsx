@@ -136,9 +136,13 @@ describe("ChatThread & Timestamp Determinism", () => {
       );
       expect(textarea).toBeInTheDocument();
 
-      const sendButton = screen.getByRole("button", { name: "" }); // icon button with Send icon
+      const sendButton = screen.getByRole("button", { name: "Send message" });
       expect(sendButton).toBeInTheDocument();
       expect(sendButton).toHaveAttribute("type", "submit");
+
+      // Verify header safety action buttons have accessible names
+      expect(screen.getByRole("button", { name: "Report User" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Block User" })).toBeInTheDocument();
 
       // Verify safety notices are NOT displayed
       expect(screen.queryByText(/Messaging is currently unavailable/i)).not.toBeInTheDocument();
@@ -160,9 +164,12 @@ describe("ChatThread & Timestamp Determinism", () => {
       );
       expect(textarea).toBeInTheDocument();
 
-      const sendButton = screen.getByRole("button", { name: "" });
+      const sendButton = screen.getByRole("button", { name: "Send message" });
       expect(sendButton).toBeInTheDocument();
       expect(sendButton).toHaveAttribute("type", "submit");
+
+      // Buyer sent sampleMessages[0], so seller can report the message
+      expect(screen.getByRole("button", { name: "Report Message" })).toBeInTheDocument();
     });
   });
 
