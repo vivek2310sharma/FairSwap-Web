@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
   const upstreamRequestId = sanitizeUpstreamRequestId(incomingId);
   const requestId = resolveCorrelationId();
   const { searchParams } = new URL(request.url);
+  const code = searchParams.get("code");
+  const oauthProviderError = searchParams.get("error");
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const nextParam = searchParams.get("next");
@@ -22,8 +24,60 @@ export async function GET(request: NextRequest) {
     operation: "GET /auth/callback",
     extra: {
       otp_type: type || undefined,
+      oauth_code_present: Boolean(code),
     },
   });
+
+  if (code) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error) {
+      logger.info("auth.oauth_callback_verified", {
+        request_id: requestId,
+        route: "/auth/callback",
+        operation: "GET /auth/callback",
+      });
+
+      const redirectRes = NextResponse.redirect(new URL(next, request.url));
+      redirectRes.headers.set("x-request-id", requestId);
+      return redirectRes;
+    }
+
+    logger.warn("auth.oauth_callback_failed", {
+      request_id: requestId,
+      route: "/auth/callback",
+      operation: "GET /auth/callback",
+      error_code: error.code || "OAUTH_CODE_EXCHANGE_FAILED",
+    });
+
+    const errorUrl = new URL("/auth/sign-in", request.url);
+    errorUrl.searchParams.set("error", "oauth_failed");
+    if (next !== "/account") {
+      errorUrl.searchParams.set("next", next);
+    }
+    const redirectRes = NextResponse.redirect(errorUrl);
+    redirectRes.headers.set("x-request-id", requestId);
+    return redirectRes;
+  }
+
+  if (oauthProviderError) {
+    logger.warn("auth.oauth_provider_failed", {
+      request_id: requestId,
+      route: "/auth/callback",
+      operation: "GET /auth/callback",
+      error_code: "OAUTH_PROVIDER_FAILED",
+    });
+
+    const errorUrl = new URL("/auth/sign-in", request.url);
+    errorUrl.searchParams.set("error", "oauth_failed");
+    if (next !== "/account") {
+      errorUrl.searchParams.set("next", next);
+    }
+    const redirectRes = NextResponse.redirect(errorUrl);
+    redirectRes.headers.set("x-request-id", requestId);
+    return redirectRes;
+  }
 
   if (token_hash && type) {
     const supabase = await createClient();
@@ -54,7 +108,6 @@ export async function GET(request: NextRequest) {
       error_code: error.code || "VERIFY_OTP_FAILED",
     });
 
-    // An actual token_hash was provided, but verification failed -> return invalid_token
     const errorUrl = new URL("/auth/sign-in", request.url);
     errorUrl.searchParams.set("error", "invalid_token");
     const redirectRes = NextResponse.redirect(errorUrl);
@@ -62,9 +115,6 @@ export async function GET(request: NextRequest) {
     return redirectRes;
   }
 
-  // If NO token_hash was provided (e.g. arrival from external/Supabase verification or direct GET),
-  // do NOT falsely report "invalid or expired token" and do NOT falsely assert "confirmed".
-  // Check if an authenticated session already exists:
   const supabase = await createClient();
   const {
     data: { user },
@@ -75,7 +125,6 @@ export async function GET(request: NextRequest) {
     return redirectRes;
   }
 
-  // If not already authenticated, redirect to sign-in with neutral continuation state:
   const continuationUrl = new URL("/auth/sign-in", request.url);
   continuationUrl.searchParams.set("message", "confirm_continue");
   if (next && next !== "/account") {
