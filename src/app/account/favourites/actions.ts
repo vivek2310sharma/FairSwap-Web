@@ -84,8 +84,21 @@ export async function toggleFavouriteAction(listingId: string): Promise<Favourit
 export async function removeFavouriteAction(listingId: string): Promise<{
   success: boolean;
   error?: string;
+  requiresPolicyReview?: boolean;
+  redirectTo?: string;
 }> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, "/account/favourites");
+  if (!guard.allowed) {
+    return {
+      success: false,
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   const {
     data: { user },
     error: authError,
@@ -112,8 +125,21 @@ export async function removeFavouriteAction(listingId: string): Promise<{
 export async function clearUnavailableFavouritesAction(listingIds: string[]): Promise<{
   success: boolean;
   error?: string;
+  requiresPolicyReview?: boolean;
+  redirectTo?: string;
 }> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, "/account/favourites");
+  if (!guard.allowed) {
+    return {
+      success: false,
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   const {
     data: { user },
     error: authError,

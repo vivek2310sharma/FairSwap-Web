@@ -167,4 +167,39 @@ describe("Policy Review UI and Server Action", () => {
       expect(redirect).not.toHaveBeenCalled();
     });
   });
+
+  describe("PolicyReviewPage Server Component", () => {
+    it("renders factual preserved pilot notice and not immutable audit log claim", async () => {
+      const PolicyReviewPage = (await import("@/app/account/policy-review/page")).default;
+      mockRpc.mockResolvedValueOnce({ data: false, error: null }); // stale user
+
+      const pageJsx = await PolicyReviewPage({ searchParams: Promise.resolve({ next: "/account" }) });
+      render(pageJsx);
+
+      expect(
+        screen.getByText(
+          /Your original pilot policy acceptance record remains preserved. This re-acceptance will be recorded separately as versioned policy evidence./i
+        )
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/immutable audit log/i)).not.toBeInTheDocument();
+    });
+
+    it("renders restrained temporary service notice and sign-out when policy check returns error", async () => {
+      const PolicyReviewPage = (await import("@/app/account/policy-review/page")).default;
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { code: "PGRST_ERROR", message: "RPC failure" },
+      });
+
+      const pageJsx = await PolicyReviewPage({ searchParams: Promise.resolve({ next: "/account" }) });
+      render(pageJsx);
+
+      expect(screen.getByText(/Unable to Verify Policy Status/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Retry/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Browse Public Listings/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Sign out/i })).toBeInTheDocument();
+      // Must NOT render the acceptance checkboxes when in error state
+      expect(screen.queryByLabelText(/I accept the/i)).not.toBeInTheDocument();
+    });
+  });
 });

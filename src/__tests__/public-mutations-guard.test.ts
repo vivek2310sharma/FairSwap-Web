@@ -113,4 +113,40 @@ describe("Public Mutation Guardrails (Favourites & Contact Seller)", () => {
       expect(result.conversationId).toBe("conv-789");
     });
   });
+
+  describe("Additional Authenticated Mutation Guards", () => {
+    it("removeFavouriteAction requires policy review for stale pilot user", async () => {
+      const { removeFavouriteAction } = await import("@/app/account/favourites/actions");
+      mockGetUser.mockResolvedValue({ data: { user: { id: "pilot-user-1" } }, error: null });
+      mockRpc.mockResolvedValueOnce({ data: false, error: null });
+
+      const result = await removeFavouriteAction("listing-123");
+      expect(result.success).toBe(false);
+      expect(result.requiresPolicyReview).toBe(true);
+      expect(result.redirectTo).toBe("/account/policy-review?next=%2Faccount%2Ffavourites");
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it("markConversationReadAction requires policy review for stale pilot user", async () => {
+      const { markConversationReadAction } = await import("@/app/account/messages/actions");
+      mockGetUser.mockResolvedValue({ data: { user: { id: "pilot-user-1" } }, error: null });
+      mockRpc.mockResolvedValueOnce({ data: false, error: null });
+
+      const result = await markConversationReadAction("conv-123", "msg-123");
+      expect(result.requiresPolicyReview).toBe(true);
+      expect(result.redirectTo).toBe("/account/policy-review?next=%2Faccount%2Fmessages%2Fconv-123");
+      expect(mockRpc).not.toHaveBeenCalledWith("mark_conversation_read", expect.anything());
+    });
+
+    it("unblockUserAction requires policy review for stale pilot user", async () => {
+      const { unblockUserAction } = await import("@/app/account/messages/actions");
+      mockGetUser.mockResolvedValue({ data: { user: { id: "pilot-user-1" } }, error: null });
+      mockRpc.mockResolvedValueOnce({ data: false, error: null });
+
+      const result = await unblockUserAction("blocked-user-id");
+      expect(result.requiresPolicyReview).toBe(true);
+      expect(result.redirectTo).toBe("/account/policy-review?next=%2Faccount%2Fmessages");
+      expect(mockRpc).not.toHaveBeenCalledWith("unblock_user", expect.anything());
+    });
+  });
 });

@@ -125,6 +125,15 @@ export async function markConversationReadAction(
 ): Promise<MessageActionResult> {
   const supabase = await createClient();
 
+  const guard = await requireCurrentPolicyAcceptance(supabase, `/account/messages/${conversationId}`);
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   const { error } = await supabase.rpc("mark_conversation_read", {
     conversation_id: conversationId,
     message_id: messageId,
@@ -171,6 +180,15 @@ export async function unblockUserAction(
   blockedUserId: string
 ): Promise<MessageActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, "/account/messages");
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
 
   const { error } = await supabase.rpc("unblock_user", {
     blocked_user_id: blockedUserId,

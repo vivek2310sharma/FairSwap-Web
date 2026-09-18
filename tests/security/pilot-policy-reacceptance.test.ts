@@ -11,6 +11,8 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
   const pilotUserId = "00000000-0000-0000-0000-000000000001";
   const pilotUser2Id = "00000000-0000-0000-0000-000000000002";
   const currentBetaUserId = "00000000-0000-0000-0000-000000000003";
+  const stalePilotId = "00000000-0000-0000-0000-000000000004";
+  const cascadePilotId = "00000000-0000-0000-0000-000000000005";
   let activeListingId: string;
 
   beforeAll(async () => {
@@ -83,7 +85,9 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
       INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
       VALUES 
         ('${pilotUserId}', 'pilot1@fairswap.local', '{"display_name":"Pilot User 1","terms_accepted":"true","terms_version":"2026-09-01","privacy_policy_version":"2026-09-01"}'::jsonb, clock_timestamp()),
-        ('${pilotUser2Id}', 'pilot2@fairswap.local', '{"display_name":"Pilot User 2","terms_accepted":"true","terms_version":"2026-09-01","privacy_policy_version":"2026-09-01"}'::jsonb, clock_timestamp());
+        ('${pilotUser2Id}', 'pilot2@fairswap.local', '{"display_name":"Pilot User 2","terms_accepted":"true","terms_version":"2026-09-01","privacy_policy_version":"2026-09-01"}'::jsonb, clock_timestamp()),
+        ('${stalePilotId}', 'stale@fairswap.local', '{"display_name":"Stale Pilot User","terms_accepted":"true","terms_version":"2026-09-01","privacy_policy_version":"2026-09-01"}'::jsonb, clock_timestamp()),
+        ('${cascadePilotId}', 'cascade@fairswap.local', '{"display_name":"Cascade User","terms_accepted":"true","terms_version":"2026-09-01","privacy_policy_version":"2026-09-01"}'::jsonb, clock_timestamp());
     `);
 
     // 4. Apply Migration 20
@@ -337,7 +341,7 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
     ).rejects.toThrow(/policy_acceptance_records rows are immutable; direct deletion is prohibited/);
   });
 
-  it("proves authenticated users cannot read another user's policy acceptance records", async () => {
+  it("proves direct SELECT on policy_acceptance_records is denied to authenticated users", async () => {
     // Authenticate as pilotUser2Id
     await db.exec(`
       CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${pilotUser2Id}'::uuid $$ LANGUAGE sql STABLE;
@@ -345,19 +349,213 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
       SET ROLE authenticated;
     `);
 
-    // Pilot 2 queries policy_acceptance_records for Pilot 1
-    const res: any = await db.query(`
-      SELECT * FROM public.policy_acceptance_records WHERE user_id = '${pilotUserId}';
-    `);
-    // RLS filters out pilotUserId's records
-    expect(res.rows.length).toBe(0);
+    // Direct table SELECT must be completely denied at privilege level
+    await expect(
+      db.query(`SELECT * FROM public.policy_acceptance_records WHERE user_id = '${pilotUserId}';`)
+    ).rejects.toThrow(/permission denied for table policy_acceptance_records/);
 
     await db.exec(`RESET ROLE;`);
   });
 
-  it("proves after re-acceptance, authenticated mutations (favourite, messaging, block) succeed", async () => {
+  it("proves an authenticated user cannot probe another user's policy acceptance status", async () => {
+    // Authenticate as pilotUser2Id
+    await db.exec(`
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${pilotUser2Id}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+      SET ROLE authenticated;
+    `);
+
+    // Attempt to inspect pilotUserId's status
+    await expect(
+      db.query(`SELECT app_security.has_current_policy_acceptance('${pilotUserId}');`)
+    ).rejects.toThrow(/Unauthorized: cannot inspect policy acceptance for another user/);
+
+    // Can inspect own status
+    const ownStatus: any = await db.query(
+      `SELECT app_security.has_current_policy_acceptance('${pilotUser2Id}') AS is_current;`
+    );
+    expect(ownStatus.rows[0].is_current).toBe(false);
+
+    await db.exec(`RESET ROLE;`);
+  });
+
+  it("proves Option A account deletion cascades to policy_acceptance_records while direct delete fails", async () => {
+    // Record acceptance for cascadePilotId (seeded prior to Migration 20)
+    await db.exec(`
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${cascadePilotId}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+    `);
+
+    await db.query(`SELECT public.record_policy_reacceptance(true, true);`);
+
+    // Verify row exists
+    const recCheck: any = await db.query(`
+      SELECT COUNT(*)::int AS cnt FROM public.policy_acceptance_records WHERE user_id = '${cascadePilotId}';
+    `);
+    expect(recCheck.rows[0].cnt).toBe(1);
+
+    // Direct DELETE fails due to immutability trigger
+    await expect(
+      db.query(`DELETE FROM public.policy_acceptance_records WHERE user_id = '${cascadePilotId}';`)
+    ).rejects.toThrow(/policy_acceptance_records rows are immutable; direct deletion is prohibited/);
+
+    // Delete corresponding auth.users identity
+    await db.query(`DELETE FROM auth.users WHERE id = '${cascadePilotId}';`);
+
+    // FK cascade successfully removes acceptance records without trigger error
+    const postDeleteCheck: any = await db.query(`
+      SELECT COUNT(*)::int AS cnt FROM public.policy_acceptance_records WHERE user_id = '${cascadePilotId}';
+    `);
+    expect(postDeleteCheck.rows[0].cnt).toBe(0);
+  });
+
+  it("proves atomic ON CONFLICT idempotency and returns original timestamp without duplicate audit logs", async () => {
+    await db.exec(`
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${pilotUser2Id}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+    `);
+
+    // First call: inserts row and logs policy.reaccepted
+    const firstCall: any = await db.query(`SELECT public.record_policy_reacceptance(true, true) AS res;`);
+    expect(firstCall.rows[0].res.success).toBe(true);
+    expect(firstCall.rows[0].res.already_recorded).toBe(false);
+    const originalRecordId = firstCall.rows[0].res.record_id;
+    const originalAcceptedAt = firstCall.rows[0].res.accepted_at;
+
+    // Count audit logs for this user using target_id column
+    const auditCount1: any = await db.query(`
+      SELECT COUNT(*)::int AS cnt FROM public.audit_logs 
+      WHERE action = 'policy.reaccepted' AND target_id = '${originalRecordId}';
+    `);
+    expect(auditCount1.rows[0].cnt).toBe(1);
+
+    // Second call: returns existing row
+    const secondCall: any = await db.query(`SELECT public.record_policy_reacceptance(true, true) AS res;`);
+    expect(secondCall.rows[0].res.success).toBe(true);
+    expect(secondCall.rows[0].res.already_recorded).toBe(true);
+    expect(secondCall.rows[0].res.record_id).toBe(originalRecordId);
+    expect(secondCall.rows[0].res.accepted_at).toBe(originalAcceptedAt);
+
+    // Audit logs count must NOT increase
+    const auditCount2: any = await db.query(`
+      SELECT COUNT(*)::int AS cnt FROM public.audit_logs 
+      WHERE action = 'policy.reaccepted' AND target_id = '${originalRecordId}';
+    `);
+    expect(auditCount2.rows[0].cnt).toBe(1);
+  });
+
+  it("proves already-current new users receive their authoritative account timestamp without creating rows", async () => {
+    await db.exec(`
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${currentBetaUserId}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+    `);
+
+    const res: any = await db.query(`SELECT public.record_policy_reacceptance(true, true) AS res;`);
+    expect(res.rows[0].res.success).toBe(true);
+    expect(res.rows[0].res.already_recorded).toBe(true);
+    expect(res.rows[0].res.record_id).toBeNull();
+    expect(res.rows[0].res.accepted_at).toBeDefined();
+
+    // No rows added to policy_acceptance_records
+    const countCheck: any = await db.query(
+      `SELECT COUNT(*)::int AS cnt FROM public.policy_acceptance_records WHERE user_id = '${currentBetaUserId}';`
+    );
+    expect(countCheck.rows[0].cnt).toBe(0);
+  });
+
+  it("proves stale pilot accounts cannot delete favourites, update profile, create listings, or mutate notifications", async () => {
+    await db.exec(`
+      RESET ROLE;
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${stalePilotId}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+      SET ROLE authenticated;
+    `);
+
+    // 1. Stale user cannot delete favourites
+    const delFavRes: any = await db.query(`
+      DELETE FROM public.favourites WHERE user_id = '${stalePilotId}' AND listing_id = '${activeListingId}';
+    `);
+    // RLS prevents deletion of any rows
+    expect(delFavRes.rowCount).toBe(0);
+
+    // 2. Stale user cannot update profile
+    const updProfileRes: any = await db.query(`
+      UPDATE public.profiles SET bio = 'Hacker Bio' WHERE id = '${stalePilotId}';
+    `);
+    expect(updProfileRes.rowCount).toBe(0);
+
+    // 3. Stale user cannot insert draft listing
+    await expect(
+      db.query(`
+        INSERT INTO public.listings (
+          seller_id, title, category_id, city_id, price_paise, price_type, condition
+        ) VALUES (
+          '${stalePilotId}', 'Unauthorized Listing',
+          (SELECT id FROM public.categories LIMIT 1),
+          (SELECT id FROM public.cities LIMIT 1),
+          10000, 'fixed', 'good'
+        );
+      `)
+    ).rejects.toThrow();
+
+    await db.exec(`RESET ROLE;`);
+
+    // 4. Stale user cannot submit listing via RPC
+    await expect(
+      db.query(`SELECT app_security.impl_seller_submit_listing('${activeListingId}');`)
+    ).rejects.toThrow(/POLICY_ACCEPTANCE_REQUIRED/);
+
+    // 5. Stale user cannot transition listing via RPC
+    await expect(
+      db.query(`SELECT app_security.impl_seller_transition_listing('${activeListingId}', 'pause');`)
+    ).rejects.toThrow(/POLICY_ACCEPTANCE_REQUIRED/);
+
+    // 6. Stale user cannot unblock user via RPC
+    await expect(
+      db.query(`SELECT app_security.impl_unblock_user('${pilotUserId}');`)
+    ).rejects.toThrow(/POLICY_ACCEPTANCE_REQUIRED/);
+
+    // 7. Stale user cannot mark notification read via RPC
+    await expect(
+      db.query(`SELECT app_security.impl_mark_all_notifications_read();`)
+    ).rejects.toThrow(/POLICY_ACCEPTANCE_REQUIRED/);
+  });
+
+  it("proves explicitly allowed safety and privacy channels remain usable for stale pilot accounts", async () => {
+    await db.exec(`
+      RESET ROLE;
+      CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${stalePilotId}'::uuid $$ LANGUAGE sql STABLE;
+      CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
+      SET ROLE authenticated;
+    `);
+
+    // 1. Privacy request insertion remains accessible (Option A exit / data export rights)
+    const privReq: any = await db.query(`
+      INSERT INTO public.privacy_requests (user_id, request_type, status)
+      VALUES ('${stalePilotId}', 'export_data', 'pending')
+      RETURNING id;
+    `);
+    expect(privReq.rows[0].id).toBeDefined();
+
+    // 2. Safety abuse reporting remains accessible via RPC
+    const reportRes: any = await db.query(`
+      SELECT public.create_report('listing', '${activeListingId}', 'Safety abuse test report') AS id;
+    `);
+    expect(reportRes.rows[0].id).toBeDefined();
+
+    // 3. Support ticket insertion remains accessible via RPC
+    const supportRes: any = await db.query(`
+      SELECT public.create_support_ticket('general', 'Help with re-acceptance', 'I have a question regarding the terms.') AS id;
+    `);
+    expect(supportRes.rows[0].id).toBeDefined();
+
+    await db.exec(`RESET ROLE;`);
+  });
+
+  it("proves after re-acceptance, authenticated mutations succeed", async () => {
     // Authenticate as re-accepted pilotUserId
     await db.exec(`
+      RESET ROLE;
       CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${pilotUserId}'::uuid $$ LANGUAGE sql STABLE;
       CREATE OR REPLACE FUNCTION auth.role() RETURNS text AS $$ SELECT 'authenticated'::text $$ LANGUAGE sql STABLE;
       SET ROLE authenticated;
@@ -372,6 +570,12 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
       SELECT * FROM public.favourites WHERE user_id = '${pilotUserId}' AND listing_id = '${activeListingId}';
     `);
     expect(favRes.rows.length).toBe(1);
+
+    // Favourite deletion now succeeds
+    const delRes: any = await db.query(`
+      DELETE FROM public.favourites WHERE user_id = '${pilotUserId}' AND listing_id = '${activeListingId}';
+    `);
+    expect(delRes.rowCount).toBe(1);
 
     await db.exec(`RESET ROLE;`);
 
@@ -393,6 +597,15 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
       SELECT * FROM public.user_blocks WHERE blocker_id = '${pilotUserId}' AND blocked_id = '${pilotUser2Id}';
     `);
     expect(blockRes.rows.length).toBe(1);
+
+    // 4. Unblock user now succeeds
+    await db.query(`
+      SELECT app_security.impl_unblock_user('${pilotUser2Id}');
+    `);
+    const unblockRes: any = await db.query(`
+      SELECT * FROM public.user_blocks WHERE blocker_id = '${pilotUserId}' AND blocked_id = '${pilotUser2Id}';
+    `);
+    expect(unblockRes.rows.length).toBe(0);
   });
 
   it("proves privacy data export includes policy_acceptances array", async () => {

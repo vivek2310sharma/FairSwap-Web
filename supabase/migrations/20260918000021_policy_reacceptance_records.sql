@@ -37,21 +37,19 @@ CREATE INDEX IF NOT EXISTS idx_policy_acceptance_records_user_id
 -- 2. Security, RLS & Access Grants
 -- =============================================================================
 -- Normal users do not query this table directly; access is via trusted RPCs.
--- However, RLS is enabled and scoped strictly to owner for defense-in-depth.
+-- Direct table access is revoked from PUBLIC, anon, and authenticated.
+-- RLS is enabled and forced for defense-in-depth.
 
 ALTER TABLE public.policy_acceptance_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.policy_acceptance_records FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.favourites FORCE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.policy_acceptance_records FROM PUBLIC, anon, authenticated;
-GRANT SELECT ON public.policy_acceptance_records TO authenticated;
 GRANT ALL ON public.policy_acceptance_records TO service_role;
 
 DROP POLICY IF EXISTS policy_acceptance_records_select_policy ON public.policy_acceptance_records;
 CREATE POLICY policy_acceptance_records_select_policy ON public.policy_acceptance_records
-FOR SELECT USING (
-  user_id = auth.uid()
-);
+FOR SELECT TO service_role USING (true);
 
 -- =============================================================================
 -- 3. Immutability Triggers
@@ -95,6 +93,7 @@ FOR EACH ROW EXECUTE FUNCTION public.enforce_policy_acceptance_records_immutabil
 -- =============================================================================
 -- Returns true if user either has original current baseline in user_accounts (new Public Beta signups)
 -- OR has recorded a re-acceptance in policy_acceptance_records (existing pilot users).
+-- Hardened against arbitrary user-id status probing: authenticated callers may only query auth.uid().
 
 CREATE OR REPLACE FUNCTION app_security.has_current_policy_acceptance(p_user_id uuid)
 RETURNS boolean
@@ -104,6 +103,12 @@ AS $$
 BEGIN
   IF p_user_id IS NULL THEN
     RETURN false;
+  END IF;
+
+  -- Caller authorization check:
+  -- If invoked in an authenticated user session, only allow inspecting auth.uid()
+  IF auth.uid() IS NOT NULL AND p_user_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'Unauthorized: cannot inspect policy acceptance for another user';
   END IF;
 
   -- 1. Check if user_accounts already holds current Public Beta baseline
@@ -135,15 +140,18 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION app_security.has_current_policy_acceptance(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION app_security.has_current_policy_acceptance(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION app_security.has_current_policy_acceptance(uuid) TO authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.has_current_policy_acceptance()
 RETURNS boolean
-LANGUAGE plpgsql STABLE SECURITY INVOKER
+LANGUAGE plpgsql STABLE SECURITY DEFINER
 SET search_path = ''
 AS $$
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN false;
+  END IF;
   RETURN app_security.has_current_policy_acceptance(auth.uid());
 END;
 $$;
@@ -157,7 +165,8 @@ GRANT EXECUTE ON FUNCTION public.has_current_policy_acceptance() TO authenticate
 -- Server-controlled policy re-acceptance recording.
 -- Caller asserts boolean consent and age confirmation.
 -- Policy versions ('2026-09-18'), minimum age (18), and timestamps are database-owned.
--- Idempotent: duplicate / repeated calls return existing acceptance without error or duplicate rows.
+-- Concurrency-safe & idempotent: atomic insert with ON CONFLICT DO NOTHING RETURNING.
+-- Duplicate / repeated calls return existing acceptance without error or duplicate rows/audit logs.
 
 CREATE OR REPLACE FUNCTION app_security.impl_record_policy_reacceptance(
   p_terms_and_privacy_accepted boolean,
@@ -168,6 +177,7 @@ SET search_path = ''
 AS $$
 DECLARE
   v_caller_id uuid;
+  v_account_rec record;
   v_existing record;
   v_record_id uuid;
   v_accepted_at timestamptz;
@@ -190,7 +200,7 @@ BEGIN
     RAISE EXCEPTION 'User account not found';
   END IF;
 
-  -- Idempotency check 1: already recorded in policy_acceptance_records
+  -- Fast path 1: already recorded in policy_acceptance_records
   SELECT id, accepted_at INTO v_existing
   FROM public.policy_acceptance_records
   WHERE user_id = v_caller_id
@@ -208,68 +218,83 @@ BEGIN
     );
   END IF;
 
-  -- Idempotency check 2: already current in user_accounts (e.g. new signup)
-  IF EXISTS (
-    SELECT 1 FROM public.user_accounts
-    WHERE user_id = v_caller_id
-      AND terms_version = '2026-09-18'
-      AND privacy_policy_version = '2026-09-18'
-      AND acceptable_use_version = '2026-09-18'
-      AND minimum_age_confirmed >= 18
-      AND age_confirmed_at IS NOT NULL
-  ) THEN
+  -- Fast path 2: already current in user_accounts (e.g. new signup)
+  -- Return authoritative original timestamp from user_accounts
+  SELECT terms_accepted_at, age_confirmed_at INTO v_account_rec
+  FROM public.user_accounts
+  WHERE user_id = v_caller_id
+    AND terms_version = '2026-09-18'
+    AND privacy_policy_version = '2026-09-18'
+    AND acceptable_use_version = '2026-09-18'
+    AND minimum_age_confirmed >= 18
+    AND age_confirmed_at IS NOT NULL;
+
+  IF v_account_rec IS NOT NULL THEN
     RETURN jsonb_build_object(
       'success', true,
       'already_recorded', true,
       'record_id', NULL,
-      'accepted_at', pg_catalog.clock_timestamp()
+      'accepted_at', COALESCE(v_account_rec.terms_accepted_at, v_account_rec.age_confirmed_at)
     );
   END IF;
 
   -- Insert new immutable acceptance record using authoritative server constants and DB clock
-  v_record_id := gen_random_uuid();
-  v_accepted_at := pg_catalog.clock_timestamp();
-
+  -- Race-safe: ON CONFLICT DO NOTHING RETURNING id, accepted_at
   INSERT INTO public.policy_acceptance_records (
-    id,
     user_id,
     terms_version,
     privacy_policy_version,
     acceptable_use_version,
-    minimum_age_confirmed,
-    accepted_at
+    minimum_age_confirmed
   ) VALUES (
-    v_record_id,
     v_caller_id,
     '2026-09-18',
     '2026-09-18',
     '2026-09-18',
-    18,
-    v_accepted_at
+    18
   )
   ON CONFLICT (user_id, terms_version, privacy_policy_version, acceptable_use_version, minimum_age_confirmed)
-  DO NOTHING;
+  DO NOTHING
+  RETURNING id, accepted_at INTO v_record_id, v_accepted_at;
 
-  -- Log audit event
-  PERFORM app_security.log_audit_event(
-    'policy.reaccepted',
-    'policy_acceptance_records',
-    v_record_id,
-    jsonb_build_object(
-      'user_id', v_caller_id,
-      'terms_version', '2026-09-18',
-      'privacy_policy_version', '2026-09-18',
-      'acceptable_use_version', '2026-09-18',
-      'minimum_age_confirmed', 18
-    )
-  );
+  IF v_record_id IS NOT NULL THEN
+    -- Won the insert race: exactly one audit event with actual inserted id
+    PERFORM app_security.log_audit_event(
+      'policy.reaccepted',
+      'policy_acceptance_records',
+      v_record_id,
+      jsonb_build_object(
+        'user_id', v_caller_id,
+        'terms_version', '2026-09-18',
+        'privacy_policy_version', '2026-09-18',
+        'acceptable_use_version', '2026-09-18',
+        'minimum_age_confirmed', 18
+      )
+    );
 
-  RETURN jsonb_build_object(
-    'success', true,
-    'already_recorded', false,
-    'record_id', v_record_id,
-    'accepted_at', v_accepted_at
-  );
+    RETURN jsonb_build_object(
+      'success', true,
+      'already_recorded', false,
+      'record_id', v_record_id,
+      'accepted_at', v_accepted_at
+    );
+  ELSE
+    -- Lost the race: another concurrent call inserted the record.
+    SELECT id, accepted_at INTO v_existing
+    FROM public.policy_acceptance_records
+    WHERE user_id = v_caller_id
+      AND terms_version = '2026-09-18'
+      AND privacy_policy_version = '2026-09-18'
+      AND acceptable_use_version = '2026-09-18'
+      AND minimum_age_confirmed = 18;
+
+    RETURN jsonb_build_object(
+      'success', true,
+      'already_recorded', true,
+      'record_id', v_existing.id,
+      'accepted_at', v_existing.accepted_at
+    );
+  END IF;
 END;
 $$;
 
@@ -322,7 +347,7 @@ $$;
 REVOKE ALL ON FUNCTION app_security.is_listing_publicly_visible(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION app_security.is_listing_publicly_visible(uuid) TO anon, authenticated, service_role;
 
--- A. Favourites: require current policy acceptance in insert policy
+-- A. Favourites: require current policy acceptance in insert and delete policies
 DROP POLICY IF EXISTS favourites_insert_policy ON public.favourites;
 CREATE POLICY favourites_insert_policy ON public.favourites
 FOR INSERT WITH CHECK (
@@ -330,6 +355,13 @@ FOR INSERT WITH CHECK (
   AND app_security.get_account_status(auth.uid()) = 'active'
   AND app_security.has_current_policy_acceptance(auth.uid())
   AND app_security.is_listing_publicly_visible(listing_id)
+);
+
+DROP POLICY IF EXISTS favourites_delete_policy ON public.favourites;
+CREATE POLICY favourites_delete_policy ON public.favourites
+FOR DELETE USING (
+  user_id = auth.uid()
+  AND app_security.has_current_policy_acceptance(auth.uid())
 );
 
 -- B. Messaging: require current policy acceptance in send_message
@@ -671,6 +703,547 @@ BEGIN
     p_blocked_user_id,
     jsonb_build_object('blocker_id', v_caller_id, 'blocked_id', p_blocked_user_id)
   );
+END;
+$$;
+
+-- E. Safety / Unblocking: require current policy acceptance in unblock_user
+CREATE OR REPLACE FUNCTION app_security.impl_unblock_user(
+  p_blocked_user_id uuid
+) RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_caller_id uuid;
+BEGIN
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF app_security.get_account_status(v_caller_id) <> 'active' THEN
+    RAISE EXCEPTION 'Account restricted';
+  END IF;
+
+  IF NOT app_security.has_current_policy_acceptance(v_caller_id) THEN
+    RAISE EXCEPTION 'POLICY_ACCEPTANCE_REQUIRED: Re-acceptance of Public Beta policies is required';
+  END IF;
+
+  DELETE FROM public.user_blocks
+  WHERE blocker_id = v_caller_id AND blocked_id = p_blocked_user_id;
+END;
+$$;
+
+-- F. Messaging: require current policy acceptance in mark_conversation_read
+CREATE OR REPLACE FUNCTION app_security.impl_mark_conversation_read(
+  p_conversation_id uuid,
+  p_message_id uuid
+) RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_caller_id uuid;
+  v_conv record;
+  v_target_msg record;
+  v_current_read record;
+BEGIN
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF app_security.get_account_status(v_caller_id) NOT IN ('active', 'suspended') THEN
+    RAISE EXCEPTION 'Account restricted';
+  END IF;
+
+  IF NOT app_security.has_current_policy_acceptance(v_caller_id) THEN
+    RAISE EXCEPTION 'POLICY_ACCEPTANCE_REQUIRED: Re-acceptance of Public Beta policies is required';
+  END IF;
+
+  -- Verify participant
+  SELECT * INTO v_conv
+  FROM public.conversations
+  WHERE id = p_conversation_id;
+
+  IF v_conv IS NULL THEN
+    RAISE EXCEPTION 'Conversation not found';
+  END IF;
+
+  IF v_conv.buyer_id <> v_caller_id AND v_conv.seller_id <> v_caller_id THEN
+    RAISE EXCEPTION 'Forbidden: not a participant';
+  END IF;
+
+  -- Verify message belongs to this conversation
+  SELECT id, created_at INTO v_target_msg
+  FROM public.messages
+  WHERE id = p_message_id AND conversation_id = p_conversation_id;
+
+  IF v_target_msg IS NULL THEN
+    RAISE EXCEPTION 'Message does not belong to this conversation';
+  END IF;
+
+  -- Monotonic check: get current read marker
+  SELECT m.created_at, m.id INTO v_current_read
+  FROM public.conversation_read_states crs
+  JOIN public.messages m ON m.id = crs.last_read_message_id
+  WHERE crs.conversation_id = p_conversation_id AND crs.user_id = v_caller_id;
+
+  IF v_current_read IS NOT NULL THEN
+    -- If candidate message is older or equal, do not regress pointer
+    IF (v_target_msg.created_at, v_target_msg.id) <= (v_current_read.created_at, v_current_read.id) THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  -- Update or insert read marker
+  INSERT INTO public.conversation_read_states (
+    conversation_id,
+    user_id,
+    last_read_message_id,
+    last_read_at
+  ) VALUES (
+    p_conversation_id,
+    v_caller_id,
+    p_message_id,
+    pg_catalog.clock_timestamp()
+  )
+  ON CONFLICT (conversation_id, user_id) DO UPDATE
+  SET last_read_message_id = EXCLUDED.last_read_message_id,
+      last_read_at = EXCLUDED.last_read_at;
+END;
+$$;
+
+-- G. Listings & Media Mutation Safeguards
+DROP POLICY IF EXISTS listings_insert_policy ON public.listings;
+CREATE POLICY listings_insert_policy ON public.listings
+FOR INSERT WITH CHECK (
+  seller_id = auth.uid()
+  AND app_security.get_account_status(auth.uid()) = 'active'
+  AND app_security.has_current_policy_acceptance(auth.uid())
+);
+
+DROP POLICY IF EXISTS listings_update_policy ON public.listings;
+CREATE POLICY listings_update_policy ON public.listings
+FOR UPDATE USING (
+  seller_id = auth.uid()
+  AND app_security.get_account_status(auth.uid()) = 'active'
+  AND status IN ('draft', 'active', 'reserved', 'paused', 'rejected')
+  AND app_security.has_current_policy_acceptance(auth.uid())
+) WITH CHECK (
+  seller_id = auth.uid()
+  AND app_security.get_account_status(auth.uid()) = 'active'
+  AND app_security.has_current_policy_acceptance(auth.uid())
+);
+
+DROP POLICY IF EXISTS listing_media_insert_policy ON public.listing_media;
+CREATE POLICY listing_media_insert_policy ON public.listing_media
+FOR INSERT WITH CHECK (
+  uploader_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM public.listings l
+    WHERE l.id = listing_media.listing_id
+      AND l.seller_id = auth.uid()
+      AND app_security.get_account_status(auth.uid()) = 'active'
+      AND app_security.has_current_policy_acceptance(auth.uid())
+  )
+);
+
+DROP POLICY IF EXISTS listing_media_update_policy ON public.listing_media;
+CREATE POLICY listing_media_update_policy ON public.listing_media
+FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM public.listings l
+    WHERE l.id = listing_media.listing_id
+      AND l.seller_id = auth.uid()
+      AND app_security.get_account_status(auth.uid()) = 'active'
+      AND app_security.has_current_policy_acceptance(auth.uid())
+  )
+) WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.listings l
+    WHERE l.id = listing_media.listing_id
+      AND l.seller_id = auth.uid()
+      AND app_security.get_account_status(auth.uid()) = 'active'
+      AND app_security.has_current_policy_acceptance(auth.uid())
+  )
+);
+
+-- Seller listing submission RPC: require current policy acceptance
+CREATE OR REPLACE FUNCTION app_security.impl_seller_submit_listing(p_listing_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_caller_id uuid;
+  v_listing record;
+  v_media_count integer;
+  v_attr record;
+  v_cover_id uuid;
+BEGIN
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  IF app_security.get_account_status(v_caller_id) != 'active' THEN
+    RAISE EXCEPTION 'account is not active';
+  END IF;
+
+  IF NOT app_security.has_current_policy_acceptance(v_caller_id) THEN
+    RAISE EXCEPTION 'POLICY_ACCEPTANCE_REQUIRED: Re-acceptance of Public Beta policies is required';
+  END IF;
+
+  SELECT * INTO v_listing
+  FROM public.listings
+  WHERE id = p_listing_id
+  FOR UPDATE;
+
+  IF v_listing.id IS NULL THEN
+    RAISE EXCEPTION 'listing not found';
+  END IF;
+
+  IF v_listing.seller_id != v_caller_id THEN
+    RAISE EXCEPTION 'caller does not own this listing';
+  END IF;
+
+  IF v_listing.status NOT IN ('draft', 'rejected') THEN
+    RAISE EXCEPTION 'listing status % cannot be submitted for review', v_listing.status;
+  END IF;
+
+  -- Validate required fields
+  IF length(trim(v_listing.title)) < 3 THEN
+    RAISE EXCEPTION 'title must be at least 3 characters';
+  END IF;
+
+  IF v_listing.description IS NULL OR length(trim(v_listing.description)) < 10 THEN
+    RAISE EXCEPTION 'description must be at least 10 characters';
+  END IF;
+
+  IF v_listing.category_id IS NULL THEN
+    RAISE EXCEPTION 'category is required';
+  END IF;
+
+  IF v_listing.city_id IS NULL THEN
+    RAISE EXCEPTION 'city is required';
+  END IF;
+
+  IF v_listing.condition IS NULL THEN
+    RAISE EXCEPTION 'condition is required';
+  END IF;
+
+  IF v_listing.price_type IS NULL THEN
+    RAISE EXCEPTION 'price type is required';
+  END IF;
+
+  IF v_listing.price_type != 'free' AND (v_listing.price_paise IS NULL OR v_listing.price_paise <= 0) THEN
+    RAISE EXCEPTION 'price in paise is required for non-free listings';
+  END IF;
+
+  -- Validate required category attributes
+  FOR v_attr IN (
+    SELECT name, label
+    FROM public.category_attributes
+    WHERE category_id = v_listing.category_id AND is_required = true
+  ) LOOP
+    IF NOT (v_listing.category_attributes ? v_attr.name) OR
+       v_listing.category_attributes->>v_attr.name IS NULL OR
+       length(trim(v_listing.category_attributes->>v_attr.name)) = 0 THEN
+      RAISE EXCEPTION 'required attribute % (%) is missing', v_attr.label, v_attr.name;
+    END IF;
+  END LOOP;
+
+  -- Validate media: at least 1 ready photo
+  SELECT count(*) INTO v_media_count
+  FROM public.listing_media
+  WHERE listing_id = p_listing_id AND processing_status = 'ready';
+
+  IF v_media_count < 1 THEN
+    RAISE EXCEPTION 'listing must have at least one photo with processing_status = ready';
+  END IF;
+
+  -- Auto-assign cover photo if not set
+  v_cover_id := v_listing.cover_photo_id;
+  IF v_cover_id IS NULL THEN
+    SELECT id INTO v_cover_id
+    FROM public.listing_media
+    WHERE listing_id = p_listing_id AND processing_status = 'ready'
+    ORDER BY display_order ASC, created_at ASC
+    LIMIT 1;
+  END IF;
+
+  -- Update listing status to pending_review
+  UPDATE public.listings
+  SET status = 'pending_review'::public.listing_status_enum,
+      cover_photo_id = v_cover_id,
+      submitted_at = pg_catalog.clock_timestamp(),
+      updated_at = pg_catalog.clock_timestamp()
+  WHERE id = p_listing_id;
+
+  -- Audit log
+  PERFORM app_security.log_audit_event(
+    'listing.submitted',
+    'listings',
+    p_listing_id,
+    jsonb_build_object('revision', v_listing.revision)
+  );
+
+  RETURN jsonb_build_object('success', true, 'status', 'pending_review');
+END;
+$$;
+
+-- Seller listing transition RPC: require current policy acceptance
+CREATE OR REPLACE FUNCTION app_security.impl_seller_transition_listing(
+  p_listing_id uuid,
+  p_action text
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_caller_id uuid;
+  v_listing record;
+  v_new_status public.listing_status_enum;
+  v_renewal_limit constant integer := 3;
+BEGIN
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
+  IF app_security.get_account_status(v_caller_id) != 'active' THEN
+    RAISE EXCEPTION 'account is not active';
+  END IF;
+
+  IF NOT app_security.has_current_policy_acceptance(v_caller_id) THEN
+    RAISE EXCEPTION 'POLICY_ACCEPTANCE_REQUIRED: Re-acceptance of Public Beta policies is required';
+  END IF;
+
+  SELECT * INTO v_listing
+  FROM public.listings
+  WHERE id = p_listing_id
+  FOR UPDATE;
+
+  IF v_listing.id IS NULL THEN
+    RAISE EXCEPTION 'listing not found';
+  END IF;
+
+  IF v_listing.seller_id != v_caller_id THEN
+    RAISE EXCEPTION 'caller does not own this listing';
+  END IF;
+
+  CASE p_action
+    WHEN 'pause' THEN
+      IF v_listing.status != 'active' THEN
+        RAISE EXCEPTION 'only active listings can be paused (current: %)', v_listing.status;
+      END IF;
+      v_new_status := 'paused'::public.listing_status_enum;
+
+      UPDATE public.listings
+      SET status = v_new_status,
+          updated_at = pg_catalog.clock_timestamp()
+      WHERE id = p_listing_id;
+
+      PERFORM app_security.log_audit_event(
+        'listing.paused',
+        'listings',
+        p_listing_id,
+        jsonb_build_object('revision', v_listing.revision)
+      );
+
+    WHEN 'resume' THEN
+      IF v_listing.status != 'paused' THEN
+        RAISE EXCEPTION 'only paused listings can be resumed (current: %)', v_listing.status;
+      END IF;
+      IF v_listing.published_at IS NULL THEN
+        RAISE EXCEPTION 'unapproved listing cannot be resumed';
+      END IF;
+      IF v_listing.expires_at IS NOT NULL AND v_listing.expires_at <= pg_catalog.clock_timestamp() THEN
+        RAISE EXCEPTION 'expired listing cannot be resumed directly';
+      END IF;
+      v_new_status := 'active'::public.listing_status_enum;
+
+      UPDATE public.listings
+      SET status = v_new_status,
+          updated_at = pg_catalog.clock_timestamp()
+      WHERE id = p_listing_id;
+
+      PERFORM app_security.log_audit_event(
+        'listing.resumed',
+        'listings',
+        p_listing_id,
+        jsonb_build_object('revision', v_listing.revision)
+      );
+
+    WHEN 'reserve' THEN
+      IF v_listing.status != 'active' THEN
+        RAISE EXCEPTION 'only active listings can be reserved (current: %)', v_listing.status;
+      END IF;
+      v_new_status := 'reserved'::public.listing_status_enum;
+
+      UPDATE public.listings
+      SET status = v_new_status,
+          updated_at = pg_catalog.clock_timestamp()
+      WHERE id = p_listing_id;
+
+      PERFORM app_security.log_audit_event(
+        'listing.reserved',
+        'listings',
+        p_listing_id,
+        jsonb_build_object('revision', v_listing.revision)
+      );
+
+    WHEN 'unreserve' THEN
+      IF v_listing.status != 'reserved' THEN
+        RAISE EXCEPTION 'only reserved listings can be unreserved (current: %)', v_listing.status;
+      END IF;
+      v_new_status := 'active'::public.listing_status_enum;
+
+      UPDATE public.listings
+      SET status = v_new_status,
+          updated_at = pg_catalog.clock_timestamp()
+      WHERE id = p_listing_id;
+
+      PERFORM app_security.log_audit_event(
+        'listing.unreserved',
+        'listings',
+        p_listing_id,
+        jsonb_build_object('revision', v_listing.revision)
+      );
+
+    WHEN 'mark_sold' THEN
+      IF v_listing.status NOT IN ('active', 'reserved', 'paused') THEN
+        RAISE EXCEPTION 'listing in status % cannot be marked sold', v_listing.status;
+      END IF;
+      v_new_status := 'sold'::public.listing_status_enum;
+
+      UPDATE public.listings
+      SET status = v_new_status,
+          sold_at = pg_catalog.clock_timestamp(),
+          updated_at = pg_catalog.clock_timestamp()
+      WHERE id = p_listing_id;
+
+      PERFORM app_security.log_audit_event(
+        'listing.sold',
+        'listings',
+        p_listing_id,
+        jsonb_build_object('revision', v_listing.revision)
+      );
+
+    WHEN 'renew' THEN
+      IF v_listing.status != 'expired' THEN
+        RAISE EXCEPTION 'only expired listings can be renewed (current: %)', v_listing.status;
+      END IF;
+      IF v_listing.renewal_count >= v_renewal_limit THEN
+        RAISE EXCEPTION 'renewal limit of % reached', v_renewal_limit;
+      END IF;
+      v_new_status := 'pending_review'::public.listing_status_enum;
+
+      UPDATE public.listings
+      SET status = v_new_status,
+          renewal_count = v_listing.renewal_count + 1,
+          submitted_at = pg_catalog.clock_timestamp(),
+          updated_at = pg_catalog.clock_timestamp()
+      WHERE id = p_listing_id;
+
+      PERFORM app_security.log_audit_event(
+        'listing.renewed',
+        'listings',
+        p_listing_id,
+        jsonb_build_object('revision', v_listing.revision, 'renewal_count', v_listing.renewal_count + 1)
+      );
+
+    ELSE
+      RAISE EXCEPTION 'invalid transition action: %', p_action;
+  END CASE;
+
+  RETURN jsonb_build_object('success', true, 'new_status', v_new_status);
+END;
+$$;
+
+-- H. Profile & Account Settings Mutation Safeguards
+DROP POLICY IF EXISTS profiles_update_policy ON public.profiles;
+CREATE POLICY profiles_update_policy ON public.profiles
+FOR UPDATE USING (
+  (id = auth.uid())
+  AND (app_security.get_account_status(auth.uid()) = 'active')
+  AND app_security.has_current_policy_acceptance(auth.uid())
+) WITH CHECK (
+  (id = auth.uid())
+  AND (app_security.get_account_status(auth.uid()) = 'active')
+  AND app_security.has_current_policy_acceptance(auth.uid())
+);
+
+DROP POLICY IF EXISTS user_accounts_update_policy ON public.user_accounts;
+CREATE POLICY user_accounts_update_policy ON public.user_accounts
+FOR UPDATE USING (
+  (user_id = auth.uid())
+  AND (account_status = 'active')
+  AND app_security.has_current_policy_acceptance(auth.uid())
+) WITH CHECK (
+  (user_id = auth.uid())
+  AND (account_status = 'active')
+  AND app_security.has_current_policy_acceptance(auth.uid())
+);
+
+-- I. In-App Notifications Mutation Safeguards
+CREATE OR REPLACE FUNCTION app_security.impl_mark_notification_read(p_id uuid)
+RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_caller_id uuid;
+BEGIN
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF app_security.get_account_status(v_caller_id) NOT IN ('active', 'suspended') THEN
+    RAISE EXCEPTION 'Account restricted';
+  END IF;
+
+  IF NOT app_security.has_current_policy_acceptance(v_caller_id) THEN
+    RAISE EXCEPTION 'POLICY_ACCEPTANCE_REQUIRED: Re-acceptance of Public Beta policies is required';
+  END IF;
+
+  UPDATE public.notifications
+  SET read_at = pg_catalog.clock_timestamp()
+  WHERE id = p_id AND user_id = v_caller_id AND read_at IS NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION app_security.impl_mark_all_notifications_read()
+RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_caller_id uuid;
+BEGIN
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF app_security.get_account_status(v_caller_id) NOT IN ('active', 'suspended') THEN
+    RAISE EXCEPTION 'Account restricted';
+  END IF;
+
+  IF NOT app_security.has_current_policy_acceptance(v_caller_id) THEN
+    RAISE EXCEPTION 'POLICY_ACCEPTANCE_REQUIRED: Re-acceptance of Public Beta policies is required';
+  END IF;
+
+  UPDATE public.notifications
+  SET read_at = pg_catalog.clock_timestamp()
+  WHERE user_id = v_caller_id AND read_at IS NULL;
 END;
 $$;
 
