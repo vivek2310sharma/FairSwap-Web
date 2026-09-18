@@ -38,7 +38,7 @@ This transition bridge has been successfully established and accepted as a verif
 1. **FairSwapTest Supabase Cloud Setup**:
    - Remote `FairSwapTest` Supabase project (`wpppxlnbzqynvhpeuavd`) provisioned and verified.
    - Complete Phase 1 migration set (`20260913000001` through `20260914000016`) applied and operational.
-   - Private (`listing-media-orig`) and public (`listing-media-public`, `avatars`) storage buckets and RLS policies active.
+   - Storage buckets `listing-originals` and `listing-derivatives` configured with RLS policies; both listing media buckets are private and server-mediated.
    - Remote staff administrator bootstrap executed and verified.
 
 2. **Vercel Staging Deployment**:
@@ -48,22 +48,22 @@ This transition bridge has been successfully established and accepted as a verif
 3. **Hosted Verification Scope Passed**:
    - **Auth & Session**: Sign-up, confirmation email flow, login persistence, and authenticated customer session handling.
    - **Staff MFA**: TOTP AAL2 enrollment and step-up enforcement on staff moderation endpoints.
-   - **Listing Lifecycle**: Listing submission, private original storage upload, and Sharp WebP derivative generation (thumbnails/detail/zoom).
-   - **Moderation**: Independent staff approval and rejection workflows with audit logging.
-   - **Public Discoverability**: Full-text search, category browsing, and public listing detail views.
+   - **Listing Lifecycle**: Listing submission, private storage upload (`listing-originals`), and Sharp WebP derivative generation (`thumb`, `medium`, `large` in private `listing-derivatives`; both listing media buckets are private and server-mediated).
+   - **Moderation**: Self-moderation prevention and independent moderator approval.
+   - **Public Discoverability**: Approved listing became publicly visible, public detail page rendered, and its cover and both image derivatives (`thumb`, `medium`) rendered while signed out.
    - **Conversation Initiation**: Buyer-seller thread creation linked to active listings.
    - **Realtime Messaging**: Two-way message exchange via Supabase Realtime channel subscriptions.
    - **Hydration Stability**: Message timestamp rendering made deterministic in Indian Standard Time (`Asia/Kolkata`), eliminating SSR/hydration discrepancies (Minified React error #418).
    - **Chat Accessibility**: Full accessible naming (`aria-label`) on icon-only messaging action buttons (`Send message`, `Report User`, `Block User`, `Report Message`).
 
 > [!IMPORTANT]
-> **Boundary Notice**: Acceptance of the Hosted Phase 1 Baseline confirms staging readiness for controlled pilot operations. It does **NOT** constitute public production launch approval. Public launch requires separate external sign-offs: authenticated production SMTP (SPF/DKIM), production domain (`fairswap.in`) DNS/TLS, statutory Grievance Officer appointment under Indian IT Rules, and legal review of agreements. Phase 2 has NOT started; `main` branch remains untouched.
+> **Boundary Notice**: Acceptance of the Hosted Phase 1 Baseline confirms hosted staging readiness / pre-pilot readiness. Starting a controlled pilot still requires separate human authorization. It does **NOT** constitute public production launch approval. Public launch requires separate external sign-offs: authenticated production SMTP (SPF/DKIM), production domain (`fairswap.in`) DNS/TLS, statutory Grievance Officer appointment under Indian IT Rules, and legal review of agreements. Phase 2 remains NOT STARTED and NOT AUTHORIZED; Next permitted transition: Phase 2 planning/kickoff only after explicit human authorization; `main` branch remains untouched.
 
 ---
 
 ## Phase 2 — Engagement and optional platform-service revenue (PLANNED)
 
-> **Status**: NOT YET STARTED — Planned to follow the successful establishment of the Hosted Phase 1 Baseline.
+> **Status**: NOT YET STARTED — Next permitted transition: Phase 2 planning/kickoff only after explicit human authorization. Phase 2 remains NOT STARTED and NOT AUTHORIZED.
 
 Use real Phase 1 controlled pilot feedback to prioritize engagement and marketplace utility:
 - Saved searches and matching item alerts.
@@ -95,8 +95,8 @@ Expand marketplace scale based on evidence from pilot operations:
 To maintain strict operational clarity, the platform distinguishes four separate readiness states:
 
 1. **Phase 1 Implementation Completion**: **ACHIEVED** — All functional code, RLS policies, tests, and runbooks are implemented and verified locally against Docker/Supabase containers.
-2. **Hosted / Staging Readiness**: **ACHIEVED & ACCEPTED** (2026-09-18) — Full Phase 1 stack deployed and verified on FairSwapTest Supabase + Vercel Preview (`hosted-phase1-baseline-2026-09-18`, commit `14e0e6a`).
-3. **Phase 2 Development**: **NEXT STAGE (NOT YET STARTED)** — Feature work commences only after Phase 2 kickoff authorization.
+2. **Hosted / Staging Readiness**: **ACHIEVED & ACCEPTED** (2026-09-18) — Full Phase 1 stack deployed and verified on FairSwapTest Supabase + Vercel Preview (`hosted-phase1-baseline-2026-09-18`, commit `14e0e6a`). Hosted staging readiness / pre-pilot readiness confirmed; starting a controlled pilot requires separate human authorization.
+3. **Phase 2 Development**: **NOT STARTED AND NOT AUTHORIZED** — Next permitted transition: Phase 2 planning/kickoff only after explicit human authorization.
 4. **Public Production Launch Readiness**: **GATED** — Public launch requires external legal and infrastructure sign-offs:
    - Authenticated production SMTP provider (DKIM/SPF)
    - Production domain (`fairswap.in`) with automated SSL/TLS
