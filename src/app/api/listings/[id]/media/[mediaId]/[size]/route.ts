@@ -16,9 +16,19 @@ export async function GET(
   const serviceClient = createServiceRoleClient();
 
   // Check if listing is publicly visible
-  const { data: isPublicVisible } = await serviceClient.rpc("is_listing_publicly_visible", {
+  const { data: isPublicVisible, error: visibilityError } = await serviceClient.rpc("is_listing_publicly_visible", {
     listing_id: listingId,
   });
+
+  if (visibilityError) {
+    console.error("[mediaRoute] RPC is_listing_publicly_visible error:", {
+      listingId,
+      mediaId,
+      size,
+      code: visibilityError.code,
+      message: visibilityError.message,
+    });
+  }
 
   // Original files are NEVER accessible publicly; strictly owner or staff
   if (size === "original" || !isPublicVisible) {
@@ -39,6 +49,13 @@ export async function GET(
       .single();
 
     if (listingError || !listing) {
+      if (listingError) {
+        console.error("[mediaRoute] Authenticated check: listing query error:", {
+          listingId,
+          code: listingError.code,
+          message: listingError.message,
+        });
+      }
       return NextResponse.json({ error: "Listing not found" }, { status: 404 });
     }
 
@@ -130,6 +147,15 @@ export async function GET(
     .single();
 
   if (mediaError || !media) {
+    if (mediaError) {
+      console.error("[mediaRoute] listing_media query error:", {
+        listingId,
+        mediaId,
+        size,
+        code: mediaError.code,
+        message: mediaError.message,
+      });
+    }
     return NextResponse.json({ error: "Media not found" }, { status: 404 });
   }
 
@@ -156,6 +182,14 @@ export async function GET(
     .createSignedUrl(derivativePath, 3600);
 
   if (signError || !signedData?.signedUrl) {
+    if (signError) {
+      console.error("[mediaRoute] Storage signed URL generation error:", {
+        listingId,
+        mediaId,
+        size,
+        message: signError.message,
+      });
+    }
     return NextResponse.json({ error: "Failed to generate media URL" }, { status: 500 });
   }
 

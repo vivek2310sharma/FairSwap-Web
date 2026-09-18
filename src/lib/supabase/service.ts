@@ -17,9 +17,19 @@ export function createServiceRoleClient() {
   }
 
   const supabaseUrl =
-    process.env.STAGING_SUPABASE_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.STAGING_SUPABASE_URL ||
     "http://127.0.0.1:54321";
+
+  if (
+    process.env.STAGING_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.STAGING_SUPABASE_URL !== process.env.NEXT_PUBLIC_SUPABASE_URL
+  ) {
+    console.warn(
+      `[createServiceRoleClient] STAGING_SUPABASE_URL (${process.env.STAGING_SUPABASE_URL}) differs from NEXT_PUBLIC_SUPABASE_URL (${process.env.NEXT_PUBLIC_SUPABASE_URL}). Using NEXT_PUBLIC_SUPABASE_URL for client consistency.`
+    );
+  }
 
   const secretKey =
     process.env.SUPABASE_SECRET_KEY ||
@@ -37,6 +47,17 @@ export function createServiceRoleClient() {
 
   if (!isModernSecret && !isJwt) {
     throw new Error("Privileged server secret key is not configured with a compatible credential format.");
+  }
+
+  if (process.env.NODE_ENV !== "test") {
+    try {
+      const parsed = new URL(supabaseUrl);
+      const keySource = process.env.SUPABASE_SECRET_KEY ? "SUPABASE_SECRET_KEY" : "SUPABASE_SERVICE_ROLE_KEY";
+      const keyType = isModernSecret ? "modern_secret" : "legacy_jwt";
+      console.info(`[createServiceRoleClient] Target host: ${parsed.host}, keySource: ${keySource}, keyType: ${keyType}`);
+    } catch {
+      // Ignore URL parse error in diagnostic logger
+    }
   }
 
   return createClient<Database>(supabaseUrl, secretKey, {
