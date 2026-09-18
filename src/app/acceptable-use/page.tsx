@@ -25,7 +25,7 @@ export default function AcceptableUsePage() {
               Acceptable Use &amp; Prohibited Listings
             </h1>
             <p className="text-sm text-muted">
-              Marketplace standards, prohibited goods, and conduct policies for FairSwap.
+              Classifieds standards, prohibited goods, and conduct policies for FairSwap.
             </p>
           </div>
         </div>

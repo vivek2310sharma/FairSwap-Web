@@ -102,6 +102,10 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
       expect(screen.getByText(/E\. Safety, Moderation & Support Data/i)).toBeInTheDocument();
       expect(screen.getByText(/F\. Privacy Request Records/i)).toBeInTheDocument();
       expect(screen.getByText(/G\. Technical & Operational Logs/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/FairSwap applies centralized redaction and sanitisation controls to operational logs to reduce exposure of credentials/i)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/systematically redacted from logs/i)).not.toBeInTheDocument();
     });
 
     it("distinguishes in-platform support tickets from email grievance intake", () => {
@@ -154,6 +158,10 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
       expect(
         screen.getByRole("heading", { level: 1, name: "Acceptable Use & Prohibited Listings" })
       ).toBeInTheDocument();
+      expect(
+        screen.getByText(/Classifieds standards, prohibited goods, and conduct policies for FairSwap\./i)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Marketplace standards/i)).not.toBeInTheDocument();
       expect(screen.getByText(`Version: ${LEGAL_POLICY.acceptableUseVersion}`)).toBeInTheDocument();
       expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.lastUpdated}`)).toBeInTheDocument();
     });

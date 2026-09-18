@@ -128,7 +128,7 @@ export default function PrivacyPage() {
               <div className="border-l-2 border-brand-500 pl-4">
                 <h3 className="text-sm font-semibold text-foreground">G. Technical &amp; Operational Logs</h3>
                 <p className="mt-1 text-xs">
-                  For service security and operational integrity, our systems process technical metadata such as request correlation IDs, authentication security events, error diagnostic logs, and security audit entries. Sensitive tokens, passwords, and secrets are systematically redacted from logs. We do not collect precise GPS tracking data or government identity documents.
+                  For service security and operational integrity, our systems process technical metadata such as request correlation IDs, authentication security events, error diagnostic logs, and security audit entries. FairSwap applies centralized redaction and sanitisation controls to operational logs to reduce exposure of credentials, authentication tokens, secrets, and other sensitive values. We do not collect precise GPS tracking data or government identity documents.
                 </p>
               </div>
             </div>
