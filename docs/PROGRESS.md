@@ -4,9 +4,9 @@ Starter pack: v4.0 (2026-09-13).
 
 ## Current authorization
 
-- Authorized milestone/action: **Phase 1 Documentation & Closure** (authorized 2026-09-14). Next: **Hosted Phase 1 Baseline Setup (FairSwapTest & Vercel Staging)**.
-- Current plan revision: Milestone 1.6 (r4 APPROVED & VERIFIED).
-- Next intended user action: establish hosted Phase 1 baseline on FairSwapTest and Vercel staging before initiating Phase 2.
+- Authorized milestone/action: **Hosted Phase 1 Baseline Accepted** (accepted 2026-09-18, tag `hosted-phase1-baseline-2026-09-18`). Next: **Phase 2 Planning & Kickoff Authorization**.
+- Current plan revision: Milestone 1.6 (r4 APPROVED & VERIFIED) + Hosted Phase 1 Baseline.
+- Next intended user action: formal Phase 2 kickoff authorization before initiating Phase 2 feature work.
 - Workspace rule actual path: `.agents/rules/fairswap.md` (confirmed present; active).
 - Detected OS: Windows 11 (NT 10.0.26200.0), native x64, PowerShell 5.1.
 - Detected toolchain: Node.js v24.15.0, npm 11.12.1, corepack 0.34.6, Git 2.45.1. pnpm pinned to 10.12.1 via corepack.
@@ -22,6 +22,7 @@ Starter pack: v4.0 (2026-09-13).
 | 1.4 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
 | 1.5 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
 | 1.6 | **r4 APPROVED** | **COMPLETED** | **2026-09-14 (r4)** | **2026-09-14 (HUMAN ACCEPTED)** |
+| Hosted Phase 1 Baseline | **APPROVED** | **COMPLETED** | **2026-09-18** | **2026-09-18 (HUMAN ACCEPTED)** |
 
 Future scope documents are reference contracts, not approved plans. Pack validation checks concern these instruction files only, not application behavior.
 
@@ -63,12 +64,13 @@ Future scope documents are reference contracts, not approved plans. Pack validat
 | 2026-09-14 | 1.6 | **BUILD AUTHORIZED** | r4 approved | User approved r4 and authorized BUILD for Milestone 1.6. |
 | 2026-09-14 | 1.6 | **BUILD & VERIFY** | r4 implemented | Implemented Migration 16 (staff user moderation hardening), `/admin/users` and `/admin/users/[id]` staff UI, disaster recovery scripts, reliability/failure injection tests, load-smoke benchmarks, accessibility contrast tests, operational runbooks, and Go/No-Go release report. Fixed listUsers pagination bug affecting test reliability. |
 | 2026-09-14 | 1.6 / Phase 1 | **HUMAN ACCEPTANCE & PHASE 1 CLOSURE** | r4 verified | User reviewed full Milestone 1.6 verification evidence (173 unit, 85 security, 84 E2E, prod build, DR restore test) on commit 79026f2, authorized documentation finalization, and formally accepted Phase 1 completion. Established forward roadmap for hosted staging baseline on FairSwapTest + Vercel before Phase 2. |
+| 2026-09-18 | Hosted Baseline | **HOSTED PHASE 1 BASELINE ACCEPTANCE** | Verified on remote | User verified and formally accepted Hosted Phase 1 Baseline on FairSwapTest (`wpppxlnbzqynvhpeuavd`) + Vercel Preview. Tagged `hosted-phase1-baseline-2026-09-18` at commit `14e0e6a190b819b62e40dd46d86e081980323bd2`. Verified auth/session, staff MFA, listing creation, Sharp WebP derivatives, independent moderation, public search, conversation initiation, two-way Realtime messaging, SSR hydration stability (IST formatting), and chat accessibility. Confirms staging readiness; public production launch prerequisites remain separate external blockers; Phase 2 not started; main branch untouched. |
 
 Record only actual human requests/reviews. Keep plan approval separate from acceptance of implemented work.
 
 ## Current batch and next task
 
-**Phase 1 is complete, verified, and formally closed**. All Milestones 1.1 through 1.6 are implemented, hardened, and verified with zero blockers. Documentation finalized. The next operational stage is establishing the **Hosted Phase 1 Baseline** on FairSwapTest (Supabase cloud) and Vercel staging. Phase 2 implementation has NOT started.
+**Hosted Phase 1 Baseline is established, verified, and formally accepted** (tag `hosted-phase1-baseline-2026-09-18`, commit `14e0e6a190b819b62e40dd46d86e081980323bd2`). This confirms multi-tenant staging readiness for controlled pilot operations. External public launch prerequisites (production SMTP with SPF/DKIM, `fairswap.in` DNS/TLS, Grievance Officer appointment, and legal review) remain gated. Phase 2 implementation has NOT started; `main` branch remains untouched.
 
 ## Verification evidence
 
@@ -117,6 +119,12 @@ Record only actual human requests/reviews. Keep plan approval separate from acce
 | 2026-09-14 00:18 | 1.6 / r4 | `corepack pnpm tsx scripts/backup-storage.ts` | 0 | PASS | 120/120 storage objects downloaded and backed up. Manifest written. |
 | 2026-09-14 00:18 | 1.6 / r4 | `corepack pnpm tsx scripts/verify-restore.ts` | 0 | PASS | Phase 1: Database restored to `fairswap_restore_test` — schemas, 9 tables, row counts all matched, zero referential integrity violations, disposable database dropped. Phase 2: 120/120 storage objects uploaded to recovery buckets, re-downloaded and 100% SHA-256 verified, active buckets unmodified, recovery buckets purged. |
 | 2026-09-14 00:15 | 1.6 / r4 | Load-smoke benchmark (inside `test:unit`) | 0 | PASS | 100 requests, 25 concurrency, 0 HTTP 5xx, 100 HTTP 2xx, p50=143.73ms, p95=446.59ms, max=514.54ms. Local engineering evidence only. |
+| 2026-09-18 14:42 | Hosted Baseline | `npm run lint` (`eslint .`) | 0 | PASS | Flat ESLint check across full codebase. 0 errors, 0 warnings. |
+| 2026-09-18 14:42 | Hosted Baseline | `npm run typecheck` (`tsc --noEmit`) | 0 | PASS | Strict TypeScript compiler check passed cleanly with 0 errors. |
+| 2026-09-18 14:43 | Hosted Baseline | `npm run test:unit` (`vitest run`) | 0 | PASS | 33 test files, 286/286 unit tests passing (including deterministic hydration, composer visibility, and chat accessibility). |
+| 2026-09-18 14:43 | Hosted Baseline | `npm run test:security` | 0 | PASS | 7 test files, 96/96 security tests passing (zero regressions). |
+| 2026-09-18 14:43 | Hosted Baseline | `npm run build` (`next build`) | 0 | PASS | Next.js 16.3.5 Turbopack production build succeeded cleanly. 41 routes compiled. |
+| 2026-09-18 14:44 | Hosted Baseline | `npx tsx scripts/run-point17-verification.ts` | 0 | PASS | Full Point 17 verification: 4 viewports, 5 a11y pages, 22 screenshots, 0 failures, 0 console/network errors. |
 
 ## Blockers and external prerequisites
 

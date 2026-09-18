@@ -26,32 +26,38 @@ All Milestones 1.1 through 1.6 are implemented, hardened, and verified locally:
 
 ---
 
-## Transition Bridge — Hosted Phase 1 Baseline (FairSwapTest & Vercel Staging)
+## Transition Bridge — Hosted Phase 1 Baseline (FairSwapTest & Vercel Staging) — ACCEPTED
 
-> **Mandatory Next Step**: Before any Phase 2 feature work or code changes begin, the verified Phase 1 application baseline must be deployed and validated in a hosted staging environment.
+> **Status**: **ACCEPTED & ESTABLISHED** (2026-09-18)<br>
+> **Target Tag**: `hosted-phase1-baseline-2026-09-18`<br>
+> **Baseline Commit**: `14e0e6a190b819b62e40dd46d86e081980323bd2` on branch `Phase1`<br>
+> **Target Environment**: `FairSwapTest` (remote Supabase cloud) + Vercel Preview staging
 
-This bridge establishes a known-good, deployed reference baseline using the dedicated **FairSwapTest** Supabase project and **Vercel staging**:
+This transition bridge has been successfully established and accepted as a verified staging reference baseline:
 
 1. **FairSwapTest Supabase Cloud Setup**:
-   - Provision and prepare the remote `FairSwapTest` Supabase cloud project.
-   - Apply and validate the complete Phase 1 migration set (`20260913000001` through `20260914000016`).
-   - Configure required cloud environment variables and secrets.
-   - Verify cloud database schemas, functions, RLS policies, and Auth configuration.
-   - Validate cloud private and public Supabase Storage buckets and permissions.
-   - Execute initial staff administrator bootstrap on the cloud database.
+   - Remote `FairSwapTest` Supabase project (`wpppxlnbzqynvhpeuavd`) provisioned and verified.
+   - Complete Phase 1 migration set (`20260913000001` through `20260914000016`) applied and operational.
+   - Private (`listing-media-orig`) and public (`listing-media-public`, `avatars`) storage buckets and RLS policies active.
+   - Remote staff administrator bootstrap executed and verified.
 
 2. **Vercel Staging Deployment**:
-   - Deploy the verified Phase 1 codebase (`Phase1` branch baseline) to Vercel staging.
-   - Connect Vercel staging environment variables securely to the `FairSwapTest` Supabase project.
-   - Utilize the default Vercel-generated deployment URL (`*.vercel.app`) initially if no custom staging domain is configured.
+   - `Phase1` branch deployed cleanly to Vercel Preview with production build optimizations (`next build` with Turbopack).
+   - Serverless and client environment variables securely connected to the identical `FairSwapTest` project.
 
-3. **Hosted Verification & Stabilization**:
-   - Execute end-to-end smoke tests against the live hosted staging deployment.
-   - Verify authenticated auth flows (sign-up, confirmation email delivery, sign-in, MFA).
-   - Verify listing creation, image upload, Sharp WebP derivative generation in cloud storage.
-   - Verify Realtime message streaming and moderation actions against the hosted stack.
-   - Diagnose and resolve any cloud-specific network, header, cookie, or cold-start blockers.
-   - Tag and establish the confirmed, known-good **Hosted Phase 1 Baseline**.
+3. **Hosted Verification Scope Passed**:
+   - **Auth & Session**: Sign-up, confirmation email flow, login persistence, and authenticated customer session handling.
+   - **Staff MFA**: TOTP AAL2 enrollment and step-up enforcement on staff moderation endpoints.
+   - **Listing Lifecycle**: Listing submission, private original storage upload, and Sharp WebP derivative generation (thumbnails/detail/zoom).
+   - **Moderation**: Independent staff approval and rejection workflows with audit logging.
+   - **Public Discoverability**: Full-text search, category browsing, and public listing detail views.
+   - **Conversation Initiation**: Buyer-seller thread creation linked to active listings.
+   - **Realtime Messaging**: Two-way message exchange via Supabase Realtime channel subscriptions.
+   - **Hydration Stability**: Message timestamp rendering made deterministic in Indian Standard Time (`Asia/Kolkata`), eliminating SSR/hydration discrepancies (Minified React error #418).
+   - **Chat Accessibility**: Full accessible naming (`aria-label`) on icon-only messaging action buttons (`Send message`, `Report User`, `Block User`, `Report Message`).
+
+> [!IMPORTANT]
+> **Boundary Notice**: Acceptance of the Hosted Phase 1 Baseline confirms staging readiness for controlled pilot operations. It does **NOT** constitute public production launch approval. Public launch requires separate external sign-offs: authenticated production SMTP (SPF/DKIM), production domain (`fairswap.in`) DNS/TLS, statutory Grievance Officer appointment under Indian IT Rules, and legal review of agreements. Phase 2 has NOT started; `main` branch remains untouched.
 
 ---
 
@@ -67,7 +73,7 @@ Use real Phase 1 controlled pilot feedback to prioritize engagement and marketpl
 - Permitted message attachments and enhanced anti-fraud triage.
 - Optional self-service monetization for FairSwap's OWN service (e.g. promoted listings or additional listing quotas). Billing applies strictly to FairSwap platform features; it does NOT introduce buyer checkout, escrow, or payment collection for items.
 
-Do not begin Phase 2 implementation or database migrations until the hosted Phase 1 baseline is accepted.
+Do not begin Phase 2 implementation or database migrations until authorized.
 
 ---
 
@@ -89,8 +95,8 @@ Expand marketplace scale based on evidence from pilot operations:
 To maintain strict operational clarity, the platform distinguishes four separate readiness states:
 
 1. **Phase 1 Implementation Completion**: **ACHIEVED** — All functional code, RLS policies, tests, and runbooks are implemented and verified locally against Docker/Supabase containers.
-2. **Hosted / Staging Readiness**: **NEXT GATE** — Full Phase 1 stack deployed and verified on FairSwapTest Supabase + Vercel staging.
-3. **Phase 2 Development**: **DEFERRED** — Feature work commences only after staging baseline is confirmed.
+2. **Hosted / Staging Readiness**: **ACHIEVED & ACCEPTED** (2026-09-18) — Full Phase 1 stack deployed and verified on FairSwapTest Supabase + Vercel Preview (`hosted-phase1-baseline-2026-09-18`, commit `14e0e6a`).
+3. **Phase 2 Development**: **NEXT STAGE (NOT YET STARTED)** — Feature work commences only after Phase 2 kickoff authorization.
 4. **Public Production Launch Readiness**: **GATED** — Public launch requires external legal and infrastructure sign-offs:
    - Authenticated production SMTP provider (DKIM/SPF)
    - Production domain (`fairswap.in`) with automated SSL/TLS
