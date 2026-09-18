@@ -59,6 +59,23 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
       expect(grievanceLinks.some((l) => l.getAttribute("href") === "/grievance")).toBe(true);
     });
 
+    it("defines a narrowed user content licence without claiming ownership", () => {
+      render(<TermsPage />);
+      expect(screen.getByText(/FairSwap does not claim ownership of your content\./i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/grant FairSwap a non-exclusive, worldwide, royalty-free licence, with the right to permit FairSwap's service providers to process the content solely as necessary/i)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/royalty-free, transferable licence/i)).not.toBeInTheDocument();
+    });
+
+    it("specifies governing law of India with competent jurisdiction under applicable law without exclusive venue claims", () => {
+      render(<TermsPage />);
+      expect(
+        screen.getByText(/These Terms are governed by the laws of India\. Any dispute arising from these Terms or use of FairSwap will be subject to courts having competent jurisdiction under applicable law\./i)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/instituted exclusively in courts/i)).not.toBeInTheDocument();
+    });
+
     it("displays version and last updated date", () => {
       render(<TermsPage />);
       expect(screen.getByText(`Version: ${LEGAL_POLICY.termsVersion}`)).toBeInTheDocument();
@@ -102,6 +119,8 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
       expect(
         screen.getByText(/FairSwap does not currently deploy advertising or marketing cookie integrations in its application code\./i)
       ).toBeInTheDocument();
+      expect(screen.queryByText(/cross-site request forgery/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/cookie consent banner is not required/i)).not.toBeInTheDocument();
     });
 
     it("accurately describes platform account deletion workflow", () => {

@@ -7,7 +7,22 @@ ALTER TABLE public.user_accounts
   ADD COLUMN IF NOT EXISTS age_confirmed_at timestamptz,
   ADD COLUMN IF NOT EXISTS minimum_age_confirmed smallint;
 
--- 2. Update user_accounts immutability enforcement trigger
+-- 2. Add check constraint protecting minimum age threshold when age confirmation exists
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'chk_user_accounts_minimum_age'
+  ) THEN
+    ALTER TABLE public.user_accounts
+      ADD CONSTRAINT chk_user_accounts_minimum_age
+      CHECK (
+        (age_confirmed_at IS NULL AND minimum_age_confirmed IS NULL) OR
+        (age_confirmed_at IS NOT NULL AND minimum_age_confirmed >= 18)
+      );
+  END IF;
+END $$;
+
+-- 3. Update user_accounts immutability enforcement trigger
 CREATE OR REPLACE FUNCTION public.enforce_user_accounts_immutability()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -43,7 +58,7 @@ BEGIN
 END;
 $$;
 
--- 3. Update auth provisioning trigger handle_new_user()
+-- 4. Update auth provisioning trigger handle_new_user()
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER
@@ -69,63 +84,27 @@ BEGIN
   v_acceptable_use_version := NULLIF(TRIM(NEW.raw_user_meta_data->>'acceptable_use_version'), '');
   v_age_confirmed := NEW.raw_user_meta_data->>'age_confirmed';
 
-  IF NEW.raw_user_meta_data->>'minimum_age_confirmed' IS NOT NULL THEN
-    v_min_age := (NEW.raw_user_meta_data->>'minimum_age_confirmed')::smallint;
-  ELSIF v_age_confirmed = 'true' THEN
+  -- Never trust client-supplied minimum_age_confirmed.
+  -- Derive the threshold strictly from server/database-controlled logic.
+  IF COALESCE(v_age_confirmed, 'false') = 'true' THEN
     v_min_age := 18;
   ELSE
     v_min_age := NULL;
   END IF;
 
+  -- Strictly validate that the exact current policy versions are accepted
+  -- and 18+ confirmation is supplied.
   v_is_valid_consent := (
     COALESCE(v_terms_accepted, 'false') = 'true' AND
-    v_terms_version IS NOT NULL AND
-    v_privacy_version IS NOT NULL AND
-    v_acceptable_use_version IS NOT NULL AND
+    v_terms_version = '2026-09-18' AND
+    v_privacy_version = '2026-09-18' AND
+    v_acceptable_use_version = '2026-09-18' AND
     COALESCE(v_age_confirmed, 'false') = 'true' AND
-    COALESCE(v_min_age, 0) >= 18
+    v_min_age = 18
   );
 
   IF v_is_valid_consent IS NOT TRUE THEN
-    -- Compatibility guard for legacy test fixture seeds (e.g. tests using '2026-09-01')
-    IF v_terms_version = '2026-09-01' THEN
-      INSERT INTO public.profiles (
-        id, display_name, avatar_url, bio, city, state, created_at, updated_at
-      ) VALUES (
-        NEW.id, v_display_name, NULL, NULL, NULL, NULL, NEW.created_at, NEW.created_at
-      );
-
-      INSERT INTO public.user_accounts (
-        user_id,
-        account_status,
-        terms_accepted_at,
-        terms_version,
-        privacy_policy_version,
-        acceptable_use_version,
-        age_confirmed_at,
-        minimum_age_confirmed,
-        notification_preferences,
-        optional_contact_preferences,
-        created_at,
-        updated_at
-      ) VALUES (
-        NEW.id,
-        'active',
-        CASE WHEN v_terms_accepted = 'true' THEN NEW.created_at ELSE NEW.created_at END,
-        COALESCE(v_terms_version, '2026-09-01'),
-        COALESCE(v_privacy_version, '2026-09-01'),
-        v_acceptable_use_version,
-        CASE WHEN v_age_confirmed = 'true' THEN NEW.created_at ELSE NULL END,
-        v_min_age,
-        '{"email_notifications": true}'::jsonb,
-        '{}'::jsonb,
-        NEW.created_at,
-        NEW.created_at
-      );
-      RETURN NEW;
-    END IF;
-
-    RAISE EXCEPTION 'Registration rejected: mandatory Terms acceptance, Privacy acknowledgement, Acceptable Use acceptance, and 18+ age confirmation are required.';
+    RAISE EXCEPTION 'Registration rejected: mandatory Terms acceptance, Privacy acknowledgement, Acceptable Use acceptance, and 18+ age confirmation are required with current policy versions.';
   END IF;
 
   -- Create public profile
@@ -153,11 +132,11 @@ BEGIN
     NEW.id,
     'active',
     NEW.created_at,
-    v_terms_version,
-    v_privacy_version,
-    v_acceptable_use_version,
+    '2026-09-18',
+    '2026-09-18',
+    '2026-09-18',
     NEW.created_at,
-    v_min_age,
+    18,
     '{"email_notifications": true}'::jsonb,
     '{}'::jsonb,
     NEW.created_at,

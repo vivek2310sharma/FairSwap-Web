@@ -209,7 +209,7 @@ export default function TermsPage() {
               You retain all ownership rights in the text, descriptions, and photographs you submit to FairSwap. FairSwap does not claim ownership of your content.
             </p>
             <p className="mt-2">
-              By uploading or posting content to FairSwap, you grant FairSwap a non-exclusive, worldwide, royalty-free, transferable licence to host, store, cache, reproduce, resize, transform (such as generating derivative WebP images and thumbnails), display, and distribute your content across the platform solely as necessary to operate, maintain, secure, improve, and promote the FairSwap classifieds service.
+              By uploading or posting content to FairSwap, you grant FairSwap a non-exclusive, worldwide, royalty-free licence, with the right to permit FairSwap&apos;s service providers to process the content solely as necessary to host, store, reproduce, resize, display, distribute, secure, and operate FairSwap.
             </p>
             <p className="mt-2">
               This licence terminates when you delete your listing or delete your account, subject to technical backup lifecycles and retention required by law.
@@ -359,7 +359,7 @@ export default function TermsPage() {
               17. Governing Law &amp; Jurisdiction
             </h2>
             <p className="mt-3">
-              These Terms and any disputes arising out of or related to your use of FairSwap shall be governed by and construed in accordance with the laws of India. Any legal action, suit, or proceeding arising under or in connection with these Terms shall be instituted exclusively in courts of competent jurisdiction in India.
+              These Terms are governed by the laws of India. Any dispute arising from these Terms or use of FairSwap will be subject to courts having competent jurisdiction under applicable law.
             </p>
           </section>
         </div>

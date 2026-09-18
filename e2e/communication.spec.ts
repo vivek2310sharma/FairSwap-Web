@@ -60,8 +60,12 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
         email_confirm: true,
         user_metadata: {
           display_name: displayName,
-          terms_version: "2026-09-01",
-          privacy_policy_version: "2026-09-01",
+          terms_accepted: "true",
+          terms_version: "2026-09-18",
+          privacy_policy_version: "2026-09-18",
+          acceptable_use_version: "2026-09-18",
+          age_confirmed: "true",
+          minimum_age_confirmed: 18,
         },
       });
       if (error || !created.user) throw error || new Error(`Failed to create ${email}`);
@@ -69,8 +73,11 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
       await serviceClient.from("user_accounts").upsert({
         user_id: created.user.id,
         account_status: "active",
-        terms_version: "2026-09-01",
-        privacy_policy_version: "2026-09-01",
+        terms_version: "2026-09-18",
+        privacy_policy_version: "2026-09-18",
+        acceptable_use_version: "2026-09-18",
+        age_confirmed_at: new Date().toISOString(),
+        minimum_age_confirmed: 18,
         terms_accepted_at: new Date().toISOString(),
       });
 

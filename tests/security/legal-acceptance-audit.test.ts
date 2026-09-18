@@ -8,6 +8,8 @@ import { LEGAL_POLICY } from "../../src/lib/compliance/legal-policy";
 
 describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", () => {
   let db: PGlite;
+  const pilotUserId = "00000000-0000-0000-0000-000000000001";
+  const newUserId = "00000000-0000-0000-0000-000000000002";
 
   beforeAll(async () => {
     db = new PGlite();
@@ -64,14 +66,34 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
       );
     `);
 
-    // 2. Apply all repository migrations in order (1 to 20)
     const migDir = path.resolve(process.cwd(), "supabase", "migrations");
     const migrationFiles = fs.readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
 
-    for (const file of migrationFiles) {
+    // 2. Apply migrations 1 through 19 (prior to Migration 20)
+    const priorMigrations = migrationFiles.filter((f) => !f.includes("000020_"));
+    for (const file of priorMigrations) {
       const sql = fs.readFileSync(path.join(migDir, file), "utf8");
       await db.exec(sql);
     }
+
+    // 3. Seed an existing historical pilot user under Migration 14 schema
+    await db.exec(`
+      INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
+      VALUES (
+        '${pilotUserId}',
+        'pilot@fairswap.local',
+        '{"display_name":"Pilot User","terms_accepted":"true","terms_version":"2026-09-01","privacy_policy_version":"2026-09-01"}'::jsonb,
+        clock_timestamp()
+      );
+    `);
+
+    // 4. Apply Migration 20 forward
+    const migration20File = migrationFiles.find((f) => f.includes("000020_"));
+    if (!migration20File) {
+      throw new Error("Migration 20 file not found");
+    }
+    const mig20Sql = fs.readFileSync(path.join(migDir, migration20File), "utf8");
+    await db.exec(mig20Sql);
   });
 
   it("Migration 20 adds acceptable_use_version, age_confirmed_at, and minimum_age_confirmed as nullable columns", async () => {
@@ -97,27 +119,23 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
     expect(cols.minimum_age_confirmed.data_type).toBe("smallint");
   });
 
-  it("permits existing pilot accounts to retain null values for newly added acceptance fields", async () => {
-    const pilotUserId = "00000000-0000-0000-0000-000000000001";
-    await db.exec(`
-      INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
-      VALUES ('${pilotUserId}', 'pilot@fairswap.local', '{"terms_version":"2026-09-01"}'::jsonb, clock_timestamp());
-    `);
-
+  it("preserves existing historical pilot accounts with null acceptance values via migration itself without retroactive overwrite", async () => {
     const accountRes: any = await db.query(`
-      SELECT user_id, terms_version, acceptable_use_version, age_confirmed_at, minimum_age_confirmed
+      SELECT user_id, terms_version, privacy_policy_version, acceptable_use_version, age_confirmed_at, minimum_age_confirmed
       FROM public.user_accounts
       WHERE user_id = '${pilotUserId}';
     `);
 
     expect(accountRes.rows).toHaveLength(1);
-    expect(accountRes.rows[0].acceptable_use_version).toBeNull();
-    expect(accountRes.rows[0].age_confirmed_at).toBeNull();
-    expect(accountRes.rows[0].minimum_age_confirmed).toBeNull();
+    const pilot = accountRes.rows[0];
+    expect(pilot.terms_version).toBe("2026-09-01");
+    expect(pilot.privacy_policy_version).toBe("2026-09-01");
+    expect(pilot.acceptable_use_version).toBeNull();
+    expect(pilot.age_confirmed_at).toBeNull();
+    expect(pilot.minimum_age_confirmed).toBeNull();
   });
 
-  it("provisions new user with verified immutable consent evidence when all legal metadata is provided", async () => {
-    const newUserId = "00000000-0000-0000-0000-000000000002";
+  it("provisions new user with verified immutable consent evidence when all exact legal metadata is provided", async () => {
     const userMeta = JSON.stringify({
       display_name: "Beta User",
       terms_accepted: "true",
@@ -125,7 +143,6 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
       privacy_policy_version: LEGAL_POLICY.privacyVersion,
       acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
       age_confirmed: "true",
-      minimum_age_confirmed: 18,
     });
 
     await db.exec(`
@@ -142,23 +159,50 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
 
     expect(accountRes.rows).toHaveLength(1);
     const acc = accountRes.rows[0];
-    expect(acc.terms_version).toBe(LEGAL_POLICY.termsVersion);
-    expect(acc.privacy_policy_version).toBe(LEGAL_POLICY.privacyVersion);
-    expect(acc.acceptable_use_version).toBe(LEGAL_POLICY.acceptableUseVersion);
+    expect(acc.terms_version).toBe("2026-09-18");
+    expect(acc.privacy_policy_version).toBe("2026-09-18");
+    expect(acc.acceptable_use_version).toBe("2026-09-18");
     expect(acc.terms_accepted_at).toBeDefined();
     expect(acc.age_confirmed_at).toBeDefined();
     expect(acc.minimum_age_confirmed).toBe(18);
   });
 
-  it("rejects user creation and prevents account record when terms acceptance is absent", async () => {
-    const invalidUserId = "00000000-0000-0000-0000-000000000003";
-    const invalidMeta = JSON.stringify({
-      display_name: "Incomplete User",
+  it("does not trust client-supplied minimum age threshold and enforces policy threshold 18", async () => {
+    const spoofUserId = "00000000-0000-0000-0000-000000000099";
+    const userMeta = JSON.stringify({
+      display_name: "Spoof User",
+      terms_accepted: "true",
       terms_version: LEGAL_POLICY.termsVersion,
       privacy_policy_version: LEGAL_POLICY.privacyVersion,
       acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
       age_confirmed: "true",
-      // terms_accepted missing!
+      minimum_age_confirmed: 25, // Client attempts to record custom age
+    });
+
+    await db.exec(`
+      INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
+      VALUES ('${spoofUserId}', 'spoof@fairswap.local', '${userMeta}'::jsonb, clock_timestamp());
+    `);
+
+    const accountRes: any = await db.query(`
+      SELECT minimum_age_confirmed
+      FROM public.user_accounts
+      WHERE user_id = '${spoofUserId}';
+    `);
+
+    expect(accountRes.rows).toHaveLength(1);
+    // Database server logic sets 18, ignoring the client-supplied 25
+    expect(accountRes.rows[0].minimum_age_confirmed).toBe(18);
+  });
+
+  it("rejects user creation when terms acceptance is absent", async () => {
+    const invalidUserId = "00000000-0000-0000-0000-000000000003";
+    const invalidMeta = JSON.stringify({
+      display_name: "No Terms User",
+      terms_version: LEGAL_POLICY.termsVersion,
+      privacy_policy_version: LEGAL_POLICY.privacyVersion,
+      acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
+      age_confirmed: "true",
     });
 
     await expect(
@@ -168,7 +212,6 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
       `)
     ).rejects.toThrow(/Registration rejected: mandatory Terms acceptance/);
 
-    // Verify no account record was created
     const checkRes: any = await db.query(`
       SELECT count(*) as count FROM public.user_accounts WHERE user_id = '${invalidUserId}';
     `);
@@ -184,7 +227,6 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
       privacy_policy_version: LEGAL_POLICY.privacyVersion,
       acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
       age_confirmed: "false",
-      minimum_age_confirmed: 16,
     });
 
     await expect(
@@ -192,11 +234,102 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
         INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
         VALUES ('${minorUserId}', 'minor@fairswap.local', '${minorMeta}'::jsonb, clock_timestamp());
       `)
-    ).rejects.toThrow(/Registration rejected: mandatory Terms acceptance.*age confirmation/);
+    ).rejects.toThrow(/Registration rejected: mandatory Terms acceptance/);
+  });
+
+  it("rejects user creation when acceptable use version is missing", async () => {
+    const noAupUserId = "00000000-0000-0000-0000-000000000005";
+    const noAupMeta = JSON.stringify({
+      display_name: "No AUP User",
+      terms_accepted: "true",
+      terms_version: LEGAL_POLICY.termsVersion,
+      privacy_policy_version: LEGAL_POLICY.privacyVersion,
+      age_confirmed: "true",
+    });
+
+    await expect(
+      db.exec(`
+        INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
+        VALUES ('${noAupUserId}', 'noaup@fairswap.local', '${noAupMeta}'::jsonb, clock_timestamp());
+      `)
+    ).rejects.toThrow(/Registration rejected: mandatory Terms acceptance/);
+  });
+
+  it("rejects direct Auth signup using stale draft Terms version (2026-09-13-draft)", async () => {
+    const staleUserId = "00000000-0000-0000-0000-000000000006";
+    const staleMeta = JSON.stringify({
+      display_name: "Draft Version User",
+      terms_accepted: "true",
+      terms_version: "2026-09-13-draft",
+      privacy_policy_version: LEGAL_POLICY.privacyVersion,
+      acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
+      age_confirmed: "true",
+    });
+
+    await expect(
+      db.exec(`
+        INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
+        VALUES ('${staleUserId}', 'stale@fairswap.local', '${staleMeta}'::jsonb, clock_timestamp());
+      `)
+    ).rejects.toThrow(/Registration rejected: mandatory Terms acceptance.*current policy versions/);
+  });
+
+  it("rejects direct Auth signup using legacy 2026-09-01 version (proves legacy test bypass was removed)", async () => {
+    const legacyUserId = "00000000-0000-0000-0000-000000000007";
+    const legacyMeta = JSON.stringify({
+      display_name: "Legacy Bypass User",
+      terms_accepted: "true",
+      terms_version: "2026-09-01",
+      privacy_policy_version: "2026-09-01",
+      acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
+      age_confirmed: "true",
+    });
+
+    await expect(
+      db.exec(`
+        INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
+        VALUES ('${legacyUserId}', 'legacy@fairswap.local', '${legacyMeta}'::jsonb, clock_timestamp());
+      `)
+    ).rejects.toThrow(/Registration rejected: mandatory Terms acceptance.*current policy versions/);
+  });
+
+  it("rejects direct Auth signup using arbitrary fake policy versions", async () => {
+    const fakeUserId = "00000000-0000-0000-0000-000000000008";
+    const fakeMeta = JSON.stringify({
+      display_name: "Fake Version User",
+      terms_accepted: "true",
+      terms_version: "fake-version-1.0",
+      privacy_policy_version: "fake-version-1.0",
+      acceptable_use_version: "fake-version-1.0",
+      age_confirmed: "true",
+    });
+
+    await expect(
+      db.exec(`
+        INSERT INTO auth.users (id, email, raw_user_meta_data, created_at)
+        VALUES ('${fakeUserId}', 'fake@fairswap.local', '${fakeMeta}'::jsonb, clock_timestamp());
+      `)
+    ).rejects.toThrow(/Registration rejected: mandatory Terms acceptance.*current policy versions/);
+  });
+
+  it("database CHECK constraint chk_user_accounts_minimum_age prevents invalid age threshold combinations", async () => {
+    const testCheckUserId = "00000000-0000-0000-0000-000000000009";
+    // Attempt to insert with age_confirmed_at set but minimum_age_confirmed < 18
+    await expect(
+      db.exec(`
+        INSERT INTO public.user_accounts (
+          user_id, account_status, terms_accepted_at, terms_version, privacy_policy_version,
+          age_confirmed_at, minimum_age_confirmed, created_at, updated_at
+        ) VALUES (
+          '${testCheckUserId}', 'active', clock_timestamp(), '2026-09-18', '2026-09-18',
+          clock_timestamp(), 16, clock_timestamp(), clock_timestamp()
+        );
+      `)
+    ).rejects.toThrow(/chk_user_accounts_minimum_age/);
   });
 
   it("enforces immutability: prevents normal users or updates from altering acceptance evidence", async () => {
-    const targetUserId = "00000000-0000-0000-0000-000000000002";
+    const targetUserId = newUserId;
 
     // 1. Attempt to alter terms_accepted_at
     await expect(
@@ -254,7 +387,7 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
   });
 
   it("privacy export RPC includes full legal acceptance and age metadata in account export", async () => {
-    const exportUserId = "00000000-0000-0000-0000-000000000002";
+    const exportUserId = newUserId;
     const requestId = "10000000-0000-0000-0000-000000000001";
 
     // 1. Mock auth.uid() to return the export user
@@ -281,9 +414,9 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
     expect(exportRes.rows).toHaveLength(1);
     const data = exportRes.rows[0].export_data;
     expect(data.account).toBeDefined();
-    expect(data.account.terms_version).toBe(LEGAL_POLICY.termsVersion);
-    expect(data.account.privacy_policy_version).toBe(LEGAL_POLICY.privacyVersion);
-    expect(data.account.acceptable_use_version).toBe(LEGAL_POLICY.acceptableUseVersion);
+    expect(data.account.terms_version).toBe("2026-09-18");
+    expect(data.account.privacy_policy_version).toBe("2026-09-18");
+    expect(data.account.acceptable_use_version).toBe("2026-09-18");
     expect(data.account.minimum_age_confirmed).toBe(18);
     expect(data.account.age_confirmed_at).toBeDefined();
   });

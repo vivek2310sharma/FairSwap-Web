@@ -185,10 +185,13 @@ export default function PrivacyPage() {
               6. Cookies &amp; Local Storage
             </h2>
             <p className="mt-3">
-              FairSwap uses cookies or similar storage necessary for authentication, session management, security, and operation of the service. FairSwap does not currently deploy advertising or marketing cookie integrations in its application code.
+              FairSwap uses cookies or similar storage necessary for authentication, session management, security, and operation of the service.
             </p>
             <p className="mt-2">
-              Essential session cookies (such as auth tokens managed via Supabase SSR) are strictly required to maintain your authenticated state across page navigations, enforce security controls, and protect against cross-site request forgery. Because we do not deploy non-essential marketing, tracking, or profiling cookies, a non-essential cookie consent banner is not required.
+              Essential session cookies (such as auth tokens managed via Supabase SSR) are used to maintain authenticated sessions and support platform security controls across page navigations.
+            </p>
+            <p className="mt-2">
+              FairSwap does not currently deploy advertising or marketing cookie integrations in its application code. If FairSwap introduces non-essential analytics, advertising, or similar technologies in the future, this Privacy Policy and any applicable consent controls will be reviewed before deployment.
             </p>
           </section>
 
