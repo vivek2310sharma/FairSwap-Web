@@ -3,7 +3,7 @@ import path from "node:path";
 import fs from "node:fs";
 
 test.describe("FairSwap Grievance Redressal E2E Tests", () => {
-  test("grievance page renders all statutory and contact details while signed out with zero console errors", async ({
+  test("grievance page renders approved grievance contact details while signed out with zero console errors", async ({
     page,
   }, testInfo) => {
     const consoleErrors: string[] = [];
@@ -32,10 +32,15 @@ test.describe("FairSwap Grievance Redressal E2E Tests", () => {
     await expect(mailLink).toBeVisible();
     await expect(mailLink).toHaveAttribute("href", "mailto:grievance@fairswap.in");
 
-    // 4. Portal link
+    // 4. Portal link with environment-safe navigation
     const portalLink = page.getByRole("link", { name: "https://fairswap.in/grievance" });
     await expect(portalLink).toBeVisible();
-    await expect(portalLink).toHaveAttribute("href", "https://fairswap.in/grievance");
+    await expect(portalLink).toHaveAttribute("href", "/grievance");
+    await portalLink.click();
+    await expect(page).toHaveURL(/\/grievance$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Grievance Redressal" })
+    ).toBeVisible();
 
     // 5. Understandable categories
     await expect(page.getByText("Account or access")).toBeVisible();

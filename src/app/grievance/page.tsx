@@ -53,7 +53,7 @@ export default function GrievancePage() {
             </p>
 
             <div className="mt-6 rounded-lg border border-border/80 bg-surface/50 p-5 space-y-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
+              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
                 <div>
                   <dt className="text-xs font-medium text-muted uppercase tracking-wider">
                     Grievance Officer
@@ -89,15 +89,15 @@ export default function GrievancePage() {
                     Grievance Portal
                   </dt>
                   <dd className="mt-0.5 font-medium text-foreground">
-                    <a
-                      href="https://fairswap.in/grievance"
+                    <Link
+                      href="/grievance"
                       className="text-brand-link underline hover:text-brand-hover"
                     >
                       https://fairswap.in/grievance
-                    </a>
+                    </Link>
                   </dd>
                 </div>
-              </div>
+              </dl>
             </div>
 
             <p className="mt-4 text-xs text-muted">

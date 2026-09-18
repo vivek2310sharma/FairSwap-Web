@@ -28,11 +28,19 @@ describe("Grievance Redressal page (/grievance)", () => {
     expect(mailtoLinks[0]).toHaveAttribute("href", "mailto:grievance@fairswap.in");
   });
 
-  it("displays the public grievance portal URL", () => {
+  it("displays the public grievance portal URL with environment-safe /grievance link", () => {
     render(<GrievancePage />);
     const portalLink = screen.getByRole("link", { name: "https://fairswap.in/grievance" });
     expect(portalLink).toBeInTheDocument();
-    expect(portalLink).toHaveAttribute("href", "https://fairswap.in/grievance");
+    expect(portalLink).toHaveAttribute("href", "/grievance");
+  });
+
+  it("uses valid description list semantics for Grievance Officer details", () => {
+    const { container } = render(<GrievancePage />);
+    const dl = container.querySelector("dl");
+    expect(dl).toBeInTheDocument();
+    expect(dl?.querySelector("dt")).toBeInTheDocument();
+    expect(dl?.querySelector("dd")).toBeInTheDocument();
   });
 
   it("presents understandable grievance categories", () => {
