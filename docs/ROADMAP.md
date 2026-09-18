@@ -37,8 +37,8 @@ This transition bridge has been successfully established and accepted as a verif
 
 1. **FairSwapTest Supabase Cloud Setup**:
    - Remote `FairSwapTest` Supabase project (`wpppxlnbzqynvhpeuavd`) provisioned and verified.
-   - Complete Phase 1 migration set (`20260913000001` through `20260914000016`) applied and operational.
-   - Storage buckets `listing-originals` and `listing-derivatives` configured with RLS policies; both listing media buckets are private and server-mediated.
+   - Complete Phase 1 migration set (`20260914000001` through `20260916000019`) applied and operational.
+   - Storage buckets `listing-originals` and `listing-derivatives` are private and server-mediated; direct anon/authenticated Storage access is not granted.
    - Remote staff administrator bootstrap executed and verified.
 
 2. **Vercel Staging Deployment**:
@@ -50,7 +50,7 @@ This transition bridge has been successfully established and accepted as a verif
    - **Staff MFA**: TOTP AAL2 enrollment and step-up enforcement on staff moderation endpoints.
    - **Listing Lifecycle**: Listing submission, private storage upload (`listing-originals`), and Sharp WebP derivative generation (`thumb`, `medium`, `large` in private `listing-derivatives`; both listing media buckets are private and server-mediated).
    - **Moderation**: Self-moderation prevention and independent moderator approval.
-   - **Public Discoverability**: Approved listing became publicly visible, public detail page rendered, and its cover and both image derivatives (`thumb`, `medium`) rendered while signed out.
+   - **Public Discoverability**: Approved listing became publicly visible, the public detail page rendered, and the cover image and both uploaded photos rendered while signed out.
    - **Conversation Initiation**: Buyer-seller thread creation linked to active listings.
    - **Realtime Messaging**: Two-way message exchange via Supabase Realtime channel subscriptions.
    - **Hydration Stability**: Message timestamp rendering made deterministic in Indian Standard Time (`Asia/Kolkata`), eliminating SSR/hydration discrepancies (Minified React error #418).
