@@ -1,4 +1,4 @@
-# FairSwap — Deployment Guide (Milestone 1.6)
+# FairSwap — Deployment Guide
 
 This guide documents the architecture, configuration, secrets management, database migration protocols, and deployment procedures for **FairSwap** across local development, staging, and production environments.
 
@@ -12,9 +12,11 @@ FairSwap is a Next.js (App Router) marketplace application powered by Supabase (
 * **Authoritative Data & Security Layer**: Supabase PostgreSQL with two-tier RPC architecture (`public` SECURITY INVOKER wrappers delegating to unexposed `app_security` SECURITY DEFINER functions)
 * **Object Storage**: Supabase Storage (`listing-originals` and `listing-derivatives` buckets)
 * **Authentication & Session Assurance**: Supabase GoTrue Auth with RFC 6238 TOTP AAL2 Multi-Factor Authentication for staff roles
-* **Hosting Platforms**:
-  * **Staging**: Hosted on Vercel preview branch `Phase1` (`https://fair-swap-git-phase1-fairswap.vercel.app`), connected to Supabase staging project `FairSwapTest` (`wpppxlnbzqynvhpeuavd`).
-  * **Production**: Hosted on Vercel production deployment (`main`), connected to dedicated Production Supabase project.
+* **Hosting Platforms / Branch Model**:
+  * **Production**: `main` → Vercel Production → `https://fairswap.in` → Supabase `FairSwapProd` (`kriuhwppxgxsyyrbjsau`).
+  * **Shared Staging**: `staging` → stable Vercel Preview `https://fair-swap-git-staging-fairswap.vercel.app` → Supabase `FairSwapTest` (`wpppxlnbzqynvhpeuavd`). The stable staging domain is explicitly shareable with testers; other previews remain protected by default.
+  * **Feature Development**: short-lived `feature/*` branches → Vercel Preview → `FairSwapTest`. Merge accepted feature work into `staging` for shared verification before promoting it to `main`.
+  * Long-lived milestone/history branches such as `Phase1`/`Phase2` are not part of the active deployment model. The historical Phase 1 baseline is preserved by tag instead.
 
 ---
 
@@ -22,15 +24,26 @@ FairSwap is a Next.js (App Router) marketplace application powered by Supabase (
 
 | Variable Name | Environment | Tier | Description |
 |---|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | All | Public | Public URL of the Supabase API Gateway / Cloud project endpoint |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | All | Public | Public publishable anon key for PostgREST & Auth client |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server Only | Critical Secret | Privileged service role key. **NEVER expose to client bundles.** |
-| `JWT_SECRET` | Server/DB | Critical Secret | Secret HMAC key used to verify Supabase JWTs (min 32 characters) |
-| `VERCEL_AUTOMATION_BYPASS_SECRET` | CI/Runner Only | Secret | Secret token passed via `x-vercel-protection-bypass` for automated test suites |
-| `UPSTASH_REDIS_REST_URL` | Server Only | Secret | Upstash Redis REST endpoint for distributed rate limiting |
-| `UPSTASH_REDIS_REST_TOKEN` | Server Only | Secret | Upstash Redis authentication token |
-| `NODE_ENV` | All | Config | Set to `production` in staging and production deployments |
-| `PORT` | Optional | Config | HTTP binding port (default: 3000) |
+| `NEXT_PUBLIC_SUPABASE_URL` | All | Public | Supabase project URL. Production points to FairSwapProd; Preview/staging points to FairSwapTest. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Cloud deploys | Public | Preferred modern browser/server publishable key for Supabase Auth and Direct API access. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Local / legacy fallback | Public | Legacy public anon-key fallback supported by the application where required. |
+| `SUPABASE_SECRET_KEY` | Cloud server only | Critical Secret | Preferred modern privileged Supabase server key. **NEVER expose to client bundles.** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Local / legacy fallback, server only | Critical Secret | Legacy privileged fallback. **NEVER expose to client bundles.** |
+| `NEXT_PUBLIC_SITE_URL` | Production / stable staging | Public | Canonical application origin used to build Auth confirmation/recovery callbacks. Production is `https://fairswap.in`; staging is branch-scoped to the stable staging URL. |
+| `JWT_SECRET` | Server/DB | Critical Secret | Secret HMAC key used where required by local/operational tooling (min 32 characters). |
+| `VERCEL_AUTOMATION_BYPASS_SECRET` | CI/Runner Only | Secret | Secret token passed via `x-vercel-protection-bypass` for authorized automated test suites. Rotate immediately if exposed. |
+| `UPSTASH_REDIS_REST_URL` | Server Only | Secret | Upstash Redis REST endpoint for distributed rate limiting. |
+| `UPSTASH_REDIS_REST_TOKEN` | Server Only | Secret | Upstash Redis authentication token. |
+| `NODE_ENV` | All | Config | Set to `production` in Vercel staging and production deployments. |
+| `PORT` | Optional | Config | HTTP binding port (default: 3000). |
+
+### Current cloud environment mapping
+
+| Environment | Git/Vercel target | Supabase project | `NEXT_PUBLIC_SITE_URL` |
+|---|---|---|---|
+| Production | `main` / Vercel Production / `https://fairswap.in` | `FairSwapProd` (`kriuhwppxgxsyyrbjsau`) | `https://fairswap.in` |
+| Shared staging | `staging` / Vercel Preview / stable branch URL | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) | `https://fair-swap-git-staging-fairswap.vercel.app` |
+| Feature previews | short-lived `feature/*` / Vercel Preview | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) | Configure a branch-appropriate callback only when an Auth flow must be exercised directly on that preview; otherwise validate Auth on shared `staging`. |
 
 ### Secret Management Rules
 * Never commit `.env.local` or raw secret strings to version control.
@@ -42,7 +55,7 @@ FairSwap is a Next.js (App Router) marketplace application powered by Supabase (
 ## 3. Database Migration Deployment Protocols
 
 FairSwap uses ordered, immutable PostgreSQL migration scripts located in `supabase/migrations/`.
-As of Milestone 1.6, migrations are sequenced through **Migration 19**:
+As of the controlled production pilot baseline, migrations are sequenced through **Migration 19**:
 * `20260914000001_create_accounts_and_profiles.sql`
 * `20260914000002_create_staff_and_security.sql`
 * `20260914000003_create_audit_and_privacy.sql`
@@ -83,13 +96,29 @@ npx supabase db push
 > **NO AD-HOC DIRECT SQL BYPASSES**:
 > Do **NOT** execute raw SQL scripts via arbitrary `psql -f` commands that bypass `supabase_migrations.schema_migrations`. All schema changes must be versioned migrations tracked in the migration table.
 
-### C. Managed Production Deployment
-> [!IMPORTANT]
-> **PRODUCTION FREEZE IN EFFECT**:
-> Production deployment requires **explicit written authorization from the Platform Owner**.
-> Under Milestone 1.6, production database and main branch remain untouched.
-> When authorized, production migrations must be applied using:
-> `npx supabase db push --linked` (linked to the production project ref).
+### C. Promotion invariant: FairSwapTest first, then FairSwapProd
+
+For every schema-changing milestone:
+
+1. Create a new migration file; test locally where applicable.
+2. Apply that migration to **FairSwapTest** first and verify the application/security behavior there.
+3. Promote the **exact same immutable migration file** to **FairSwapProd** only after acceptance and explicit production authorization.
+4. Never edit or rewrite a migration that has already been applied to FairSwapProd. Corrections use a new follow-on migration.
+5. Prefer backward-compatible **expand → migrate → contract** changes so staging and production application versions can coexist safely during rollout.
+6. Because feature previews and shared staging use the same FairSwapTest database, run only **one schema-changing milestone at a time**. Avoid concurrent incompatible migration work across preview branches.
+
+### D. Managed Production Deployment (`FairSwapProd`)
+
+Production is active and is no longer under the old Milestone 1.6 pre-production freeze. Production changes still require explicit human authorization and the promotion invariant above.
+
+Before a production database push, verify that the CLI is linked to `FairSwapProd` (`kriuhwppxgxsyyrbjsau`) rather than FairSwapTest. Prefer an isolated release context/worktree or otherwise verify the linked project immediately before the command.
+
+```bash
+# After FairSwapTest verification and explicit production authorization
+npx supabase db push --linked
+```
+
+Application promotion is through reviewed Git changes to `main`; Vercel Production then deploys `main` to `https://fairswap.in`.
 
 ---
 
@@ -136,8 +165,15 @@ pnpm build
 
 ## 6. External Launch Prerequisites (India Marketplace Context)
 
-Before opening FairSwap to public consumer traffic:
-1. **Production Transactional Email (SMTP)**: Switch from development/sandbox email to a verified transactional email provider (SendGrid / Postmark / Amazon SES) with configured SPF, DKIM, and DMARC DNS records.
-2. **Statutory Grievance Officer**: Publish the legal name, contact email, and address of the statutory Grievance Officer on `/contact` and `/terms` pursuant to the India Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules.
-3. **Custom Domain & TLS**: Bind `fairswap.in` with automated HTTPS certificate renewal.
-4. **Dedicated Operations On-Call**: Confirm all positions in `docs/operations/operational-owner-matrix.md` are staffed with 24/7 on-call coverage.
+The controlled production pilot has completed these previously gated infrastructure items:
+
+- **Production Transactional Email (SMTP)**: Supabase custom SMTP is configured through Resend using the verified `auth.fairswap.in` sending domain and has passed delivery testing.
+- **Custom Domain & TLS**: `fairswap.in` and `www.fairswap.in` are bound to Vercel with HTTPS/TLS established.
+
+Before opening FairSwap to wider public consumer traffic, the remaining external gates include:
+
+1. **Statutory Grievance Officer / Compliance**: Complete and publish the required Grievance Officer information and any related launch compliance work.
+2. **Legal Review**: Complete legal review of the applicable public-facing user agreements and policies.
+3. **Dedicated Operations On-Call**: Confirm the required operational owners, escalation paths, and on-call coverage for public traffic.
+
+These are public-launch gates, not blockers to the already established controlled technical pilot.

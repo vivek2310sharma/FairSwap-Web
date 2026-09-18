@@ -4,9 +4,10 @@ Starter pack: v4.0 (2026-09-13).
 
 ## Current authorization
 
-- Authorized milestone/action: **Hosted Phase 1 Baseline Accepted** (accepted 2026-09-18, tag `hosted-phase1-baseline-2026-09-18`). Next permitted transition: **Phase 2 planning/kickoff only after explicit human authorization**.
-- Current plan revision: Milestone 1.6 (r4 APPROVED & VERIFIED) + Hosted Phase 1 Baseline.
-- Next permitted transition: Phase 2 planning/kickoff only after explicit human authorization.
+- Authorized milestone/action: **Controlled Production Pilot Baseline established and verified** (2026-09-18, tag `prod-pilot-baseline-2026-09-18` at commit `a81b0a5e3c77172e9f691462cac0cecb21a86723`); current authorized work is documentation alignment for the production/staging operating model.
+- Current plan revision: Milestone 1.6 (r4 APPROVED & VERIFIED) + Hosted Phase 1 Baseline + Controlled Production Pilot Baseline.
+- Environment model: `main` → Vercel Production → `fairswap.in` → FairSwapProd; `staging` → stable Vercel Preview → FairSwapTest; short-lived `feature/*` → Vercel Preview → FairSwapTest.
+- Phase 2 remains **NOT STARTED / NOT AUTHORIZED**. Phase 2 planning or implementation requires explicit human authorization.
 - Workspace rule actual path: `.agents/rules/fairswap.md` (confirmed present; active).
 - Detected OS: Windows 11 (NT 10.0.26200.0), native x64, PowerShell 5.1.
 - Detected toolchain: Node.js v24.15.0, npm 11.12.1, corepack 0.34.6, Git 2.45.1. pnpm pinned to 10.12.1 via corepack.
@@ -23,6 +24,7 @@ Starter pack: v4.0 (2026-09-13).
 | 1.5 | **r1 APPROVED** | **COMPLETED** | **2026-09-13 (r1)** | **2026-09-13 (r1)** |
 | 1.6 | **r4 APPROVED** | **COMPLETED** | **2026-09-14 (r4)** | **2026-09-14 (HUMAN ACCEPTED)** |
 | Hosted Phase 1 Baseline | **APPROVED** | **COMPLETED** | **2026-09-18** | **2026-09-18 (HUMAN ACCEPTED)** |
+| Controlled Production Pilot Baseline | **APPROVED OPERATIONS / DEPLOYMENT** | **ESTABLISHED** | **2026-09-18** | **2026-09-18 (HUMAN VERIFIED)** |
 
 Future scope documents are reference contracts, not approved plans. Pack validation checks concern these instruction files only, not application behavior.
 
@@ -64,13 +66,14 @@ Future scope documents are reference contracts, not approved plans. Pack validat
 | 2026-09-14 | 1.6 | **BUILD AUTHORIZED** | r4 approved | User approved r4 and authorized BUILD for Milestone 1.6. |
 | 2026-09-14 | 1.6 | **BUILD & VERIFY** | r4 implemented | Implemented Migration 16 (staff user moderation hardening), `/admin/users` and `/admin/users/[id]` staff UI, disaster recovery scripts, reliability/failure injection tests, load-smoke benchmarks, accessibility contrast tests, operational runbooks, and Go/No-Go release report. Fixed listUsers pagination bug affecting test reliability. |
 | 2026-09-14 | 1.6 / Phase 1 | **HUMAN ACCEPTANCE & PHASE 1 CLOSURE** | r4 verified | User reviewed full Milestone 1.6 verification evidence (173 unit, 85 security, 84 E2E, prod build, DR restore test) on commit 79026f2, authorized documentation finalization, and formally accepted Phase 1 completion. Established forward roadmap for hosted staging baseline on FairSwapTest + Vercel before Phase 2. |
-| 2026-09-18 | Hosted Baseline | **HOSTED PHASE 1 BASELINE ACCEPTANCE** | Verified on remote | User verified and formally accepted Hosted Phase 1 Baseline on FairSwapTest (`wpppxlnbzqynvhpeuavd`) + Vercel Preview. Tagged `hosted-phase1-baseline-2026-09-18` at commit `14e0e6a190b819b62e40dd46d86e081980323bd2`. Verified auth/session, staff MFA, listing creation, private storage upload (`listing-originals`), Sharp WebP derivatives (`thumb`, `medium`, `large` in private `listing-derivatives`; both buckets private and server-mediated), self-moderation prevention plus independent moderator approval, public discoverability (approved listing publicly visible with the cover image and both uploaded photos rendered while signed out), conversation initiation, two-way Realtime messaging, SSR hydration stability (IST formatting), and chat accessibility. Confirms hosted staging readiness / pre-pilot readiness; starting a controlled pilot requires separate human authorization; public production launch prerequisites remain separate external blockers; Phase 2 remains NOT STARTED and NOT AUTHORIZED; Next permitted transition: Phase 2 planning/kickoff only after explicit human authorization; main branch untouched. |
+| 2026-09-18 | Hosted Baseline | **HOSTED PHASE 1 BASELINE ACCEPTANCE** | Verified on remote | User verified and formally accepted Hosted Phase 1 Baseline on FairSwapTest (`wpppxlnbzqynvhpeuavd`) + Vercel Preview. Tagged `hosted-phase1-baseline-2026-09-18` at commit `14e0e6a190b819b62e40dd46d86e081980323bd2`. Verified auth/session, staff MFA, listing creation, private storage upload (`listing-originals`), Sharp WebP derivatives (`thumb`, `medium`, `large` in private `listing-derivatives`; both buckets private and server-mediated), self-moderation prevention plus independent moderator approval, public discoverability (approved listing publicly visible with the cover image and both uploaded photos rendered while signed out), conversation initiation, two-way Realtime messaging, SSR hydration stability (IST formatting), and chat accessibility. This row is retained as historical hosted-staging evidence; the former `Phase1` branch was later retired. |
+| 2026-09-18 | Production Pilot | **CONTROLLED PRODUCTION PILOT BASELINE ESTABLISHED** | Verified on remote | PR #24 merged the accepted Phase 1 work into `main` at `a81b0a5e3c77172e9f691462cac0cecb21a86723`, preserved by tag `prod-pilot-baseline-2026-09-18`. FairSwapProd (`kriuhwppxgxsyyrbjsau`) was provisioned through migrations 1–19 with private `listing-originals` and `listing-derivatives` buckets. Production Auth uses `https://fairswap.in`; custom SMTP is configured through Resend with verified `auth.fairswap.in`; `fairswap.in` and `www.fairswap.in` DNS/TLS are established. Human smoke verification passed normal signup/email confirmation/sign-in/password reset, administrator bootstrap, TOTP AAL2, seller listing creation with two photos, independent moderation approval, signed-out public discovery/media, buyer-to-seller conversation creation, and Realtime seller reply without refresh/duplicates or console errors. `Phase1` was retired. A long-lived `staging` environment branch was then established against FairSwapTest, and a fresh staging signup was confirmed in FairSwapTest rather than FairSwapProd. Phase 2 remains NOT STARTED / NOT AUTHORIZED; full public/legal launch readiness remains separately gated. |
 
 Record only actual human requests/reviews. Keep plan approval separate from acceptance of implemented work.
 
 ## Current batch and next task
 
-**Hosted Phase 1 Baseline is established, verified, and formally accepted** (tag `hosted-phase1-baseline-2026-09-18`, commit `14e0e6a190b819b62e40dd46d86e081980323bd2`). This confirms hosted staging readiness / pre-pilot readiness. Starting a controlled pilot still requires separate human authorization. External public launch prerequisites (production SMTP with SPF/DKIM, `fairswap.in` DNS/TLS, Grievance Officer appointment, and legal review) remain gated. Phase 2 remains NOT STARTED and NOT AUTHORIZED. Next permitted transition: Phase 2 planning/kickoff only after explicit human authorization. `main` branch remains untouched.
+**Controlled Production Pilot Baseline is established and technically operational** (tag `prod-pilot-baseline-2026-09-18`, commit `a81b0a5e3c77172e9f691462cac0cecb21a86723`). Production runs from `main` at `https://fairswap.in` against FairSwapProd. Stable shared staging runs from `staging` at `https://fair-swap-git-staging-fairswap.vercel.app` against FairSwapTest, and short-lived `feature/*` branches use FairSwapTest previews. Production SMTP and `fairswap.in` DNS/TLS are complete. Wider public launch remains gated by outstanding legal/compliance and operational requirements, including Grievance Officer work, legal review, and operational ownership/on-call readiness. Phase 2 remains NOT STARTED / NOT AUTHORIZED. Current work is documentation alignment only; any Phase 2 planning or implementation requires separate explicit human authorization.
 
 ## Verification evidence
 
@@ -125,12 +128,16 @@ Record only actual human requests/reviews. Keep plan approval separate from acce
 | 2026-09-18 14:43 | Hosted Baseline | `npm run test:security` | 0 | PASS | 7 test files, 96/96 security tests passing (zero regressions). |
 | 2026-09-18 14:43 | Hosted Baseline | `npm run build` (`next build`) | 0 | PASS | Next.js 16.3.5 Turbopack production build succeeded cleanly. 41 routes compiled. |
 | 2026-09-18 14:44 | Hosted Baseline | `npx tsx scripts/run-point17-verification.ts` | 0 | PASS | Full Point 17 verification: 4 viewports, 5 a11y pages, 22 screenshots, 0 failures, 0 console/network errors. |
+| 2026-09-18 | Production Pilot | FairSwapProd provisioning and infrastructure verification | n/a | PASS | Human/dashboard verification: migrations 1–19 aligned; both listing media buckets private; Resend custom SMTP delivered a Supabase test invite; `fairswap.in` and `www.fairswap.in` DNS/TLS established. |
+| 2026-09-18 | Production Pilot | `https://fairswap.in` manual smoke | n/a | PASS | Human-observed production journeys passed: normal auth/recovery, staff TOTP AAL2, listing + two-photo upload, independent moderation, signed-out discovery/media, conversation creation, and two-way Realtime messaging without refresh/duplicates; browser console clean on verified journeys. |
+| 2026-09-18 | Stable Staging | `https://fair-swap-git-staging-fairswap.vercel.app` environment-isolation smoke | n/a | PASS | Stable staging loads without Vercel login via a targeted protection exception, Auth returns to the staging domain, and a fresh staging signup was confirmed in FairSwapTest rather than FairSwapProd. |
 
 ## Blockers and external prerequisites
 
-- None for Phase 1 implementation. All milestones 1.1–1.6 verified and passing.
+- None for Phase 1 implementation or the technically controlled production pilot baseline.
 - Evidence directory `artifacts/verification/` is ignored by Git per `.gitignore` line 53; confirmed 0 files tracked.
-- External launch blockers documented in `docs/release/1.6-go-no-go-report.md`: custom domain, production transactional email, statutory Grievance Officer appointment, legal counsel review.
+- Production transactional email and `fairswap.in` / `www.fairswap.in` DNS/TLS were completed on 2026-09-18.
+- Remaining wider-public-launch gates include statutory Grievance Officer/compliance work, legal review of public-facing agreements, and operational ownership/on-call readiness. `docs/release/1.6-go-no-go-report.md` remains the original pre-production assessment and should be read together with this later progress entry.
 
 ## Scope and business decisions
 
