@@ -145,6 +145,14 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
       expect(grievanceLinks.some((l) => l.getAttribute("href") === "/grievance")).toBe(true);
     });
 
+    it("describes measured technical safeguards without claiming universal automated redaction", () => {
+      render(<PrivacyPage />);
+      expect(
+        screen.getByText(/Centralized log sanitisation and redaction controls designed to reduce exposure of authentication tokens, credentials, secrets, and other sensitive values\./i)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Automated redaction of sensitive authentication tokens/i)).not.toBeInTheDocument();
+    });
+
     it("displays version and last updated date", () => {
       render(<PrivacyPage />);
       expect(screen.getByText(`Version: ${LEGAL_POLICY.privacyVersion}`)).toBeInTheDocument();

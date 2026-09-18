@@ -257,7 +257,7 @@ export default function PrivacyPage() {
               <li>Two-tier database architecture separating public user-facing functions from unexposed security definer procedures.</li>
               <li>Strict Multi-Factor Authentication (AAL2 TOTP) mandatory for all administrative and staff accounts.</li>
               <li>HTTPS/TLS encryption in transit for all communications between your browser and our servers.</li>
-              <li>Automated redaction of sensitive authentication tokens and credentials in operational logs.</li>
+              <li>Centralized log sanitisation and redaction controls designed to reduce exposure of authentication tokens, credentials, secrets, and other sensitive values.</li>
             </ul>
             <p className="mt-2 text-xs">
               While we implement rigorous technical safeguards, no internet-based platform can guarantee absolute security. Users are responsible for safeguarding their account credentials.
