@@ -138,11 +138,11 @@ If FairSwap later adds managed backups or an external production backup/export p
 
 | Failure Scenario | Severity | Owner | Target Response | Immediate Diagnostic Action |
 |---|---|---|---|---|
-| **Database Backup Script Fails** | P2 | Vivek Kumar / Backup Owner | < 4 hours | Check Supabase connectivity, network egress, CLI session tokens. |
-| **Storage Backup Fails** | P2 | Vivek Kumar / Backup Owner | < 4 hours | Check Supabase Storage API rate limits and network egress quotas. |
-| **Manifest SHA-256 Mismatch** | P1 | Vivek Kumar / Backup Owner | < 1 hour | Quarantine artifact. Re-run backup. Inspect disk for bit-rot or tampering. |
-| **Restore Verification Fails** | P1 | Vivek Kumar / Backup Owner | < 1 hour | Inspect restore log for schema syntax errors, orphan FKs, or missing tables. |
-| **Residual Test Buckets Detected** | P3 | Vivek Kumar / Backup Owner | Next business day | Run cleanup helper (`purgeBucket`) to remove disposable buckets. |
+| **Database Backup Script Fails** | P2 | Vivek Kumar (single operator; backup-owner risk accepted) | < 4 hours | Check Supabase connectivity, network egress, CLI session tokens. |
+| **Storage Backup Fails** | P2 | Vivek Kumar (single operator; backup-owner risk accepted) | < 4 hours | Check Supabase Storage API rate limits and network egress quotas. |
+| **Manifest SHA-256 Mismatch** | P1 | Vivek Kumar (single operator; backup-owner risk accepted) | < 1 hour | Quarantine artifact. Re-run backup. Inspect disk for bit-rot or tampering. |
+| **Restore Verification Fails** | P1 | Vivek Kumar (single operator; backup-owner risk accepted) | < 1 hour | Inspect restore log for schema syntax errors, orphan FKs, or missing tables. |
+| **Residual Test Buckets Detected** | P3 | Vivek Kumar (single operator; backup-owner risk accepted) | Next business day | Run cleanup helper (`purgeBucket`) to remove disposable buckets. |
 
 > [!NOTE]
 > Currently, automated backup alerting depends on script exit codes and runner logs. No external automated paging service is configured during Public Beta; failures surface via runner execution output.
