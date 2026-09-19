@@ -5,12 +5,15 @@ import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { draftListingSchema, ListingCondition, ListingPriceType } from "@/types/listing";
 import type { Json } from "@/types/database";
+import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
 
 export type ListingActionResult = {
   error?: string;
   success?: boolean;
   listingId?: string;
   message?: string;
+  requiresPolicyReview?: boolean;
+  redirectTo?: string;
 };
 
 export async function createDraftListingAction(
@@ -18,6 +21,16 @@ export async function createDraftListingAction(
   formData: FormData
 ): Promise<ListingActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, "/account/listings");
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -93,6 +106,16 @@ export async function updateListingAction(
   formData: FormData
 ): Promise<ListingActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, `/account/listings/${listingId}/edit`);
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -166,6 +189,15 @@ export async function updateListingAction(
 export async function submitListingAction(listingId: string): Promise<ListingActionResult> {
   const supabase = await createClient();
 
+  const guard = await requireCurrentPolicyAcceptance(supabase, "/account/listings");
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   logger.info("listing.submit_initiated", {
     operation: "submit_listing",
     extra: { listing_id: listingId },
@@ -192,6 +224,15 @@ export async function transitionListingAction(
   action: string
 ): Promise<ListingActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, "/account/listings");
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
 
   logger.info("listing.transition_initiated", {
     operation: "transition_listing",
@@ -221,6 +262,15 @@ export async function reorderMediaAction(
 ): Promise<ListingActionResult> {
   const supabase = await createClient();
 
+  const guard = await requireCurrentPolicyAcceptance(supabase, `/account/listings/${listingId}/edit`);
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   for (const item of items) {
     const { error } = await supabase
       .from("listing_media")
@@ -242,6 +292,15 @@ export async function setCoverPhotoAction(
   mediaId: string
 ): Promise<ListingActionResult> {
   const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, `/account/listings/${listingId}/edit`);
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
 
   const { error } = await supabase
     .from("listings")

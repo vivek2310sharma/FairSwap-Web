@@ -1,17 +1,22 @@
-# FairSwap — Point 16 Disaster Recovery Drill Evidence (Milestone 1.6)
+# FairSwap — Disaster Recovery Drill Evidence & History (Milestone 1.6)
 
-This document provides durable, non-secret operational evidence for **Point 16 — Recovery & Operations Verification** in accordance with Milestone 1.6 requirements and targeted closure corrections.
+This document provides durable, non-secret operational evidence for disaster recovery verification drills conducted for **FairSwap** (a peer-to-peer local classifieds platform).
+
+> [!IMPORTANT]
+> **Staging Scope Notice**:
+> The drill evidence documented in Sections 1 through 10 below represents an isolated verification executed on the **FairSwapTest** staging project (`wpppxlnbzqynvhpeuavd`) and local test engines.
+> **Production Status**: Production backup and restore capability on `FairSwapProd` has **not** been independently verified.
+> Production verification remains an active blocker tracked under Issue **#41**.
 
 ---
 
 ## 1. Executive Summary & Verification Verdict
 
 * **Milestone Item**: Point 16 — Recovery & Operations Verification
-* **Final Verdict**: **COMPLETE PASS (100% VERIFIED)**
+* **Final Verdict**: **COMPLETE PASS (100% VERIFIED ON STAGING)**
 * **Execution Date & Time**: 2026-09-16 (UTC)
 * **Git Repository**: `vivek2310sharma/FairSwap-Web`
 * **Starting Branch**: `Phase1`
-* **Remote Main Checkpoint**: `333694bb7c1a91763b1bed3c7b9207ef9f85c3b8` (**Untouched**)
 * **Staging Target**: `FairSwapTest` (Project Ref: `wpppxlnbzqynvhpeuavd`)
 * **Hosted Staging Application**: `https://fair-swap-git-phase1-fairswap.vercel.app`
 * **Production Status**: **Untouched & Fully Isolated**
@@ -64,7 +69,7 @@ Rerunning `npx supabase migration list --linked` confirmed all 19 migrations are
 
 ---
 
-## 5. Database Backup Evidence (Option B: Application Data Backup)
+## 5. Database Backup Evidence (Application Data Backup)
 
 * **Tool Command**: `pnpm tsx scripts/backup-database.ts --source=staging`
 * **Backup Artifact**: `artifacts/backups/database/fairswap_backup.json` (Gitignored)
@@ -109,7 +114,7 @@ Prior to reconciliation, 46 active objects existed in Supabase Storage. All 46 o
 All 42 Category C orphan objects were safely purged using supported Supabase Storage APIs without SQL table mutations or trigger tampering.
 
 ### Final Reconciled Storage Inventory:
-* **Tool Command**: `npx tsx scripts/backup-storage.ts --source=staging`
+* **Tool Command**: `pnpm tsx scripts/backup-storage.ts --source=staging`
 * **Manifest File**: `artifacts/backups/storage/manifest.json` (Gitignored)
 * **Total Objects**: 4 objects (1 original, 3 derivatives)
 * **Total Media Bytes**: 0.17 MB (175,381 bytes)
@@ -135,9 +140,9 @@ All 42 Category C orphan objects were safely purged using supported Supabase Sto
 
 ---
 
-## 7. Isolated Local Database Restore Execution (Option B)
+## 7. Isolated Local Database Restore Execution
 
-Restoration was executed into a **completely isolated, disposable local in-process PostgreSQL engine** (`@electric-sql/pglite` 0.5.8), ensuring zero interaction with `FairSwapTest`.
+Restoration was executed into a **completely isolated, disposable local in-process PostgreSQL engine** (`@electric-sql/pglite` 0.5.8), ensuring zero interaction with `FairSwapTest` or Production.
 
 * **Execution Duration**: **2.30 seconds**
 * **Schema Reconstruction from Clean Migrations**:
@@ -198,3 +203,11 @@ Following completion:
   * Listing media `3fc849f5-9211-49cd-b1b4-74053300f0ec`: **Intact**
   * Administrator MFA Verified Factors: **Exactly 1**
 * Production / Main Branch: **100% Untouched**.
+
+---
+
+## 11. Production Recovery Drill Verification Posture (Public Beta)
+
+* **Status**: **UNVERIFIED ON PRODUCTION (BLOCKER in #41)**
+* **Requirement**: Before full public launch on `FairSwapProd`, a human-authorized physical backup recovery and PITR drill must be scheduled and verified against a replica or isolated restore database.
+* **Production Guard**: Automated scripts in `scripts/backup-database.ts` and `scripts/verify-restore.ts` will continue to strictly prohibit `--source=production` and `--restore-target=production` to ensure developer workstations cannot inadvertently alter production state.
