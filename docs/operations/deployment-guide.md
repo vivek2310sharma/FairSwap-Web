@@ -29,6 +29,8 @@ FairSwap is a Next.js (App Router) classifieds platform powered by Supabase (Pos
 | `VERCEL_AUTOMATION_BYPASS_SECRET` | CI/Runner Only | Secret | Secret token passed via `x-vercel-protection-bypass` for automated test suites |
 | `UPSTASH_REDIS_REST_URL` | Server Only | Secret | Upstash Redis REST endpoint for distributed rate limiting |
 | `UPSTASH_REDIS_REST_TOKEN` | Server Only | Secret | Upstash Redis authentication token |
+| `RESEND_WEBHOOK_SECRET` | Server Only | Critical Secret | Signing secret used to authenticate Resend webhook deliveries; never expose to clients or logs |
+| `OPERATIONS_ALERT_WEBHOOK_URL` | Server Only | Secret | HTTPS operational alert sink for sanitized Resend failure/bounce events; treat the URL as a credential |
 | `NODE_ENV` | All | Config | Set to `production` in staging and production deployments |
 | `PORT` | Optional | Config | HTTP binding port (default: 3000) |
 
@@ -36,8 +38,25 @@ FairSwap is a Next.js (App Router) classifieds platform powered by Supabase (Pos
 * Never commit `.env.local` or raw secret strings to version control.
 * In production, inject secrets exclusively via Vercel Project Settings or dedicated secret management vaults.
 * The `VERCEL_AUTOMATION_BYPASS_SECRET` must be rotated immediately if exposed in test transcripts.
+* Rotate `RESEND_WEBHOOK_SECRET` if exposed and update the matching Resend webhook configuration. During planned rotations, follow the provider's supported overlap window where available.
+* Treat `OPERATIONS_ALERT_WEBHOOK_URL` as a secret because incoming-webhook URLs commonly authorize message delivery to the destination.
 
 ---
+
+### Transactional Email Failure Monitoring
+
+Production Auth email is delivered by Supabase Auth through Resend SMTP. FairSwap's application-side delivery-event receiver is:
+
+- Endpoint: `POST /api/monitoring/resend`
+- Signing secret: `RESEND_WEBHOOK_SECRET` (server only)
+- Alert sink: `OPERATIONS_ALERT_WEBHOOK_URL` (server only, HTTPS)
+- Actionable Resend events: `email.bounced`, `email.complained`, `email.delivery_delayed`, `email.failed`, and `email.suppressed`
+
+The route verifies the exact raw request body with the Resend/Svix signature headers, rejects timestamps outside the replay window, and never forwards recipient addresses, subjects, message bodies, or provider error text to the operations alert destination. Only provider event identifiers, event type, occurrence time, severity, and coarse bounce classification are included.
+
+For actionable events, an unavailable or failed operations alert returns HTTP 503 so the provider can retry delivery rather than silently acknowledging an unalerted failure event. Configure and test the alert sink **before** enabling the production Resend webhook.
+
+The Resend webhook endpoint/signing secret and alert-sink URL must be different per environment. No webhook secret or incoming-alert URL belongs in Git.
 
 ## 3. Database Migration Deployment Protocols
 
