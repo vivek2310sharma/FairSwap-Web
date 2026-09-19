@@ -71,14 +71,16 @@ This transition bridge has been successfully established and accepted as a verif
 
 The controlled production pilot baseline is technically operational. Verification covered:
 
-- **Production database and storage**: Migrations 1–19 aligned on `FairSwapProd`; `listing-originals` and `listing-derivatives` verified private.
-- **Production auth and email**: Normal signup, email confirmation, sign-in, and password recovery passed; custom SMTP is configured through Resend using the verified `auth.fairswap.in` sending domain.
+- **Production database and storage**: Migrations 1–21 aligned on `FairSwapProd` and `FairSwapTest`; `listing-originals` and `listing-derivatives` verified private.
+- **Production auth and email**: Normal signup, email confirmation, sign-in, and password recovery passed; custom SMTP is configured through Resend with verified `auth.fairswap.in`. Google sign-in is live in production for existing FairSwap accounts with matching verified email (PR #61). Phone OTP authentication is **not implemented** (Issue #12 closed as Not Planned, PR #60 closed without merge).
+- **Public Beta legal & grievance**: Terms of Service (`/terms`), Privacy Policy (`/privacy`), Acceptable Use (`/acceptable-use`), Safety Guidelines (`/safety`), mandatory 18+ age declaration, pilot policy re-acceptance (`/auth/reaccept-policies`), and the statutory Grievance Redressal mechanism (`/grievance`, Grievance Officer Vivek Kumar) with conditional Rule 3A / GAC appeal guidance are live in production (PR #56).
+- **Monitoring & operations**: UptimeRobot HTTP/keyword monitoring and Cloudflare Universal SSL certificate alerts are active. Production transactional-email failure monitoring is active and verified end-to-end via signed Resend webhooks (`POST /api/monitoring/resend`) delivering sanitized alerts to Slack (PR #54, Issue #41). On 2026-09-19, the Platform Owner explicitly accepted the residual risks of operating as a single operator (no backup owner), running on Supabase Free without managed backups or PITR, and omitting additional automated alerting channels under Issue #41.
 - **Staff administration**: First administrator bootstrap completed; `/admin` enforced TOTP AAL2 and successful enrollment/step-up was verified.
 - **Listings and moderation**: A normal seller created a listing, uploaded two photos, submitted it for review, and an independent administrator approved it.
 - **Public discovery and media**: The approved listing and both photos rendered while signed out with a clean browser console.
 - **Messaging**: A separate buyer initiated a conversation; the seller received it and a seller reply appeared buyer-side in Realtime without refresh or duplicate messages, with a clean console.
 - **Production domain**: `fairswap.in` and `www.fairswap.in` are routed to Vercel with HTTPS/TLS established.
-- **Stable staging isolation**: The `staging` branch has a stable tester-accessible Vercel URL, uses FairSwapTest Auth callbacks, and a new staging signup was confirmed in `FairSwapTest` rather than `FairSwapProd`.
+- **Stable staging isolation**: The `staging` branch has a stable tester-accessible Vercel URL, uses FairSwapTest Auth callbacks, and a fresh staging signup was confirmed in `FairSwapTest` rather than `FairSwapProd`.
 
 The branch model after the pilot baseline is intentionally simple:
 
@@ -88,7 +90,7 @@ The branch model after the pilot baseline is intentionally simple:
 - There is no long-lived Phase 2 branch. Phase 2 remains **NOT STARTED / NOT AUTHORIZED**.
 
 > [!IMPORTANT]
-> **Public-launch boundary**: Technical controlled-pilot operation does not by itself certify a wider public launch. Production SMTP and domain/TLS are complete, while the remaining gates include the applicable Grievance Officer/compliance work, legal review of public-facing agreements, and operational ownership/on-call readiness.
+> **Public-launch boundary**: Controlled-pilot operation is active with infrastructure, legal policies, grievance mechanism, and email monitoring deployed. Wider public launch remains gated by deferred legal applicability review under Issue #38, outbound grievance delivery verification under Issue #37, and commercial/local registration evaluations.
 
 ---
 
@@ -129,7 +131,7 @@ To maintain strict operational clarity, the platform distinguishes five separate
 2. **Hosted / Staging Readiness**: **ACHIEVED & ACCEPTED** (2026-09-18) — The historical hosted baseline was verified on FairSwapTest + Vercel Preview and preserved by `hosted-phase1-baseline-2026-09-18` at commit `14e0e6a`.
 3. **Controlled Production Pilot**: **ACHIEVED & TECHNICALLY OPERATIONAL** (2026-09-18) — Production runs from `main` at `fairswap.in` against FairSwapProd; production smoke checks passed and the baseline is preserved by `prod-pilot-baseline-2026-09-18` at commit `a81b0a5`.
 4. **Phase 2 Development**: **NOT STARTED AND NOT AUTHORIZED** — Phase 2 planning or implementation begins only after explicit human authorization.
-5. **Public Production Launch Readiness**: **GATED** — Production SMTP and custom-domain TLS are complete. Remaining external gates include:
-   - Statutory Grievance Officer/compliance work applicable to the public launch
-   - Legal review of user-facing agreements
-   - Operational ownership and on-call readiness for wider public traffic
+5. **Public Production Launch Readiness**: **GATED** — Production SMTP, custom-domain TLS, statutory Grievance Officer details (`/grievance`), legal policies (`/terms`, `/privacy`, `/acceptable-use`, `/safety`), production transactional email monitoring, and Google sign-in (existing accounts) are complete. Operational risks (single operator, Supabase Free backup gap, omitted alert channels) were explicitly accepted under #41 on 2026-09-19. Issues #37 and #38 were closed as Not Planned on GitHub; remaining business/compliance gates deferred for wider launch include:
+   - Final legal review of intermediary / E-Commerce Rules applicability recorded in closed Issue #38
+   - Outbound grievance email delivery verification recorded in closed Issue #37
+   - Local establishment registration evaluations (e.g., SAN / Rajasthan Shops Act)

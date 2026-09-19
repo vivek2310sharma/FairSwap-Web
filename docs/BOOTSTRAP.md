@@ -1,5 +1,11 @@
 # FairSwap - safe scaffold and prerequisite procedure
 
+> [!NOTE]
+> **Historical Initial Scaffolding Notice**:
+> This document records the original safe scaffolding procedure executed during Milestone 1.1 initialization on **2026-09-13**.
+> - **Current Status**: **SCAFFOLDING COMPLETED**. The FairSwap Next.js 16 application is fully scaffolded, established, and operational at the repository root.
+> - **Usage Invariant**: This document is preserved as a historical operational reference only. **Do NOT re-scaffold or re-initialize the current application.**
+
 This is a procedure for the agent, not a command to execute immediately. PLAN ONLY permits inspection and a proposal. Scaffolding and installation require BUILD approval.
 
 ## 1. Detect the actual environment

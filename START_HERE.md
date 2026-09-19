@@ -1,5 +1,11 @@
 # FairSwap.in - full Antigravity start guide
 
+> [!NOTE]
+> **Historical Starter-Pack Onboarding Notice**:
+> This document records the original Antigravity starter-pack onboarding procedure (v4.0, 2026-09-13).
+> - **Current Repository Status**: **PHASE 1 IS COMPLETE & ACCEPTED**. All six Phase 1 milestones (1.1 through 1.6), the hosted baseline on FairSwapTest, and the Controlled Production Pilot on `fairswap.in` have been built, verified, and accepted.
+> - **Usage Invariant**: This document is preserved solely as a historical record. **Do NOT use these instructions to restart Milestone 1.1 or re-scaffold the project.** For current developer onboarding, branch workflows, and contribution guidelines, see [`CONTRIBUTING.md`](./CONTRIBUTING.md) and [`README.md`](./README.md).
+
 Version 4.0 | Prepared 2026-09-13
 
 You already have a folder named `FairSwap` open in Antigravity. This pack supplies your Project Bible, workspace rule, complete Phase 1 roadmap, six milestone contracts and separate chat prompts. It contains NO application code, preapproved implementation plan, dependencies, secrets or fabricated application test results.

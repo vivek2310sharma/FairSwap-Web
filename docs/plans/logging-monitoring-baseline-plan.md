@@ -1,9 +1,19 @@
 # FairSwap Logging & Monitoring Baseline Plan (r1)
 
-> **Document Status**: `PROPOSED` (Plan Only)  
+> [!NOTE]
+> **Historical Plan & Implementation Status Notice**:
+> This document records the original architectural design plan formulated between Milestone 1.2 and Milestone 1.3 on **2026-09-13**.
+> - **Implementation Status**: **IMPLEMENTED & VERIFIED**. The proposed four-channel observability and structured application logging architecture was subsequently implemented in the active codebase:
+>   - Structured application logger and redaction pipeline: [`src/lib/logger/`](../../src/lib/logger/) (`index.ts`, `correlation.ts`, `redactor.ts`, `types.ts`).
+>   - Request correlation & proxy instrumentation: `src/proxy.ts`.
+>   - Client error capture route & UI boundaries: implemented at `src/app/api/monitoring/client-error/route.ts` (singular, distinct from the originally proposed plural `client-errors` path in the historical text below), `src/app/error.tsx`, and `src/app/global-error.tsx`.
+>   - Test verification: Observability test suite in `tests/observability/` (historical verification evidence: 24/24 passing tests across six test files recorded when the baseline was accepted on 2026-09-13 per `docs/PROGRESS.md`; test coverage has subsequently expanded).
+> - **Historical Content**: The sections below preserve the original historical plan and pre-implementation assessment as written on 2026-09-13.
+
+> **Document Status**: `HISTORICAL (IMPLEMENTED)` (Originally `PROPOSED` Plan Only)  
 > **Target Phase**: Post-Milestone 1.2 / Pre-Milestone 1.3 Cross-Cutting Infrastructure  
 > **Milestone Roadmap Invariant**: Sits strictly between Milestone 1.2 and 1.3. Does not renumber or alter the authoritative milestone sequence.  
-> **Execution Constraint**: PLAN ONLY. No dependencies installed, no application source modified, no database mutations, no cloud vendors provisioned, no git commits or pushes.
+> **Original Execution Constraint**: PLAN ONLY. (Subsequently implemented and accepted into baseline).
 
 ---
 
@@ -15,7 +25,7 @@
 3. **End-to-End Correlation**: Propagate a consistent `x-request-id` across proxy, Server Actions, Route Handlers, Supabase API calls, and client error boundaries.
 4. **Rigorous Centralized Redaction**: Enforce automated redaction of passwords, tokens, session cookies, JWTs, Authorization headers, and MFA secrets before output serialization.
 5. **Safe User Experience & Diagnostic References**: Display user-friendly, non-technical error messages accompanied by safe reference IDs (`ref_<id>`) rather than raw stack traces.
-6. **Failure Isolation**: Ensure operational logging failures never interrupt customer marketplace transactions, while preserving atomic transaction aborts for required security audit events.
+6. **Failure Isolation**: Ensure operational logging failures never interrupt customer classifieds transactions, while preserving atomic transaction aborts for required security audit events.
 7. **Vendor-Neutral Architecture**: Output structured JSON to `stdout`/`stderr` so cloud log aggregators (Datadog, Better Stack, Logtail, Axiom, Grafana Cloud, Sentry) can be attached later with zero application rewrites.
 
 ### Non-Goals
@@ -166,14 +176,14 @@ Every operational log record emitted by the FairSwap application logger adheres 
    - *Cons*: Must maintain ~150 lines of internal logging code.
 
 ### **Recommendation: Option B (Purpose-Built Internal Logger)**
-FairSwap will implement a zero-dependency, type-safe structured logger in [`src/lib/logger/`](file:///c:/Users/VivekKumar/OneDrive%20-%20Nobly%20A%20S/Documents/FairSwap/src/lib/logger/). This satisfies the Project Bible constraint of avoiding unnecessary dependencies while guaranteeing seamless SSR and Edge compatibility.
+FairSwap will implement a zero-dependency, type-safe structured logger in [`src/lib/logger/`](../../src/lib/logger/). This satisfies the Project Bible constraint of avoiding unnecessary dependencies while guaranteeing seamless SSR and Edge compatibility.
 
 ---
 
 ## 6. Correlation / Request ID Architecture
 
 1. **Generation Boundary**:
-   - In [`src/proxy.ts`](file:///c:/Users/VivekKumar/OneDrive%20-%20Nobly%20A%20S/Documents/FairSwap/src/proxy.ts) (Next.js middleware), every incoming HTTP request is inspected for an existing upstream header (`x-request-id` or `x-correlation-id`).
+   - In [`src/proxy.ts`](../../src/proxy.ts) (Next.js middleware), every incoming HTTP request is inspected for an existing upstream header (`x-request-id` or `x-correlation-id`).
    - If present and valid, it is preserved. If absent or malformed, a standard cryptographically random UUID (`crypto.randomUUID()`) is generated.
 2. **Propagation to Server Context**:
    - The correlation ID is injected into internal request headers via `request.headers.set('x-request-id', correlationId)`.
@@ -181,7 +191,7 @@ FairSwap will implement a zero-dependency, type-safe structured logger in [`src/
 3. **Propagation to Outbound Response**:
    - The proxy sets `response.headers.set('x-request-id', correlationId)` on all HTTP responses, allowing browser devtools and API consumers to observe the trace ID.
 4. **Propagation to Supabase Infrastructure**:
-   - In [`src/lib/supabase/server.ts`](file:///c:/Users/VivekKumar/OneDrive%20-%20Nobly%20A%20S/Documents/FairSwap/src/lib/supabase/server.ts), the correlation ID is added to Supabase client global headers:
+   - In [`src/lib/supabase/server.ts`](../../src/lib/supabase/server.ts), the correlation ID is added to Supabase client global headers:
      ```typescript
      global: {
        headers: { 'x-request-id': correlationId },

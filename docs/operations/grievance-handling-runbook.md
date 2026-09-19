@@ -150,17 +150,14 @@ If the notice also concerns a cyber-security incident, activate the CERT-In asse
 
 ## 9. Backup and escalation ownership
 
-Before wider Public Beta, the private operations register must name:
+For the current production release posture (PR #56):
+- Primary Grievance Officer: **Vivek Kumar** (publicly designated at `/grievance`)
+- Backup grievance handler: **None — owner risk accepted** (single-operator posture accepted under #41)
+- Legal/privacy escalation owner: **Vivek Kumar** (FairSwap does not currently have retained counsel; Vivek Kumar evaluates and engages external legal counsel if/when required per `docs/operations/operational-owner-matrix.md`)
+- Security incident escalation owner: **Vivek Kumar** (Primary Production Owner)
+- Moderation escalation owner: **Vivek Kumar**
 
-- Primary Grievance Officer: **Vivek Kumar** (publicly designated)
-- Backup grievance handler: **UNASSIGNED — BLOCKER**
-- Legal/privacy escalation owner: **UNASSIGNED — BLOCKER**
-- Security incident escalation owner: **UNASSIGNED — BLOCKER**
-- Moderation escalation owner: **UNASSIGNED — BLOCKER**
-
-Private phone numbers, home addresses, recovery information, and emergency contact details must not be committed to this repository.
-
-If the primary Grievance Officer is unavailable, the backup must be able to monitor the intake channel, acknowledge complaints, access the required moderation/support records, and escalate legal/security matters without depending on the primary's personal credentials.
+Private phone numbers, home addresses, recovery information, and emergency contact details must not be committed to this repository. The Platform Owner operates as sole designated handler under the accepted single-operator posture.
 
 ## 10. Evidence preservation and privacy
 
@@ -173,7 +170,7 @@ If the primary Grievance Officer is unavailable, the backup must be able to moni
 
 ## 11. End-to-end grievance intake test
 
-Run this test before claiming #37 operationally complete. Use synthetic test data only.
+Run this test before claiming public launch grievance readiness. Use synthetic test data only.
 
 ### Test setup
 
@@ -201,21 +198,21 @@ Run this test before claiming #37 operationally complete. Use synthetic test dat
 - case can be assigned, tracked, and closed with complete timestamps;
 - the test does not expose secrets or real user data.
 
-Current status: **NOT RUN**.
+Current status: **Inbound routing verified (PASS on 2026-09-19)**; outbound acknowledgement from `grievance@fairswap.in` remains **deferred**.
 
-## 12. Production verification checklist
+## 12. Public launch verification checklist
 
-Issue #37 remains open until real evidence exists for all relevant items:
+Both Issue #37 and Issue #38 were closed as Not Planned by owner decision on 2026-09-19. Unresolved operational and compliance items are recorded below as deferred prerequisites for a wider public launch:
 
-- [ ] #38 confirms FairSwap's legal classification and applicable grievance obligations.
-- [ ] Backup grievance handler is named in the private operations register.
-- [ ] Legal/privacy and security escalation owners are named privately.
-- [ ] `grievance@fairswap.in` is monitored by primary and backup without shared credentials.
-- [ ] End-to-end intake/acknowledgement test passes.
-- [ ] `/grievance` is verified on the stable staging deployment.
-- [ ] `/grievance` is verified on `https://fairswap.in` after an explicitly authorized production promotion.
-- [ ] Published name/contact details match the approved business/legal record.
-- [ ] Any legally required postal address, phone number, or additional disclosure is confirmed under #38 before publication.
+- [ ] Issue #38 confirms FairSwap's legal classification and applicable grievance obligations (deferred item recorded in closed #38).
+- [ ] Backup grievance handler is designated in the private operations register (single-operator risk accepted under #41).
+- [x] Legal/privacy and security escalation owners are designated (Vivek Kumar per `docs/operations/operational-owner-matrix.md`).
+- [ ] Outbound acknowledgement delivery from `grievance@fairswap.in` is verified with timestamps (deferred item recorded in closed #37).
+- [x] Inbound grievance intake routing to `grievance@fairswap.in` tested and passing via Cloudflare Email Routing (2026-09-19).
+- [x] `/grievance` is verified on the stable staging deployment (PR #42 & PR #55).
+- [x] `/grievance` deployed to production via PR #56 (Vercel deployment succeeded; deployed source verified; live external domain fetch unverified due to verification environment resolution limit).
+- [x] Published name/contact details match the approved business/legal record (`Vivek Kumar`, `grievance@fairswap.in`).
+- [ ] Any legally required postal address, phone number, or additional disclosure is confirmed under #38 before wider public launch.
 - [x] Conditional Rule 3A / GAC appeal guidance is included on the public grievance page.
 - [ ] Approval/evidence is recorded without adding private contact details or secrets to GitHub.
 
@@ -231,5 +228,6 @@ Relevant repository references:
 - `/grievance`
 - `docs/operations/incident-response-runbook.md`
 - `docs/operations/operational-owner-matrix.md`
-- issue #38 — final legal review
-- issue #41 — production monitoring and incident ownership
+- Closed issue #38 — final legal review (closed as Not Planned; unresolved items deferred)
+- Closed issue #37 — publish grievance officer details (closed as Not Planned; unresolved items deferred)
+- Issue #41 — production monitoring and incident ownership
