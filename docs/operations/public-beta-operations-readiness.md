@@ -23,7 +23,7 @@ The following matrix tracks the required observability signals for the live prod
 
 > [!CAUTION]
 > **Monitoring Reality Attestation**:
-> FairSwap now has primary-owner external HTTP/content monitoring through UptimeRobot and TLS certificate notifications through Cloudflare, with e-mail notification paths tested on 2026-09-19. Automated phone/SMS alerting and backup-owner alert routing are not configured.
+> FairSwap now has primary-owner external HTTP/content monitoring through UptimeRobot and TLS certificate notifications through Cloudflare, with e-mail notification paths tested on 2026-09-19. No backup production owner is designated; that single-operator risk was explicitly accepted on 2026-09-19. Automated phone/SMS alerting is not configured.
 > Any remaining signal not verified through repository evidence or verified dashboard inspection is marked **`UNVERIFIED`** or **`NOT CONFIGURED — PUBLIC BETA BLOCKER`**. Documentation alone does not satisfy launch readiness.
 
 | Signal / Source | Alert Destination | Primary Owner | Backup Owner | Expected Operational Response | Test Method | Current Status | Evidence / Notes |
