@@ -15,14 +15,21 @@ describe("Footer component", () => {
     expect(screen.getByText("Swap")).toBeInTheDocument();
   });
 
-  it("displays the development foundation notice and copyright", () => {
+  it("displays the copyright and controlled production pilot notice", () => {
     render(<Footer />);
     const currentYear = new Date().getFullYear();
     expect(
-      screen.getByText(new RegExp(`© ${currentYear} FairSwap. Development foundation.`))
+      screen.getByText(new RegExp(`© ${currentYear} FairSwap\\.`))
     ).toBeInTheDocument();
     expect(
-      screen.getByText("This is a development build. Not a live service.")
+      screen.getByText("Currently operating as a controlled production pilot.")
     ).toBeInTheDocument();
+  });
+
+  it("renders a link to the Grievance Redressal page", () => {
+    render(<Footer />);
+    const grievanceLink = screen.getByRole("link", { name: "Grievance Redressal" });
+    expect(grievanceLink).toBeInTheDocument();
+    expect(grievanceLink).toHaveAttribute("href", "/grievance");
   });
 });

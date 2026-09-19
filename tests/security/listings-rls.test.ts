@@ -58,8 +58,12 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
           email_confirm: true,
           user_metadata: {
             display_name: email.split("@")[0],
-            terms_version: "2026-09-01",
-            privacy_policy_version: "2026-09-01",
+            terms_accepted: "true",
+            terms_version: "2026-09-18",
+            privacy_policy_version: "2026-09-18",
+            acceptable_use_version: "2026-09-18",
+            age_confirmed: "true",
+            minimum_age_confirmed: 18,
           },
         });
         if (created?.user) {

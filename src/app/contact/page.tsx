@@ -1,10 +1,11 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { Mail, Clock, AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { Mail, Clock, AlertTriangle, ShieldCheck, Scale } from "lucide-react";
 
 export const metadata = {
   title: "Contact Guidance — FairSwap",
-  description: "Truthful operational status and contact guidance for the FairSwap development prototype.",
+  description: "Contact channels, support information, and grievance redressal guidance for FairSwap.",
 };
 
 export default function ContactPage() {
@@ -15,11 +16,11 @@ export default function ContactPage() {
         <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-200">
           <div className="flex items-center gap-2 font-semibold">
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            <span>Operational Status Notice</span>
+            <span>Controlled Production Pilot Notice</span>
           </div>
           <p className="mt-1 text-xs">
-            FairSwap is currently in Milestone 1.4 development. There is no active call center,
-            live support inbox, or dispute resolution team at this stage.
+            FairSwap is currently operating as a controlled production pilot. FairSwap does not operate a telephone
+            call center or live phone helpline. Please use the appropriate digital channels below.
           </p>
         </div>
 
@@ -31,30 +32,67 @@ export default function ContactPage() {
         </div>
 
         <div className="mt-8 space-y-6">
-          <div className="rounded-xl border border-border bg-card p-6">
+          {/* Formal Grievance Redressal Card */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Clock className="h-5 w-5 text-brand-600" aria-hidden="true" />
-              Support &amp; Reporting Availability
+              <Scale className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              Formal Grievance Redressal
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              Operational customer support workflows, live buyer-seller reporting queues, and user appeals are scheduled
-              for implementation in <span className="font-semibold text-foreground">Milestone 1.5</span> (Communication &amp; Safety)
-              and <span className="font-semibold text-foreground">Milestone 1.6</span> (Pilot Readiness).
+              For grievances regarding your FairSwap account, listings, user conduct, safety, privacy,
+              intellectual property notices, or platform compliance, you may contact FairSwap&apos;s Grievance Officer directly:
             </p>
+            <div className="mt-3 rounded-lg border border-border/70 bg-surface/50 p-4 text-sm space-y-1">
+              <p><strong className="text-foreground">Grievance Officer:</strong> Vivek Kumar</p>
+              <p><strong className="text-foreground">Designation:</strong> Grievance Officer — FairSwap</p>
+              <p>
+                <strong className="text-foreground">Email:</strong>{" "}
+                <a
+                  href="mailto:grievance@fairswap.in"
+                  className="text-brand-link underline hover:text-brand-hover"
+                >
+                  grievance@fairswap.in
+                </a>
+              </p>
+            </div>
             <p className="mt-3 text-sm text-muted leading-relaxed">
-              To avoid false expectations, automated contact forms and email submission buttons are disabled until the
-              associated staff response queues are fully staffed and operational.
+              For detailed submission requirements, categories, and sensitive-information warnings, please visit the{" "}
+              <Link href="/grievance" className="font-medium text-brand-link underline hover:text-brand-hover">
+                Grievance Redressal Portal
+              </Link>.
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="text-base font-semibold text-foreground">
-              Urgent Safety or Prohibited Items
+          {/* Account Support & Appeals */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Clock className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              Account Support &amp; Moderation Appeals
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              All advertisements currently undergo manual staff review prior to publication. If you encounter any
-              suspicious or unlawful behavior during your local testing of this prototype, please report it to your
-              local repository administrator or test coordinator.
+              Authenticated users can view and manage their support tickets, submit inquiries regarding listing
+              moderation decisions, or appeal account actions directly from the{" "}
+              <Link href="/account/support" className="font-medium text-brand-link underline hover:text-brand-hover">
+                Support Tickets
+              </Link>{" "}
+              dashboard.
+            </p>
+          </div>
+
+          {/* Urgent Safety or Prohibited Items */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <ShieldCheck className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+              Marketplace Safety &amp; Content Reporting
+            </h2>
+            <p className="mt-2 text-sm text-muted leading-relaxed">
+              To report suspicious listings, fraudulent behavior, harassment, or prohibited items, use the
+              built-in <strong className="text-foreground">Report</strong> and <strong className="text-foreground">Block</strong>{" "}
+              controls available directly on listing detail pages, seller profiles, and message threads.
+            </p>
+            <p className="mt-3 text-sm text-muted leading-relaxed">
+              If you believe there is an immediate risk to someone&apos;s physical safety, please contact your
+              local emergency or law enforcement authorities immediately. FairSwap does not provide emergency dispatch services.
             </p>
           </div>
         </div>

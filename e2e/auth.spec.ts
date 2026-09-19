@@ -121,6 +121,11 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
     await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Faccount/);
   });
 
+  test("unauthenticated access to /account/policy-review redirects to /auth/sign-in", async ({ page }) => {
+    await page.goto("/account/policy-review");
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Faccount%2Fpolicy-review/);
+  });
+
   test("unauthenticated access to /admin redirects to /auth/sign-in", async ({ page }) => {
     await page.goto("/admin");
     await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fadmin/);

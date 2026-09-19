@@ -68,8 +68,12 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
       email_confirm: true,
       user_metadata: {
         display_name: `Target User ${runId}`,
-        terms_version: "2026-09-01",
-        privacy_policy_version: "2026-09-01",
+        terms_accepted: "true",
+        terms_version: "2026-09-18",
+        privacy_policy_version: "2026-09-18",
+        acceptable_use_version: "2026-09-18",
+        age_confirmed: "true",
+        minimum_age_confirmed: 18,
       },
     });
     if (targetErr || !createdTarget.user) throw targetErr || new Error("Failed to create target user");
@@ -77,8 +81,11 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
     await serviceClient.from("user_accounts").upsert({
       user_id: createdTarget.user.id,
       account_status: "active",
-      terms_version: "2026-09-01",
-      privacy_policy_version: "2026-09-01",
+      terms_version: "2026-09-18",
+      privacy_policy_version: "2026-09-18",
+      acceptable_use_version: "2026-09-18",
+      age_confirmed_at: new Date().toISOString(),
+      minimum_age_confirmed: 18,
       terms_accepted_at: new Date().toISOString(),
     });
 
@@ -118,8 +125,12 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
       email_confirm: true,
       user_metadata: {
         display_name: `Staff ${runId}`,
-        terms_version: "2026-09-01",
-        privacy_policy_version: "2026-09-01",
+        terms_accepted: "true",
+        terms_version: "2026-09-18",
+        privacy_policy_version: "2026-09-18",
+        acceptable_use_version: "2026-09-18",
+        age_confirmed: "true",
+        minimum_age_confirmed: 18,
       },
     });
     if (staffErr || !createdStaff.user) throw staffErr || new Error("Failed to create staff user");
@@ -127,8 +138,11 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
     await serviceClient.from("user_accounts").upsert({
       user_id: createdStaff.user.id,
       account_status: "active",
-      terms_version: "2026-09-01",
-      privacy_policy_version: "2026-09-01",
+      terms_version: "2026-09-18",
+      privacy_policy_version: "2026-09-18",
+      acceptable_use_version: "2026-09-18",
+      age_confirmed_at: new Date().toISOString(),
+      minimum_age_confirmed: 18,
       terms_accepted_at: new Date().toISOString(),
     });
 

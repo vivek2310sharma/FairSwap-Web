@@ -1,11 +1,11 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
-import { HelpCircle, Search, Shield, AlertTriangle } from "lucide-react";
+import { HelpCircle, Search, Shield, AlertTriangle, Scale } from "lucide-react";
 
 export const metadata = {
   title: "Help Center & FAQ — FairSwap",
-  description: "Truthful project guidance and frequently asked questions for the FairSwap development prototype.",
+  description: "Platform guidance and frequently asked questions for FairSwap.",
 };
 
 export default function HelpPage() {
@@ -13,15 +13,15 @@ export default function HelpPage() {
     <>
       <Header />
       <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
-        {/* Draft Notice */}
+        {/* Pilot Status Notice */}
         <div className="mb-8 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-200">
           <div className="flex items-center gap-2 font-semibold">
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            <span>Development Prototype Documentation</span>
+            <span>Controlled Production Pilot Guidance</span>
           </div>
           <p className="mt-1 text-xs">
-            This guidance document represents the current prototype implementation of FairSwap (Milestone 1.4).
-            Live operations, customer dispute queues, and messaging services are scheduled for Milestone 1.5/1.6.
+            FairSwap is currently operating as a controlled production pilot. Core marketplace discovery, messaging,
+            reporting, and account management are active.
           </p>
         </div>
 
@@ -29,7 +29,7 @@ export default function HelpPage() {
           Frequently Asked Questions
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Understanding how peer-to-peer discovery works on FairSwap.
+          Understanding how peer-to-peer discovery and communication work on FairSwap.
         </p>
 
         <div className="mt-8 space-y-6">
@@ -55,9 +55,9 @@ export default function HelpPage() {
               How do I contact a seller?
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              In this Milestone 1.4 development release, public discovery and favourites are live, but in-app messaging
-              is currently in development for Milestone 1.5. No live communication channels or personal phone number
-              exchanges are operated at this milestone.
+              When signed in, you can contact a seller directly through FairSwap&apos;s built-in messaging by clicking
+              the &ldquo;Contact Seller&rdquo; button on any active listing. To protect your privacy and security, keep
+              initial discussions within the platform and arrange to inspect items in person in a safe public location.
             </p>
           </div>
 
@@ -74,6 +74,29 @@ export default function HelpPage() {
                 Safety Tips
               </Link>{" "}
               before meeting.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+              <Scale className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              How do I report a concern or contact the Grievance Officer?
+            </h2>
+            <p className="mt-2 text-sm text-muted leading-relaxed">
+              To report a specific listing, user profile, or chat message, use the built-in{" "}
+              <strong className="text-foreground">Report</strong> or{" "}
+              <strong className="text-foreground">Block</strong> options available directly on those items.
+            </p>
+            <p className="mt-2 text-sm text-muted leading-relaxed">
+              For platform-level grievances, privacy inquiries, intellectual property notices, or compliance matters,
+              please review our{" "}
+              <Link href="/grievance" className="font-medium text-brand-link underline">
+                Grievance Redressal
+              </Link>{" "}
+              page or contact FairSwap&apos;s Grievance Officer at{" "}
+              <a href="mailto:grievance@fairswap.in" className="font-medium text-brand-link underline">
+                grievance@fairswap.in
+              </a>.
             </p>
           </div>
         </div>
