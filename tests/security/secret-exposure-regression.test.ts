@@ -73,6 +73,28 @@ describe("Point 16 Secret-Exposure Regression & Hygiene Gates", () => {
     }
   });
 
+  it("verifies no literal Resend webhook secrets or Slack incoming-webhook credentials are committed", () => {
+    const directoriesToScan = ["src", "scripts", "docs/operations"];
+    const resendWebhookSecretRegex = /whsec_[A-Za-z0-9+/_=-]{20,}/g;
+    const slackWebhookRegex = /https:\/\/hooks\.slack\.com\/services\/[A-Za-z0-9/_-]{20,}/g;
+
+    for (const dir of directoriesToScan) {
+      const fullDir = path.join(rootDir, dir);
+      if (!fs.existsSync(fullDir)) continue;
+
+      const files = fs.readdirSync(fullDir, { recursive: true }) as string[];
+      for (const file of files) {
+        const fullPath = path.join(fullDir, file);
+        if (fs.statSync(fullPath).isDirectory()) continue;
+        if (!file.endsWith(".ts") && !file.endsWith(".tsx") && !file.endsWith(".js") && !file.endsWith(".md")) continue;
+
+        const content = fs.readFileSync(fullPath, "utf8");
+        expect(content.match(resendWebhookSecretRegex) || []).toEqual([]);
+        expect(content.match(slackWebhookRegex) || []).toEqual([]);
+      }
+    }
+  });
+
   it("verifies no literal Vercel automation bypass secrets are hardcoded in test scripts or docs", () => {
     const directoriesToScan = ["scripts", "docs/operations"];
     // Ensure header setting uses process.env.VERCEL_AUTOMATION_BYPASS_SECRET rather than string literals
