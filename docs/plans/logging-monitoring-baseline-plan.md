@@ -15,7 +15,7 @@
 3. **End-to-End Correlation**: Propagate a consistent `x-request-id` across proxy, Server Actions, Route Handlers, Supabase API calls, and client error boundaries.
 4. **Rigorous Centralized Redaction**: Enforce automated redaction of passwords, tokens, session cookies, JWTs, Authorization headers, and MFA secrets before output serialization.
 5. **Safe User Experience & Diagnostic References**: Display user-friendly, non-technical error messages accompanied by safe reference IDs (`ref_<id>`) rather than raw stack traces.
-6. **Failure Isolation**: Ensure operational logging failures never interrupt customer marketplace transactions, while preserving atomic transaction aborts for required security audit events.
+6. **Failure Isolation**: Ensure operational logging failures never interrupt customer classifieds transactions, while preserving atomic transaction aborts for required security audit events.
 7. **Vendor-Neutral Architecture**: Output structured JSON to `stdout`/`stderr` so cloud log aggregators (Datadog, Better Stack, Logtail, Axiom, Grafana Cloud, Sentry) can be attached later with zero application rewrites.
 
 ### Non-Goals

@@ -1,205 +1,196 @@
-# FairSwap — Incident Response Runbook (Milestone 1.6)
+# FairSwap — Incident Response Runbook (Public Beta Readiness)
 
-This runbook defines severity classifications, escalation channels, emergency playbooks, containment procedures, and post-mortem protocols for operational and security incidents across FairSwap.
+This runbook defines severity classifications, operational response flows, emergency containment playbooks, statutory reporting considerations, and post-incident review protocols for **FairSwap** (a peer-to-peer local classifieds platform).
+
+It is tailored to a small-team operational model led by the Primary Production Owner (Vivek Kumar) with an identified backup owner requirement.
 
 ---
 
-## 1. Incident Severity Classifications
+## 1. Incident Severity Classifications (P0 – P3)
 
-| Severity Level | Definition | Target Response | Target Resolution | Example Scenarios |
+The following operational targets are internal engineering goals to guide triage and prioritization during Public Beta. They are **operational targets**, not contractual customer Service Level Agreements (SLAs).
+
+| Severity | Definition | Operational Target (Ack / Triage) | Target Resolution / Containment | Representative Scenarios |
 |---|---|---|---|---|
-| **Sev 1 — Critical** | Total platform outage, unauthorized privileged access, active data exfiltration, or complete database/storage failure. | < 15 minutes | < 2 hours | Primary database unreachable, bypass of MFA/AAL2 controls, critical RLS bypass, mass data deletion. |
-| **Sev 2 — Major** | Core user journey blocked, major component degraded, or severe partial failure with no viable workaround. | < 30 minutes | < 4 hours | Listing creation/upload failing, chat messages failing to deliver, excessive 5xx errors (> 5%). |
-| **Sev 3 — Minor** | Non-critical component degraded, isolated edge-case bug, or minor operational defect with available workaround. | Next business day | < 48 hours | Non-blocking filter bug, localized UI styling anomaly, minor telemetry delivery delay. |
+| **P0 — Critical** | Active security compromise, verified data exfiltration/leak, destructive malicious tampering, or complete platform outage impacting all users. | Immediate (< 30 mins) | Immediate containment (< 2 hours) | Active administrative credential compromise, public leak of user databases, total Supabase or Vercel production outage, RLS authorization bypass leaking personal data. |
+| **P1 — Major** | Core classifieds journeys blocked, severe security degradation, or major platform component unavailable without a viable workaround. | < 1 hour | < 4 hours | Users cannot sign in or view listings, image upload pipeline completely down, message delivery failing across all active chats, elevated 5xx error rate (> 5%). |
+| **P2 — Moderate** | Important platform feature degraded or impaired, but core functionality remains usable or an operational workaround exists. | < 4 hours (operational hours) | < 24 hours | Search filtering degraded, notification delivery delayed, localized UI rendering defect on specific devices, support ticket creation intermittent. |
+| **P3 — Minor** | Low-impact defect, non-blocking cosmetic anomaly, localized edge case, or routine operational maintenance inquiry. | Next business day | Scheduled release cycle | Minor styling inconsistency, non-blocking telemetry warning in logs, minor documentation defect. |
 
 ---
 
-## 2. Emergency Incident Playbooks
+## 2. End-to-End Incident Lifecycle Flow
+
+All incidents follow this structured 10-stage lifecycle:
+
+```
+[1. DETECT] ----> [2. ASSESS] ----> [3. TRIAGE] ----> [4. CONTAIN] ----> [5. PRESERVE]
+                                                                               |
+[10. REVIEW] <--- [9. COMMUNICATE] <-- [8. VERIFY] <-- [7. RECOVER] <--- [6. REMEDIATE]
+```
+
+1. **Detect**: Signal identified via uptime monitor, Vercel runtime alerts, Supabase dashboard, user report to Grievance Officer, or automated code scanning.
+2. **Assess**: Initial evaluation of user impact, data integrity, and security exposure.
+3. **Triage**: Assign severity (P0, P1, P2, P3); activate Incident Commander (Vivek Kumar / Backup Owner).
+4. **Contain**: Execute immediate non-destructive containment to arrest ongoing harm or exposure.
+5. **Preserve Evidence**: Export logs, snapshot audit entries, and record commit SHAs and timestamps before modifying state.
+6. **Remediate**: Deploy code fix, execute forward database migration, rotate exposed credentials, or adjust infrastructure settings.
+7. **Recover**: Restore full service availability; remove emergency access restrictions.
+8. **Verify**: Perform smoke tests and regression checks to confirm normal behavior across frontend and backend.
+9. **Communicate**: Provide factual updates to affected users and initiate regulatory assessments where applicable.
+10. **Review**: Conduct a blameless post-mortem; track corrective action items in GitHub issues.
+
+---
+
+## 3. Explicit Decision Points Matrix
+
+The Incident Commander must evaluate these critical decision points during active triage and containment:
+
+| Decision Point | Trigger Criteria | Authorization & Execution Path |
+|---|---|---|
+| **Frontend Rollback** | Recent Vercel deployment causes elevated 5xx or breaks core journeys, and **database schema remains backward-compatible**. | **Incident Commander**. Trigger Instant Rollback in Vercel to last-known-good deployment. |
+| **Feature Disablement** | Specific feature (e.g. chat, media upload, registration) is malfunctioning or under attack while remainder of platform is healthy. | **Incident Commander**. Deploy environment variable flag or feature toggle; display graceful maintenance notice. |
+| **Traffic Restriction** | Severe DDoS, aggressive automated scraping, or resource exhaustion threatening platform stability. | **Incident Commander**. Enable Vercel Attack Mode or apply IP/rate-limit controls at proxy layer. |
+| **Account Suspension** | Staff or user account suspected compromised, abusing platform, or attempting privilege escalation. | **Incident Commander / Staff**. Update `public.user_accounts` status to `'suspended'` via supported RPC/SQL. |
+| **Credential Rotation** | Any secret, API key, service token, or database password exposed in Git, logs, or third-party breaches. | **Incident Commander**. Immediately rotate in Vercel / Supabase / Upstash; revoke prior version; test deployment. |
+| **Vendor Escalation** | Outage or degradation originating in upstream infrastructure (Vercel, Supabase, Upstash, DNS, Email). | **Incident Commander**. Inspect vendor status pages; file high-priority support ticket; inform users of upstream dependency. |
+| **User Communications** | Incident impacts user data accessibility, security, or causes extended visible downtime (> 2 hours). | **Primary Production Owner / Grievance Officer**. Publish transparent notice on platform banner or direct communication. |
+| **Regulatory / Authority Escalation** | Cyber incident potentially falls under CERT-In Annexure I or data protection statutes. | **Primary Production Owner / Legal Counsel**. Initiate 6-hour CERT-In assessment clock immediately. |
+
+---
+
+## 4. Statutory Cyber Security & Data Breach Protocols
+
+### A. CERT-In Direction (Section 70B) Operational Protocol
+Pursuant to the **Directions under sub-section (6) of section 70B of the Information Technology Act, 2000** (issued 28 April 2022 by CERT-In; see [CERT-In Directions 70B](https://www.cert-in.org.in/Directions70B.jsp)):
+* The Directions identify covered categories of entities, including service providers, intermediaries, data centres, body corporates, and Government organisations.
+* **Annexure-I Reportable Incidents**: Incidents specified include unauthorized access to IT systems/data, compromise of critical systems, targeted scanning/probing, identity theft/spoofing, data breach/data leak, attacks on servers/network infrastructure, and other listed cyber security incidents.
+* **Reporting Window**: Covered entities must report Annexure-I incidents to CERT-In **within 6 hours** of noticing the incident or the incident being brought to notice.
+* **Reporting Channel**: Formal report to `incident@cert-in.org.in` using the format published on the CERT-In portal.
+* **Point of Contact (PoC)**: Covered entities must designate a Point of Contact for liaison with CERT-In. (Private contact details of the PoC are maintained securely outside Git).
+* **System Log Retention**: Covered entities are required to maintain ICT-system logs securely within India for a rolling duration of **180 days**.
+
+> [!IMPORTANT]
+> **FairSwap Operational Rule on CERT-In Applicability**:
+> FairSwap's exact statutory classification and intermediary status are currently under formal legal review in Issue **#38**.
+> **Conservative Invariant**: Any security incident that appears to match CERT-In Annexure I (e.g. credential compromise, unauthorized database access, suspected data leak) must **immediately start a CERT-In applicability and reportability assessment**.
+> Pending final legal classification, the Incident Commander must treat the **six-hour window** as the internal maximum escalation clock, ensuring FairSwap preserves the capability to report on time if the statutory obligation applies.
+
+### B. Digital Personal Data Protection (DPDP) Readiness Framework
+* **Statutory Baseline**: Based on the 13 November 2025 commencement notification and the DPDP Rules 2025:
+  * **Rule 7** establishes the detailed notification process for personal data breaches.
+  * Rules 3, 5–16, 22, and 23—along with their corresponding substantive Act provisions—come into force **eighteen months** following official publication.
+* **Current Operational Posture (September 2026)**:
+  * Rule 7 is **not yet in force** as a binding legal obligation.
+  * **Future Compliance Checkpoint**: **13 May 2027** (end of 18-month staging transition).
+* **Readiness Architecture (Future Requirements under Rule 7)**:
+  1. **Notification to Data Principals**: In the event of a confirmed personal data breach, affected individuals must be notified **without delay** with clear guidance on protective steps.
+  2. **Initial Report to the Data Protection Board**: An initial description of the breach must be submitted **without delay**.
+  3. **Detailed Follow-up**: Comprehensive report submitted to the Board within **72 hours** (or within an extension permitted by the Board).
+* During Public Beta, FairSwap tracks these guidelines as operational best practices to ensure procedural readiness prior to 13 May 2027.
+
+---
+
+## 5. Emergency Technical Playbooks
 
 ### Playbook 1: Compromised Staff Account or Privileged Credential
-* **Detection**: Alert from security telemetry, anomalous audit log entries in `public.audit_logs`, or report from account holder.
+* **Detection**: Anomalous entries in `public.audit_logs`, unexpected administrative actions, or staff notification.
 * **Containment Protocol**:
-  1. **Immediately Suspend Application Account**:
-     Update `public.user_accounts` through the supported administrative path:
+  1. **Immediately Suspend User Account**:
      ```sql
      UPDATE public.user_accounts
      SET account_status = 'suspended'
      WHERE user_id = '<COMPROMISED_USER_ID>';
      ```
-     *Impact*: FairSwap's database/RPC layer dynamically evaluates `app_security.get_account_status(auth.uid())`. A suspended status immediately denies all marketplace queries, mutations, and privileged actions across the platform, even if the caller possesses an unexpired JWT.
-  2. **Immediately Revoke Privileged Staff Roles**:
+     *Security Invariant*: FairSwap's database RPCs and data layer evaluate `app_security.get_account_status(auth.uid())`. A `'suspended'` status immediately revokes all marketplace mutations and access, even if the caller holds a valid, unexpired JWT.
+  2. **Immediately Revoke Staff Roles**:
      ```sql
      DELETE FROM public.staff_roles WHERE user_id = '<COMPROMISED_USER_ID>';
      ```
-     *Impact*: Revokes all administrator and moderator privileges immediately from all database security barriers and middleware checks.
-  3. **Supported Session Revocation & JWT Lifecycle Reality**:
-     * Note that Supabase Auth `supabase.auth.admin.signOut(jwt, 'global')` requires an active session JWT, not a user ID. Supabase does NOT provide a standalone user-ID global signout API.
-     * Already-issued stateless JWT access tokens remain cryptographically verifiable until expiry (default 1 hour). Therefore, **Step 1 (suspending `public.user_accounts`) is the authoritative real-time containment boundary** dynamically enforced by FairSwap's database security routines.
-     * If the compromised user's active session JWT is accessible from server telemetry or logs, invoke:
-       ```typescript
-       await supabase.auth.admin.signOut(activeUserJwt, 'global');
-       ```
+  3. **Session Revocation Reality**:
+     * Supabase Auth `supabase.auth.admin.signOut(jwt, 'global')` requires an active session JWT, not a standalone user ID.
+     * Stateless JWTs remain cryptographically valid until expiration (1 hour). Therefore, **Step 1 (`account_status = 'suspended'`) is the authoritative real-time security barrier**.
   4. **Strict Safety Prohibition**:
      > [!CAUTION]
-     > **NEVER DIRECTLY MANIPULATE INTERNAL AUTH TABLES**:
-     > Do **NOT** execute manual SQL `DELETE FROM auth.refresh_tokens`, `DELETE FROM auth.sessions`, or `DELETE FROM auth.mfa_factors`. Direct mutation of internal GoTrue tables bypasses auth state machine invariants and can corrupt platform state. Containment must rely strictly on application account suspension, staff role removal, and supported Supabase Auth admin APIs.
-* **Preservation of Evidence**:
-  * Snapshot `public.audit_logs` entries filtered by `actor_id = '<COMPROMISED_USER_ID>'`.
-  * Export server access logs containing the IP and User-Agent signatures of the compromised sessions.
-* **Escalation**: Notify Security Lead / Platform Owner within 15 minutes.
-* **Recovery**: Reset password through authorized recovery flow; require new TOTP factor enrollment before re-assigning any staff role.
-* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT` (Default: Platform Administrator).
-* **Post-Incident Review**: Conduct 5-Whys root cause analysis; review credential hygiene and MFA enforcement.
+     > **DO NOT DIRECTLY MUTATE `auth.*` INTERNAL TABLES**:
+     > Never execute manual SQL `DELETE FROM auth.sessions` or `DELETE FROM auth.users`. Bypassing GoTrue auth internal state machines risks data corruption.
+* **Preservation of Evidence**: Export all `public.audit_logs` where `actor_id = '<COMPROMISED_USER_ID>'`. Record source IP and User-Agent from Vercel runtime logs.
+* **Remediation**: Reset account credentials via official administrative recovery flow; require fresh TOTP factor enrollment.
 
 ---
 
-### Playbook 2: Credential Exposure (API Keys, Bypass Secrets, Tokens)
-* **Detection**: Automated scanning (e.g. GitHub secret scanning), transcript review, or developer self-report.
+### Playbook 2: Credential / Secret Exposure
+* **Detection**: GitHub Secret Scanning alert, transcript inspection, or developer disclosure.
 * **Containment**:
-  1. Rotate the exposed secret immediately at its source (Vercel Project Settings, Supabase Dashboard, or Redis provider).
-  2. Deploy replacement environment variable to staging/production without logging its value.
-  3. Revoke/delete the prior credential version.
+  1. Rotate exposed secret immediately at its source (Vercel Project Settings, Supabase Dashboard, Upstash Redis, or SMTP provider).
+  2. Deploy updated environment variable to staging/production.
+  3. Revoke/delete the compromised secret version at the provider.
 * **Preservation of Evidence**: Note commit SHA or exposure location; log timestamp of exposure vs timestamp of revocation.
-* **Escalation**: Escalate immediately to Security Lead and Platform Owner.
-* **Recovery**: Verify application health and automated test suites with new credentials.
-* **Customer Communication Owner**: Not applicable unless customer data accessed; if customer impact exists, `OWNER REQUIRED BEFORE PUBLIC PILOT`.
-* **Post-Incident Review**: Implement pre-commit hooks and CI lint guards to prevent secret exposure.
+* **Assessment**: Start 6-hour CERT-In assessment clock if credentials could have enabled access to user data.
 
 ---
 
-### Playbook 3: Database Outage or Unavailability
-* **Detection**: Health check endpoint `/api/listings/recent` returns 500/503; Vercel server functions log connection timeouts to Supabase.
-* **Containment**:
-  1. Inspect Supabase platform status (status.supabase.com) for provider-wide incidents.
-  2. Inspect connection pooler (PgBouncer / Supavisor) metrics on Supabase project dashboard.
-  3. Check connection pool saturation; terminate lingering idle transactions if necessary:
+### Playbook 3: Application Rollback & Compatibility
+* **Detection**: Vercel deployment fails, serves 500s, or introduces critical application defect.
+* **Rollback Procedure**:
+  1. Check database migration history before rolling back frontend:
+     * FairSwap migrations use a **forward-only corrective strategy**.
+     * Verify whether the previous frontend code is compatible with the current database schema.
+     * If backward-compatible: Navigate to Vercel Deployments -> select last-known-good deployment -> click **Instant Rollback**.
+     * If incompatible (breaking schema change): Do **NOT** roll back frontend alone. Deploy a forward corrective fix or repair migration.
+  2. Capture full build/runtime error logs from Vercel.
+
+---
+
+### Playbook 4: Database / Supabase Platform Outage
+* **Detection**: Synthetic monitor reports 5xx/503; Vercel server functions log connection timeouts to Supabase API/database.
+* **Triage & Containment**:
+  1. Check [Supabase Status](https://status.supabase.com) for upstream platform incidents.
+  2. Check Supabase Dashboard for connection pool exhaustion (PgBouncer/Supavisor).
+  3. If pool is exhausted by lingering idle transactions, terminate idle connections:
      ```sql
-     SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle in transaction' AND state_change < current_timestamp - INTERVAL '5 minutes';
+     SELECT pg_terminate_backend(pid)
+     FROM pg_stat_activity
+     WHERE state = 'idle in transaction'
+       AND state_change < current_timestamp - INTERVAL '5 minutes';
      ```
-* **Preservation of Evidence**: Capture connection pooler metrics, active query count, and Postgres error logs.
-* **Escalation**: Escalate to Lead Database Administrator (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
-* **Recovery**: If primary database is unrecoverable, follow `docs/operations/backup-restore-runbook.md` to restore to the latest verified backup.
-* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
-* **Post-Incident Review**: Review connection limits, query timeouts, and pooler settings.
+* **Fallback & Recovery**: FairSwap has **no automatic database failover** in Phase 1 / Public Beta. If the hosted primary is unrecoverable, follow `docs/operations/backup-restore-runbook.md` under human authorization.
 
 ---
 
-### Playbook 4: Object Storage Outage
-* **Detection**: Image uploads fail; media processing jobs throw 5xx; listing detail pages render fallback placeholder images.
-* **Containment**:
-  1. Verify Supabase Storage API health.
-  2. Check Storage egress and API quotas on Supabase dashboard.
-  3. Inspect client and server logs for storage endpoint error payloads.
-* **Preservation of Evidence**: Save failed upload error bodies and correlation IDs.
-* **Escalation**: Escalate to DevOps / Storage Engineer (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
-* **Recovery**: Re-enable service; if objects were lost, restore from verified storage backup manifest using `scripts/backup-storage.ts` artifacts.
-* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
-* **Post-Incident Review**: Assess storage redundancy, multi-region failover, or CDN caching layer.
+### Playbook 5: Object Storage Outage
+* **Detection**: Media uploads fail; listing photo galleries render placeholders; storage API returns 5xx.
+* **Containment & Triage**:
+  1. Verify Supabase Storage API status and egress quotas.
+  2. Confirm whether storage bucket configuration (`listing-originals`, `listing-derivatives`) is intact.
+  3. Display non-blocking UI alert to users attempting to upload new photos while keeping listing browsing functional.
 
 ---
 
-### Playbook 5: Realtime / WebSocket Outage
-* **Detection**: Chat messages do not update in real-time without manual browser refresh; presence indicators fail.
-* **Containment**:
-  1. Verify Realtime service status in Supabase project dashboard.
-  2. Check whether `supabase_realtime` publication includes expected tables:
-     ```sql
-     SELECT * FROM pg_publication_tables WHERE pubname = 'supabase_realtime';
-     ```
-  3. If publication was dropped or modified, re-add tables:
-     ```sql
-     ALTER PUBLICATION supabase_realtime ADD TABLE messages;
-     ```
-* **Preservation of Evidence**: Capture Realtime client reconnection logs.
-* **Escalation**: Escalate to Realtime / Frontend Lead (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
-* **Recovery**: Restart Realtime listeners; fallback to polling mode in client application if necessary.
-* **Customer Communication Owner**: Not required for Sev 3; if persistent Sev 2, `OWNER REQUIRED BEFORE PUBLIC PILOT`.
-* **Post-Incident Review**: Review database replication slots and Realtime broadcast limits.
+### Playbook 6: Transactional Email Outage (SMTP)
+* **Detection**: Verification emails, password resets, or account notices fail to send.
+* **Containment & Triage**:
+  1. Inspect upstream email provider status (SendGrid / Postmark / SES).
+  2. Inspect server error logs for SMTP rejection codes (e.g. auth failure, rate limit, SPF/DKIM bounce).
+  3. FairSwap does **not** have an automated secondary SMTP failover relay configured.
+  4. Temporarily surface an informational banner on `/auth/sign-in` and `/auth/sign-up` notifying users of temporary email delays.
 
 ---
 
-### Playbook 6: Failed Deployment (Vercel / Next.js)
-* **Detection**: Vercel deployment status is `ERROR` or build fails; production endpoint serves 500 on route loading.
-* **Containment**:
-  1. Immediately navigate to Vercel Deployments dashboard.
-  2. Trigger **Instant Rollback** to the last known-good deployment.
-  3. If database migrations were executed forward, evaluate whether the application is backward-compatible before rolling back frontend.
-* **Preservation of Evidence**: Save full Vercel build and runtime function logs.
-* **Escalation**: Escalate to Release Manager / DevOps Engineer (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
-* **Recovery**: Fix regression on feature branch, run typecheck, lint, and build locally, and redeploy.
-* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
-* **Post-Incident Review**: Enforce automated deployment preflight checks.
+### Playbook 7: DNS / TLS Incident
+* **Detection**: Browser TLS certificate errors, DNS resolution failures on `fairswap.in`.
+* **Containment & Triage**:
+  1. Check domain registrar status, nameserver delegation, and domain renewal status.
+  2. Check Vercel Domain dashboard for certificate renewal status (Let's Encrypt / DigiCert).
+  3. If CAA records are misconfigured, verify CAA permits Vercel certificate issuance authorities.
 
 ---
 
-### Playbook 7: Excessive 5xx Error Rate
-* **Detection**: Vercel runtime telemetry or monitoring endpoint indicates 5xx rate > 1%.
-* **Containment**:
-  1. Query Vercel runtime logs filtering by status code $\ge$ 500.
-  2. Identify failing route (e.g. `/api/listings/create`, `/api/messages/send`).
-  3. If caused by external dependency (e.g. Redis, SMTP), activate circuit breaker or fallback gracefully.
-* **Preservation of Evidence**: Record error stack traces, request paths, and timestamps.
-* **Escalation**: Escalate to On-Call Backend Engineer (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
-* **Recovery**: Patch offending logic or scale serverless memory/timeout allocations.
-* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
-* **Post-Incident Review**: Add regression test suite covering the failure pattern.
+## 6. Post-Mortem & Corrective Review
 
----
-
-### Playbook 8: Backup Failure (DB, Storage, or Verification Drill)
-* **Detection**: Scheduled backup script exits with non-zero code or manifest SHA-256 validation fails.
-* **Containment**:
-  1. Quarantine any incomplete or corrupted backup files under `artifacts/backups/`.
-  2. Verify active production/staging database and storage are unaffected.
-  3. Re-execute manual backup with explicit target:
-     ```bash
-     pnpm tsx scripts/backup-database.ts --target=staging
-     pnpm tsx scripts/backup-storage.ts --target=staging
-     ```
-* **Preservation of Evidence**: Save execution logs detailing CLI failure, disk full, or API timeout.
-* **Escalation**: Escalate to Reliability Lead (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
-* **Recovery**: Ensure fresh valid backup and verified manifest exist.
-* **Customer Communication Owner**: Internal only (no customer impact).
-* **Post-Incident Review**: Review disk quotas, network egress limits, and API timeouts.
-
----
-
-### Playbook 9: Suspected Data Corruption
-* **Detection**: Integrity checks report orphan foreign keys, broken relationships, or users report missing listings.
-* **Containment**:
-  1. Place platform into maintenance mode if corruption is propagating.
-  2. Run read-only referential integrity diagnostic script across all application tables.
-  3. Identify corruption boundary (specific table, user cohort, or time window).
-* **Preservation of Evidence**: Take an immediate read-only snapshot before any remediation.
-* **Escalation**: Escalate immediately to Principal Database Architect and Platform Owner.
-* **Recovery**: Execute forward corrective SQL repair scripts if isolated, or restore from verified backup if widespread.
-* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
-* **Post-Incident Review**: Add database-level constraints or triggers to prevent invalid state transitions.
-
----
-
-### Playbook 10: Email Provider Outage (SMTP / Transactional Email)
-* **Detection**: User reports of missing verification emails, password resets, or support ticket notifications; mail server returns timeout/auth errors.
-* **Containment**:
-  1. Inspect status of transactional email provider (SendGrid / Postmark / SES).
-  2. Verify application email delivery queue or client logs.
-  3. Enable graceful UI messaging notifying users that email delivery is currently delayed.
-* **Preservation of Evidence**: Save SMTP failure error codes and affected recipient addresses.
-* **Escalation**: Escalate to Operations Engineer (`OWNER REQUIRED BEFORE PUBLIC PILOT`).
-* **Recovery**: Switch to secondary backup SMTP relay or wait for upstream recovery; replay queued notification events.
-* **Customer Communication Owner**: `OWNER REQUIRED BEFORE PUBLIC PILOT`.
-* **Post-Incident Review**: Implement dead-letter queue and automatic retry mechanism for transactional emails.
-
----
-
-## 3. Post-Mortem & Ownership Requirements
-
-Following any Sev 1 or Sev 2 incident, a blameless post-mortem must be published within 48 hours covering:
-1. Incident timeline (UTC)
-2. Quantitative impact assessment
-3. Root Cause Analysis (RCA)
-4. Preventive action items with designated owners and target completion dates.
-
-> [!IMPORTANT]
-> **Operational Ownership Prerequisite**:
-> All role placeholders marked `OWNER REQUIRED BEFORE PUBLIC PILOT` must be assigned to named staff members with documented 24/7 on-call contact channels before public production launch.
+Following any P0 or P1 incident, the Incident Commander must publish a blameless post-mortem within **48 hours**:
+1. **Incident Overview**: Severity, start time (UTC), detection time, containment time, full recovery time.
+2. **Impact Assessment**: Number of affected users, broken journeys, data exposure (if any).
+3. **Timeline**: Chronological sequence of events and operational actions taken.
+4. **Root Cause Analysis (5-Whys)**: Underlying technical, process, or operational failure points.
+5. **Action Items**: Preventative engineering and documentation tasks, each assigned to a named owner with target completion dates.
