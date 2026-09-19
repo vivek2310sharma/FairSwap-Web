@@ -21,9 +21,9 @@ If this guide conflicts with a higher-authority product, security, or authorizat
 
 ## 2. Branching model
 
-`main` is the long-lived source-of-truth branch.
+`main` is the production source-of-truth branch. `staging` is the long-lived shared integration and verification branch used before production promotion.
 
-Do not use a permanent development branch for routine work. Start each change from the latest `main` and use a short-lived branch.
+For routine product work, start from the latest `staging` and use a short-lived branch. Merge accepted feature/fix work back into `staging` for shared verification, then promote an accepted release from `staging` to `main` through a separate production PR. Emergency production fixes may branch from `main`, but those fixes must be reconciled back into `staging` promptly so the branches do not diverge.
 
 Recommended prefixes:
 
@@ -36,15 +36,17 @@ Recommended prefixes:
 
 Keep one logical change per branch. Delete the branch after the pull request is merged unless there is a specific reason to retain it.
 
-## 3. Start from current `main`
+## 3. Start from current `staging`
 
-Before creating a branch:
+For routine feature, fix, test, documentation, and maintenance work, create the branch from current shared staging:
 
 ```bash
-git checkout main
+git checkout staging
 git pull --ff-only
 git checkout -b fix/example-change
 ```
+
+For an explicitly authorized emergency production hotfix, branch from `main`, promote the fix through review, and then reconcile the resulting `main` change back into `staging`.
 
 Do not build new work on an old feature branch or on the historical `Phase1` branch.
 
@@ -223,15 +225,17 @@ Keep generated output, local test artifacts, credentials, and temporary debuggin
 
 Routine contribution flow:
 
-1. Branch from current `main`.
+1. Branch from current `staging` for routine work.
 2. Make one focused change.
 3. Add/update tests and documentation.
 4. Run relevant local verification.
-5. Open a pull request to `main`.
-6. Use the Vercel Preview for hosted verification when applicable.
+5. Open a pull request to `staging`.
+6. Use the Vercel Preview/shared staging environment for hosted verification when applicable.
 7. Address review findings.
-8. Merge only after required checks and review are satisfied.
-9. Delete the merged branch.
+8. Merge into `staging` only after required checks and review are satisfied.
+9. Delete the merged short-lived branch.
+10. When a staging release is explicitly approved for production, open a separate `staging` -> `main` release PR and verify the production promotion independently.
+11. If a production-only hotfix lands on `main`, reconcile `main` back into `staging` before starting dependent work.
 
 The maintainer decides the merge method based on the change and repository history.
 
