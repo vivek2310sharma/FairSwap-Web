@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { type UserAccount } from "@/types/account";
+import { PhoneVerificationForm } from "@/components/account/PhoneVerificationForm";
 
 export default async function SecurityPage() {
   const supabase = await createClient();
@@ -88,6 +89,14 @@ export default async function SecurityPage() {
               </dd>
             </div>
           </dl>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900">Phone Sign-in</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Add and verify a phone number to sign in to this existing FairSwap account with an SMS code.
+          </p>
+          <PhoneVerificationForm currentPhone={userData.user.phone} />
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
