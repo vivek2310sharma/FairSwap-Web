@@ -6,13 +6,23 @@ FairSwap.in is a hyperlocal discovery and communication platform enabling buyers
 
 ---
 
-## Current Status: Phase 1 Complete (Controlled Pilot Baseline)
+## Current Status: Controlled Production Pilot
 
 * **Phase 1 Implementation**: **COMPLETE & VERIFIED** across all Milestones (1.1 through 1.6).
-* **Controlled-Pilot Readiness**: **GO** (`v0.1.6-pilot.1` pre-release candidate) — Verified locally for invitation-only, restricted-scope pilot testing in local and staging environments.
-* **Public Production Launch**: **NOT YET CERTIFIED** — Public launch remains gated behind external operational, legal, and infrastructure prerequisites documented in the [Go/No-Go Release Report](docs/release/1.6-go-no-go-report.md).
-* **Verified Baseline Commit**: `79026f28e893f340a7da06e16e00d2f2836013cb` on branch `Phase1`.
-* **Next Stage**: Establishing the hosted Phase 1 baseline on the **FairSwapTest** Supabase cloud project and **Vercel staging** before any Phase 2 feature work begins.
+* **Controlled Production Pilot**: **TECHNICALLY OPERATIONAL** on `https://fairswap.in`, deployed from `main` and connected to the dedicated **FairSwapProd** Supabase project (`kriuhwppxgxsyyrbjsau`). The immutable production-pilot baseline is tagged `prod-pilot-baseline-2026-09-18` at commit `a81b0a5e3c77172e9f691462cac0cecb21a86723`.
+* **Stable Staging**: `staging` deploys to `https://fair-swap-git-staging-fairswap.vercel.app` and connects to **FairSwapTest** (`wpppxlnbzqynvhpeuavd`). The stable staging domain is shareable with testers without Vercel project access; ordinary feature previews remain protected by default.
+* **Development Workflow**: New work uses short-lived `feature/*` branches, is verified against **FairSwapTest**, is integrated into `staging` for shared testing, and is promoted to `main` only after acceptance.
+* **Historical Hosted Baseline**: The accepted staging reference remains preserved by tag `hosted-phase1-baseline-2026-09-18`. The former long-lived `Phase1` branch has been retired.
+* **Public Production Launch**: **NOT YET CERTIFIED**. Production SMTP and `fairswap.in` DNS/TLS are established, but public launch remains gated by the outstanding legal/compliance and operational prerequisites documented below and in the [Go/No-Go Release Report](docs/release/1.6-go-no-go-report.md).
+* **Phase 2**: **NOT STARTED / NOT AUTHORIZED**. Planning or implementation begins only after explicit human authorization.
+
+### Deployment topology
+
+| Purpose | Git branch | Vercel target | Supabase target |
+|---|---|---|---|
+| Production pilot | `main` | `https://fairswap.in` | `FairSwapProd` (`kriuhwppxgxsyyrbjsau`) |
+| Shared staging | `staging` | `https://fair-swap-git-staging-fairswap.vercel.app` | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) |
+| Feature development | short-lived `feature/*` | Vercel Preview | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) |
 
 ---
 
@@ -187,11 +197,15 @@ Detailed architectural, operational, and milestone documentation is maintained i
 
 ## Public Launch Prerequisites
 
-While Phase 1 code is complete and verified as a controlled pilot baseline, **public production launch** is deliberately gated until external legal and cloud infrastructure requirements are satisfied:
+The controlled production pilot is technically operational. Two infrastructure gates that were previously outstanding were completed on 2026-09-18:
 
-1. **Production SMTP Provider**: Provision and verify production transactional email (e.g. Amazon SES, SendGrid, or Postmark) with authenticated DKIM/SPF domains.
-2. **Production Domain & SSL/TLS**: Provision production hosting infrastructure and bind the custom domain (`fairswap.in`) with automated certificate management.
-3. **Statutory Grievance Officer**: Formally appoint and publish Grievance Officer contact details in compliance with the Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules of India.
-4. **Legal Counsel Review**: Finalize pilot Terms of Service, Acceptable Use, and Privacy policies for public consumer transactions.
+- **Production transactional email**: custom Supabase SMTP is configured through Resend using the verified `auth.fairswap.in` sending domain.
+- **Production domain & TLS**: `fairswap.in` and `www.fairswap.in` are routed to Vercel with HTTPS/TLS established.
 
-Refer to the [Milestone 1.6 Go/No-Go Report](docs/release/1.6-go-no-go-report.md) for full readiness tier classifications.
+**Public production launch is still not certified.** Remaining external gates include:
+
+1. **Statutory Grievance Officer**: Formally appoint and publish the required Grievance Officer contact details.
+2. **Legal Counsel Review**: Finalize and review the applicable Terms of Service, Acceptable Use, Privacy, and related public-facing agreements.
+3. **Operational Ownership / On-Call**: Confirm the operational owners, escalation path, and on-call coverage required for a wider public launch.
+
+Refer to the [Milestone 1.6 Go/No-Go Report](docs/release/1.6-go-no-go-report.md) as the original readiness assessment; this README records the later infrastructure progress.
