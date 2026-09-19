@@ -20,10 +20,10 @@ FairSwap is currently operated solely by **Vivek Kumar**. On 2026-09-19, the Pla
 | **Legal Counsel Escalation** | Vivek Kumar | None — owner risk accepted | FairSwap does not currently have retained counsel; Vivek Kumar evaluates and engages external legal counsel if/when required. | Operational procedure |
 
 > [!IMPORTANT]
-> **Single-Point-of-Failure (SPOF) Blocker**:
+> **Single-Operator Residual Risk — Accepted**:
 > FairSwap currently has **one** active production operator (Vivek Kumar).
-> A qualified backup production owner must be formally onboarded, granted verified emergency access, and briefed on emergency runbooks before public launch.
-> The placeholder **None — owner risk accepted** constitutes an active operational launch blocker tracked under Issue **#41**.
+> No backup production owner is designated. On 2026-09-19, the Platform Owner explicitly closed this readiness gap by accepting the associated single-operator availability, access, and incident-response risk under Issue **#41**.
+> This is an owner risk decision, not evidence that redundancy or backup access exists.
 
 ---
 
