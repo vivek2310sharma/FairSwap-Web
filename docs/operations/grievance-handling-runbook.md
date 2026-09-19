@@ -150,17 +150,14 @@ If the notice also concerns a cyber-security incident, activate the CERT-In asse
 
 ## 9. Backup and escalation ownership
 
-Before wider Public Beta, the private operations register must name:
+For the current production release posture (PR #56):
+- Primary Grievance Officer: **Vivek Kumar** (publicly designated at `/grievance`)
+- Backup grievance handler: **DEFERRED** (single-operator posture accepted under #41)
+- Legal/privacy escalation owner: **DEFERRED** (Vivek Kumar evaluates external counsel engagement if required)
+- Security incident escalation owner: **Vivek Kumar** (Primary Production Owner)
+- Moderation escalation owner: **Vivek Kumar**
 
-- Primary Grievance Officer: **Vivek Kumar** (publicly designated)
-- Backup grievance handler: **UNASSIGNED — BLOCKER**
-- Legal/privacy escalation owner: **UNASSIGNED — BLOCKER**
-- Security incident escalation owner: **UNASSIGNED — BLOCKER**
-- Moderation escalation owner: **UNASSIGNED — BLOCKER**
-
-Private phone numbers, home addresses, recovery information, and emergency contact details must not be committed to this repository.
-
-If the primary Grievance Officer is unavailable, the backup must be able to monitor the intake channel, acknowledge complaints, access the required moderation/support records, and escalate legal/security matters without depending on the primary's personal credentials.
+Private phone numbers, home addresses, recovery information, and emergency contact details must not be committed to this repository. Upon production promotion in PR #56, the Platform Owner authorized proceeding with Vivek Kumar as sole designated handler, deferring secondary operational staffing to be revisited before full public launch.
 
 ## 10. Evidence preservation and privacy
 
@@ -212,10 +209,10 @@ Issue #37 remains open until real evidence exists for all relevant items:
 - [ ] Legal/privacy and security escalation owners are named privately.
 - [ ] `grievance@fairswap.in` is monitored by primary and backup without shared credentials.
 - [ ] End-to-end intake/acknowledgement test passes.
-- [ ] `/grievance` is verified on the stable staging deployment.
-- [ ] `/grievance` is verified on `https://fairswap.in` after an explicitly authorized production promotion.
-- [ ] Published name/contact details match the approved business/legal record.
-- [ ] Any legally required postal address, phone number, or additional disclosure is confirmed under #38 before publication.
+- [x] `/grievance` is verified on the stable staging deployment (PR #42 & PR #55).
+- [x] `/grievance` is verified on `https://fairswap.in` after an explicitly authorized production promotion (PR #56 on 2026-09-19).
+- [x] Published name/contact details match the approved business/legal record (`Vivek Kumar`, `grievance@fairswap.in`).
+- [ ] Any legally required postal address, phone number, or additional disclosure is confirmed under #38 before wider public launch.
 - [x] Conditional Rule 3A / GAC appeal guidance is included on the public grievance page.
 - [ ] Approval/evidence is recorded without adding private contact details or secrets to GitHub.
 

@@ -188,12 +188,12 @@ corepack pnpm build
 
 ---
 
-## 6. External Launch Prerequisites (India Classifieds Context)
+## 6. External Launch Prerequisites & Operational Posture
 
-Before opening FairSwap to public consumer traffic:
-1. **Operational Ownership Handover**: Onboard and verify a qualified Backup Production Owner pursuant to `docs/operations/operational-owner-matrix.md`.
-2. **Production Transactional Email**: Production transactional-email configuration and failure alerting must be verified and configured.
-3. **Statutory Grievance Mechanism**: If IT Rules Rule 3 applies, the Rules require prominent publication of the Grievance Officer's name, contact details, and complaint mechanism. FairSwap implements this via `/grievance`, `/contact`, `/terms`, and the global footer (subject to final legal applicability under #38).
-4. **External DNS & TLS Monitoring**: Verify external DNS and automated TLS certificate health monitoring and alerting on `fairswap.in`.
-5. **Production Recovery Verification**: Verify the production backup configuration on `FairSwapProd` and, when human-authorized, restore a production backup/copy into an isolated non-production recovery target where technically supported. Never restore a test backup over `FairSwapProd`.
-6. **External Monitoring Configuration**: Provision uptime synthetic probes and alert routing for `https://fairswap.in`.
+Operational, legal, and infrastructure status for public traffic:
+1. **Operational Ownership**: FairSwap operates under an accepted single-operator model (Vivek Kumar as sole operator). The operational risk of proceeding without a designated Backup Production Owner was explicitly accepted by the Platform Owner on 2026-09-19 under Issue #41 (see [`docs/operations/operational-owner-matrix.md`](./operational-owner-matrix.md)).
+2. **Production Transactional Email & Monitoring**: Production transactional email operates via custom Supabase SMTP through Resend (`auth.fairswap.in`). Production failure monitoring is active and verified end-to-end via signed Resend webhooks (`POST /api/monitoring/resend`) delivering sanitized failure alerts to the operations Slack webhook (passed 2026-09-19 under Issue #41).
+3. **Statutory Grievance Mechanism & Legal Policies**: Promoted to production on 2026-09-19 (PR #56). Implemented via `/grievance` (Grievance Officer: Vivek Kumar), `/terms`, `/privacy`, `/acceptable-use`, `/security`, and global footer links with conditional Rule 3A / GAC guidance (subject to final legal review under Issue #38).
+4. **External Uptime & TLS Monitoring**: UptimeRobot HTTP/keyword monitoring and Cloudflare Universal SSL certificate alerts are configured and verified active on `https://fairswap.in`. Dedicated DNS monitoring was closed via owner risk acceptance under #41.
+5. **Production Backup Posture**: `FairSwapProd` operates on the Supabase Free plan with no managed backups or PITR; no production restore exercise has been executed. The Platform Owner explicitly accepted this residual data-loss and recovery risk under Issue #41 on 2026-09-19. If backups are added later, verify recovery only into disposable non-production targets; never restore a test backup over `FairSwapProd`.
+6. **Application Error Monitoring**: Additional automated alerting channels (5xx, client errors, Supabase DB/storage/realtime metrics, auth spikes) were closed as owner-accepted residual risks under #41 on 2026-09-19.

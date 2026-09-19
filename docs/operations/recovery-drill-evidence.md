@@ -5,8 +5,7 @@ This document provides durable, non-secret operational evidence for disaster rec
 > [!IMPORTANT]
 > **Staging Scope Notice**:
 > The drill evidence documented in Sections 1 through 10 below represents an isolated verification executed on the **FairSwapTest** staging project (`wpppxlnbzqynvhpeuavd`) and local test engines.
-> **Production Status**: Production backup and restore capability on `FairSwapProd` has **not** been independently verified.
-> Production verification remains an active blocker tracked under Issue **#41**.
+> **Production Status**: Production backup and restore capability on `FairSwapProd` has **not** been independently executed. FairSwapProd remains on Supabase Free with no managed backups or PITR. On 2026-09-19, the Platform Owner explicitly closed this readiness gap under Issue **#41** by accepting the associated data-loss and recovery risk for the current launch posture.
 
 ---
 

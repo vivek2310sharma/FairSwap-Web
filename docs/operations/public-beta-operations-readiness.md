@@ -30,47 +30,49 @@ The following matrix tracks the required observability signals for the live prod
 |---|---|---|---|---|---|---|---|
 | **1. `https://fairswap.in` Availability** | UptimeRobot e-mail alert | Vivek Kumar | None — risk accepted | Ack < 30m; triage DNS/Vercel/edge status | 5-minute HTTPS probe + provider Test Notification | **CONFIGURED & TESTED (PRIMARY OWNER)** | UptimeRobot HTTP + keyword monitors created; simulated DOWN and UP e-mails received 2026-09-19 |
 | **2. Vercel Deployment Failures** | GitHub commit check / Vercel notification | Vivek Kumar | None — risk accepted | Triage build error; block rollout to main | Trigger deliberate build failure on feature branch | **CONFIGURED & ACTIVE** | Staging build checks verified in PR runs |
-| **3. Application / Server Errors (5xx)** | Vercel runtime log alerts / Error webhook | Vivek Kumar | None — risk accepted | Inspect stack trace; evaluate rollback if > 1% rate | Route error probe via synthetic test | **NOT CONFIGURED — PUBLIC BETA BLOCKER** | Pending alert destination configuration |
-| **4. Client-Side Rendering Errors** | Ingestion endpoint (`/api/monitoring/client-error`) | Vivek Kumar | None — risk accepted | Triage UI regression; evaluate patch priority | Trigger React error boundary in staging | **PARTIALLY CONFIGURED** (Boundary exists; alert routing unverified) | Error boundaries in repo; external alerting pending |
-| **5. Supabase DB Health (Connections/CPU)** | Supabase project dashboard alerts | Vivek Kumar | None — risk accepted | Inspect pooler saturation; kill idle backends | Query `pg_stat_activity` under load | **NOT CONFIGURED — PUBLIC BETA BLOCKER** | Automated alerting unverified on FairSwapProd |
-| **6. Supabase Storage Health** | Supabase storage API metric alerts | Vivek Kumar | None — risk accepted | Inspect storage API 5xx, quota limits | Upload/download test asset probe | **NOT CONFIGURED — PUBLIC BETA BLOCKER** | Manual dashboard check only |
-| **7. Supabase Realtime Health** | Realtime connection monitoring | Vivek Kumar | None — risk accepted | Verify publication tables; restart client listeners | Inspect WebSocket reconnect telemetry | **NOT CONFIGURED — PUBLIC BETA BLOCKER** | No automated Realtime monitor active |
-| **8. Supabase Quotas / Resource Pressure** | Supabase billing / quota threshold notification | Vivek Kumar | None — risk accepted | Upgrade tier or prune storage/logs before cutoff | Review usage metrics against plan tier limits | **UNVERIFIED — PUBLIC BETA BLOCKER** | Actual plan tier and alert delivery unverified |
-| **9. Authentication Failures (Spike / Brute-force)** | Auth rate-limit alerts / Upstash Redis | Vivek Kumar | None — risk accepted | Inspect IP clusters; enforce temporary block | Scripted rate-limit threshold test | **PARTIALLY CONFIGURED** (Upstash distributed rate-limiting active; alert webhook unconfigured) | Rate limiter verified in Milestone 1.2 tests |
-| **10. Transactional Email Failures** | Resend signed webhook -> operations alert sink | Vivek Kumar | None — risk accepted | Inspect Resend event/log; correct recipient/domain/provider issue | Production password reset + signed webhook test | **STAGING PASS; PRODUCTION ALERTING PENDING** | FairSwapProd custom SMTP delivery verified. Staging Resend -> signed FairSwap webhook -> Slack alert passed end-to-end on 2026-09-19. Production Resend event subscription, secret, alert sink and failure-alert test remain pending |
-| **11. DNS Health (`fairswap.in`)** | External DNS propagation / lookup monitor | Vivek Kumar | None — risk accepted | Check nameserver delegation and NS records | Global DNS lookup query (dig/nslookup) | **NOT CONFIGURED — PUBLIC BETA BLOCKER** | Endpoint exists; external monitor not configured |
+| **3. Application / Server Errors (5xx)** | Vercel runtime log alerts / Error webhook | Vivek Kumar | None — risk accepted | Inspect stack trace; evaluate rollback if > 1% rate | Route error probe via synthetic test | **CLOSED / RISK ACCEPTED in #41** | Not technically implemented; residual risk accepted by Platform Owner on 2026-09-19 |
+| **4. Client-Side Rendering Errors** | Ingestion endpoint (`/api/monitoring/client-error`) | Vivek Kumar | None — risk accepted | Triage UI regression; evaluate patch priority | Trigger React error boundary in staging | **CLOSED / RISK ACCEPTED in #41** | Boundary exists in code; external alerting not configured; residual risk accepted 2026-09-19 |
+| **5. Supabase DB Health (Connections/CPU)** | Supabase project dashboard alerts | Vivek Kumar | None — risk accepted | Inspect pooler saturation; kill idle backends | Query `pg_stat_activity` under load | **CLOSED / RISK ACCEPTED in #41** | Automated alerting not configured on FairSwapProd; residual risk accepted 2026-09-19 |
+| **6. Supabase Storage Health** | Supabase storage API metric alerts | Vivek Kumar | None — risk accepted | Inspect storage API 5xx, quota limits | Upload/download test asset probe | **CLOSED / RISK ACCEPTED in #41** | Manual dashboard check only; automated alerting not configured; residual risk accepted 2026-09-19 |
+| **7. Supabase Realtime Health** | Realtime connection monitoring | Vivek Kumar | None — risk accepted | Verify publication tables; restart client listeners | Inspect WebSocket reconnect telemetry | **CLOSED / RISK ACCEPTED in #41** | Automated Realtime alerting not active; residual risk accepted 2026-09-19 |
+| **8. Supabase Quotas / Resource Pressure** | Supabase billing / quota threshold notification | Vivek Kumar | None — risk accepted | Upgrade tier or prune storage/logs before cutoff | Review usage metrics against plan tier limits | **CLOSED / RISK ACCEPTED in #41** | Automated quota alert delivery unconfigured; residual risk accepted 2026-09-19 |
+| **9. Authentication Failures (Spike / Brute-force)** | Auth rate-limit alerts / Upstash Redis | Vivek Kumar | None — risk accepted | Inspect IP clusters; enforce temporary block | Scripted rate-limit threshold test | **CLOSED / RISK ACCEPTED in #41** | Upstash distributed rate-limiting active in code; alert webhook not configured; residual risk accepted 2026-09-19 |
+| **10. Transactional Email Failures** | Resend signed webhook -> operations Slack alert sink | Vivek Kumar | None — risk accepted | Inspect Resend event/log; correct recipient/domain/provider issue | Production bounce simulation + signed webhook | **CONFIGURED & VERIFIED (PRODUCTION PASS)** | FairSwapProd custom SMTP verified. Production Resend webhook (`https://fairswap.in/api/monitoring/resend`), `RESEND_WEBHOOK_SECRET`, and `OPERATIONS_ALERT_WEBHOOK_URL` configured; production redeploy green. Real production `email.bounced` event processed with HTTP 200 and sanitized Slack alert received by operator on 2026-09-19 |
+| **11. DNS Health (`fairswap.in`)** | External DNS propagation / lookup monitor | Vivek Kumar | None — risk accepted | Check nameserver delegation and NS records | Global DNS lookup query (dig/nslookup) | **CLOSED / RISK ACCEPTED in #41** | Dedicated DNS monitor not configured; HTTP uptime probe detects site-level failure; residual risk accepted 2026-09-19 |
 | **12. TLS / Certificate Health** | Cloudflare Universal SSL e-mail alert | Vivek Kumar | None — risk accepted | Verify automated certificate issuance / renewal | Cloudflare test notification | **CONFIGURED & TESTED (PRIMARY OWNER)** | Universal SSL test e-mail received 2026-09-19 |
 
 ---
 
-## 3. Open Items and Owner-Accepted Residual Risks (Issue #41)
+## 3. Operational Status Summary & Owner-Accepted Residual Risks (Issue #41)
 
-### Open operational items
+### Technically implemented & verified operational controls
 
 1. **Production Transactional-Email Failure Alerting**:
-   - Status: **OPEN**
-   - Evidence: FairSwapProd custom SMTP delivery through Resend is functional; staging Resend -> FairSwap -> Slack failure alerting passed end-to-end on 2026-09-19.
-   - Remaining work: configure the production Resend webhook, production `RESEND_WEBHOOK_SECRET`, production `OPERATIONS_ALERT_WEBHOOK_URL`, and prove one signed production failure/bounce alert reaches the operator.
-2. **Application / Client Error Alert Routing**:
-   - Status: **OPEN**
-   - Remaining work: configure actionable alert routing for production 5xx/server errors and meaningful client-side failures.
-3. **Supabase Health / Quota Monitoring**:
-   - Status: **OPEN**
-   - Remaining work: establish or explicitly disposition production DB, Storage, Realtime, and quota/resource-pressure alerting.
-4. **Authentication-Failure Alerting**:
-   - Status: **OPEN**
-   - Remaining work: add actionable alerting for material authentication-failure/brute-force spikes; rate limiting already exists.
-5. **DNS-Specific Monitoring**:
-   - Status: **OPEN**
-   - Remaining work: add a dedicated DNS-specific signal if retained as a requirement. Existing HTTP monitoring detects DNS-caused site outages but does not diagnose DNS separately.
-6. **Issue #37 & Issue #38 launch gates**:
-   - Status: **OPEN**
-   - #37 grievance operational/legal closure and #38 final legal applicability review remain separate launch gates.
+   - Status: **CLOSED / VERIFIED (PRODUCTION PASS)**
+   - Evidence: Production Resend webhook configured for `https://fairswap.in/api/monitoring/resend`, `RESEND_WEBHOOK_SECRET` and `OPERATIONS_ALERT_WEBHOOK_URL` set in Vercel Production. Production deployment confirmed green. A real production `email.bounced` event was delivered by Resend, processed with HTTP 200, and a sanitized operational alert was confirmed received in Slack by the operator on 2026-09-19.
+2. **Uptime & TLS Monitoring**:
+   - Status: **ACTIVE & TESTED**
+   - Evidence: UptimeRobot HTTP probe and keyword monitoring active on `https://fairswap.in`; Cloudflare Universal SSL certificate monitoring active. Test notifications confirmed received on 2026-09-19.
+3. **Deployment Safety**:
+   - Status: **ACTIVE**
+   - Evidence: Vercel deployment checks active on PR runs; Vercel Instant Rollback available for frontend releases.
 
-### Closed by explicit owner risk acceptance
+### Closed by explicit owner risk acceptance (not technically implemented)
 
-- **Backup Production Owner** — no backup owner designated; single-operator availability/access risk accepted on 2026-09-19.
-- **Production Backup / PITR Gap** — FairSwapProd remains on Supabase Free with no managed project/database backups or PITR; no production restore exercise performed; Storage recovery unverified. Data-loss/recovery risk accepted on 2026-09-19.
-- **Staging credential rotation** — previously exposed staging-only credentials were not confirmed rotated; residual credential risk accepted on 2026-09-19.
+The Platform Owner confirmed under Issue #41 on 2026-09-19 that the following items will **not be pursued technically at this time** and are closed as owner-accepted residual risks for the current launch posture:
 
-Risk acceptance means these gaps are no longer treated as owner-blocking checklist items under #41, but it does **not** mean the underlying technical controls exist or were remediated.
+- **Backup Production Owner**: no backup owner designated; single-operator availability, access, and incident-response risk accepted on 2026-09-19.
+- **Production Backup / PITR Gap**: FairSwapProd remains on Supabase Free with no managed project/database backups or PITR; no production restore exercise performed; Storage recovery unverified. Data-loss and recovery risk accepted on 2026-09-19.
+- **Application / Server Errors (5xx Alerting)**: no automated 5xx alerting configured; residual risk accepted on 2026-09-19.
+- **Client-Side Rendering Errors**: boundary exists in code, but automated external alert routing is unconfigured; residual risk accepted on 2026-09-19.
+- **Supabase DB, Storage, Realtime, and Quota Alerting**: automated resource/quota metric alerts not configured; manual dashboard inspection only; residual risk accepted on 2026-09-19.
+- **Authentication-Failure / Brute-Force Alerting**: distributed rate-limiting exists in code, but automated alerting on spike/threshold breach is unconfigured; residual risk accepted on 2026-09-19.
+- **DNS-Specific Monitoring**: dedicated DNS lookup monitor not configured; HTTP probe detects site-level resolution failures; residual risk accepted on 2026-09-19.
+- **Staging Credential Rotation**: previously exposed staging-only credentials not confirmed rotated; residual credential risk accepted on 2026-09-19.
+
+Risk acceptance records the owner's operational decision under #41; it does **not** claim that the omitted technical controls exist, were configured, or were remediated.
+
+### Separate external launch gates (Issues #37 & #38)
+
+- **Issue #37**: statutory Grievance Officer details (`/grievance`, Vivek Kumar) and runbook are published; outbound grievance acknowledgement identity and delivery verification remain to be revisited.
+- **Issue #38**: Public Beta legal policies (`/terms`, `/privacy`, `/acceptable-use`, `/security`) are published in production; formal legal counsel classification under IT Rules / E-Commerce Rules remains to be revisited.
