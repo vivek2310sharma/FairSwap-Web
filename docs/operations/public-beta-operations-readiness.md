@@ -72,7 +72,9 @@ The Platform Owner confirmed under Issue #41 on 2026-09-19 that the following it
 
 Risk acceptance records the owner's operational decision under #41; it does **not** claim that the omitted technical controls exist, were configured, or were remediated.
 
-### Separate external launch gates (Issues #37 & #38)
+### Separate external launch gates (Issues #37 & #38 — Closed as Not Planned)
 
-- **Issue #37**: statutory Grievance Officer details (`/grievance`, Vivek Kumar) and runbook are published; outbound grievance acknowledgement identity and delivery verification remain to be revisited.
-- **Issue #38**: Public Beta legal policies (`/terms`, `/privacy`, `/acceptable-use`, `/security`) are published in production; formal legal counsel classification under IT Rules / E-Commerce Rules remains to be revisited.
+Both Issue #37 and Issue #38 were closed as Not Planned by owner decision on 2026-09-19. Unresolved items remain deferred prerequisites to be revisited before a wider public launch:
+
+- **Issue #37 (Grievance Mechanism)**: Statutory Grievance Officer details (`/grievance`, Vivek Kumar) and runbook are deployed; outbound grievance acknowledgement identity and delivery verification from `grievance@fairswap.in` remain deferred items recorded in closed #37.
+- **Issue #38 (Legal Review & Registrations)**: Public Beta legal policies (`/terms`, `/privacy`, `/acceptable-use`, `/safety`) are deployed to production; formal legal counsel classification under IT Rules / Consumer Protection (E-Commerce) Rules and local Rajasthan establishment registrations (SAN / Shops Act) remain deferred items recorded in closed #38.

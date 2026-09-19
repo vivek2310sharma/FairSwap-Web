@@ -1,9 +1,19 @@
 # FairSwap Logging & Monitoring Baseline Plan (r1)
 
-> **Document Status**: `PROPOSED` (Plan Only)  
+> [!NOTE]
+> **Historical Plan & Implementation Status Notice**:
+> This document records the original architectural design plan formulated between Milestone 1.2 and Milestone 1.3 on **2026-09-13**.
+> - **Implementation Status**: **IMPLEMENTED & VERIFIED**. The proposed four-channel observability and structured application logging architecture was subsequently implemented in the active codebase:
+>   - Structured application logger and redaction pipeline: [`src/lib/logger/`](../../src/lib/logger/) (`index.ts`, `correlation.ts`, `redactor.ts`, `types.ts`).
+>   - Request correlation & proxy instrumentation: `src/proxy.ts`.
+>   - Client error capture route & UI boundaries: `src/app/api/monitoring/client-errors/route.ts`, `src/app/error.tsx`, and `src/app/global-error.tsx`.
+>   - Test verification: Observability test suite in `tests/observability/` (24/24 passing tests).
+> - **Historical Content**: The sections below preserve the original historical plan and pre-implementation assessment as written on 2026-09-13.
+
+> **Document Status**: `HISTORICAL (IMPLEMENTED)` (Originally `PROPOSED` Plan Only)  
 > **Target Phase**: Post-Milestone 1.2 / Pre-Milestone 1.3 Cross-Cutting Infrastructure  
 > **Milestone Roadmap Invariant**: Sits strictly between Milestone 1.2 and 1.3. Does not renumber or alter the authoritative milestone sequence.  
-> **Execution Constraint**: PLAN ONLY. No dependencies installed, no application source modified, no database mutations, no cloud vendors provisioned, no git commits or pushes.
+> **Original Execution Constraint**: PLAN ONLY. (Subsequently implemented and accepted into baseline).
 
 ---
 
