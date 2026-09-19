@@ -35,7 +35,9 @@ export function FavouriteButton({
       if (!result.success) {
         // Revert optimistic update
         setIsFavourited(!nextState);
-        if (result.error?.includes("sign in")) {
+        if (result.redirectTo) {
+          router.push(result.redirectTo);
+        } else if (result.error?.includes("sign in")) {
           router.push(`/auth/sign-in?next=/listings/${listingId}`);
         } else {
           alert(result.error || "Could not update favourite");

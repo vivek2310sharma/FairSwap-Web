@@ -66,20 +66,30 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Policy Drafts */}
+          {/* Policies */}
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-              Policy Drafts
+              Policies
             </h3>
             <ul className="mt-3 space-y-2 text-xs text-muted">
               <li>
                 <Link href="/terms" className="hover:text-foreground">
-                  Terms of Service (Draft)
+                  Terms of Service
                 </Link>
               </li>
               <li>
                 <Link href="/privacy" className="hover:text-foreground">
-                  Privacy Policy (Draft)
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/acceptable-use" className="hover:text-foreground">
+                  Acceptable Use
+                </Link>
+              </li>
+              <li>
+                <Link href="/grievance" className="hover:text-foreground">
+                  Grievance Redressal
                 </Link>
               </li>
             </ul>
@@ -89,10 +99,10 @@ export function Footer() {
         {/* Development notice and copyright */}
         <div className="mt-8 border-t border-border/60 pt-6 flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
           <p className="text-xs text-muted">
-            &copy; {currentYear} FairSwap. Development foundation.
+            &copy; {currentYear} FairSwap.
           </p>
           <p className="text-xs text-muted">
-            This is a development build. Not a live service.
+            Currently operating as a controlled production pilot.
           </p>
         </div>
       </div>

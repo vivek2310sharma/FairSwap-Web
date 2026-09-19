@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
 
 const ProfileUpdateSchema = z.object({
   displayName: z
@@ -18,12 +19,25 @@ export type AccountActionResult = {
   error?: string;
   success?: boolean;
   message?: string;
+  requiresPolicyReview?: boolean;
+  redirectTo?: string;
 };
 
 export async function updateProfileAction(
   prevState: AccountActionResult | null,
   formData: FormData
 ): Promise<AccountActionResult> {
+  const supabase = await createClient();
+
+  const guard = await requireCurrentPolicyAcceptance(supabase, "/account/profile");
+  if (!guard.allowed) {
+    return {
+      error: guard.error,
+      requiresPolicyReview: guard.requiresPolicyReview,
+      redirectTo: guard.redirectTo,
+    };
+  }
+
   const parseResult = ProfileUpdateSchema.safeParse({
     displayName: formData.get("displayName"),
     bio: formData.get("bio") ? (formData.get("bio") as string).trim() : null,
@@ -36,7 +50,6 @@ export async function updateProfileAction(
     return { error: errorMsg };
   }
 
-  const supabase = await createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError || !userData.user) {
@@ -107,6 +120,6 @@ export async function submitPrivacyRequestAction(
   return {
     success: true,
     message:
-      "Your privacy request has been recorded. Note that manual and automated fulfillment workflows are scheduled for Milestone 1.5.",
+      "Your privacy request has been recorded and will be processed according to platform policy. You can monitor the status in your request history.",
   };
 }

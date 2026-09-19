@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
+import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
 
 const SignUpSchema = z.object({
   email: z.string().email("Please provide a valid email address."),
@@ -14,7 +15,10 @@ const SignUpSchema = z.object({
     .min(2, "Display name must be at least 2 characters.")
     .max(50, "Display name cannot exceed 50 characters."),
   termsAccepted: z.literal("on", {
-    errorMap: () => ({ message: "You must accept the Terms and Privacy Policy." }),
+    errorMap: () => ({ message: "You must accept the Terms of Service and Acceptable Use Policy, and acknowledge the Privacy Policy." }),
+  }),
+  ageConfirmed: z.literal("on", {
+    errorMap: () => ({ message: "You must confirm that you are at least 18 years old to create an account." }),
   }),
 });
 
@@ -33,6 +37,7 @@ export async function signUpAction(
     password: formData.get("password"),
     displayName: formData.get("displayName"),
     termsAccepted: formData.get("termsAccepted"),
+    ageConfirmed: formData.get("ageConfirmed"),
   });
 
   if (!parseResult.success) {
@@ -53,8 +58,11 @@ export async function signUpAction(
       data: {
         display_name: displayName,
         terms_accepted: "true",
-        terms_version: "2026-09-13-draft",
-        privacy_policy_version: "2026-09-13-draft",
+        terms_version: LEGAL_POLICY.termsVersion,
+        privacy_policy_version: LEGAL_POLICY.privacyVersion,
+        acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
+        age_confirmed: "true",
+        minimum_age_confirmed: LEGAL_POLICY.minimumAge,
       },
       emailRedirectTo: `${siteUrl}/auth/callback?type=signup&next=/account`,
     },
