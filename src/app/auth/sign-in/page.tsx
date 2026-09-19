@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { signInAction, type AuthActionResult } from "../actions";
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { PhoneAuthForm } from "@/components/auth/PhoneAuthForm";
 
 function SignInForm() {
   const searchParams = useSearchParams();
@@ -136,6 +137,14 @@ function SignInForm() {
             {isPending ? "Signing in..." : "Sign In"}
           </button>
         </form>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-gray-500">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span>or use phone</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <PhoneAuthForm next={next} />
       </div>
     </main>
   );
