@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signInAction, type AuthActionResult } from "../actions";
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
 function SignInForm() {
   const searchParams = useSearchParams();
@@ -37,6 +38,16 @@ function SignInForm() {
           </div>
         )}
 
+        {errorParam === "oauth_failed" && (
+          <div
+            role="alert"
+            className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"
+          >
+            Google sign-in could not be completed. If this is your first time on FairSwap, create an
+            account with email first, then use Google with the same verified email.
+          </div>
+        )}
+
         {messageParam === "confirm_continue" && (
           <div
             role="status"
@@ -64,7 +75,20 @@ function SignInForm() {
           </div>
         )}
 
-        <form action={formAction} className="mt-6 space-y-4">
+        <div className="mt-6">
+          <GoogleAuthButton next={next} />
+          <p className="mt-2 text-xs leading-5 text-gray-500">
+            Use the Google account with the same verified email as your existing FairSwap account.
+          </p>
+        </div>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-gray-500">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span>or use email</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <form action={formAction} className="space-y-4">
           <input type="hidden" name="next" value={next} />
 
           <div>
