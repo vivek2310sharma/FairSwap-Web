@@ -1,5 +1,11 @@
 # Safely upgrading the FairSwap starter to v4
 
+> [!NOTE]
+> **Historical Starter-Pack Upgrade Notice**:
+> This document records the original starter-pack upgrade procedure (from v3 to v4) used prior to Milestone 1.1 execution on **2026-09-13**.
+> - **Current Status**: **OBSOLETE / HISTORICAL ONLY**. The repository is fully scaffolded, Phase 1 is complete, and current updates follow standard Git pull requests and dependency management.
+> - **Usage Invariant**: Preserved solely for historical context; do not execute these starter-pack merge steps on the active codebase.
+
 This pack does not edit the local project automatically. Copy/merge instructions deliberately. Never reset actual project progress to make it match an untouched template.
 
 ## Empty FairSwap folder
