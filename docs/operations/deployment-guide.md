@@ -14,7 +14,7 @@ FairSwap is a Next.js (App Router) classifieds platform powered by Supabase (Pos
 * **Authentication & Session Assurance**: Supabase GoTrue Auth with RFC 6238 TOTP AAL2 Multi-Factor Authentication for staff roles
 * **Hosting Platforms**:
   * **Staging**: Hosted on Vercel preview branch `staging` (`https://fair-swap-git-staging-fairswap.vercel.app`), connected to Supabase staging project `FairSwapTest` (`wpppxlnbzqynvhpeuavd`).
-  * **Production**: Hosted on Vercel production deployment (`main`), connected to dedicated Production Supabase project `FairSwapProd`.
+  * **Production**: Hosted on Vercel production deployment (`main`), connected to dedicated Production Supabase project `FairSwapProd`. Existing production domain: `https://fairswap.in`.
 
 ---
 
@@ -142,8 +142,8 @@ corepack pnpm build
 
 Before opening FairSwap to public consumer traffic:
 1. **Operational Ownership Handover**: Onboard and verify a qualified Backup Production Owner pursuant to `docs/operations/operational-owner-matrix.md`.
-2. **Production Transactional Email (SMTP)**: Switch from development/sandbox email to a verified transactional email provider (SendGrid / Postmark / Amazon SES) with configured SPF, DKIM, and DMARC DNS records.
-3. **Statutory Grievance Officer**: Publish the legal name, contact email, and address of the statutory Grievance Officer on `/contact` and `/terms` pursuant to the India Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules.
-4. **Custom Domain & TLS**: Bind `fairswap.in` with automated HTTPS certificate renewal and verify CAA DNS records.
-5. **Production Recovery Verification**: Perform a human-authorized backup and restore drill on `FairSwapProd` and record evidence.
+2. **Production Transactional Email**: Production transactional-email configuration and failure alerting must be verified and configured.
+3. **Statutory Grievance Mechanism**: If IT Rules Rule 3 applies, the Rules require prominent publication of the Grievance Officer's name, contact details, and complaint mechanism. FairSwap implements this via `/grievance`, `/contact`, `/terms`, and the global footer (subject to final legal applicability under #38).
+4. **External DNS & TLS Monitoring**: Verify external DNS and automated TLS certificate health monitoring and alerting on `fairswap.in`.
+5. **Production Recovery Verification**: Verify the production backup configuration on `FairSwapProd` and, when human-authorized, restore a production backup/copy into an isolated non-production recovery target where technically supported. Never restore a test backup over `FairSwapProd`.
 6. **External Monitoring Configuration**: Provision uptime synthetic probes and alert routing for `https://fairswap.in`.

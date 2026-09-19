@@ -55,7 +55,7 @@ The Incident Commander must evaluate these critical decision points during activ
 | **Credential Rotation** | Any secret, API key, service token, or database password exposed in Git, logs, or third-party breaches. | **Incident Commander**. Immediately rotate in Vercel / Supabase / Upstash; revoke prior version; test deployment. |
 | **Vendor Escalation** | Outage or degradation originating in upstream infrastructure (Vercel, Supabase, Upstash, DNS, Email). | **Incident Commander**. Inspect vendor status pages; file high-priority support ticket; inform users of upstream dependency. |
 | **User Communications** | Incident impacts user data accessibility, security, or causes extended visible downtime (> 2 hours). | **Primary Production Owner / Grievance Officer**. Publish transparent notice on platform banner or direct communication. |
-| **Regulatory / Authority Escalation** | Cyber incident potentially falls under CERT-In Annexure I or data protection statutes. | **Primary Production Owner / Legal Counsel**. Initiate 6-hour CERT-In assessment clock immediately. |
+| **Authority / Legal Escalation** | Cyber incident potentially falls under CERT-In Annexure I or data protection statutes. | **Primary Production Owner**; engage external legal counsel if/when required. The owner of deciding and escalating that engagement is Vivek Kumar. Initiate 6-hour CERT-In assessment clock immediately. |
 
 ---
 
@@ -63,18 +63,20 @@ The Incident Commander must evaluate these critical decision points during activ
 
 ### A. CERT-In Direction (Section 70B) Operational Protocol
 Pursuant to the **Directions under sub-section (6) of section 70B of the Information Technology Act, 2000** (issued 28 April 2022 by CERT-In; see [CERT-In Directions 70B](https://www.cert-in.org.in/Directions70B.jsp)):
-* The Directions identify covered categories of entities, including service providers, intermediaries, data centres, body corporates, and Government organisations.
-* **Annexure-I Reportable Incidents**: Incidents specified include unauthorized access to IT systems/data, compromise of critical systems, targeted scanning/probing, identity theft/spoofing, data breach/data leak, attacks on servers/network infrastructure, and other listed cyber security incidents.
+* **Broad Scope & Applicability**:
+  * The Directions specify covered categories including service providers, intermediaries, data centres, body corporates, and Government organisations.
+  * Furthermore, CERT-In's official FAQs clarify that "body corporate" is defined broadly (including sole proprietorships, partnerships, and companies), and state that the 28 April 2022 Directions apply to all entities insofar as cyber-incident reporting is concerned.
+* **Annexure-I Reportable Incidents**: Reportable incident types include unauthorized access to IT systems/data, compromise of critical systems, targeted scanning/probing, identity theft/spoofing, data breach/data leak, attacks on servers/network infrastructure, and other listed cyber security incidents.
 * **Reporting Window**: Covered entities must report Annexure-I incidents to CERT-In **within 6 hours** of noticing the incident or the incident being brought to notice.
 * **Reporting Channel**: Formal report to `incident@cert-in.org.in` using the format published on the CERT-In portal.
-* **Point of Contact (PoC)**: Covered entities must designate a Point of Contact for liaison with CERT-In. (Private contact details of the PoC are maintained securely outside Git).
+* **Point of Contact (PoC)**: Covered entities must designate a Point of Contact for liaison with CERT-In. (Note: Formal designation of FairSwap's CERT-In PoC is an unverified operational item subject to legal review in #38; contact records must be maintained securely outside Git).
 * **System Log Retention**: Covered entities are required to maintain ICT-system logs securely within India for a rolling duration of **180 days**.
 
 > [!IMPORTANT]
-> **FairSwap Operational Rule on CERT-In Applicability**:
-> FairSwap's exact statutory classification and intermediary status are currently under formal legal review in Issue **#38**.
-> **Conservative Invariant**: Any security incident that appears to match CERT-In Annexure I (e.g. credential compromise, unauthorized database access, suspected data leak) must **immediately start a CERT-In applicability and reportability assessment**.
-> Pending final legal classification, the Incident Commander must treat the **six-hour window** as the internal maximum escalation clock, ensuring FairSwap preserves the capability to report on time if the statutory obligation applies.
+> **FairSwap Operational Rule on CERT-In Reporting**:
+> While FairSwap's precise legal classification is under formal review in Issue **#38**, CERT-In's broad interpretation of covered entities requires a conservative posture.
+> **Conservative Operational Invariant**: Any security incident that appears to match CERT-In Annexure I (e.g. credential compromise, unauthorized database access, suspected data leak) must **immediately start a CERT-In applicability and reportability assessment**.
+> The Incident Commander must treat the **six-hour window** as the internal maximum escalation clock, ensuring FairSwap preserves the capability to report on time if the requirement applies.
 
 ### B. Digital Personal Data Protection (DPDP) Readiness Framework
 * **Statutory Baseline**: Based on the 13 November 2025 commencement notification and the DPDP Rules 2025:
@@ -102,14 +104,15 @@ Pursuant to the **Directions under sub-section (6) of section 70B of the Informa
      SET account_status = 'suspended'
      WHERE user_id = '<COMPROMISED_USER_ID>';
      ```
-     *Security Invariant*: FairSwap's database RPCs and data layer evaluate `app_security.get_account_status(auth.uid())`. A `'suspended'` status immediately revokes all marketplace mutations and access, even if the caller holds a valid, unexpired JWT.
+     *Security Invariant*: FairSwap's database RPCs and data layer evaluate `app_security.get_account_status(auth.uid())`. A `'suspended'` status immediately revokes all classifieds-platform mutations/features and access, even if the caller holds a valid, unexpired JWT.
   2. **Immediately Revoke Staff Roles**:
      ```sql
      DELETE FROM public.staff_roles WHERE user_id = '<COMPROMISED_USER_ID>';
      ```
-  3. **Session Revocation Reality**:
+  3. **User Session Containment vs. API Key Containment**:
      * Supabase Auth `supabase.auth.admin.signOut(jwt, 'global')` requires an active session JWT, not a standalone user ID.
-     * Stateless JWTs remain cryptographically valid until expiration (1 hour). Therefore, **Step 1 (`account_status = 'suspended'`) is the authoritative real-time security barrier**.
+     * Stateless user JWTs remain cryptographically valid until expiration (1 hour). Therefore, **Step 1 (`account_status = 'suspended'`) is the authoritative real-time security barrier** dynamically enforced by database RPCs.
+     * Note: Rotating an application API key (`sb_secret_...`) prevents programmatic backend access but does not invalidate end-user Auth sessions; conversely, user session containment does not affect application service keys.
   4. **Strict Safety Prohibition**:
      > [!CAUTION]
      > **DO NOT DIRECTLY MUTATE `auth.*` INTERNAL TABLES**:
@@ -119,12 +122,12 @@ Pursuant to the **Directions under sub-section (6) of section 70B of the Informa
 
 ---
 
-### Playbook 2: Credential / Secret Exposure
+### Playbook 2: Application Credential / Secret Exposure
 * **Detection**: GitHub Secret Scanning alert, transcript inspection, or developer disclosure.
 * **Containment**:
   1. Rotate exposed secret immediately at its source (Vercel Project Settings, Supabase Dashboard, Upstash Redis, or SMTP provider).
   2. Deploy updated environment variable to staging/production.
-  3. Revoke/delete the compromised secret version at the provider.
+  3. Revoke/delete the compromised secret version at the provider so any requests using it fail immediately.
 * **Preservation of Evidence**: Note commit SHA or exposure location; log timestamp of exposure vs timestamp of revocation.
 * **Assessment**: Start 6-hour CERT-In assessment clock if credentials could have enabled access to user data.
 
@@ -170,7 +173,7 @@ Pursuant to the **Directions under sub-section (6) of section 70B of the Informa
 ### Playbook 6: Transactional Email Outage (SMTP)
 * **Detection**: Verification emails, password resets, or account notices fail to send.
 * **Containment & Triage**:
-  1. Inspect upstream email provider status (SendGrid / Postmark / SES).
+  1. Inspect upstream email provider status.
   2. Inspect server error logs for SMTP rejection codes (e.g. auth failure, rate limit, SPF/DKIM bounce).
   3. FairSwap does **not** have an automated secondary SMTP failover relay configured.
   4. Temporarily surface an informational banner on `/auth/sign-in` and `/auth/sign-up` notifying users of temporary email delays.

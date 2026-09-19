@@ -166,14 +166,14 @@ Every operational log record emitted by the FairSwap application logger adheres 
    - *Cons*: Must maintain ~150 lines of internal logging code.
 
 ### **Recommendation: Option B (Purpose-Built Internal Logger)**
-FairSwap will implement a zero-dependency, type-safe structured logger in [`src/lib/logger/`](file:///c:/Users/VivekKumar/OneDrive%20-%20Nobly%20A%20S/Documents/FairSwap/src/lib/logger/). This satisfies the Project Bible constraint of avoiding unnecessary dependencies while guaranteeing seamless SSR and Edge compatibility.
+FairSwap will implement a zero-dependency, type-safe structured logger in [`src/lib/logger/`](../../src/lib/logger/). This satisfies the Project Bible constraint of avoiding unnecessary dependencies while guaranteeing seamless SSR and Edge compatibility.
 
 ---
 
 ## 6. Correlation / Request ID Architecture
 
 1. **Generation Boundary**:
-   - In [`src/proxy.ts`](file:///c:/Users/VivekKumar/OneDrive%20-%20Nobly%20A%20S/Documents/FairSwap/src/proxy.ts) (Next.js middleware), every incoming HTTP request is inspected for an existing upstream header (`x-request-id` or `x-correlation-id`).
+   - In [`src/proxy.ts`](../../src/proxy.ts) (Next.js middleware), every incoming HTTP request is inspected for an existing upstream header (`x-request-id` or `x-correlation-id`).
    - If present and valid, it is preserved. If absent or malformed, a standard cryptographically random UUID (`crypto.randomUUID()`) is generated.
 2. **Propagation to Server Context**:
    - The correlation ID is injected into internal request headers via `request.headers.set('x-request-id', correlationId)`.
@@ -181,7 +181,7 @@ FairSwap will implement a zero-dependency, type-safe structured logger in [`src/
 3. **Propagation to Outbound Response**:
    - The proxy sets `response.headers.set('x-request-id', correlationId)` on all HTTP responses, allowing browser devtools and API consumers to observe the trace ID.
 4. **Propagation to Supabase Infrastructure**:
-   - In [`src/lib/supabase/server.ts`](file:///c:/Users/VivekKumar/OneDrive%20-%20Nobly%20A%20S/Documents/FairSwap/src/lib/supabase/server.ts), the correlation ID is added to Supabase client global headers:
+   - In [`src/lib/supabase/server.ts`](../../src/lib/supabase/server.ts), the correlation ID is added to Supabase client global headers:
      ```typescript
      global: {
        headers: { 'x-request-id': correlationId },

@@ -15,8 +15,9 @@ FairSwap is currently operated solely by **Vivek Kumar**.
 | **Database Administration (Supabase)** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Health inspection, pooler & migration safety | **BLOCKER in #41** |
 | **Storage & Media Health** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Bucket quotas, integrity & manifest tracking | **BLOCKER in #41** |
 | **Credential & Secret Rotation** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Immediate containment upon suspected leak | **BLOCKER in #41** |
-| **Statutory Grievance Redressal** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Statutory acknowledgement within 24–48 hours | Mandatory (India IT Rules) |
-| **User Communications (Outages/Breaches)** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Timely notification as assessed | Mandatory |
+| **Grievance Redressal** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | If IT Rules Rule 3 applies: acknowledge general grievance within 24h; general resolution within 7 days; shorter categories handled per the applicable rule. (Applicability subject to #38). | Pre-launch requirement |
+| **User Communications (Outages/Breaches)** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Timely notification as assessed | Pre-launch requirement |
+| **Legal Counsel Escalation** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | FairSwap does not currently have retained counsel; Vivek Kumar evaluates and engages external legal counsel if/when required. | Operational procedure |
 
 > [!IMPORTANT]
 > **Single-Point-of-Failure (SPOF) Blocker**:
@@ -34,9 +35,9 @@ Access to production systems follows the principle of least privilege with manda
 |---|---|---|---|---|
 | **GitHub** (`vivek2310sharma/FairSwap-Web`) | Repository Owner / Admin | Branch protections (`main`, `staging`), PR reviews, CI/CD secrets management | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
 | **Vercel** (`fair-swap`) | Team Owner / Admin | Staging/Production deployments, environment variable injection, Instant Rollback | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
-| **Supabase** (`FairSwapProd`) | Project Owner / Admin | Database settings, PITR/backups, connection pooling, Storage policies, Auth settings | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
+| **Supabase** (`FairSwapProd`) | Project Owner / Admin | Database settings, backups, connection pooling, Storage policies, Auth settings | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
 | **DNS / Domain Registrar** (`fairswap.in`) | Account Holder | DNS records (A, CNAME, ALIAS), TLS certificate verification, CAA/DNSSEC records | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
-| **Transactional Email Provider** (SMTP/API) | Account Admin | Sender verification, DKIM/SPF/DMARC DNS keys, API keys, delivery rate monitoring | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
+| **Transactional Email Provider** | Account Admin | Sender verification, DKIM/SPF/DMARC DNS records, API keys, delivery rate monitoring | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
 | **Uptime / External Monitoring Provider** | Account Admin | Uptime synthetic probes, alert routing policies, escalation notifications | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
 
 > [!CAUTION]
@@ -52,4 +53,4 @@ Prior to lifting the Public Beta operational freeze:
 1. [ ] A real individual accepts and is recorded as the named backup production owner.
 2. [ ] Backup owner successfully completes emergency access test (GitHub, Vercel, Supabase, DNS, Email).
 3. [ ] Emergency notification channels (SMS / phone / push alerts) are configured and tested outside Git.
-4. [ ] The statutory Grievance Officer details on customer-facing routes (`/contact`, `/terms`) are verified accurate.
+4. [ ] The statutory Grievance Officer details on customer-facing routes (`/contact`, `/terms`, `/grievance`) are verified accurate.

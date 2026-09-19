@@ -11,12 +11,13 @@ This runbook establishes disaster recovery objectives, backup procedures, enviro
 * **Target Recovery Time Objective (RTO)**: $\le$ 2 hours (maximum target time to restore full platform availability from backup artifacts).
 
 > [!IMPORTANT]
-> **RPO / RTO Truthfulness Attestation**:
+> **RPO / RTO Truthfulness & Supabase Configuration Attestation**:
 > The figures above are **business target objectives**, not contractual customer SLAs or operational guarantees.
-> In the current configuration:
-> * Supabase managed automatic backups operate on a **daily schedule** (free/pro baseline).
-> * Point-in-Time Recovery (PITR) with continuous write-ahead logging (WAL) archiving is required to achieve RPO $\le$ 1 hour.
-> * Therefore, **RPO $\le$ 1 hour is NOT currently guaranteed in production**. It remains a target objective dependent on Supabase Pro/Team PITR enablement and verification.
+> Regarding Supabase backup architecture:
+> * Managed automatic daily backups are available for Pro/Team/Enterprise projects; projects on the Free tier require their own external backup/export strategy.
+> * Point-in-Time Recovery (PITR) is an add-on available on eligible paid plans and represents one possible mechanism for achieving a lower RPO.
+> * **No specific plan tier, daily backup schedule, PITR add-on, WAL status, or retention window may be claimed for `FairSwapProd` until manually inspected and verified in the live project dashboard**.
+> * Therefore, **RPO $\le$ 1 hour is NOT currently guaranteed in production**. It remains a target objective dependent on verified production plan features and PITR enablement.
 
 ### B. Empirically Observed Recovery Drill on Staging (FairSwapTest)
 During the isolated Point 16 Disaster Recovery drill conducted on staging project `FairSwapTest` (`wpppxlnbzqynvhpeuavd`):
@@ -29,7 +30,7 @@ During the isolated Point 16 Disaster Recovery drill conducted on staging projec
 ### C. Production Backup & Recovery Posture
 > [!WARNING]
 > **PRODUCTION BACKUP/RESTORE STATUS UNVERIFIED — PUBLIC BETA BLOCKER**:
-> While staging recovery has been rigorously proven, **production backup schedules, Point-in-Time Recovery (PITR), and storage recovery on `FairSwapProd` have not yet been independently verified in a live production drill**.
+> While staging recovery has been rigorously proven, **production backup schedules, PITR configuration, and storage recovery on `FairSwapProd` have not yet been independently verified in a live production drill**.
 > Production backup capability must not be assumed from staging results alone.
 > An independent production backup and recovery verification drill must be conducted under explicit human authorization prior to full public beta launch.
 
@@ -57,7 +58,7 @@ To eliminate environmental ambiguity and protect production data from accidental
 
 ### B. Storage (Media Byte) Backup
 * **Command**: `pnpm tsx scripts/backup-storage.ts --source=staging`
-* **Mechanism**: Direct recursive object enumeration via Supabase Storage API for active buckets `listing-originals` and `listing-derivatives` using server environment credentials (`SUPABASE_SERVICE_ROLE_KEY`).
+* **Mechanism**: Direct recursive object enumeration via Supabase Storage API for active buckets `listing-originals` and `listing-derivatives` using server environment credentials (`SUPABASE_SECRET_KEY`).
 * **Output Location**: `artifacts/backups/storage/<bucket-name>/<object-path>` (Gitignored)
 * **Manifest**: `artifacts/backups/storage/manifest.json` (Gitignored)
   * Captures: Object path, byte size, SHA-256 hash, local path, and bucket name for every retained asset.
@@ -118,14 +119,13 @@ pnpm tsx scripts/verify-restore.ts --restore-target=local
 
 ## 5. Production Backup Verification Checklist (Human-Authorized Execution)
 
-The following checklist must be executed under explicit human authorization when provisioning the production environment (`FairSwapProd`):
+The following checklist must be executed under explicit human authorization when validating production readiness on `FairSwapProd`:
 
-1. [ ] Confirm Supabase Pro/Team plan is active on `FairSwapProd` with daily automated physical backups enabled.
-2. [ ] Confirm Point-in-Time Recovery (PITR) is enabled on `FairSwapProd` with retention $\ge$ 7 days.
-3. [ ] Verify that WAL (Write-Ahead Log) archiving status on `FairSwapProd` is active and healthy.
-4. [ ] Perform a test restore of a production physical backup into an isolated auxiliary test database (not the live production database).
-5. [ ] Verify that storage media files in `listing-originals` and `listing-derivatives` on `FairSwapProd` have corresponding backup manifests.
-6. [ ] Record date, operator name, and verification results in `docs/operations/recovery-drill-evidence.md`.
+1. [ ] Inspect and verify the actual Supabase plan tier and active backup settings on `FairSwapProd` in the Supabase Dashboard.
+2. [ ] If a paid tier with PITR is provisioned, verify that PITR is enabled and WAL archiving status is healthy.
+3. [ ] Verify the production backup configuration and, when human-authorized, restore a production backup/copy into an isolated non-production recovery target where technically supported. **Never restore a test backup over `FairSwapProd`**.
+4. [ ] Verify that storage media files in `listing-originals` and `listing-derivatives` on `FairSwapProd` have corresponding backup manifests.
+5. [ ] Record date, operator name, and verification results in `docs/operations/recovery-drill-evidence.md`.
 
 ---
 
