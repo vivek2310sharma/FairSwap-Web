@@ -16,8 +16,9 @@ This runbook establishes disaster recovery objectives, backup procedures, enviro
 > Regarding Supabase backup architecture:
 > * Managed automatic daily backups are available for Pro/Team/Enterprise projects; projects on the Free tier require their own external backup/export strategy.
 > * Point-in-Time Recovery (PITR) is an add-on available on eligible paid plans and represents one possible mechanism for achieving a lower RPO.
-> * **No specific plan tier, daily backup schedule, PITR add-on, WAL status, or retention window may be claimed for `FairSwapProd` until manually inspected and verified in the live project dashboard**.
-> * Therefore, **RPO $\le$ 1 hour is NOT currently guaranteed in production**. It remains a target objective dependent on verified production plan features and PITR enablement.
+> * `FairSwapProd` was manually inspected on 2026-09-19 and is on the Supabase **Free** plan.
+> * Managed project/database backups are **not included** in the current FairSwapProd setup, and PITR is not available under the current setup.
+> * Therefore, **RPO $\le$ 1 hour is NOT currently guaranteed in production**. The Platform Owner explicitly accepted this residual data-loss/recovery risk on 2026-09-19 under #41 rather than upgrading the plan or implementing an external production backup process at this time.
 
 ### B. Empirically Observed Recovery Drill on Staging (FairSwapTest)
 During the isolated Point 16 Disaster Recovery drill conducted on staging project `FairSwapTest` (`wpppxlnbzqynvhpeuavd`):
@@ -29,10 +30,11 @@ During the isolated Point 16 Disaster Recovery drill conducted on staging projec
 
 ### C. Production Backup & Recovery Posture
 > [!WARNING]
-> **PRODUCTION BACKUP/RESTORE STATUS UNVERIFIED — PUBLIC BETA BLOCKER**:
-> While staging recovery has been rigorously proven, **production backup schedules, PITR configuration, and storage recovery on `FairSwapProd` have not yet been independently verified in a live production drill**.
-> Production backup capability must not be assumed from staging results alone.
-> An independent production backup and recovery verification drill must be conducted under explicit human authorization prior to full public beta launch.
+> **VERIFIED PRODUCTION BACKUP GAP — OWNER RISK ACCEPTED**:
+> FairSwapProd is on the Supabase Free plan and currently has **no managed project/database backup coverage** and no PITR under the current setup.
+> No production restore exercise has been performed, and production Storage recovery remains unverified.
+> On 2026-09-19, the Platform Owner explicitly closed this readiness gap by accepting the associated data-loss and recovery risk under #41.
+> This is a risk-acceptance decision, **not** evidence that production backup/recovery controls were remediated.
 
 ---
 
@@ -117,15 +119,18 @@ pnpm tsx scripts/verify-restore.ts --restore-target=local
 
 ---
 
-## 5. Production Backup Verification Checklist (Human-Authorized Execution)
+## 5. Production Backup Verification Record and Future Checklist
 
-The following checklist must be executed under explicit human authorization when validating production readiness on `FairSwapProd`:
+Current verified state on 2026-09-19:
 
-1. [ ] Inspect and verify the actual Supabase plan tier and active backup settings on `FairSwapProd` in the Supabase Dashboard.
-2. [ ] If a paid tier with PITR is provisioned, verify that PITR is enabled and WAL archiving status is healthy.
-3. [ ] Verify the production backup configuration and, when human-authorized, restore a production backup/copy into an isolated non-production recovery target where technically supported. **Never restore a test backup over `FairSwapProd`**.
-4. [ ] Verify that storage media files in `listing-originals` and `listing-derivatives` on `FairSwapProd` have corresponding backup manifests.
-5. [ ] Record date, operator name, and verification results in `docs/operations/recovery-drill-evidence.md`.
+1. [x] FairSwapProd plan inspected in the Supabase Dashboard: **Free**.
+2. [x] Managed project/database backups confirmed **not included** under the current setup.
+3. [x] PITR confirmed unavailable under the current setup.
+4. [ ] Production restore exercise: **not performed**.
+5. [ ] Production Storage backup/recovery: **not verified**.
+6. [x] Residual backup/recovery risk explicitly accepted by the Platform Owner under #41.
+
+If FairSwap later adds managed backups or an external production backup/export process, verify recovery only into an isolated non-production target where technically supported. **Never restore a test backup over `FairSwapProd`**. Record future verification evidence in `docs/operations/recovery-drill-evidence.md`.
 
 ---
 
