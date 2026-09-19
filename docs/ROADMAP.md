@@ -9,7 +9,7 @@ Classifieds only: sellers advertise, buyers discover/contact them, both arrange 
 ## Phase 1 — complete, controlled-pilot classifieds platform (COMPLETED & VERIFIED)
 
 > **Status**: **COMPLETED & VERIFIED** (2026-09-14)<br>
-> **Verified Baseline Commit**: `79026f28e893f340a7da06e16e00d2f2836013cb` on branch `Phase1`<br>
+> **Verified Baseline Commit**: `79026f28e893f340a7da06e16e00d2f2836013cb` (historical `Phase1` implementation baseline; the branch was retired on 2026-09-18)<br>
 > **Classification**: Controlled-Pilot Candidate (`v0.1.6-pilot.1`)
 
 All Milestones 1.1 through 1.6 are implemented, hardened, and verified locally:
@@ -57,7 +57,38 @@ This transition bridge has been successfully established and accepted as a verif
    - **Chat Accessibility**: Full accessible naming (`aria-label`) on icon-only messaging action buttons (`Send message`, `Report User`, `Block User`, `Report Message`).
 
 > [!IMPORTANT]
-> **Boundary Notice**: Acceptance of the Hosted Phase 1 Baseline confirms hosted staging readiness / pre-pilot readiness. Starting a controlled pilot still requires separate human authorization. It does **NOT** constitute public production launch approval. Public launch requires separate external sign-offs: authenticated production SMTP (SPF/DKIM), production domain (`fairswap.in`) DNS/TLS, statutory Grievance Officer appointment under Indian IT Rules, and legal review of agreements. Phase 2 remains NOT STARTED and NOT AUTHORIZED; Next permitted transition: Phase 2 planning/kickoff only after explicit human authorization; `main` branch remains untouched.
+> **Historical boundary notice**: This acceptance established the hosted staging reference only. The controlled production pilot was separately established later on 2026-09-18. The former `Phase1` branch is now retired. Production SMTP and `fairswap.in` DNS/TLS were subsequently completed; public launch still requires the remaining legal/compliance and operational sign-offs. Phase 2 remains NOT STARTED and NOT AUTHORIZED.
+
+---
+
+## Controlled Production Pilot Baseline — ESTABLISHED
+
+> **Status**: **ESTABLISHED & VERIFIED** (2026-09-18)<br>
+> **Production Tag**: `prod-pilot-baseline-2026-09-18`<br>
+> **Baseline Commit**: `a81b0a5e3c77172e9f691462cac0cecb21a86723`<br>
+> **Production**: `main` → Vercel Production → `https://fairswap.in` → `FairSwapProd` (`kriuhwppxgxsyyrbjsau`)<br>
+> **Staging**: `staging` → `https://fair-swap-git-staging-fairswap.vercel.app` → `FairSwapTest` (`wpppxlnbzqynvhpeuavd`)
+
+The controlled production pilot baseline is technically operational. Verification covered:
+
+- **Production database and storage**: Migrations 1–19 aligned on `FairSwapProd`; `listing-originals` and `listing-derivatives` verified private.
+- **Production auth and email**: Normal signup, email confirmation, sign-in, and password recovery passed; custom SMTP is configured through Resend using the verified `auth.fairswap.in` sending domain.
+- **Staff administration**: First administrator bootstrap completed; `/admin` enforced TOTP AAL2 and successful enrollment/step-up was verified.
+- **Listings and moderation**: A normal seller created a listing, uploaded two photos, submitted it for review, and an independent administrator approved it.
+- **Public discovery and media**: The approved listing and both photos rendered while signed out with a clean browser console.
+- **Messaging**: A separate buyer initiated a conversation; the seller received it and a seller reply appeared buyer-side in Realtime without refresh or duplicate messages, with a clean console.
+- **Production domain**: `fairswap.in` and `www.fairswap.in` are routed to Vercel with HTTPS/TLS established.
+- **Stable staging isolation**: The `staging` branch has a stable tester-accessible Vercel URL, uses FairSwapTest Auth callbacks, and a new staging signup was confirmed in `FairSwapTest` rather than `FairSwapProd`.
+
+The branch model after the pilot baseline is intentionally simple:
+
+- `main` is production.
+- `staging` is the shared tester environment and uses FairSwapTest.
+- Short-lived `feature/*` branches use Vercel Preview and FairSwapTest, then merge into `staging` for shared acceptance before promotion to `main`.
+- There is no long-lived Phase 2 branch. Phase 2 remains **NOT STARTED / NOT AUTHORIZED**.
+
+> [!IMPORTANT]
+> **Public-launch boundary**: Technical controlled-pilot operation does not by itself certify a wider public launch. Production SMTP and domain/TLS are complete, while the remaining gates include the applicable Grievance Officer/compliance work, legal review of public-facing agreements, and operational ownership/on-call readiness.
 
 ---
 
@@ -92,13 +123,13 @@ Expand marketplace scale based on evidence from pilot operations:
 
 ## Operational Readiness Tiers & Launch Gates
 
-To maintain strict operational clarity, the platform distinguishes four separate readiness states:
+To maintain strict operational clarity, the platform distinguishes five separate readiness states:
 
 1. **Phase 1 Implementation Completion**: **ACHIEVED** — All functional code, RLS policies, tests, and runbooks are implemented and verified locally against Docker/Supabase containers.
-2. **Hosted / Staging Readiness**: **ACHIEVED & ACCEPTED** (2026-09-18) — Full Phase 1 stack deployed and verified on FairSwapTest Supabase + Vercel Preview (`hosted-phase1-baseline-2026-09-18`, commit `14e0e6a`). Hosted staging readiness / pre-pilot readiness confirmed; starting a controlled pilot requires separate human authorization.
-3. **Phase 2 Development**: **NOT STARTED AND NOT AUTHORIZED** — Next permitted transition: Phase 2 planning/kickoff only after explicit human authorization.
-4. **Public Production Launch Readiness**: **GATED** — Public launch requires external legal and infrastructure sign-offs:
-   - Authenticated production SMTP provider (DKIM/SPF)
-   - Production domain (`fairswap.in`) with automated SSL/TLS
-   - Statutory Grievance Officer appointment published in compliance with Indian IT Rules
-   - Legal counsel review of user-facing agreements
+2. **Hosted / Staging Readiness**: **ACHIEVED & ACCEPTED** (2026-09-18) — The historical hosted baseline was verified on FairSwapTest + Vercel Preview and preserved by `hosted-phase1-baseline-2026-09-18` at commit `14e0e6a`.
+3. **Controlled Production Pilot**: **ACHIEVED & TECHNICALLY OPERATIONAL** (2026-09-18) — Production runs from `main` at `fairswap.in` against FairSwapProd; production smoke checks passed and the baseline is preserved by `prod-pilot-baseline-2026-09-18` at commit `a81b0a5`.
+4. **Phase 2 Development**: **NOT STARTED AND NOT AUTHORIZED** — Phase 2 planning or implementation begins only after explicit human authorization.
+5. **Public Production Launch Readiness**: **GATED** — Production SMTP and custom-domain TLS are complete. Remaining external gates include:
+   - Statutory Grievance Officer/compliance work applicable to the public launch
+   - Legal review of user-facing agreements
+   - Operational ownership and on-call readiness for wider public traffic

@@ -1,6 +1,5 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { DevelopmentNotice } from "@/components/development-notice";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
 import Link from "next/link";
 import {
@@ -31,11 +30,6 @@ export default function HomePage() {
       <Header />
 
       <main className="flex-1">
-        {/* Development notice */}
-        <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
-          <DevelopmentNotice />
-        </div>
-
         {/* Hero section with Search */}
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">

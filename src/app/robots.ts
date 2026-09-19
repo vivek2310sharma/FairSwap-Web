@@ -1,12 +1,13 @@
 import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
-  const isProduction =
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const isProductionSite =
     process.env.NODE_ENV === "production" &&
-    process.env.NEXT_PUBLIC_SITE_URL?.includes("fairswap.in");
+    (siteUrl === "https://fairswap.in" || siteUrl === "https://www.fairswap.in");
 
-  if (!isProduction) {
-    // Keep internal development and preview environments completely non-indexed
+  if (!isProductionSite) {
+    // Keep local, staging, and preview environments completely non-indexed.
     return {
       rules: {
         userAgent: "*",
@@ -21,6 +22,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/admin/", "/account/", "/api/"],
     },
-    sitemap: `${process.env.NEXT_PUBLIC_SITE_URL || "https://fairswap.in"}/sitemap.xml`,
+    sitemap: `${siteUrl}/sitemap.xml`,
   };
 }
