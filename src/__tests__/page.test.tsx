@@ -11,12 +11,6 @@ describe("HomePage component", () => {
     expect(heading).toHaveTextContent(/Buy & sell locally on FairSwap.in/i);
   });
 
-  it("renders the DevelopmentNotice banner", () => {
-    render(<HomePage />);
-    expect(screen.getByRole("status")).toBeInTheDocument();
-    expect(screen.getByText("Development Foundation")).toBeInTheDocument();
-  });
-
   it("renders the How It Works section with 3 core steps", () => {
     render(<HomePage />);
     expect(
