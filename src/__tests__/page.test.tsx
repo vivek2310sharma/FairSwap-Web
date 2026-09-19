@@ -11,10 +11,12 @@ describe("HomePage component", () => {
     expect(heading).toHaveTextContent(/Buy & sell locally on FairSwap.in/i);
   });
 
-  it("renders the DevelopmentNotice banner", () => {
+  it("does not render the obsolete development foundation notice", () => {
     render(<HomePage />);
-    expect(screen.getByRole("status")).toBeInTheDocument();
-    expect(screen.getByText("Development Foundation")).toBeInTheDocument();
+    expect(screen.queryByText("Development Foundation")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Accounts, listings, and communication are not connected yet/i)
+    ).not.toBeInTheDocument();
   });
 
   it("renders the How It Works section with 3 core steps", () => {
