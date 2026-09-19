@@ -31,7 +31,10 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
     const result = await startConversationAction(listingId, clean, clientRequestId);
     setIsSending(false);
 
-    if (result.error) {
+    if (result.redirectTo) {
+      setModalOpen(false);
+      router.push(result.redirectTo);
+    } else if (result.error) {
       setErrorMessage(result.error);
     } else if (result.conversationId) {
       setModalOpen(false);

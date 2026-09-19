@@ -53,13 +53,16 @@ describe("Point 9B-R5 — Admin Auth Flow & Moderation Query Tests", () => {
 
   describe("B. Static Query & Security Invariants Verification", () => {
     const rootDir = process.cwd();
-    const proxyContent = fs.readFileSync(path.join(rootDir, "src/proxy.ts"), "utf-8");
-    const adminLayoutContent = fs.readFileSync(path.join(rootDir, "src/app/admin/layout.tsx"), "utf-8");
-    const mfaPageContent = fs.readFileSync(path.join(rootDir, "src/app/auth/mfa/page.tsx"), "utf-8");
-    const queuePageContent = fs.readFileSync(path.join(rootDir, "src/app/admin/listings/page.tsx"), "utf-8");
-    const detailPageContent = fs.readFileSync(path.join(rootDir, "src/app/admin/listings/[id]/page.tsx"), "utf-8");
-    const locationsPageContent = fs.readFileSync(path.join(rootDir, "src/app/admin/locations/page.tsx"), "utf-8");
-    const categoriesPageContent = fs.readFileSync(path.join(rootDir, "src/app/admin/categories/page.tsx"), "utf-8");
+    const readNormalized = (relPath: string) =>
+      fs.readFileSync(path.join(rootDir, relPath), "utf-8").replace(/\r\n/g, "\n");
+
+    const proxyContent = readNormalized("src/proxy.ts");
+    const adminLayoutContent = readNormalized("src/app/admin/layout.tsx");
+    const mfaPageContent = readNormalized("src/app/auth/mfa/page.tsx");
+    const queuePageContent = readNormalized("src/app/admin/listings/page.tsx");
+    const detailPageContent = readNormalized("src/app/admin/listings/[id]/page.tsx");
+    const locationsPageContent = readNormalized("src/app/admin/locations/page.tsx");
+    const categoriesPageContent = readNormalized("src/app/admin/categories/page.tsx");
 
     it("1. proxy.ts does NOT perform blanket AAL1 -> /auth/mfa redirect", () => {
       expect(proxyContent).not.toContain('redirect("/auth/mfa"');
