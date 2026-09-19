@@ -1,7 +1,14 @@
 # FairSwap.in — Architecture and Foundation Design (Milestone 1.1)
 
 Document version: 1.0 (2026-09-13)  
-Milestone status: 1.1 Foundation (Build in Progress)
+Milestone status: 1.1 Foundation (Historical Architectural Design)
+
+> [!NOTE]
+> **Historical Design Document Notice**:
+> This document represents the initial conceptual architecture and foundation design prepared during **Milestone 1.1 (2026-09-13)** prior to backend implementation.
+> - **Authentication Invariant**: As implemented in Milestone 1.2 and active in production, FairSwap uses **email/password authentication** with mandatory email confirmation, plus **Google sign-in** for existing accounts with matching verified emails (`/auth/sign-in`).
+> - **Phone Authentication Abandoned**: Early references in this document to phone OTP authentication, SMS gateways, or phone number fields reflect early conceptual design only. Phone-number authentication was evaluated and **intentionally abandoned**; Issue #12 was closed as Not Planned, and draft PR #60 was closed without merge. Phone authentication is not implemented, planned for release, or present in staging/main.
+> - For current implementation and operational reality, refer to `README.md`, `FAIRSWAP_SPEC.md`, `docs/PROGRESS.md`, and `docs/operations/public-beta-operations-readiness.md`.
 
 ---
 

@@ -1,5 +1,11 @@
 # FairSwap - sequential milestone operating contract
 
+> [!NOTE]
+> **Historical Milestone Workflow Notice**:
+> This document records the original sequential milestone execution contract used during the development of Phase 1 (Milestones 1.1 through 1.6).
+> - **Current Status**: **PHASE 1 MILESTONES ARE FULLY ACCEPTED**. Phase 2 remains NOT STARTED and NOT AUTHORIZED.
+> - **Current Workflow**: Routine ongoing development, branch naming, pull requests, and production release procedures now follow the established Git workflow defined in [`CONTRIBUTING.md`](../CONTRIBUTING.md) and [`docs/operations/deployment-guide.md`](./operations/deployment-guide.md).
+
 ## The complete cycle
 
 PLAN -> HUMAN BUILD APPROVAL -> BUILD WITH VERIFICATION -> VERIFY/REVIEW -> FIXES IF NEEDED -> HUMAN ACCEPTANCE -> PLAN NEXT.

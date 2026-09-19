@@ -2,7 +2,7 @@
 
 This runbook defines severity classifications, operational response flows, emergency containment playbooks, statutory reporting considerations, and post-incident review protocols for **FairSwap** (a peer-to-peer local classifieds platform).
 
-It is tailored to a small-team operational model led by the Primary Production Owner (Vivek Kumar) with an identified backup owner requirement.
+It is tailored to a single-operator model led by the Primary Production Owner (Vivek Kumar). On 2026-09-19, the Platform Owner explicitly accepted the operational risk under Issue #41 of operating without a designated backup owner for the current launch posture.
 
 ---
 
@@ -31,7 +31,7 @@ All incidents follow this structured 10-stage lifecycle:
 
 1. **Detect**: Signal identified via uptime monitor, Vercel runtime alerts, Supabase dashboard, user report to Grievance Officer, or automated code scanning.
 2. **Assess**: Initial evaluation of user impact, data integrity, and security exposure.
-3. **Triage**: Assign severity (P0, P1, P2, P3); activate Incident Commander (Vivek Kumar / Backup Owner).
+3. **Triage**: Assign severity (P0, P1, P2, P3); activate Incident Commander (Vivek Kumar; single-operator posture accepted under #41).
 4. **Contain**: Execute immediate non-destructive containment to arrest ongoing harm or exposure.
 5. **Preserve Evidence**: Export logs, snapshot audit entries, and record commit SHAs and timestamps before modifying state.
 6. **Remediate**: Deploy code fix, execute forward database migration, rotate exposed credentials, or adjust infrastructure settings.

@@ -10,10 +10,13 @@ FairSwap.in is a hyperlocal discovery and communication platform enabling buyers
 
 * **Phase 1 Implementation**: **COMPLETE & VERIFIED** across all Milestones (1.1 through 1.6).
 * **Controlled Production Pilot**: **TECHNICALLY OPERATIONAL** on `https://fairswap.in`, deployed from `main` and connected to the dedicated **FairSwapProd** Supabase project (`kriuhwppxgxsyyrbjsau`). The immutable production-pilot baseline is tagged `prod-pilot-baseline-2026-09-18` at commit `a81b0a5e3c77172e9f691462cac0cecb21a86723`.
+* **Authentication**: Primary authentication is email/password with mandatory email confirmation. Google sign-in is live in production for existing FairSwap accounts with matching verified email (`/auth/sign-in`); FairSwap does not use Google-first signup because registration requires explicit acceptance of legal policies and age confirmation. Phone-number authentication is **not implemented**; Issue #12 was closed as Not Planned and PR #60 was closed without merge.
+* **Legal & Grievance Policies**: Published and promoted to production on 2026-09-19 (PR #56), including Terms of Service (`/terms`), Privacy Policy (`/privacy`), Acceptable Use Policy (`/acceptable-use`), Safety Guide (`/safety`), mandatory 18+ age declaration, pilot policy re-acceptance (`/auth/reaccept-policies`), and the statutory Grievance Redressal mechanism (`/grievance`, Grievance Officer: Vivek Kumar) with conditional Rule 3A / GAC appeal guidance.
+* **Operational Monitoring & Posture**: UptimeRobot HTTP/keyword monitoring and Cloudflare Universal SSL alerts are active. Production transactional-email failure monitoring is active and verified end-to-end via signed Resend webhooks (`POST /api/monitoring/resend`) routed to an operations Slack webhook sink. Single-operator operational risk (Vivek Kumar as sole operator, no backup owner) and the Supabase Free tier backup/PITR gap were explicitly accepted by the Platform Owner under Issue #41 on 2026-09-19. Additional monitoring gaps (5xx, client errors, Supabase DB/storage/realtime metrics, auth spike alerting, DNS-specific monitoring) were closed by owner risk acceptance under #41 rather than technical implementation.
 * **Stable Staging**: `staging` deploys to `https://fair-swap-git-staging-fairswap.vercel.app` and connects to **FairSwapTest** (`wpppxlnbzqynvhpeuavd`). The stable staging domain is shareable with testers without Vercel project access; ordinary feature previews remain protected by default.
-* **Development Workflow**: New work uses short-lived `feature/*` branches, is verified against **FairSwapTest**, is integrated into `staging` for shared testing, and is promoted to `main` only after acceptance.
+* **Development Workflow**: Routine work starts from the latest `staging`, uses short-lived branches, is verified against **FairSwapTest**, merges back into `staging` for shared integration testing, and promotes from `staging` to `main` via dedicated production release PRs. Targeted production releases from `main` are reconciled back into `staging`.
 * **Historical Hosted Baseline**: The accepted staging reference remains preserved by tag `hosted-phase1-baseline-2026-09-18`. The former long-lived `Phase1` branch has been retired.
-* **Public Production Launch**: **NOT YET CERTIFIED**. Production SMTP and `fairswap.in` DNS/TLS are established, but public launch remains gated by the outstanding legal/compliance and operational prerequisites documented below and in the [Go/No-Go Release Report](docs/release/1.6-go-no-go-report.md).
+* **Public Production Launch**: **NOT YET CERTIFIED**. Wider public launch remains gated by deferred business items and operational items documented below and in the [Go/No-Go Release Report](docs/release/1.6-go-no-go-report.md).
 * **Phase 2**: **NOT STARTED / NOT AUTHORIZED**. Planning or implementation begins only after explicit human authorization.
 
 ### Deployment topology
@@ -52,12 +55,13 @@ The platform is built using the following core technologies directly configured 
 ## Phase 1 Feature Summary (Milestones 1.1–1.6)
 
 - **Milestone 1.1 — Foundation**: Responsive design system, Tailwind CSS v4 token hierarchy, system font stack, accessible landmark layouts, and multi-viewport test harnesses.
-- **Milestone 1.2 — Accounts & Security**: PostgreSQL schemas, Direct-API RLS policies, two-layer security RPCs (`SECURITY INVOKER` wrappers delegating to unexposed `SECURITY DEFINER` implementations), customer auth journeys (sign-up, email confirm, sign-in, recovery, TOTP MFA), AAL2-gated staff portal, and privacy request intake.
-- **Logging & Monitoring Baseline**: Zero-dependency structured JSON logger, recursive PII redactor, W3C/UUID request correlation, Next.js 16 instrumentation, and client-error ingestion telemetry.
+- **Milestone 1.2 — Accounts & Security**: PostgreSQL schemas, Direct-API RLS policies, two-layer security RPCs (`SECURITY INVOKER` wrappers delegating to unexposed `SECURITY DEFINER` implementations), customer auth journeys (sign-up, email confirm, sign-in, recovery, TOTP MFA), Google sign-in for existing accounts with verified email, AAL2-gated staff portal, and privacy request intake.
+- **Logging & Monitoring Baseline**: Zero-dependency structured JSON logger, recursive PII redactor, W3C/UUID request correlation, Next.js 16 instrumentation, client-error ingestion telemetry, and signed Resend transactional-email failure monitoring webhook bridge.
 - **Milestone 1.3 — Listings & Moderation**: Category and location hierarchies, seller listing lifecycle (`draft`, `pending_review`, `active`, `paused`, `reserved`, `sold`, `expired`, `rejected`), material-edit re-review policies, private Supabase Storage pipeline with Sharp WebP derivatives, staff moderation queue, and automated expiry/cleanup maintenance scripts.
 - **Milestone 1.4 — Public Browsing & Discovery**: Full-text PostgreSQL search with GIN index, public discovery RPC with composite filters, canonical listing detail views with slug history redirects, anonymous WebP media delivery, authenticated favourites, and truthful static policy pages.
 - **Milestone 1.5 — Communication & Safety**: Direct persistent buyer-seller messaging with Realtime streaming, bidirectional user blocking, report intake and staff resolution, support ticketing and appeals, in-app notifications, and GDPR/DPDP privacy fulfillment (sanitized export and account deletion preserving counterparty history).
 - **Milestone 1.6 — Release Hardening & Pilot Readiness**: Staff user management portal (`/admin/users`), user suspension/reinstatement cascading to listings, automated disaster recovery scripts (database dump and storage backup/restore verification against disposable targets), reliability/idempotency tests, WCAG AA contrast audit, operational runbooks, and evidence-based Go/No-Go release assessment.
+- **Public Beta Legal & Grievance Policies (Post-1.6)**: Terms of Service (`/terms`), Privacy Policy (`/privacy`), Acceptable Use (`/acceptable-use`), Safety Guidelines (`/safety`), mandatory 18+ age declaration audit, pilot policy re-acceptance (`/auth/reaccept-policies`), and statutory Grievance Redressal mechanism (`/grievance`, designated Grievance Officer Vivek Kumar) with conditional Rule 3A / GAC appeal guidance.
 
 ---
 
@@ -187,25 +191,34 @@ Detailed architectural, operational, and milestone documentation is maintained i
 - [Milestone 1.6 Pilot Readiness](docs/milestones/1.6-pilot-readiness.md)
 
 ### Operations & Runbooks
-- [Go/No-Go Release Report](docs/release/1.6-go-no-go-report.md) (`docs/release/1.6-go-no-go-report.md`) — Controlled-pilot assessment and public launch prerequisites.
-- [Deployment Guide](docs/operations/deployment-guide.md) (`docs/operations/deployment-guide.md`) — Staging and production deployment procedures.
-- [Backup & Restore Runbook](docs/operations/backup-restore-runbook.md) (`docs/operations/backup-restore-runbook.md`) — Disaster recovery procedures and verification.
-- [Incident Response Runbook](docs/operations/incident-response-runbook.md) (`docs/operations/incident-response-runbook.md`) — Incident classification, containment, and escalation.
+- [Go/No-Go Release Report](docs/release/1.6-go-no-go-report.md) (`docs/release/1.6-go-no-go-report.md`) — Original Milestone 1.6 controlled-pilot assessment and pre-production baseline.
+- [Public Beta Operations Readiness](docs/operations/public-beta-operations-readiness.md) (`docs/operations/public-beta-operations-readiness.md`) — Authoritative launch readiness matrix, monitoring status, and owner risk-acceptance decisions under #41.
+- [Operational Owner Matrix](docs/operations/operational-owner-matrix.md) (`docs/operations/operational-owner-matrix.md`) — Single-operator ownership model and access controls.
+- [Deployment Guide](docs/operations/deployment-guide.md) (`docs/operations/deployment-guide.md`) — Staging and production deployment procedures and rollback protocols.
+- [Backup & Restore Runbook](docs/operations/backup-restore-runbook.md) (`docs/operations/backup-restore-runbook.md`) — Disaster recovery objectives, staging verification, and production backup posture.
+- [Incident Response Runbook](docs/operations/incident-response-runbook.md) (`docs/operations/incident-response-runbook.md`) — Incident classification, containment playbooks, and CERT-In/DPDP protocols.
+- [Grievance Handling Runbook](docs/operations/grievance-handling-runbook.md) (`docs/operations/grievance-handling-runbook.md`) — Statutory grievance handling workflow and conditional GAC appeals under #37.
 - [Staff Handbook](docs/operations/staff-handbook.md) (`docs/operations/staff-handbook.md`) — Moderator guidelines and user account actions.
+- [Tabletop Incident Simulation (2026-09-19)](docs/operations/tabletop-simulation-2026-09-19.md) (`docs/operations/tabletop-simulation-2026-09-19.md`) — Recorded credential-leak and rollback drill.
 
 ---
 
 ## Public Launch Prerequisites
 
-The controlled production pilot is technically operational. Two infrastructure gates that were previously outstanding were completed on 2026-09-18:
+The controlled production pilot is technically operational. Infrastructure, legal, and operational gates completed to date include:
 
-- **Production transactional email**: custom Supabase SMTP is configured through Resend using the verified `auth.fairswap.in` sending domain.
-- **Production domain & TLS**: `fairswap.in` and `www.fairswap.in` are routed to Vercel with HTTPS/TLS established.
+- **Production transactional email**: custom Supabase SMTP configured through Resend using the verified `auth.fairswap.in` sending domain (2026-09-18).
+- **Production domain & TLS**: `fairswap.in` and `www.fairswap.in` routed to Vercel with HTTPS/TLS active (2026-09-18).
+- **Statutory Grievance Redressal**: published `/grievance` page with designated Grievance Officer Vivek Kumar and conditional Rule 3A / GAC appeal guidance (PR #56, 2026-09-19).
+- **Public Beta Legal Policies**: Terms of Service (`/terms`), Privacy Policy (`/privacy`), Acceptable Use (`/acceptable-use`), Safety Guide (`/safety`), 18+ age declaration audit, and pilot policy re-acceptance flow live in production (PR #56, 2026-09-19).
+- **Production Transactional-Email Failure Monitoring**: verified end-to-end via signed Resend webhooks (`/api/monitoring/resend`) delivering sanitized failure alerts to the operations Slack webhook (PR #54, verified under #41 on 2026-09-19).
+- **Google Sign-In**: released to production for existing FairSwap accounts with matching verified email (PR #61, 2026-09-19).
+- **Operational Risk Acceptance (Issue #41)**: on 2026-09-19, the Platform Owner explicitly accepted the residual risks of operating as a single operator (no backup production owner), running on Supabase Free without managed backups or PITR, and omitting additional automated alerting channels (5xx, client errors, DB/storage metrics, auth spikes, DNS-specific probes).
 
-**Public production launch is still not certified.** Remaining external gates include:
+**Public production launch is still not certified.** Remaining external business and compliance gates include:
 
-1. **Statutory Grievance Officer**: Formally appoint and publish the required Grievance Officer contact details.
-2. **Legal Counsel Review**: Finalize and review the applicable Terms of Service, Acceptable Use, Privacy, and related public-facing agreements.
-3. **Operational Ownership / On-Call**: Confirm the operational owners, escalation path, and on-call coverage required for a wider public launch.
+1. **Intermediary & E-Commerce Legal Applicability**: Finalize legal counsel classification (deferred items recorded in closed Issue #38; formal IT Rules / Consumer Protection E-Commerce applicability).
+2. **Grievance Acknowledgement Delivery**: Verify outbound grievance email acknowledgement identity and delivery from `grievance@fairswap.in` (deferred item recorded in closed Issue #37).
+3. **Local Registration**: Evaluate SAN / Rajasthan Shops and Commercial Establishments Act registration.
 
-Refer to the [Milestone 1.6 Go/No-Go Report](docs/release/1.6-go-no-go-report.md) as the original readiness assessment; this README records the later infrastructure progress.
+Refer to the [Milestone 1.6 Go/No-Go Report](docs/release/1.6-go-no-go-report.md) as the original pre-production assessment; this README and the [Public Beta Operations Readiness Checklist](docs/operations/public-beta-operations-readiness.md) record subsequent infrastructure, legal, and operational milestones.

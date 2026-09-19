@@ -85,7 +85,7 @@ Use configurable defaults rather than blocking on nonessential product questions
 - One pilot city. Jaipur is a development assumption only, not a hardcoded market or a claim that a launch decision has been made.
 - Categories: electronics, furniture, home appliances, bicycles and sports, books, and hobbies. Exclude regulated/high-risk categories initially.
 - Adults-only self-declaration as a proposed product rule, without claiming legal sufficiency or collecting unnecessary dates of birth/identity documents.
-- Email/password authentication with confirmation; SMS optional and disabled until configured.
+- Email/password authentication with mandatory email confirmation; Google sign-in is active in production for existing FairSwap accounts with matching verified email (`/auth/sign-in`). Google-first account registration is intentionally disabled because FairSwap signup captures required terms/privacy acceptance and 18+ age confirmation. Phone-number authentication is not implemented (Issue #12 closed as Not Planned, PR #60 closed without merge).
 - Manual listing review for the pilot; configurable listing expiry, initially 30 days.
 - Approximate city/locality, optional PIN code as a string; no public home address or required precise GPS.
 - No monetization or purchase of listed goods through the platform in Phase 1.
@@ -160,7 +160,7 @@ Keep trusted status and role assignments outside user-editable metadata. Account
 
 Staff roles: administrator, moderator, support agent, content editor. Require MFA for privileged staff actions in the database/server authorization path, not only at a login screen. Bootstrap the first administrator through an explicitly authorized secure procedure, never by first-signup wins.
 
-SMS remains disabled unless a real provider and appropriate India sender configuration exist. Never display phone verification without actual verification.
+Phone-number authentication is not implemented (Issue #12 closed as Not Planned, PR #60 closed without merge). Never display phone verification without actual verification. Google sign-in is enabled for existing accounts only.
 
 ## 7. Listings, attributes, ownership, and moderation
 
