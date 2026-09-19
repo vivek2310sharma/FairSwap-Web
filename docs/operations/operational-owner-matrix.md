@@ -2,7 +2,7 @@
 
 This matrix establishes the small-team operational and incident response ownership model for **FairSwap** (a peer-to-peer local classifieds platform). It reflects actual operational realities rather than theoretical enterprise staffing.
 
-FairSwap is currently operated solely by **Vivek Kumar**.
+FairSwap is currently operated solely by **Vivek Kumar**. On 2026-09-19, the Platform Owner explicitly accepted the operational risk of continuing without a backup production owner for the current launch posture. This records risk acceptance; it does **not** create redundant staffing or emergency access.
 
 ---
 
@@ -10,20 +10,20 @@ FairSwap is currently operated solely by **Vivek Kumar**.
 
 | Functional Area | Primary Production Owner | Backup Owner | Operational Target | Launch Requirement |
 |---|---|---|---|---|
-| **Incident Commander (P0 / P1)** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Immediate acknowledgement (< 30m target during operational hours) | **BLOCKER in #41** |
-| **Production Deployments & Rollback** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Rapid triage & rollback execution | **BLOCKER in #41** |
-| **Database Administration (Supabase)** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Health inspection, pooler & migration safety | **BLOCKER in #41** |
-| **Storage & Media Health** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Bucket quotas, integrity & manifest tracking | **BLOCKER in #41** |
-| **Credential & Secret Rotation** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Immediate containment upon suspected leak | **BLOCKER in #41** |
-| **Grievance Redressal** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | If IT Rules Rule 3 applies: acknowledge general grievance within 24h; general resolution within 7 days; shorter categories handled per the applicable rule. (Applicability subject to #38). | Pre-launch requirement |
-| **User Communications (Outages/Breaches)** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | Timely notification as assessed | Pre-launch requirement |
-| **Legal Counsel Escalation** | Vivek Kumar | `BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` | FairSwap does not currently have retained counsel; Vivek Kumar evaluates and engages external legal counsel if/when required. | Operational procedure |
+| **Incident Commander (P0 / P1)** | Vivek Kumar | None — owner risk accepted | Immediate acknowledgement (< 30m target during operational hours) | **CLOSED / RISK ACCEPTED in #41** |
+| **Production Deployments & Rollback** | Vivek Kumar | None — owner risk accepted | Rapid triage & rollback execution | **CLOSED / RISK ACCEPTED in #41** |
+| **Database Administration (Supabase)** | Vivek Kumar | None — owner risk accepted | Health inspection, pooler & migration safety | **CLOSED / RISK ACCEPTED in #41** |
+| **Storage & Media Health** | Vivek Kumar | None — owner risk accepted | Bucket quotas, integrity & manifest tracking | **CLOSED / RISK ACCEPTED in #41** |
+| **Credential & Secret Rotation** | Vivek Kumar | None — owner risk accepted | Immediate containment upon suspected leak | **CLOSED / RISK ACCEPTED in #41** |
+| **Grievance Redressal** | Vivek Kumar | None — owner risk accepted | If IT Rules Rule 3 applies: acknowledge general grievance within 24h; general resolution within 7 days; shorter categories handled per the applicable rule. (Applicability subject to #38). | Pre-launch requirement |
+| **User Communications (Outages/Breaches)** | Vivek Kumar | None — owner risk accepted | Timely notification as assessed | Pre-launch requirement |
+| **Legal Counsel Escalation** | Vivek Kumar | None — owner risk accepted | FairSwap does not currently have retained counsel; Vivek Kumar evaluates and engages external legal counsel if/when required. | Operational procedure |
 
 > [!IMPORTANT]
-> **Single-Point-of-Failure (SPOF) Blocker**:
+> **Single-Operator Residual Risk — Accepted**:
 > FairSwap currently has **one** active production operator (Vivek Kumar).
-> A qualified backup production owner must be formally onboarded, granted verified emergency access, and briefed on emergency runbooks before public launch.
-> The placeholder **`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA`** constitutes an active operational launch blocker tracked under Issue **#41**.
+> No backup production owner is designated. On 2026-09-19, the Platform Owner explicitly closed this readiness gap by accepting the associated single-operator availability, access, and incident-response risk under Issue **#41**.
+> This is an owner risk decision, not evidence that redundancy or backup access exists.
 
 ---
 
@@ -33,12 +33,12 @@ Access to production systems follows the principle of least privilege with manda
 
 | Platform / Resource | Administrative Role | Access Scope & Expectations | MFA Requirement | Access Holder(s) |
 |---|---|---|---|---|
-| **GitHub** (`vivek2310sharma/FairSwap-Web`) | Repository Owner / Admin | Branch protections (`main`, `staging`), PR reviews, CI/CD secrets management | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
-| **Vercel** (`fair-swap`) | Team Owner / Admin | Staging/Production deployments, environment variable injection, Instant Rollback | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
-| **Supabase** (`FairSwapProd`) | Project Owner / Admin | Database settings, backups, connection pooling, Storage policies, Auth settings | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
-| **DNS / Domain Registrar** (`fairswap.in`) | Account Holder | DNS records (A, CNAME, ALIAS), TLS certificate verification, CAA/DNSSEC records | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
-| **Transactional Email Provider** | Account Admin | Sender verification, DKIM/SPF/DMARC DNS records, API keys, delivery rate monitoring | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
-| **Uptime / External Monitoring Provider** | Account Admin | Uptime synthetic probes, alert routing policies, escalation notifications | Mandatory 2FA | Vivek Kumar (Primary)<br>`BACKUP OWNER REQUIRED BEFORE PUBLIC BETA` |
+| **GitHub** (`vivek2310sharma/FairSwap-Web`) | Repository Owner / Admin | Branch protections (`main`, `staging`), PR reviews, CI/CD secrets management | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
+| **Vercel** (`fair-swap`) | Team Owner / Admin | Staging/Production deployments, environment variable injection, Instant Rollback | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
+| **Supabase** (`FairSwapProd`) | Project Owner / Admin | Database settings, backups, connection pooling, Storage policies, Auth settings | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
+| **DNS / Domain Registrar** (`fairswap.in`) | Account Holder | DNS records (A, CNAME, ALIAS), TLS certificate verification, CAA/DNSSEC records | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
+| **Transactional Email Provider** | Account Admin | Sender verification, DKIM/SPF/DMARC DNS records, API keys, delivery rate monitoring | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
+| **Uptime / External Monitoring Provider** | Account Admin | Uptime synthetic probes, alert routing policies, escalation notifications | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
 
 > [!CAUTION]
 > **Credential & Secret Hygiene Invariant**:
@@ -49,8 +49,9 @@ Access to production systems follows the principle of least privilege with manda
 
 ## 3. Launch Readiness Handover Checklist
 
-Prior to lifting the Public Beta operational freeze:
-1. [ ] A real individual accepts and is recorded as the named backup production owner.
-2. [ ] Backup owner successfully completes emergency access test (GitHub, Vercel, Supabase, DNS, Email).
-3. [ ] Emergency notification channels (SMS / phone / push alerts) are configured and tested outside Git.
-4. [ ] The statutory Grievance Officer details on customer-facing routes (`/contact`, `/terms`, `/grievance`) are verified accurate.
+For the current owner-accepted launch posture:
+1. [x] Primary production owner recorded: Vivek Kumar.
+2. [x] No backup production owner is designated; the Platform Owner explicitly accepted this residual risk on 2026-09-19 under #41.
+3. [ ] If a backup owner is added later, complete emergency access testing across GitHub, Vercel, Supabase, DNS, and Email before relying on that person operationally.
+4. [ ] Emergency notification channels beyond the currently verified e-mail/Slack paths may be added and tested outside Git as operational needs evolve.
+5. [ ] The statutory Grievance Officer details on customer-facing routes (`/contact`, `/terms`, `/grievance`) are verified accurate.
