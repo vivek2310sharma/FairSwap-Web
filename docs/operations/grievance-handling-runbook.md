@@ -2,7 +2,7 @@
 
 **Issue:** #37 — Publish Grievance Officer details  
 **Repository status:** READY FOR REVIEW / EXTERNAL VERIFICATION INCOMPLETE  
-**Reviewed against public legal sources:** 2026-09-18
+**Reviewed against public legal sources:** 2026-09-19
 
 This runbook defines FairSwap's internal handling process for grievances received through the published grievance channel. It complements the public `/grievance` page and does not replace legal advice or the classification/applicability decisions tracked in issue #38.
 
@@ -102,6 +102,18 @@ The acknowledgement should:
 - provide a monitored reply path.
 
 If automated acknowledgement is later introduced, its successful delivery must be monitored. An automated response does not replace human triage of expedited or high-risk categories.
+
+### Grievance Appellate Committee (conditional Rule 3A path)
+
+If the intermediary grievance provisions apply to FairSwap, user-facing outcome communications should not obscure the statutory appeal route under Rule 3A.
+
+- A person aggrieved by a Grievance Officer decision may appeal to the Grievance Appellate Committee within the applicable 30-day period.
+- Rule 3A also provides an appeal route for certain grievances that are not resolved within the applicable Rule 3 resolution period.
+- The appeal process is online through the official GAC portal: `https://gac.gov.in`.
+- Where this route applies, record whether the user-facing outcome included or linked to the GAC appeal information.
+- Do not represent GAC as FairSwap's internal appeals body; it is the Government-established appellate mechanism under the IT Rules.
+
+This remains conditional on the intermediary applicability position tracked in #38.
 
 ## 7. Expedited content handling
 
@@ -204,6 +216,7 @@ Issue #37 remains open until real evidence exists for all relevant items:
 - [ ] `/grievance` is verified on `https://fairswap.in` after an explicitly authorized production promotion.
 - [ ] Published name/contact details match the approved business/legal record.
 - [ ] Any legally required postal address, phone number, or additional disclosure is confirmed under #38 before publication.
+- [x] Conditional Rule 3A / GAC appeal guidance is included on the public grievance page.
 - [ ] Approval/evidence is recorded without adding private contact details or secrets to GitHub.
 
 ## 13. Source references
@@ -211,6 +224,7 @@ Issue #37 remains open until real evidence exists for all relevant items:
 Official legal reference reviewed for the conditional intermediary timelines:
 
 - MeitY, consolidated Information Technology (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021, updated 10 February 2026: `https://www.meity.gov.in/static/uploads/2026/02/550681ab908f8afb135b0ad42816a1c9.pdf`
+- Government Grievance Appellate Committee portal and FAQs: `https://gac.gov.in`
 
 Relevant repository references:
 

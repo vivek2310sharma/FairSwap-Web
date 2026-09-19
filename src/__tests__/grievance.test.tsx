@@ -84,6 +84,14 @@ describe("Grievance Redressal page (/grievance)", () => {
     ).toBeInTheDocument();
   });
 
+  it("provides conditional Grievance Appellate Committee appeal guidance", () => {
+    render(<GrievancePage />);
+    expect(screen.getByText(/Grievance Appellate Committee \(GAC\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/30-day period/i)).toBeInTheDocument();
+    const gacLink = screen.getByRole("link", { name: /official GAC portal/i });
+    expect(gacLink).toHaveAttribute("href", "https://gac.gov.in");
+  });
+
   it("provides safety guidance and emergency service disclaimers", () => {
     render(<GrievancePage />);
     const safetyHeading = screen.getByRole("heading", { name: /Safety and Urgent Concerns/i });

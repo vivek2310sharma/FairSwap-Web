@@ -191,6 +191,23 @@ export default function GrievancePage() {
               appropriate action where required, and communicate an outcome or request further information
               where necessary.
             </p>
+            <p className="mt-3 text-sm text-muted leading-relaxed">
+              If the intermediary grievance provisions of the Information Technology
+              (Intermediary Guidelines and Digital Media Ethics Code) Rules, 2021 apply to FairSwap,
+              Rule 3A provides an appeal route to the Grievance Appellate Committee (GAC).
+              A person aggrieved by a Grievance Officer decision may appeal within the applicable
+              30-day period, and Rule 3A also covers certain grievances not resolved within the
+              applicable Rule 3 resolution period. Appeals are handled online through the{" "}
+              <a
+                href="https://gac.gov.in"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-brand-link underline hover:text-brand-hover"
+              >
+                official GAC portal
+              </a>
+              .
+            </p>
           </section>
 
           {/* Safety & Urgent Concerns */}
