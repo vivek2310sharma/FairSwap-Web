@@ -7,6 +7,7 @@ import { signInAction, type AuthActionResult } from "../actions";
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { AuthCloseLink } from "@/components/auth/AuthCloseLink";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 function SignInForm() {
   const searchParams = useSearchParams();
@@ -120,13 +121,11 @@ function SignInForm() {
                 Forgot password?
               </Link>
             </div>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               required
               autoComplete="current-password"
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
 
