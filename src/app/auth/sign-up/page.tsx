@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { signUpAction, type AuthActionResult } from "../actions";
 import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
+import { AuthCloseLink } from "@/components/auth/AuthCloseLink";
 
 export default function SignUpPage() {
   const [state, formAction, isPending] = useActionState<AuthActionResult | null, FormData>(
@@ -13,8 +14,9 @@ export default function SignUpPage() {
 
   return (
     <main className="mx-auto max-w-md px-4 py-12">
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-2xl font-bold text-gray-900">Create your FairSwap account</h1>
+      <div className="relative rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+        <AuthCloseLink />
+        <h1 className="pr-10 text-2xl font-bold text-gray-900">Create your FairSwap account</h1>
         <p className="mt-2 text-sm text-gray-600">
           Already have an account?{" "}
           <Link href="/auth/sign-in" className="font-semibold text-emerald-700 hover:text-emerald-800">

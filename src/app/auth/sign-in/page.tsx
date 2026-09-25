@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { signInAction, type AuthActionResult } from "../actions";
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { AuthCloseLink } from "@/components/auth/AuthCloseLink";
 
 function SignInForm() {
   const searchParams = useSearchParams();
@@ -20,8 +21,9 @@ function SignInForm() {
 
   return (
     <main className="mx-auto max-w-md px-4 py-12">
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-2xl font-bold text-gray-900">Sign in to FairSwap</h1>
+      <div className="relative rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+        <AuthCloseLink />
+        <h1 className="pr-10 text-2xl font-bold text-gray-900">Sign in to FairSwap</h1>
         <p className="mt-2 text-sm text-gray-600">
           Don&apos;t have an account yet?{" "}
           <Link href="/auth/sign-up" className="font-semibold text-emerald-700 hover:text-emerald-800">
