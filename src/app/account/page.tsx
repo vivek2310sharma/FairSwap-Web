@@ -193,7 +193,7 @@ export default async function AccountPage() {
               href="/account/support"
               className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
             >
-              {isSuspended ? "Submit Appeal &rarr;" : "Support Tickets &rarr;"}
+              {isSuspended ? "Submit Appeal" : "Support Tickets"} &rarr;
             </Link>
           </div>
         </div>
