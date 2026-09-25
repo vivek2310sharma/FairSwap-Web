@@ -166,4 +166,59 @@ describe("AccountNav component", () => {
     const profileLink = screen.getByRole("link", { name: /Profile/ });
     expect(profileLink).not.toHaveAttribute("aria-current");
   });
+
+  // --- Close Account control (Issue #72) ---
+
+  describe("Close Account control", () => {
+    it("renders the close account control linking to '/'", () => {
+      mockUsePathname.mockReturnValue("/account");
+      render(<AccountNav />);
+
+      const closeControl = screen.getByRole("link", { name: "Close account" });
+      expect(closeControl).toBeInTheDocument();
+      expect(closeControl).toHaveAttribute("href", "/");
+    });
+
+    it("has accessible name and tooltip title", () => {
+      mockUsePathname.mockReturnValue("/account");
+      render(<AccountNav />);
+
+      const closeControl = screen.getByRole("link", { name: "Close account" });
+      expect(closeControl).toHaveAttribute("aria-label", "Close account");
+      expect(closeControl).toHaveAttribute("title", "Close account");
+    });
+
+    it("sits outside the Account navigation landmark", () => {
+      mockUsePathname.mockReturnValue("/account");
+      render(<AccountNav />);
+
+      const nav = screen.getByRole("navigation", {
+        name: "Account navigation",
+      });
+      const linksInsideNav = within(nav).getAllByRole("link");
+      const closeLinkInsideNav = within(nav).queryByRole("link", {
+        name: "Close account",
+      });
+
+      expect(closeLinkInsideNav).toBeNull();
+      // Ensure all links inside nav are account section links
+      expect(linksInsideNav.map((l) => l.getAttribute("href"))).not.toContain("/");
+    });
+
+    it("is not treated as active when on account routes", () => {
+      mockUsePathname.mockReturnValue("/account");
+      render(<AccountNav />);
+
+      const closeControl = screen.getByRole("link", { name: "Close account" });
+      expect(closeControl).not.toHaveAttribute("aria-current");
+    });
+
+    it("is not treated as active even when pathname is '/'", () => {
+      mockUsePathname.mockReturnValue("/");
+      render(<AccountNav />);
+
+      const closeControl = screen.getByRole("link", { name: "Close account" });
+      expect(closeControl).not.toHaveAttribute("aria-current");
+    });
+  });
 });
