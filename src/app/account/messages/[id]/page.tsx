@@ -1,6 +1,5 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { ChatThread } from "@/components/communication/ChatThread";
@@ -114,8 +113,7 @@ export default async function ConversationPage({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <Header />
+    <div className="flex flex-1 flex-col bg-background text-foreground">
       <main className="flex-1 py-8">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="mb-4 flex items-center justify-between">

@@ -90,15 +90,15 @@ export default function SignUpPage() {
               <label htmlFor="termsAccepted" className="ml-2 block text-xs text-gray-700">
                 I accept the{" "}
                 <Link href="/terms" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
-                  Terms of Service (v{LEGAL_POLICY.termsVersion})
+                  Terms of Service
                 </Link>{" "}
                 and{" "}
                 <Link href="/acceptable-use" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
-                  Acceptable Use Policy (v{LEGAL_POLICY.acceptableUseVersion})
+                  Acceptable Use Policy
                 </Link>
                 , and acknowledge the{" "}
                 <Link href="/privacy" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
-                  Privacy Policy (v{LEGAL_POLICY.privacyVersion})
+                  Privacy Policy
                 </Link>
                 .
               </label>

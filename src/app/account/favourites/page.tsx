@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ClearUnavailableButton } from "./ClearUnavailableButton";
@@ -29,8 +28,6 @@ export default async function FavouritesPage() {
 
   return (
     <>
-      <Header />
-
       <main className="flex-1 bg-surface/20">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Header */}

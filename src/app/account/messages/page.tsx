@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { MessageSquare, ArrowRight, Tag } from "lucide-react";
@@ -77,8 +76,6 @@ export default async function MessagesPage({
 
   return (
     <>
-      <Header />
-
       <main className="flex-1 bg-surface/20 py-8 sm:py-12">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           {/* Header */}
