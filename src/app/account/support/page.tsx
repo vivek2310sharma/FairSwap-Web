@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { LifeBuoy, Clock, CheckCircle2, AlertCircle, ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
@@ -92,7 +93,7 @@ export default async function SupportPage() {
   };
 
   return (
-    <div className="flex-1 bg-stone-900 text-stone-100">
+    <div className="flex flex-1 flex-col bg-stone-900 text-stone-100">
       <main className="flex-1 py-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           {isSuspended && (
@@ -170,6 +171,7 @@ export default async function SupportPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

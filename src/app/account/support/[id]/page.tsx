@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { ChevronLeft, Clock, CheckCircle2, AlertCircle, Shield } from "lucide-react";
 import type { Metadata } from "next";
@@ -141,7 +142,7 @@ export default async function SupportTicketPage({
   };
 
   return (
-    <div className="flex-1 bg-stone-900 text-stone-100">
+    <div className="flex flex-1 flex-col bg-stone-900 text-stone-100">
       <main className="flex-1 py-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="mb-6">
@@ -230,6 +231,7 @@ export default async function SupportTicketPage({
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
