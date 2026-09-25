@@ -23,24 +23,29 @@ vi.mock("next/navigation", () => ({
 
 describe("Signup Policy Acceptance & 18+ Verification", () => {
   describe("Sign Up Page Component", () => {
-    it("renders versioned Terms, Acceptable Use, and Privacy links without draft labels", () => {
+    it("renders Terms, Acceptable Use, and Privacy links without version identifiers or draft labels", () => {
       render(<SignUpPage />);
       expect(screen.queryByText(/draft/i)).not.toBeInTheDocument();
 
       const termsLink = screen.getByRole("link", {
-        name: `Terms of Service (v${LEGAL_POLICY.termsVersion})`,
+        name: "Terms of Service",
       });
       expect(termsLink).toHaveAttribute("href", "/terms");
 
       const acceptableUseLink = screen.getByRole("link", {
-        name: `Acceptable Use Policy (v${LEGAL_POLICY.acceptableUseVersion})`,
+        name: "Acceptable Use Policy",
       });
       expect(acceptableUseLink).toHaveAttribute("href", "/acceptable-use");
 
       const privacyLink = screen.getByRole("link", {
-        name: `Privacy Policy (v${LEGAL_POLICY.privacyVersion})`,
+        name: "Privacy Policy",
       });
       expect(privacyLink).toHaveAttribute("href", "/privacy");
+
+      // Issue #69 regression check: ensure policy version identifiers are not displayed on sign-up page
+      expect(screen.queryByText(new RegExp(`v${LEGAL_POLICY.termsVersion}`))).not.toBeInTheDocument();
+      expect(screen.queryByText(new RegExp(`v${LEGAL_POLICY.acceptableUseVersion}`))).not.toBeInTheDocument();
+      expect(screen.queryByText(new RegExp(`v${LEGAL_POLICY.privacyVersion}`))).not.toBeInTheDocument();
     });
 
     it("renders required Terms and 18+ checkboxes without pre-checking", () => {

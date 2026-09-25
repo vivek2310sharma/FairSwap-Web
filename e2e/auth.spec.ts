@@ -98,8 +98,9 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
 
     const consentCheckbox = page.locator("input[name='termsAccepted']");
     await expect(consentCheckbox).toBeVisible();
-    await expect(page.getByRole("link", { name: /Terms of Service \(v2026-09-13-draft\)/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Privacy Policy \(v2026-09-13-draft\)/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Terms of Service" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Acceptable Use Policy" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Privacy Policy" })).toBeVisible();
 
     await expect(page.getByRole("button", { name: /sign up/i })).toBeVisible();
   });
