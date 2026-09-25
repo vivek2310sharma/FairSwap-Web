@@ -141,18 +141,18 @@ export default async function SupportTicketPage({
   };
 
   return (
-    <main className="flex-1 py-10">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Link
-            href="/account/support"
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-500 dark:text-brand-400"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back to Support Inquiries
-          </Link>
-        </div>
-
+    <div className="flex-1 bg-stone-900 text-stone-100">
+      <main className="flex-1 py-10">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <Link
+              href="/account/support"
+              className="inline-flex items-center gap-1 text-sm font-medium text-amber-500 hover:text-amber-400"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to Support Inquiries
+            </Link>
+          </div>
 
           {/* Ticket Header */}
           <div className="rounded-2xl border border-stone-800 bg-stone-800/40 p-6">
@@ -228,7 +228,8 @@ export default async function SupportTicketPage({
               This ticket is closed. If you have a new issue, please submit a new inquiry.
             </div>
           )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   );
 }

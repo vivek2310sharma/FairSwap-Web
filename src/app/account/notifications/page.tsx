@@ -29,19 +29,21 @@ export default async function NotificationsPage() {
   const notifications = (notifsData || []) as unknown as Notification[];
 
   return (
-    <main className="flex-1 py-10">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
-            <p className="mt-1 text-sm text-muted">
-              Updates regarding your listings, conversations, reports, and support inquiries.
-            </p>
+    <div className="flex-1 bg-stone-900 text-stone-100">
+      <main className="flex-1 py-10">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-stone-100">Notifications</h1>
+              <p className="mt-1 text-sm text-stone-400">
+                Updates regarding your listings, conversations, reports, and support inquiries.
+              </p>
+            </div>
           </div>
-        </div>
 
-        <NotificationList initialNotifications={notifications} />
-      </div>
-    </main>
+          <NotificationList initialNotifications={notifications} />
+        </div>
+      </main>
+    </div>
   );
 }

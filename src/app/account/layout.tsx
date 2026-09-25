@@ -10,7 +10,7 @@ export default function AccountLayout({
     <>
       <Header />
       <AccountNav />
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 flex flex-col">{children}</div>
     </>
   );
 }
