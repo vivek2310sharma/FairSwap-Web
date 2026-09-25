@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
@@ -31,8 +30,7 @@ export default async function NotificationsPage() {
   const notifications = (notifsData || []) as unknown as Notification[];
 
   return (
-    <div className="flex min-h-screen flex-col bg-stone-900 text-stone-100">
-      <Header />
+    <div className="flex flex-1 flex-col bg-stone-900 text-stone-100">
       <main className="flex-1 py-10">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center justify-between">
