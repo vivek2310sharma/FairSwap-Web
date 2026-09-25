@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { LifeBuoy, Clock, CheckCircle2, AlertCircle, ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
@@ -94,86 +92,82 @@ export default async function SupportPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-stone-900 text-stone-100">
-      <Header />
-      <main className="flex-1 py-10">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          {isSuspended && (
-            <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-rose-300">
-              <div className="flex items-center gap-2 font-semibold">
-                <AlertCircle className="h-5 w-5 text-rose-400" />
-                <span>Account Suspended</span>
-              </div>
-              <p className="mt-1 text-sm text-rose-300/80">
-                Your account is currently suspended from marketplace actions. You may submit an appeal using the support form below.
-              </p>
+    <main className="flex-1 py-10">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        {isSuspended && (
+          <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-rose-300">
+            <div className="flex items-center gap-2 font-semibold">
+              <AlertCircle className="h-5 w-5 text-rose-400" />
+              <span>Account Suspended</span>
             </div>
-          )}
+            <p className="mt-1 text-sm text-rose-300/80">
+              Your account is currently suspended from marketplace actions. You may submit an appeal using the support form below.
+            </p>
+          </div>
+        )}
 
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-stone-100">Help & Support</h1>
-              <p className="mt-1 text-sm text-stone-400">
-                Have questions or need assistance with an issue? Contact our support staff.
-              </p>
-            </div>
-
-            <CreateTicketDialog isSuspended={isSuspended} />
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Help & Support</h1>
+            <p className="mt-1 text-sm text-muted">
+              Have questions or need assistance with an issue? Contact our support staff.
+            </p>
           </div>
 
-          <div className="space-y-4">
-            {tickets.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-stone-800 bg-stone-800/30 p-12 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-800 text-stone-500">
-                  <LifeBuoy className="h-6 w-6" />
-                </div>
-                <h3 className="mt-4 text-base font-semibold text-stone-200">No support tickets</h3>
-                <p className="mt-1 text-sm text-stone-400">
-                  You have not submitted any inquiries yet. Click &quot;New Inquiry&quot; if you need help.
-                </p>
+          <CreateTicketDialog isSuspended={isSuspended} />
+        </div>
+
+        <div className="space-y-4">
+          {tickets.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-12 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface text-muted">
+                <LifeBuoy className="h-6 w-6" />
               </div>
-            ) : (
-              <div className="divide-y divide-stone-800/60 rounded-2xl border border-stone-800/80 bg-stone-800/40">
-                {tickets.map((t) => (
-                  <Link
-                    key={t.id}
-                    href={`/account/support/${t.id}`}
-                    className="flex items-center justify-between p-5 transition-colors hover:bg-stone-800/50"
-                  >
-                    <div className="flex-1 min-w-0 pr-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-mono font-medium text-amber-500">
-                          #{t.ticket_number}
-                        </span>
-                        {getStatusBadge(t.status)}
-                        <span className="rounded bg-stone-800 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-stone-400">
-                          {t.category.replace("_", " ")}
-                        </span>
-                      </div>
-
-                      <h3 className="mt-2 text-base font-semibold text-stone-200 truncate">
-                        {t.subject}
-                      </h3>
-
-                      <p className="mt-1 text-xs text-stone-400">
-                        Updated {new Date(t.updated_at).toLocaleString([], {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
+              <h3 className="mt-4 text-base font-semibold">No support tickets</h3>
+              <p className="mt-1 text-sm text-muted">
+                You have not submitted any inquiries yet. Click &quot;New Inquiry&quot; if you need help.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border rounded-2xl border border-border bg-card">
+              {tickets.map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/account/support/${t.id}`}
+                  className="flex items-center justify-between p-5 transition-colors hover:bg-surface"
+                >
+                  <div className="flex-1 min-w-0 pr-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono font-medium text-amber-500">
+                        #{t.ticket_number}
+                      </span>
+                      {getStatusBadge(t.status)}
+                      <span className="rounded bg-surface px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted">
+                        {t.category.replace("_", " ")}
+                      </span>
                     </div>
 
-                    <ChevronRight className="h-5 w-5 text-stone-500 shrink-0" />
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
+                    <h3 className="mt-2 text-base font-semibold truncate">
+                      {t.subject}
+                    </h3>
+
+                    <p className="mt-1 text-xs text-muted">
+                      Updated {new Date(t.updated_at).toLocaleString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+
+                  <ChevronRight className="h-5 w-5 text-muted shrink-0" />
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </main>
   );
 }

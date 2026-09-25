@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { MessageSquare, ArrowRight, Tag } from "lucide-react";
 import { formatMessageDate } from "@/lib/formatters";
@@ -76,11 +74,8 @@ export default async function MessagesPage({
   });
 
   return (
-    <>
-      <Header />
-
-      <main className="flex-1 bg-surface/20 py-8 sm:py-12">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+    <main className="flex-1 bg-surface/20 py-8 sm:py-12">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
             <div>
@@ -204,11 +199,8 @@ export default async function MessagesPage({
                 );
               })
             )}
-          </div>
         </div>
-      </main>
-
-      <Footer />
-    </>
+      </div>
+    </main>
   );
 }

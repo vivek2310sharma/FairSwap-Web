@@ -1,7 +1,5 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { ChatThread } from "@/components/communication/ChatThread";
 import { ChevronLeft, ExternalLink } from "lucide-react";
@@ -114,41 +112,37 @@ export default async function ConversationPage({
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <Header />
-      <main className="flex-1 py-8">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-4 flex items-center justify-between">
+    <main className="flex-1 py-8">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-4 flex items-center justify-between">
+          <Link
+            href="/account/messages"
+            className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-500 dark:text-brand-400"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back to Inbox
+          </Link>
+
+          {conversation.listing && (
             <Link
-              href="/account/messages"
-              className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-500 dark:text-brand-400"
+              href={`/listings/${conversation.listing.slug || conversation.listing.id}`}
+              className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground"
             >
-              <ChevronLeft className="h-4 w-4" />
-              Back to Inbox
+              <span>View Listing: <span className="font-semibold text-foreground">{conversation.listing.title}</span></span>
+              <ExternalLink className="h-3 w-3" />
             </Link>
-
-            {conversation.listing && (
-              <Link
-                href={`/listings/${conversation.listing.slug || conversation.listing.id}`}
-                className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground"
-              >
-                <span>View Listing: <span className="font-semibold text-foreground">{conversation.listing.title}</span></span>
-                <ExternalLink className="h-3 w-3" />
-              </Link>
-            )}
-          </div>
-
-          <div className="h-[calc(100vh-14rem)] min-h-[520px] max-h-[750px] overflow-hidden rounded-2xl">
-            <ChatThread
-              conversation={conversation}
-              initialMessages={initialMessages}
-              currentUserId={userId}
-              isBlockedInitial={isBlocked}
-            />
-          </div>
+          )}
         </div>
-      </main>
-      <Footer />
-    </div>
+
+        <div className="h-[calc(100vh-14rem)] min-h-[520px] max-h-[750px] overflow-hidden rounded-2xl">
+          <ChatThread
+            conversation={conversation}
+            initialMessages={initialMessages}
+            currentUserId={userId}
+            isBlockedInitial={isBlocked}
+          />
+        </div>
+      </div>
+    </main>
   );
 }
