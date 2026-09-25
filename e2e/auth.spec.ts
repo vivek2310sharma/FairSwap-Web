@@ -86,12 +86,20 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
     const forgotLink = page.getByRole("link", { name: /forgot password/i });
     await expect(forgotLink).toBeVisible();
     await expect(forgotLink).toHaveAttribute("href", "/auth/forgot-password");
+
+    const closeLink = page.getByRole("link", { name: "Close" });
+    await expect(closeLink).toBeVisible();
+    await expect(closeLink).toHaveAttribute("href", "/");
   });
 
   test("sign-up page enforces required fields and consent acceptance", async ({ page }) => {
     await page.goto("/auth/sign-up");
 
     await expect(page.getByRole("heading", { name: /create your fairswap account/i })).toBeVisible();
+    const closeLink = page.getByRole("link", { name: "Close" });
+    await expect(closeLink).toBeVisible();
+    await expect(closeLink).toHaveAttribute("href", "/");
+
     await expect(page.locator("input[name='displayName']")).toBeVisible();
     await expect(page.locator("input[name='email']")).toBeVisible();
     await expect(page.locator("input[name='password']")).toBeVisible();
