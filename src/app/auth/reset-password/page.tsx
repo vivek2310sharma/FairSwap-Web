@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { resetPasswordAction, type AuthActionResult } from "../actions";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 export default function ResetPasswordPage() {
   const [state, formAction, isPending] = useActionState<AuthActionResult | null, FormData>(
@@ -32,14 +33,16 @@ export default function ResetPasswordPage() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               New Password (min. 8 characters)
             </label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               required
               minLength={8}
               autoComplete="new-password"
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              toggleAriaLabel={{
+                show: "Show new password",
+                hide: "Hide new password",
+              }}
             />
           </div>
 
@@ -47,14 +50,16 @@ export default function ResetPasswordPage() {
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
               Confirm New Password
             </label>
-            <input
+            <PasswordInput
               id="confirmPassword"
               name="confirmPassword"
-              type="password"
               required
               minLength={8}
               autoComplete="new-password"
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              toggleAriaLabel={{
+                show: "Show confirm new password",
+                hide: "Hide confirm new password",
+              }}
             />
           </div>
 

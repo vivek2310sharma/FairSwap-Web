@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signUpAction, type AuthActionResult } from "../actions";
 import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
 import { AuthCloseLink } from "@/components/auth/AuthCloseLink";
+import { PasswordInput } from "@/components/auth/PasswordInput";
 
 export default function SignUpPage() {
   const [state, formAction, isPending] = useActionState<AuthActionResult | null, FormData>(
@@ -69,14 +70,12 @@ export default function SignUpPage() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password (min. 8 characters)
             </label>
-            <input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               required
               minLength={8}
               autoComplete="new-password"
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
 

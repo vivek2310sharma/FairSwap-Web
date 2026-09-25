@@ -76,7 +76,20 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
 
     await expect(page.getByRole("heading", { name: /sign in to fairswap/i })).toBeVisible();
     await expect(page.locator("input[name='email']")).toBeVisible();
-    await expect(page.locator("input[name='password']")).toBeVisible();
+    const passwordInput = page.locator("input[name='password']");
+    await expect(passwordInput).toBeVisible();
+    await expect(passwordInput).toHaveAttribute("type", "password");
+
+    const togglePassword = page.getByRole("button", { name: "Show password" });
+    await expect(togglePassword).toBeVisible();
+    await togglePassword.click();
+    await expect(passwordInput).toHaveAttribute("type", "text");
+    const hidePassword = page.getByRole("button", { name: "Hide password" });
+    await expect(hidePassword).toBeVisible();
+    await hidePassword.click();
+    await expect(passwordInput).toHaveAttribute("type", "password");
+    await expect(page.getByRole("button", { name: "Show password" })).toBeVisible();
+
     await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
 
     const signUpLink = page.getByRole("link", { name: /create account/i });
@@ -102,7 +115,20 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
 
     await expect(page.locator("input[name='displayName']")).toBeVisible();
     await expect(page.locator("input[name='email']")).toBeVisible();
-    await expect(page.locator("input[name='password']")).toBeVisible();
+
+    const signUpPasswordInput = page.locator("input[name='password']");
+    await expect(signUpPasswordInput).toBeVisible();
+    await expect(signUpPasswordInput).toHaveAttribute("type", "password");
+
+    const toggleSignUpPassword = page.getByRole("button", { name: "Show password" });
+    await expect(toggleSignUpPassword).toBeVisible();
+    await toggleSignUpPassword.click();
+    await expect(signUpPasswordInput).toHaveAttribute("type", "text");
+    const hideSignUpPassword = page.getByRole("button", { name: "Hide password" });
+    await expect(hideSignUpPassword).toBeVisible();
+    await hideSignUpPassword.click();
+    await expect(signUpPasswordInput).toHaveAttribute("type", "password");
+    await expect(page.getByRole("button", { name: "Show password" })).toBeVisible();
 
     const consentCheckbox = page.locator("input[name='termsAccepted']");
     await expect(consentCheckbox).toBeVisible();
@@ -123,6 +149,39 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
     const backToSignIn = page.getByRole("link", { name: /back to sign in/i });
     await expect(backToSignIn).toBeVisible();
     await expect(backToSignIn).toHaveAttribute("href", "/auth/sign-in");
+  });
+
+  test("reset-password page renders password inputs with independent visibility toggles", async ({ page }) => {
+    await page.goto("/auth/reset-password");
+
+    await expect(page.getByRole("heading", { name: /set new password/i })).toBeVisible();
+
+    const newPasswordInput = page.locator("input[name='password']");
+    const confirmPasswordInput = page.locator("input[name='confirmPassword']");
+
+    await expect(newPasswordInput).toBeVisible();
+    await expect(newPasswordInput).toHaveAttribute("type", "password");
+    await expect(confirmPasswordInput).toBeVisible();
+    await expect(confirmPasswordInput).toHaveAttribute("type", "password");
+
+    const toggleNew = page.getByRole("button", { name: "Show new password" });
+    const toggleConfirm = page.getByRole("button", { name: "Show confirm new password" });
+
+    await expect(toggleNew).toBeVisible();
+    await expect(toggleConfirm).toBeVisible();
+
+    await toggleNew.click();
+    await expect(newPasswordInput).toHaveAttribute("type", "text");
+    await expect(confirmPasswordInput).toHaveAttribute("type", "password");
+
+    await toggleConfirm.click();
+    await expect(newPasswordInput).toHaveAttribute("type", "text");
+    await expect(confirmPasswordInput).toHaveAttribute("type", "text");
+
+    const hideNew = page.getByRole("button", { name: "Hide new password" });
+    await hideNew.click();
+    await expect(newPasswordInput).toHaveAttribute("type", "password");
+    await expect(confirmPasswordInput).toHaveAttribute("type", "text");
   });
 
   test("unauthenticated access to /account redirects to /auth/sign-in", async ({ page }) => {
