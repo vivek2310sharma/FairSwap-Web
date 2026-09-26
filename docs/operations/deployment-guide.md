@@ -144,51 +144,77 @@ Because the Edge Function relies on custom webhook authentication via `EMAIL_WOR
   ```
 If `verify_jwt` is not set to `false`, the Supabase API Gateway will reject incoming Database Webhook calls before they reach the Edge Function code.
 
-#### 1. Database Webhook Setup (Immediate Dispatch)
-In the Supabase Dashboard under **Database -> Webhooks**, configure a webhook for immediate delivery on listing state transitions:
-- **Name**: `process-email-outbox-on-insert`
-- **Table**: `public.email_outbox`
-- **Events**: `INSERT`
-- **Type**: HTTP Request (POST)
-- **URL**: `https://<project-ref>.supabase.co/functions/v1/process-email-outbox`
-- **HTTP Headers**:
-  - `Content-Type: application/json`
-  - `x-email-worker-secret: <EMAIL_WORKER_SECRET>`
+#### Immediate Dispatch & Retry Scheduler Architecture (Migration 23)
 
-The Edge Function accepts the Supabase Database Webhook payload (`{ "record": { "id": "..." } }`) and immediately claims and processes that specific job without blocking the database transaction. Inbound requests presenting `SUPABASE_SERVICE_ROLE_KEY` or missing the dedicated `x-email-worker-secret` header are rejected with HTTP 401.
+FairSwap uses an environment-portable, declarative database runtime architecture codified in **Migration 23** (`20260926000023_email_outbox_dispatch_runtime.sql`) that combines PostgreSQL triggers, `pg_net`, `pg_cron`, and **Supabase Vault**:
 
-#### 2. Recurring Scheduler Setup (REQUIRED for Retries & Recovery)
-Because Database Webhooks only fire when a row is first inserted, subsequent retry attempts and stale-lease recovery **require** a recurring batch runner:
-- **Schedule**: Approximately every 5 minutes (`*/5 * * * *`).
-- **Target URL**: `POST https://<project-ref>.supabase.co/functions/v1/process-email-outbox`
-- **HTTP Headers**:
-  - `Content-Type: application/json`
-  - `x-email-worker-secret: <EMAIL_WORKER_SECRET>`
-- **HTTP Body**: `{}` (empty object triggers batch mode to claim all available retry and stale jobs up to batch size).
+```text
+New email_outbox INSERT
+    -> trg_email_outbox_immediate_dispatch
+    -> app_security.trg_fn_notify_email_outbox_worker() (SECURITY DEFINER)
+    -> reads Vault: email_outbox_worker_url & email_worker_secret
+    -> pg_net asynchronous HTTP POST
+    -> process-email-outbox invocation (immediate delivery)
 
-Supported Scheduler Options in FairSwap / Supabase:
-1. **Supabase pg_cron + pg_net (In-Database)**:
+AND
+
+Recurring scheduler (pg_cron every 5 minutes: '*/5 * * * *')
+    -> cron.job 'process-email-outbox-retries'
+    -> SELECT app_security.invoke_email_outbox_retry_batch() (SECURITY DEFINER)
+    -> reads Vault: email_outbox_worker_url & email_worker_secret
+    -> pg_net batch HTTP POST ({})
+    -> process-email-outbox batch runner (recovers retries & stale leases)
+```
+
+#### Key Architecture & Security Guarantees:
+1. **Immediate Execution**: Fires asynchronously on `INSERT` to deliver emails within seconds without blocking or slowing the database transaction.
+2. **Fail-Safe Transaction Isolation**: The immediate-dispatch trigger function wraps the Vault retrieval and `net.http_post` call in an exception block. If Vault is unconfigured or a network error occurs, the trigger logs a warning and allows the transaction to commit. Under NO circumstances does downstream email dispatch cause listing submission, approval, or rejection to fail.
+3. **Encrypted Credentials at Rest**: Secrets and endpoint URLs are stored in Supabase Vault (`vault.decrypted_secrets`), NOT in plain SQL trigger arguments, cron job commands, or git.
+4. **Clean Cron Command**: `cron.job.command` contains only `SELECT app_security.invoke_email_outbox_retry_batch();`, completely free of embedded URLs or credentials.
+5. **Periodic Retry & Recovery (REQUIRED)**: The 5-minute recurring scheduler is mandatory to process future retries whose `next_attempt_at` has passed and reclaim stale leases (`locked_at < NOW() - 10 minutes`).
+
+#### Canonical 6-Step Deployment Order:
+1. **Apply Migrations**:
+   Run database migrations to apply Migration 22 (schema, outbox, RPCs) and Migration 23 (dispatch trigger, retry batch function, canonical cron job):
+   ```bash
+   supabase db push
+   ```
+2. **Configure Supabase Vault Secrets** (per environment):
+   Store the worker URL and dedicated worker secret in Vault:
    ```sql
-   -- Scheduled inside Supabase database (after pg_net and pg_cron extensions are enabled)
-   SELECT cron.schedule(
-     'process-email-outbox-retries',
-     '*/5 * * * *',
-     $$
-     SELECT net.http_post(
-       url := 'https://<project-ref>.supabase.co/functions/v1/process-email-outbox',
-       headers := '{"Content-Type": "application/json", "x-email-worker-secret": "<EMAIL_WORKER_SECRET>"}'::jsonb,
-       body := '{}'::jsonb
-     );
-     $$
+   -- email_outbox_worker_url: Edge Function process-email-outbox URL
+   SELECT vault.create_secret(
+     'https://<project-ref>.supabase.co/functions/v1/process-email-outbox',
+     'email_outbox_worker_url',
+     'Edge Function endpoint for email outbox worker'
+   );
+
+   -- email_worker_secret: 256-bit cryptographically secure shared secret
+   SELECT vault.create_secret(
+     '<EMAIL_WORKER_SECRET>',
+     'email_worker_secret',
+     'Dedicated authentication secret for email outbox worker'
    );
    ```
-2. **External / Platform Scheduler (Vercel Cron or GitHub Actions)**:
-   An external monitoring cron or serverless task calling the endpoint every 5 minutes with the `x-email-worker-secret` header.
-
-> [!IMPORTANT]
-> **Mandatory Deployment Requirement**: The recurring scheduler is **not optional**. Without it, transiently failed emails (e.g. brief Resend 429 rate limit or 5xx provider downtime) will remain in `retry` state indefinitely and stale locks from aborted functions will not be recovered.
-> 
-> *Note: No scheduler is configured in production during this local implementation task; this documentation constitutes the authoritative operational deployment requirement for staging/production rollout.*
+3. **Configure Edge Function Secrets**:
+   Set custom runtime secrets via Supabase CLI (do NOT commit secrets to Git):
+   ```bash
+   supabase secrets set \
+     RESEND_API_KEY="re_..." \
+     EMAIL_FROM="FairSwap <notifications@auth.fairswap.in>" \
+     SITE_URL="https://fairswap.in" \
+     EMAIL_WORKER_SECRET="<EMAIL_WORKER_SECRET>"
+   ```
+   *(Note: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are platform-provided and automatically injected by the Edge Runtime).*
+4. **Deploy Edge Function**:
+   Deploy `process-email-outbox` with `--no-verify-jwt`:
+   ```bash
+   supabase functions deploy process-email-outbox --no-verify-jwt
+   ```
+5. **Verify Immediate Dispatch**:
+   Perform a controlled listing transition and verify the trigger invokes `net.http_post`, claims the job, and transitions `status` to `sent` with populated `provider_message_id`.
+6. **Verify Cron Retry Runner**:
+   Execute `SELECT app_security.invoke_email_outbox_retry_batch();` and inspect `net._http_response` to verify status code 200. Check `SELECT * FROM cron.job WHERE jobname = 'process-email-outbox-retries';`.
 
 #### Retry Strategy & Idempotency
 - **Idempotency**: Resend calls include an `Idempotency-Key` header formatted as `fairswap/listing-email/<outbox-row-id>`, preventing duplicate sends on retries. At the database layer, `CONSTRAINT uq_email_outbox_transition_event_recipient UNIQUE (transition_id, event_type, recipient_user_id)` prevents duplicate transitions from spawning redundant outbox jobs.
