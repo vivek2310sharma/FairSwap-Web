@@ -226,6 +226,84 @@ export type Database = {
           },
         ]
       }
+      email_outbox: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          event_type: Database["public"]["Enums"]["email_outbox_event_type"]
+          id: string
+          last_error_code: string | null
+          last_error_message: string | null
+          last_error_status: number | null
+          listing_id: string
+          lock_token: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_user_id: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["email_outbox_status"]
+          transition_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          event_type: Database["public"]["Enums"]["email_outbox_event_type"]
+          id?: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          last_error_status?: number | null
+          listing_id: string
+          lock_token?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          provider_message_id?: string | null
+          recipient_user_id: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["email_outbox_status"]
+          transition_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          event_type: Database["public"]["Enums"]["email_outbox_event_type"]
+          id?: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          last_error_status?: number | null
+          listing_id?: string
+          lock_token?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          provider_message_id?: string | null
+          recipient_user_id?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["email_outbox_status"]
+          transition_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_outbox_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_outbox_transition_id_fkey"
+            columns: ["transition_id"]
+            isOneToOne: false
+            referencedRelation: "listing_status_transitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favourites: {
         Row: {
           created_at: string
@@ -1111,6 +1189,43 @@ export type Database = {
         Args: { client_request_id: string; content: string; listing_id: string }
         Returns: Json
       }
+      claim_email_outbox_batch: {
+        Args: {
+          p_batch_size: number
+          p_lock_token: string
+          p_stale_timeout_seconds?: number
+        }
+        Returns: Database["public"]["Tables"]["email_outbox"]["Row"][]
+      }
+      claim_email_outbox_job_by_id: {
+        Args: {
+          p_job_id: string
+          p_lock_token: string
+          p_stale_timeout_seconds?: number
+        }
+        Returns: Database["public"]["Tables"]["email_outbox"]["Row"][]
+      }
+      complete_email_outbox_job: {
+        Args: {
+          p_job_id: string
+          p_lock_token: string
+          p_provider_message_id: string
+        }
+        Returns: boolean
+      }
+      fail_email_outbox_job: {
+        Args: {
+          p_backoff_seconds?: number
+          p_error_code: string
+          p_error_message: string
+          p_error_status: number
+          p_is_permanent: boolean
+          p_job_id: string
+          p_lock_token: string
+          p_max_attempts?: number
+        }
+        Returns: boolean
+      }
       unblock_user: { Args: { blocked_user_id: string }; Returns: undefined }
     }
     Enums: {
@@ -1120,6 +1235,16 @@ export type Database = {
         | "deletion_pending"
         | "deleted"
       attribute_value_type_enum: "text" | "number" | "select" | "boolean"
+      email_outbox_event_type:
+        | "listing_submitted_for_review"
+        | "listing_approved"
+        | "listing_rejected"
+      email_outbox_status:
+        | "pending"
+        | "processing"
+        | "retry"
+        | "sent"
+        | "dead_letter"
       listing_condition_enum: "new" | "like_new" | "good" | "fair" | "poor"
       listing_price_type_enum: "fixed" | "negotiable" | "free"
       listing_status_enum:
@@ -1304,6 +1429,18 @@ export const Constants = {
         "deleted",
       ],
       attribute_value_type_enum: ["text", "number", "select", "boolean"],
+      email_outbox_event_type: [
+        "listing_submitted_for_review",
+        "listing_approved",
+        "listing_rejected",
+      ],
+      email_outbox_status: [
+        "pending",
+        "processing",
+        "retry",
+        "sent",
+        "dead_letter",
+      ],
       listing_condition_enum: ["new", "like_new", "good", "fair", "poor"],
       listing_price_type_enum: ["fixed", "negotiable", "free"],
       listing_status_enum: [
