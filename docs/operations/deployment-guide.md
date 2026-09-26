@@ -37,6 +37,9 @@ FairSwap is a Next.js (App Router) classifieds platform powered by Supabase (Pos
 | `UPSTASH_REDIS_REST_TOKEN` | Server Only | Secret | Upstash Redis authentication token |
 | `RESEND_WEBHOOK_SECRET` | Server Only | Critical Secret | Signing secret used to authenticate Resend webhook deliveries; never expose to clients or logs |
 | `OPERATIONS_ALERT_WEBHOOK_URL` | Server Only | Secret | HTTPS operational alert sink for sanitized Resend failure/bounce events; treat the URL as a credential |
+| `RESEND_API_KEY` | Supabase Edge Function / Server | Critical Secret | API key for transactional email dispatch via Resend; configured as Supabase Edge Function secret |
+| `EMAIL_FROM` | Supabase Edge Function / Server | Config | Sender identity (e.g. `FairSwap <notifications@fairswap.in>`) |
+| `EMAIL_WORKER_SECRET` | Supabase Edge Function / Webhook | Secret | Shared secret authenticating Edge Function triggers from Database Webhooks and cron runners |
 | `NODE_ENV` | All | Config | Set to `production` in staging and production deployments |
 | `PORT` | Optional | Config | HTTP binding port (default: 3000) |
 
@@ -72,6 +75,164 @@ For actionable events, an unavailable or failed operations alert returns HTTP 50
 
 The Resend webhook endpoint/signing secret and alert-sink URL must be different per environment. No webhook secret or incoming-alert URL belongs in Git.
 
+---
+
+### Listing Transactional Email Outbox & Edge Function Pipeline (Issue #83)
+
+Listing lifecycle state transitions trigger durable transactional email jobs stored in `public.email_outbox`.
+
+The production/staging deployment architecture requires **two complementary execution triggers**:
+
+```text
+New email_outbox INSERT
+    -> Database Webhook
+    -> immediate process-email-outbox invocation
+
+AND
+
+Recurring scheduler (REQUIRED operational configuration)
+    -> process-email-outbox batch invocation
+    -> retry jobs whose next_attempt_at has elapsed
+    -> reclaim stale processing leases
+```
+
+1. **Immediate Execution (Database Webhook)**: Fires on `INSERT` to deliver emails to users within seconds under normal conditions.
+2. **Periodic Retry & Recovery (Recurring Scheduler - REQUIRED)**: An INSERT-only webhook cannot process future retries. A recurring scheduler executing approximately every 5 minutes is **MANDATORY** to claim pending retries whose `next_attempt_at` has passed and to recover leases from crashed workers (`locked_at < NOW() - 10 minutes`).
+
+#### Supported Email Events & Recipients
+1. **`listing_submitted_for_review`**: When any listing enters `pending_review`, enqueues notifications to all active staff whose role is `administrator` or `moderator`. Excludes `support_agent` and `content_editor`, and prohibits self-review notification (does not notify the seller even if the seller is staff).
+2. **`listing_approved`**: When a listing transitions from `pending_review` to `active`, enqueues a notification to the seller with a link to the live listing (`/listings/<slug>`), respecting `user_accounts.notification_preferences.email_notifications`.
+3. **`listing_rejected`**: When a listing transitions from `pending_review` to `rejected`, enqueues a notification to the seller with the moderation rejection reason and the seller edit link (`/account/listings/<id>/edit`), respecting `notification_preferences.email_notifications`.
+
+#### Security & Access Control
+- `public.email_outbox` has RLS enabled with fail-closed permissions. Direct SELECT, INSERT, UPDATE, and DELETE are strictly revoked from `PUBLIC`, `anon`, and `authenticated`.
+- **Two-Layer RPC Pattern**: Worker functions follow FairSwap's standard two-layer pattern:
+  - Private implementations in `app_security` (`impl_claim_email_outbox_batch`, `impl_claim_email_outbox_job_by_id`, `impl_complete_email_outbox_job`, `impl_fail_email_outbox_job`) are `SECURITY DEFINER`.
+  - Narrow wrappers in `public` (`claim_email_outbox_batch`, `claim_email_outbox_job_by_id`, `complete_email_outbox_job`, `fail_email_outbox_job`) delegate to `app_security.impl_*`.
+  - All execute privileges are strictly revoked from `PUBLIC`, `anon`, and `authenticated`. Only `service_role` is granted EXECUTE on both layers.
+  - The `app_security` schema is never exposed to PostgREST.
+- Recipient email addresses are never stored in plain outbox payloads; they are resolved server-side from `auth.users` via Supabase Auth Admin API during job execution.
+- HTML escaping is strictly enforced on all user- and staff-supplied text (listing titles, rejection reasons) prior to rendering email bodies.
+- Safe link sanitization ensures outbound URLs cannot be manipulated into protocol-relative or external open redirects.
+
+#### Worker Edge Function Configuration
+The worker is located at `supabase/functions/process-email-outbox/index.ts`. Required Edge Function environment values:
+
+**1. Platform-provided Edge Function environment variables** (automatically injected by Supabase runtime; do **not** set manually via `supabase secrets set`):
+- `SUPABASE_URL`: Supabase project API URL.
+- `SUPABASE_SERVICE_ROLE_KEY`: Privileged service role secret key (used server-side inside the worker for Auth/DB operations only; **never** accepted for inbound worker authentication).
+
+**2. Custom Edge Function secrets** (configured per environment via `supabase secrets set`):
+- `RESEND_API_KEY`: API key for outbound dispatch via Resend.
+- `EMAIL_FROM`: Sender identity (e.g. `FairSwap <notifications@fairswap.in>`).
+- `SITE_URL`: Application canonical origin (e.g. `https://fairswap.in` in production; `https://fair-swap-git-staging-fairswap.vercel.app` in staging).
+- `EMAIL_WORKER_SECRET`: Dedicated authorization secret used exclusively to authenticate webhook and batch runner invocations.
+
+> [!NOTE]
+> The Edge Function implementation has been verified locally through comprehensive Vitest unit tests, Zod validation, and Next.js integration tests. Deployed execution under the live Supabase Deno Edge Runtime remains pending for staging rollout on `FairSwapTest`.
+
+#### Edge Function JWT Verification (`verify_jwt = false`)
+Because the Edge Function relies on custom webhook authentication via `EMAIL_WORKER_SECRET` rather than a standard user JWT, default Supabase API gateway JWT verification must be disabled:
+- In `supabase/config.toml`:
+  ```toml
+  [functions.process-email-outbox]
+  verify_jwt = false
+  ```
+- When deploying via CLI:
+  ```bash
+  supabase functions deploy process-email-outbox --no-verify-jwt
+  ```
+If `verify_jwt` is not set to `false`, the Supabase API Gateway will reject incoming Database Webhook calls before they reach the Edge Function code.
+
+#### 1. Database Webhook Setup (Immediate Dispatch)
+In the Supabase Dashboard under **Database -> Webhooks**, configure a webhook for immediate delivery on listing state transitions:
+- **Name**: `process-email-outbox-on-insert`
+- **Table**: `public.email_outbox`
+- **Events**: `INSERT`
+- **Type**: HTTP Request (POST)
+- **URL**: `https://<project-ref>.supabase.co/functions/v1/process-email-outbox`
+- **HTTP Headers**:
+  - `Content-Type: application/json`
+  - `x-email-worker-secret: <EMAIL_WORKER_SECRET>`
+
+The Edge Function accepts the Supabase Database Webhook payload (`{ "record": { "id": "..." } }`) and immediately claims and processes that specific job without blocking the database transaction. Inbound requests presenting `SUPABASE_SERVICE_ROLE_KEY` or missing the dedicated `x-email-worker-secret` header are rejected with HTTP 401.
+
+#### 2. Recurring Scheduler Setup (REQUIRED for Retries & Recovery)
+Because Database Webhooks only fire when a row is first inserted, subsequent retry attempts and stale-lease recovery **require** a recurring batch runner:
+- **Schedule**: Approximately every 5 minutes (`*/5 * * * *`).
+- **Target URL**: `POST https://<project-ref>.supabase.co/functions/v1/process-email-outbox`
+- **HTTP Headers**:
+  - `Content-Type: application/json`
+  - `x-email-worker-secret: <EMAIL_WORKER_SECRET>`
+- **HTTP Body**: `{}` (empty object triggers batch mode to claim all available retry and stale jobs up to batch size).
+
+Supported Scheduler Options in FairSwap / Supabase:
+1. **Supabase pg_cron + pg_net (In-Database)**:
+   ```sql
+   -- Scheduled inside Supabase database (after pg_net and pg_cron extensions are enabled)
+   SELECT cron.schedule(
+     'process-email-outbox-retries',
+     '*/5 * * * *',
+     $$
+     SELECT net.http_post(
+       url := 'https://<project-ref>.supabase.co/functions/v1/process-email-outbox',
+       headers := '{"Content-Type": "application/json", "x-email-worker-secret": "<EMAIL_WORKER_SECRET>"}'::jsonb,
+       body := '{}'::jsonb
+     );
+     $$
+   );
+   ```
+2. **External / Platform Scheduler (Vercel Cron or GitHub Actions)**:
+   An external monitoring cron or serverless task calling the endpoint every 5 minutes with the `x-email-worker-secret` header.
+
+> [!IMPORTANT]
+> **Mandatory Deployment Requirement**: The recurring scheduler is **not optional**. Without it, transiently failed emails (e.g. brief Resend 429 rate limit or 5xx provider downtime) will remain in `retry` state indefinitely and stale locks from aborted functions will not be recovered.
+> 
+> *Note: No scheduler is configured in production during this local implementation task; this documentation constitutes the authoritative operational deployment requirement for staging/production rollout.*
+
+#### Retry Strategy & Idempotency
+- **Idempotency**: Resend calls include an `Idempotency-Key` header formatted as `fairswap/listing-email/<outbox-row-id>`, preventing duplicate sends on retries. At the database layer, `CONSTRAINT uq_email_outbox_transition_event_recipient UNIQUE (transition_id, event_type, recipient_user_id)` prevents duplicate transitions from spawning redundant outbox jobs.
+- **Retry Backoff**: Temporary failures (HTTP 429 rate limits, HTTP 5xx errors, network timeouts) transition the job to `status = 'retry'` with bounded exponential backoff (60s, 300s, 900s, 3600s, 7200s).
+- **Dead-Letter Handling**: Permanent client errors (HTTP 4xx such as unverified domain, missing recipient in `auth.users`, template parsing error) or jobs exceeding 5 failed attempts transition immediately to `status = 'dead_letter'`.
+- **Stale Lease Recovery**: If a worker node crashes mid-processing, jobs with `status = 'processing'` whose `locked_at` timestamp is older than 10 minutes (600s) are automatically re-claimed by subsequent worker runs.
+
+#### Manual Dead-Letter Recovery Procedure
+Operators can inspect and re-queue dead-letter jobs after addressing root causes (e.g. provider outages, domain verification):
+
+1. **Inspect Dead-Letter Jobs**:
+```sql
+SELECT id, event_type, recipient_user_id, last_error_code, last_error_status, last_error_message, attempt_count, updated_at
+FROM public.email_outbox
+WHERE status = 'dead_letter'
+ORDER BY updated_at DESC;
+```
+
+2. **Re-queue Specific Job for Processing**:
+```sql
+UPDATE public.email_outbox
+SET status = 'pending',
+    attempt_count = 0,
+    next_attempt_at = clock_timestamp(),
+    locked_at = NULL,
+    lock_token = NULL,
+    updated_at = clock_timestamp()
+WHERE id = '<job_id>';
+```
+
+3. **Re-queue Batch of Dead-Letter Jobs**:
+```sql
+UPDATE public.email_outbox
+SET status = 'pending',
+    attempt_count = 0,
+    next_attempt_at = clock_timestamp(),
+    locked_at = NULL,
+    lock_token = NULL,
+    updated_at = clock_timestamp()
+WHERE status = 'dead_letter' AND last_error_code = '<resolvable_error_code>';
+```
+
+---
+
 ## 3. Database Migration Deployment Protocols
 
 FairSwap uses ordered, immutable PostgreSQL migration scripts located in `supabase/migrations/`.
@@ -97,6 +258,7 @@ As of Public Beta readiness, migrations are sequenced through **Migration 21**:
 * `20260916000019_fix_public_rls_staff_helper_execution.sql`
 * `20260918000020_legal_acceptance_and_age_audit.sql`
 * `20260918000021_policy_reacceptance_records.sql`
+* `20260926000022_listing_email_notifications.sql`
 
 ### A. Local Development Deployment
 ```powershell
