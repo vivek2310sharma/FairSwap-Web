@@ -15,6 +15,22 @@ describe("Footer component", () => {
     expect(screen.getByText("Swap")).toBeInTheDocument();
   });
 
+  it("links to FairSwap's public launch record securely", () => {
+    render(<Footer />);
+    const launchRecordLink = screen.getByRole("link", {
+      name: "View FairSwap's public launch record",
+    });
+
+    expect(launchRecordLink).toHaveAttribute(
+      "href",
+      "https://websitelaunches.com/site/fairswap.in"
+    );
+    expect(launchRecordLink).toHaveAttribute("target", "_blank");
+    expect(launchRecordLink.getAttribute("rel")?.split(/\s+/)).toEqual(
+      expect.arrayContaining(["noopener", "noreferrer", "external"])
+    );
+  });
+
   it("displays the copyright and controlled production pilot notice", () => {
     render(<Footer />);
     const currentYear = new Date().getFullYear();
