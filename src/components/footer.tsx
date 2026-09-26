@@ -16,6 +16,14 @@ export function Footer() {
             <p className="mt-2 text-xs text-muted leading-relaxed">
               India&apos;s local classifieds marketplace
             </p>
+            <a
+              href="https://websitelaunches.com/site/fairswap.in"
+              target="_blank"
+              rel="noopener noreferrer external"
+              className="mt-2 inline-block text-xs text-muted underline underline-offset-2 hover:text-foreground"
+            >
+              View FairSwap&apos;s public launch record
+            </a>
           </div>
 
           {/* Discovery Links */}
