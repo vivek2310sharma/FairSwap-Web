@@ -81,23 +81,26 @@ The Resend webhook endpoint/signing secret and alert-sink URL must be different 
 
 Listing lifecycle state transitions trigger durable transactional email jobs stored in `public.email_outbox`.
 
-The production/staging deployment architecture requires **two complementary execution triggers**:
+The production/staging deployment architecture requires **two complementary execution paths**:
 
 ```text
 New email_outbox INSERT
-    -> Database Webhook
+    -> PostgreSQL AFTER INSERT trigger (Migration 23)
+    -> pg_net asynchronous POST
     -> immediate process-email-outbox invocation
 
 AND
 
 Recurring scheduler (REQUIRED operational configuration)
-    -> process-email-outbox batch invocation
+    -> pg_cron every 5 minutes
+    -> app_security.invoke_email_outbox_retry_batch()
+    -> pg_net batch invocation
     -> retry jobs whose next_attempt_at has elapsed
     -> reclaim stale processing leases
 ```
 
-1. **Immediate Execution (Database Webhook)**: Fires on `INSERT` to deliver emails to users within seconds under normal conditions.
-2. **Periodic Retry & Recovery (Recurring Scheduler - REQUIRED)**: An INSERT-only webhook cannot process future retries. A recurring scheduler executing approximately every 5 minutes is **MANDATORY** to claim pending retries whose `next_attempt_at` has passed and to recover leases from crashed workers (`locked_at < NOW() - 10 minutes`).
+1. **Immediate Execution (PostgreSQL trigger + pg_net)**: Fires on `INSERT` to deliver emails to users within seconds under normal conditions. The trigger is fail-safe and must never roll back the parent listing transaction if dispatch infrastructure is unavailable.
+2. **Periodic Retry & Recovery (pg_cron - REQUIRED)**: Immediate INSERT dispatch cannot process future retries. The canonical recurring scheduler executes every 5 minutes and is **MANDATORY** to claim pending retries whose `next_attempt_at` has passed and to recover leases from crashed workers (`locked_at < NOW() - 10 minutes`).
 
 #### Supported Email Events & Recipients
 1. **`listing_submitted_for_review`**: When any listing enters `pending_review`, enqueues notifications to all active staff whose role is `administrator` or `moderator`. Excludes `support_agent` and `content_editor`, and prohibits self-review notification (does not notify the seller even if the seller is staff).
@@ -280,7 +283,7 @@ WHERE status = 'dead_letter' AND last_error_code = '<resolvable_error_code>';
 ## 3. Database Migration Deployment Protocols
 
 FairSwap uses ordered, immutable PostgreSQL migration scripts located in `supabase/migrations/`.
-As of Public Beta readiness, migrations are sequenced through **Migration 21**:
+As of Issue #83 production-release readiness, repository migrations are sequenced through **Migration 24**. Production remains unchanged until the production preflight and an explicitly authorized deployment:
 * `20260914000001_create_accounts_and_profiles.sql`
 * `20260914000002_create_staff_and_security.sql`
 * `20260914000003_create_audit_and_privacy.sql`
@@ -303,6 +306,8 @@ As of Public Beta readiness, migrations are sequenced through **Migration 21**:
 * `20260918000020_legal_acceptance_and_age_audit.sql`
 * `20260918000021_policy_reacceptance_records.sql`
 * `20260926000022_listing_email_notifications.sql`
+* `20260926000023_email_outbox_dispatch_runtime.sql`
+* `20260926000024_email_outbox_runtime_extensions.sql`
 
 ### A. Local Development Deployment
 ```powershell
