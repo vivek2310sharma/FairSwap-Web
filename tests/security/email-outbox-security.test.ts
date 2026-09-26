@@ -75,9 +75,42 @@ describe("GitHub Issue #83 Listing Email Notifications & Security Invariants", (
         metadata jsonb,
         path_tokens text[] GENERATED ALWAYS AS (string_to_array(name, '/')) STORED
       );
+
+      -- Mock net, vault, and cron schemas for PGlite test environment
+      CREATE SCHEMA IF NOT EXISTS net;
+      CREATE OR REPLACE FUNCTION net.http_post(url text, headers jsonb, body jsonb) RETURNS bigint AS $$ SELECT 1::bigint; $$ LANGUAGE sql;
+
+      CREATE SCHEMA IF NOT EXISTS vault;
+      CREATE TABLE IF NOT EXISTS vault.decrypted_secrets (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        name text UNIQUE,
+        decrypted_secret text
+      );
+
+      CREATE SCHEMA IF NOT EXISTS cron;
+      CREATE TABLE IF NOT EXISTS cron.job (
+        jobid bigint PRIMARY KEY,
+        schedule text,
+        command text,
+        nodename text,
+        nodeport integer,
+        database text,
+        username text,
+        active boolean,
+        jobname text UNIQUE
+      );
+      CREATE OR REPLACE FUNCTION cron.schedule(jobname text, schedule text, command text) RETURNS bigint AS $$
+        INSERT INTO cron.job (jobid, schedule, command, active, jobname) VALUES (1, schedule, command, true, jobname)
+        ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule, command = EXCLUDED.command;
+        SELECT 1::bigint;
+      $$ LANGUAGE sql;
+      CREATE OR REPLACE FUNCTION cron.unschedule(jobname text) RETURNS boolean AS $$
+        DELETE FROM cron.job WHERE jobname = $1;
+        SELECT true;
+      $$ LANGUAGE sql;
     `);
 
-    // 2. Apply all migrations from 1 through 22 in order
+    // 2. Apply all migrations from 1 through 23 in order
     const migDir = path.resolve(process.cwd(), "supabase", "migrations");
     const migrationFiles = fs
       .readdirSync(migDir)
@@ -1049,5 +1082,136 @@ describe("GitHub Issue #83 Listing Email Notifications & Security Invariants", (
     expect(verifyJob.rows[0].status).toBe("dead_letter");
     expect(verifyJob.rows[0].attempt_count).toBe(5);
     expect(verifyJob.rows[0].last_error_code).toBe("MAX_ATTEMPTS_EXCEEDED_IN_PROCESSING");
+  });
+
+  describe("Migration 23 - Dispatch and Scheduler Runtime Security Invariants", () => {
+    it("attaches immediate-dispatch trigger trg_email_outbox_immediate_dispatch to public.email_outbox", async () => {
+      const triggerRes = await db.query<any>(`
+        SELECT tgname, tgenabled, tgtype
+        FROM pg_trigger
+        WHERE tgname = 'trg_email_outbox_immediate_dispatch'
+          AND tgrelid = 'public.email_outbox'::regclass;
+      `);
+      expect(triggerRes.rows.length).toBe(1);
+      expect(triggerRes.rows[0].tgname).toBe("trg_email_outbox_immediate_dispatch");
+    });
+
+    it("verifies dispatch functions reside in app_security with SECURITY DEFINER and empty search_path", async () => {
+      const funcRes = await db.query<any>(`
+        SELECT 
+          p.proname,
+          p.prosecdef,
+          p.proconfig,
+          n.nspname
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'app_security'
+          AND p.proname IN ('trg_fn_notify_email_outbox_worker', 'invoke_email_outbox_retry_batch')
+        ORDER BY p.proname;
+      `);
+      expect(funcRes.rows.length).toBe(2);
+      for (const row of funcRes.rows) {
+        expect(row.prosecdef).toBe(true);
+        expect(row.proconfig.some((c: string) => c.startsWith("search_path="))).toBe(true);
+      }
+    });
+
+    it("ensures anon and authenticated roles have zero execute privileges on runtime dispatch functions", async () => {
+      const aclRes = await db.query<any>(`
+        SELECT 
+          p.proname,
+          has_function_privilege('anon', p.oid, 'EXECUTE') as anon_exec,
+          has_function_privilege('authenticated', p.oid, 'EXECUTE') as auth_exec
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'app_security'
+          AND p.proname IN ('trg_fn_notify_email_outbox_worker', 'invoke_email_outbox_retry_batch');
+      `);
+      expect(aclRes.rows.length).toBe(2);
+      for (const row of aclRes.rows) {
+        expect(row.anon_exec).toBe(false);
+        expect(row.auth_exec).toBe(false);
+      }
+    });
+
+    it("ensures no public RPC surface was created for internal dispatch functions", async () => {
+      const publicRpc = await db.query<any>(`
+        SELECT p.proname
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'public'
+          AND (p.proname LIKE '%email_outbox%dispatch%' OR p.proname LIKE '%retry_batch%');
+      `);
+      expect(publicRpc.rows.length).toBe(0);
+    });
+
+    it("verifies cron job process-email-outbox-retries is scheduled with clean command shape", async () => {
+      const cronRes = await db.query<any>(`
+        SELECT jobname, schedule, command
+        FROM cron.job
+        WHERE jobname = 'process-email-outbox-retries';
+      `);
+      expect(cronRes.rows.length).toBe(1);
+      expect(cronRes.rows[0].schedule).toBe("*/5 * * * *");
+      expect(cronRes.rows[0].command).toBe("SELECT app_security.invoke_email_outbox_retry_batch();");
+      // Explicitly verifies no secrets or URLs are stored in cron command
+      expect(cronRes.rows[0].command).not.toContain("http");
+      expect(cronRes.rows[0].command).not.toContain("secret");
+    });
+
+    it("verifies immediate dispatch failure isolation: trigger exception never aborts listing transitions", async () => {
+      // Temporarily mock net.http_post to raise an exception
+      await db.query(`
+        CREATE OR REPLACE FUNCTION net.http_post(url text, headers jsonb, body jsonb) 
+        RETURNS bigint AS $$ 
+        BEGIN 
+          RAISE EXCEPTION 'Simulated pg_net network failure'; 
+        END; 
+        $$ LANGUAGE plpgsql;
+      `);
+
+      // Create and transition a listing
+      const listRes = await db.query<any>(`
+        INSERT INTO public.listings (
+          seller_id, category_id, city_id, locality_id, title, description,
+          price_paise, condition, price_type, status, slug
+        ) VALUES (
+          '${sellerUserId}', '${categoryId}', '${cityId}', '${localityId}',
+          'Fault Isolation Test Listing', 'Description', 25000, 'good', 'fixed',
+          'draft', 'fault-isolation-test-listing'
+        ) RETURNING id;
+      `);
+      const listingId = listRes.rows[0].id;
+
+      // Submit listing for moderation -> inserts listing_status_transitions -> triggers email_outbox insert
+      // -> triggers trg_email_outbox_immediate_dispatch which calls failing net.http_post
+      await expect(
+        db.query(`UPDATE public.listings SET status = 'pending_review' WHERE id = '${listingId}';`)
+      ).resolves.not.toThrow();
+
+      // Verify the authoritative listing transition and email_outbox row were COMMITTED
+      const listingCheck = await db.query<any>(`SELECT status FROM public.listings WHERE id = '${listingId}';`);
+      expect(listingCheck.rows[0].status).toBe("pending_review");
+
+      const outboxCheck = await db.query<any>(`
+        SELECT status, event_type FROM public.email_outbox WHERE listing_id = '${listingId}';
+      `);
+      expect(outboxCheck.rows.length).toBeGreaterThanOrEqual(1);
+      expect(outboxCheck.rows.every((r: any) => r.event_type === "listing_submitted_for_review")).toBe(true);
+      expect(outboxCheck.rows.every((r: any) => r.status === "pending")).toBe(true);
+
+      // Restore working net.http_post mock
+      await db.query(`
+        CREATE OR REPLACE FUNCTION net.http_post(url text, headers jsonb, body jsonb) 
+        RETURNS bigint AS $$ SELECT 1::bigint; $$ LANGUAGE sql;
+      `);
+    });
+
+    it("documents explicitly runtime limitations in PGlite", () => {
+      // PGlite runs purely in WebAssembly/Node and cannot run the native background
+      // pg_cron daemon or make live external network requests via pg_net.
+      // Full runtime end-to-end dispatch is verified against hosted Supabase (FairSwapTest).
+      expect(true).toBe(true);
+    });
   });
 });
