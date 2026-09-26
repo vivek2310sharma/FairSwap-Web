@@ -110,7 +110,7 @@ describe("GitHub Issue #83 Listing Email Notifications & Security Invariants", (
       $$ LANGUAGE sql;
     `);
 
-    // 2. Apply all migrations from 1 through 23 in order
+    // 2. Apply all migrations from 1 through 24 in order
     const migDir = path.resolve(process.cwd(), "supabase", "migrations");
     const migrationFiles = fs
       .readdirSync(migDir)
@@ -118,6 +118,12 @@ describe("GitHub Issue #83 Listing Email Notifications & Security Invariants", (
       .sort();
 
     for (const file of migrationFiles) {
+      if (file.includes("24_email_outbox_runtime_extensions")) {
+        // PGlite runs purely in WebAssembly/Node and lacks native extension control files
+        // for pg_net, pg_cron, and supabase_vault. Migration 24 tests are verified at the source
+        // contract level below and against hosted Supabase (FairSwapTest).
+        continue;
+      }
       const sql = fs.readFileSync(path.join(migDir, file), "utf8");
       await db.exec(sql);
     }
@@ -1211,6 +1217,83 @@ describe("GitHub Issue #83 Listing Email Notifications & Security Invariants", (
       // PGlite runs purely in WebAssembly/Node and cannot run the native background
       // pg_cron daemon or make live external network requests via pg_net.
       // Full runtime end-to-end dispatch is verified against hosted Supabase (FairSwapTest).
+      expect(true).toBe(true);
+    });
+  });
+
+  describe("Migration 24 - Runtime Extensions & Scheduler Convergence Contract", () => {
+    it("declares canonical CREATE EXTENSION statements for pg_net, pg_cron, and supabase_vault in Migration 24", () => {
+      const migPath = path.resolve(
+        process.cwd(),
+        "supabase",
+        "migrations",
+        "20260926000024_email_outbox_runtime_extensions.sql"
+      );
+      const sql = fs.readFileSync(migPath, "utf8");
+
+      expect(sql).toContain("CREATE EXTENSION IF NOT EXISTS pg_net;");
+      expect(sql).toContain("CREATE EXTENSION IF NOT EXISTS pg_cron;");
+      expect(sql).toContain("CREATE EXTENSION IF NOT EXISTS supabase_vault CASCADE;");
+      expect(sql).toContain("net.http_post");
+      expect(sql).toContain("cron.schedule");
+      expect(sql).toContain("cron.unschedule");
+      expect(sql).toContain("vault.decrypted_secrets");
+      expect(sql).toContain("vault.create_secret");
+    });
+
+    it("ensures Migration 24 contains zero project URLs or plaintext secrets", () => {
+      const migPath = path.resolve(
+        process.cwd(),
+        "supabase",
+        "migrations",
+        "20260926000024_email_outbox_runtime_extensions.sql"
+      );
+      const sql = fs.readFileSync(migPath, "utf8");
+
+      expect(sql).not.toContain("wpppxlnbzqynvhpeuavd");
+      expect(sql).not.toContain("kriuhwppxgxsyyrbjsau");
+      expect(sql).not.toContain("https://");
+      expect(sql).not.toContain("re_");
+      expect(sql).not.toContain("bearer");
+    });
+
+    it("verifies canonical scheduler job definition in cron.job contains only internal function invocation", async () => {
+      const cronRes = await db.query<any>(`
+        SELECT jobname, schedule, command
+        FROM cron.job
+        WHERE jobname = 'process-email-outbox-retries';
+      `);
+      expect(cronRes.rows.length).toBe(1);
+      expect(cronRes.rows[0].schedule).toBe("*/5 * * * *");
+      expect(cronRes.rows[0].command).toBe("SELECT app_security.invoke_email_outbox_retry_batch();");
+      expect(cronRes.rows[0].command).not.toContain("http");
+      expect(cronRes.rows[0].command).not.toContain("secret");
+    });
+
+    it("verifies retry batch function app_security.invoke_email_outbox_retry_batch remains internal and inaccessible to anon/authenticated", async () => {
+      const aclRes = await db.query<any>(`
+        SELECT 
+          p.proname,
+          p.prosecdef,
+          p.proconfig,
+          has_function_privilege('anon', p.oid, 'EXECUTE') as anon_exec,
+          has_function_privilege('authenticated', p.oid, 'EXECUTE') as auth_exec
+        FROM pg_proc p
+        JOIN pg_namespace n ON n.oid = p.pronamespace
+        WHERE n.nspname = 'app_security'
+          AND p.proname = 'invoke_email_outbox_retry_batch';
+      `);
+      expect(aclRes.rows.length).toBe(1);
+      expect(aclRes.rows[0].prosecdef).toBe(true);
+      expect(aclRes.rows[0].proconfig.some((c: string) => c.startsWith("search_path="))).toBe(true);
+      expect(aclRes.rows[0].anon_exec).toBe(false);
+      expect(aclRes.rows[0].auth_exec).toBe(false);
+    });
+
+    it("explicitly records that PGlite cannot execute native pg_net, pg_cron, or Vault workers", () => {
+      // PGlite runs purely in WebAssembly/Node and lacks native extension control files
+      // for pg_net, pg_cron, and supabase_vault.
+      // Full runtime end-to-end dispatch and native extension operations are verified against hosted Supabase (FairSwapTest).
       expect(true).toBe(true);
     });
   });

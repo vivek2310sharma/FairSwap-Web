@@ -115,6 +115,14 @@ Recurring scheduler (REQUIRED operational configuration)
 - HTML escaping is strictly enforced on all user- and staff-supplied text (listing titles, rejection reasons) prior to rendering email bodies.
 - Safe link sanitization ensures outbound URLs cannot be manipulated into protocol-relative or external open redirects.
 
+#### Required PostgreSQL Extensions (Migration 24)
+The transactional email notifications pipeline requires the following PostgreSQL extensions:
+- `pg_net`: Asynchronous HTTP client for immediate trigger-based dispatch and scheduled batch execution.
+- `pg_cron`: Periodic in-database job scheduler for retry recovery and stale-lease reclamation.
+- `supabase_vault`: Encrypted secret storage for worker URLs and authentication credentials.
+
+These extensions and their required runtime capabilities are declared, enabled, and validated by **Migration 24** (`20260926000024_email_outbox_runtime_extensions.sql`). Migration 24 also ensures the canonical 5-minute scheduler job `process-email-outbox-retries` is converged.
+
 #### Worker Edge Function Configuration
 The worker is located at `supabase/functions/process-email-outbox/index.ts`. Required Edge Function environment values:
 
@@ -124,12 +132,22 @@ The worker is located at `supabase/functions/process-email-outbox/index.ts`. Req
 
 **2. Custom Edge Function secrets** (configured per environment via `supabase secrets set`):
 - `RESEND_API_KEY`: API key for outbound dispatch via Resend.
-- `EMAIL_FROM`: Sender identity (e.g. `FairSwap <notifications@fairswap.in>`).
+- `EMAIL_FROM`: Sender identity (e.g. `FairSwap <notifications@auth.fairswap.in>`).
 - `SITE_URL`: Application canonical origin (e.g. `https://fairswap.in` in production; `https://fair-swap-git-staging-fairswap.vercel.app` in staging).
 - `EMAIL_WORKER_SECRET`: Dedicated authorization secret used exclusively to authenticate webhook and batch runner invocations.
 
 > [!NOTE]
-> The Edge Function implementation has been verified locally through comprehensive Vitest unit tests, Zod validation, and Next.js integration tests. Deployed execution under the live Supabase Deno Edge Runtime remains pending for staging rollout on `FairSwapTest`.
+> The transactional email pipeline has been verified on `FairSwapTest` across the complete operational matrix:
+> - Migration 22 (`20260926000022_listing_email_notifications.sql`)
+> - Migration 23 (`20260926000023_email_outbox_dispatch_runtime.sql`)
+> - Migration 24 (`20260926000024_email_outbox_runtime_extensions.sql`)
+> - Deployed `process-email-outbox` Edge Function under the live Supabase Deno Edge Runtime
+> - Real Resend email delivery (submission, approval, and rejection notifications)
+> - Immediate dispatch trigger via `pg_net`
+> - 5-minute retry scheduler via `pg_cron`
+> - Downstream failure isolation (listing moderation never rolls back)
+> - Secret and credential rotation (Vault worker secret and Resend API key)
+> Production deployment and verification remain strictly pending formal release authorization.
 
 #### Edge Function JWT Verification (`verify_jwt = false`)
 Because the Edge Function relies on custom webhook authentication via `EMAIL_WORKER_SECRET` rather than a standard user JWT, default Supabase API gateway JWT verification must be disabled:
@@ -175,7 +193,7 @@ Recurring scheduler (pg_cron every 5 minutes: '*/5 * * * *')
 
 #### Canonical 6-Step Deployment Order:
 1. **Apply Migrations**:
-   Run database migrations to apply Migration 22 (schema, outbox, RPCs) and Migration 23 (dispatch trigger, retry batch function, canonical cron job):
+   Run database migrations to apply Migration 22 (schema, outbox, RPCs), Migration 23 (dispatch trigger, retry batch function), and Migration 24 (runtime extensions, capability verification, canonical scheduler convergence):
    ```bash
    supabase db push
    ```
