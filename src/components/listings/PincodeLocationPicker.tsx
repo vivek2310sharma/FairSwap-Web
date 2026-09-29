@@ -27,9 +27,11 @@ export default function PincodeLocationPicker({
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [derivedLocationText, setDerivedLocationText] = useState<string | null>(null);
-  const [availableLocalities, setAvailableLocalities] = useState<Array<{ id: string; name: string }>>(() => {
+  const [availableLocalities, setAvailableLocalities] = useState<Array<{ id: string; name: string; city_id: string }>>(() => {
     if (initialCityId) {
-      return localities.filter((loc) => loc.city_id === initialCityId);
+      return localities
+        .filter((loc) => loc.city_id === initialCityId)
+        .map((loc) => ({ id: loc.id, name: loc.name, city_id: loc.city_id }));
     }
     return [];
   });
@@ -51,23 +53,25 @@ export default function PincodeLocationPicker({
           if (data.city_id) {
             setSelectedCityId(data.city_id);
           } else {
-            // Find existing city by name match
+            // Find existing city by name match from the lookup response
             const match = cities.find(
               (c) => c.name.toLowerCase() === data.city.toLowerCase() || c.name.toLowerCase() === data.district.toLowerCase()
             );
             if (match) {
               setSelectedCityId(match.id);
-            } else if (cities.length > 0) {
-              setSelectedCityId(cities[0].id);
             }
+            // No fallback: if we can't identify the city, leave it unset
+            // The lookup response text still shows the derived location
           }
 
           if (data.localities && data.localities.length > 0) {
-            const locList = data.localities.map((l) => ({ id: l.id, name: l.name }));
+            const locList = data.localities.map((l) => ({ id: l.id, name: l.name, city_id: l.city_id }));
             setAvailableLocalities(locList);
 
             if (locList.length === 1) {
               setSelectedLocalityId(locList[0].id);
+              // Derive city from the single auto-selected locality
+              setSelectedCityId(locList[0].city_id);
             } else if (!locList.some((l) => l.id === selectedLocalityId)) {
               setSelectedLocalityId("");
             }
@@ -186,7 +190,15 @@ export default function PincodeLocationPicker({
           <select
             id="locality_picker_select"
             value={selectedLocalityId}
-            onChange={(e) => setSelectedLocalityId(e.target.value)}
+            onChange={(e) => {
+              const locId = e.target.value;
+              setSelectedLocalityId(locId);
+              // Derive city from the selected locality
+              const selectedLoc = availableLocalities.find((l) => l.id === locId);
+              if (selectedLoc) {
+                setSelectedCityId(selectedLoc.city_id);
+              }
+            }}
             disabled={isLoading || availableLocalities.length === 0}
             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-400"
           >

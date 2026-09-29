@@ -6,6 +6,7 @@ import {
   toTitleCase,
   slugify,
   parseCSVLine,
+  validateImportTarget,
 } from "../../scripts/import-india-postal-data";
 
 describe("India Location & PIN Code Utilities", () => {
@@ -188,6 +189,69 @@ describe("India Location & PIN Code Utilities", () => {
       // Clean candidate locality name derived without destructive loss of source
       expect(cleanLocalityName).toBe("Koramangala VI Bk");
       expect(toTitleCase(cleanLocalityName)).toBe("Koramangala Vi Bk");
+    });
+  });
+
+  describe("Import Target Validation (validateImportTarget)", () => {
+    const localOpts = { allowRemote: false, confirmHost: null, isDemo: false };
+
+    it("allows local targets by default", () => {
+      expect(() => validateImportTarget("http://127.0.0.1:54321", localOpts)).not.toThrow();
+      expect(() => validateImportTarget("http://localhost:54321", localOpts)).not.toThrow();
+    });
+
+    it("blocks accidental remote target without --allow-remote", () => {
+      expect(() =>
+        validateImportTarget("https://abc123.supabase.co", localOpts)
+      ).toThrow(/SAFETY REJECTION.*--allow-remote/);
+    });
+
+    it("allows confirmed remote Supabase target", () => {
+      const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: false };
+      expect(() =>
+        validateImportTarget("https://abc123.supabase.co", opts)
+      ).not.toThrow();
+    });
+
+    it("rejects remote when --confirm-host does not match", () => {
+      const opts = { allowRemote: true, confirmHost: "wrong-ref.supabase.co", isDemo: false };
+      expect(() =>
+        validateImportTarget("https://abc123.supabase.co", opts)
+      ).toThrow(/does not match actual target/);
+    });
+
+    it("rejects --allow-remote without --confirm-host", () => {
+      const opts = { allowRemote: true, confirmHost: null, isDemo: false };
+      expect(() =>
+        validateImportTarget("https://abc123.supabase.co", opts)
+      ).toThrow(/requires --confirm-host/);
+    });
+
+    it("blocks --demo against remote target", () => {
+      const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: true };
+      expect(() =>
+        validateImportTarget("https://abc123.supabase.co", opts)
+      ).toThrow(/--demo is not allowed against remote/);
+    });
+
+    it("blocks non-Supabase remote hosts", () => {
+      const opts = { allowRemote: true, confirmHost: "fairswap.org", isDemo: false };
+      expect(() =>
+        validateImportTarget("https://fairswap.org", opts)
+      ).toThrow(/not a recognized Supabase host/);
+    });
+
+    it("rejects invalid URLs", () => {
+      expect(() =>
+        validateImportTarget("not-a-url", localOpts)
+      ).toThrow(/Invalid Supabase URL/);
+    });
+
+    it("allows --demo on local target", () => {
+      const opts = { allowRemote: false, confirmHost: null, isDemo: true };
+      expect(() =>
+        validateImportTarget("http://localhost:54321", opts)
+      ).not.toThrow();
     });
   });
 });

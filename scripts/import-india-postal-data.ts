@@ -25,20 +25,59 @@ export interface PostalRecordInput {
   statename: string;
 }
 
-export function validateSeedTarget(url: string) {
-  const allowedHosts = ["127.0.0.1", "localhost"];
+export interface ImportTargetOptions {
+  allowRemote: boolean;
+  confirmHost: string | null;
+  isDemo: boolean;
+}
+
+export function validateImportTarget(url: string, options: ImportTargetOptions) {
+  const LOCAL_HOSTS = ["127.0.0.1", "localhost"];
+  let parsed: URL;
   try {
-    const parsed = new URL(url);
-    if (!allowedHosts.includes(parsed.hostname)) {
-      throw new Error(
-        `CRITICAL SAFETY REJECTION: Script refused non-local target host "${parsed.hostname}". Allowed targets: ${allowedHosts.join(", ")}`
-      );
-    }
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message.includes("CRITICAL SAFETY REJECTION")) {
-      throw err;
-    }
+    parsed = new URL(url);
+  } catch {
     throw new Error(`Invalid Supabase URL: ${url}`);
+  }
+
+  const hostname = parsed.hostname;
+  const isLocal = LOCAL_HOSTS.includes(hostname);
+
+  if (isLocal) {
+    return; // Local targets always allowed
+  }
+
+  // Remote target checks
+  if (!options.allowRemote) {
+    throw new Error(
+      `SAFETY REJECTION: Remote target "${hostname}" is not allowed without --allow-remote.\n` +
+      `Usage: npm run location:import -- ./data.csv --allow-remote --confirm-host ${hostname}`
+    );
+  }
+
+  if (!hostname.endsWith(".supabase.co")) {
+    throw new Error(
+      `SAFETY REJECTION: Remote host "${hostname}" is not a recognized Supabase host (*.supabase.co).`
+    );
+  }
+
+  if (!options.confirmHost) {
+    throw new Error(
+      `SAFETY REJECTION: --allow-remote requires --confirm-host <hostname>.\n` +
+      `Usage: --allow-remote --confirm-host ${hostname}`
+    );
+  }
+
+  if (options.confirmHost !== hostname) {
+    throw new Error(
+      `SAFETY REJECTION: --confirm-host "${options.confirmHost}" does not match actual target "${hostname}".`
+    );
+  }
+
+  if (options.isDemo) {
+    throw new Error(
+      `SAFETY REJECTION: --demo is not allowed against remote target "${hostname}". Demo data is for local development only.`
+    );
   }
 }
 
@@ -106,9 +145,10 @@ export interface ImportStats {
 export async function importPostalData(
   records: PostalRecordInput[],
   supabaseUrl: string,
-  serviceRoleKey: string
+  serviceRoleKey: string,
+  targetOptions: ImportTargetOptions = { allowRemote: false, confirmHost: null, isDemo: false }
 ): Promise<ImportStats> {
-  validateSeedTarget(supabaseUrl);
+  validateImportTarget(supabaseUrl, targetOptions);
 
   const supabase = createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -203,6 +243,7 @@ export async function importPostalData(
 
   // Derive cities & localities for high-priority postal offices
   // For each distinct state + district combo, ensure city exists in public.cities
+  // Primary identity: normalized (name, state) — NOT slug, which is an implementation detail
   const cityMap = new Map<string, string>(); // "district|state" -> city_id
 
   const uniqueCities = new Map<string, { name: string; state: string; district: string }>();
@@ -214,19 +255,21 @@ export async function importPostalData(
   }
 
   for (const [, cityInfo] of uniqueCities) {
-    const slug = slugify(`${cityInfo.name}-${cityInfo.state}`);
-    
-    // Check if city exists
-    const { data: existingCity } = await supabase
+    // 1. Look for existing city by normalized name + state (case-insensitive)
+    const { data: existingByName } = await supabase
       .from("cities")
       .select("id")
-      .eq("slug", slug)
+      .ilike("name", cityInfo.name)
+      .ilike("state", cityInfo.state)
+      .limit(1)
       .maybeSingle();
 
     let cityId: string;
-    if (existingCity) {
-      cityId = existingCity.id;
+    if (existingByName) {
+      cityId = existingByName.id;
     } else {
+      // 2. No canonical match — create new city
+      const slug = slugify(`${cityInfo.name}-${cityInfo.state}`);
       const { data: newCity, error: cityErr } = await supabase
         .from("cities")
         .insert({
@@ -239,11 +282,23 @@ export async function importPostalData(
         .single();
 
       if (cityErr || !newCity) {
-        console.warn(`Could not create city "${cityInfo.name}":`, cityErr?.message);
-        continue;
+        // Might have been created concurrently; try to find it again
+        const { data: retry } = await supabase
+          .from("cities")
+          .select("id")
+          .ilike("name", cityInfo.name)
+          .ilike("state", cityInfo.state)
+          .limit(1)
+          .maybeSingle();
+        if (!retry) {
+          console.warn(`Could not create city "${cityInfo.name}":`, cityErr?.message);
+          continue;
+        }
+        cityId = retry.id;
+      } else {
+        cityId = newCity.id;
+        stats.citiesCreated++;
       }
-      cityId = newCity.id;
-      stats.citiesCreated++;
     }
 
     cityMap.set(`${cityInfo.district.toLowerCase()}|${cityInfo.state.toLowerCase()}`, cityId);
@@ -415,7 +470,27 @@ async function main() {
 
   const args = process.argv.slice(2);
   const isDemo = args.includes("--demo");
-  const csvArg = args.find((a) => !a.startsWith("--"));
+  const allowRemote = args.includes("--allow-remote");
+
+  // Parse --confirm-host value (--confirm-host <hostname>)
+  const confirmHostIdx = args.indexOf("--confirm-host");
+  const confirmHost = confirmHostIdx !== -1 ? args[confirmHostIdx + 1] || null : null;
+
+  const csvArg = args.find((a) => !a.startsWith("--") && (confirmHostIdx === -1 || args.indexOf(a) !== confirmHostIdx + 1));
+
+  const targetOptions: ImportTargetOptions = {
+    allowRemote,
+    confirmHost,
+    isDemo,
+  };
+
+  // Log target host (never credentials)
+  try {
+    const parsed = new URL(supabaseUrl);
+    console.log(`Target: ${parsed.hostname} (${allowRemote ? "remote mode" : "local mode"})`);
+  } catch {
+    // validateImportTarget will throw below
+  }
 
   let records: PostalRecordInput[];
 
@@ -426,7 +501,9 @@ async function main() {
     if (!csvArg) {
       console.error(
         "CRITICAL ERROR: Official postal CSV dataset file path is required.\n" +
-        "Usage: npx tsx scripts/import-india-postal-data.ts <path-to-pincode.csv> (or use --demo for dev seeding)"
+        "Usage: npx tsx scripts/import-india-postal-data.ts <path-to-pincode.csv> (or use --demo for dev seeding)\n" +
+        "\nRemote import:\n" +
+        "  npx tsx scripts/import-india-postal-data.ts ./data.csv --allow-remote --confirm-host <project-ref>.supabase.co"
       );
       process.exit(1);
     }
@@ -446,7 +523,7 @@ async function main() {
   }
 
   console.log(`Starting import of ${records.length} postal records...`);
-  const stats = await importPostalData(records, supabaseUrl, serviceRoleKey);
+  const stats = await importPostalData(records, supabaseUrl, serviceRoleKey, targetOptions);
 
   console.log("----------------------------------------");
   console.log("Postal Import Summary:");

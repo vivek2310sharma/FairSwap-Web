@@ -53,20 +53,44 @@ The postal importer operates directly against the Supabase database. Because tab
 
 ## 4. Execution Commands
 
-The repository provides a CLI script: [`scripts/import-india-postal-data.ts`](file:///c:/Users/VivekKumar/OneDrive%20-%20Nobly%20A%20S/Documents/FairSwap/scripts/import-india-postal-data.ts) (aliased as `npm run location:import`).
+The repository provides a CLI script: [`scripts/import-india-postal-data.ts`](../scripts/import-india-postal-data.ts) (aliased as `npm run location:import`).
 
 ### A. Production & Staging Ingestion (Strict Mode)
 Requires a valid CSV file path. Fails loudly with exit code 1 if the input file is missing, empty, or unreadable:
 
 ```bash
-# Using npm script:
+# Local (default safe target):
 npm run location:import -- /path/to/downloaded_pincode_directory.csv
 
 # Or direct tsx execution:
 npx tsx scripts/import-india-postal-data.ts /path/to/downloaded_pincode_directory.csv
 ```
 
-### B. Local Development & Prototype Seeding (Demo Flag)
+### B. Remote Staging / Production Import
+Remote targets require explicit opt-in with `--allow-remote` and hostname confirmation with `--confirm-host`:
+
+```bash
+# Staging:
+NEXT_PUBLIC_SUPABASE_URL=https://<staging-ref>.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=<staging-service-role-key> \
+npm run location:import -- ./india_pincode_data.csv \
+  --allow-remote --confirm-host <staging-ref>.supabase.co
+
+# Production:
+NEXT_PUBLIC_SUPABASE_URL=https://<prod-ref>.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=<prod-service-role-key> \
+npm run location:import -- ./india_pincode_data.csv \
+  --allow-remote --confirm-host <prod-ref>.supabase.co
+```
+
+> [!IMPORTANT]
+> **Remote Safety Constraints:**
+> - Only `*.supabase.co` remote hosts are accepted.
+> - `--confirm-host` must exactly match the target hostname.
+> - `--demo` is **never** allowed against remote targets.
+> - Credentials are never logged to the console.
+
+### C. Local Development & Prototype Seeding (Demo Flag)
 When seeding a development environment without the nationwide 150k+ CSV, pass `--demo`:
 
 ```bash
@@ -154,7 +178,7 @@ SELECT public.lookup_pincode('302001');
 ## 9. Current Environment Status & Test Coverage
 
 - **Database / Schema Validation**:
-  - Verified using PGlite in a PostgreSQL-compatible automated test environment ([`tests/security/india-location-security.test.ts`](file:///c:/Users/VivekKumar/OneDrive%20-%20Nobly%20A%20S/Documents/FairSwap/tests/security/india-location-security.test.ts)).
+  - Verified using PGlite in a PostgreSQL-compatible automated test environment ([`tests/security/india-location-security.test.ts`](../tests/security/india-location-security.test.ts)).
   - Real local Supabase Docker smoke test remains pending on local environments where Docker Desktop engine is unavailable.
 - **CSV Parser Smoke Testing**:
   - The importer and parser were tested using an automated test fixture structured to match official Department of Posts headers, BOM encoding, and quote formats. Testing against a live 150k+ production government export will occur during initial production deployment per this runbook.

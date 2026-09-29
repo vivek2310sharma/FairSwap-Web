@@ -114,7 +114,7 @@ export async function signInAction(
       operation: "signInAction",
       error_code: "INVALID_CREDENTIALS",
     });
-    return { error: "Invalid email or password. Please try again." };
+    return { error: "We couldn\'t sign you in with those credentials. Check your email and password and try again." };
   }
 
   // Confirm identity from server
