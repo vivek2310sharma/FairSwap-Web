@@ -179,6 +179,7 @@ export async function importPostalData(
     source: string;
     source_updated_at: string;
   }> = [];
+  const validMap = new Map<string, (typeof validRecords)[0]>();
 
   const nowIso = new Date().toISOString();
 
@@ -204,7 +205,8 @@ export async function importPostalData(
       continue;
     }
 
-    validRecords.push({
+    const key = `${pincode}|${officeName.toLowerCase()}`;
+    validMap.set(key, {
       pincode,
       office_name: officeName,
       office_type: normalizeText(raw.officeType) || null,
@@ -218,6 +220,10 @@ export async function importPostalData(
       source: "data.gov.in",
       source_updated_at: nowIso,
     });
+  }
+
+  for (const rec of validMap.values()) {
+    validRecords.push(rec);
   }
 
   console.log(`Validated ${validRecords.length} records (${stats.rejected} rejected)...`);
@@ -239,6 +245,10 @@ export async function importPostalData(
     } else {
       stats.imported += batch.length;
     }
+
+    if ((i + BATCH_SIZE) % 10000 === 0 || i + BATCH_SIZE >= validRecords.length) {
+      console.log(`  -> Postal data progress: ${Math.min(i + BATCH_SIZE, validRecords.length)} / ${validRecords.length}`);
+    }
   }
 
   // Derive cities & localities for high-priority postal offices
@@ -254,6 +264,8 @@ export async function importPostalData(
     }
   }
 
+  console.log(`Ensuring ${uniqueCities.size} cities exist...`);
+  let citiesProcessed = 0;
   for (const [, cityInfo] of uniqueCities) {
     // 1. Look for existing city by normalized name + state (case-insensitive)
     const { data: existingByName } = await supabase
@@ -302,15 +314,21 @@ export async function importPostalData(
     }
 
     cityMap.set(`${cityInfo.district.toLowerCase()}|${cityInfo.state.toLowerCase()}`, cityId);
+    citiesProcessed++;
+    if (citiesProcessed % 100 === 0 || citiesProcessed === uniqueCities.size) {
+      console.log(`  -> Cities progress: ${citiesProcessed} / ${uniqueCities.size}`);
+    }
   }
 
-  // Derive localities & mappings
+  // Derive localities & mappings using batched upserts
+  const localityCache = new Map<string, string>(); // `${cityId}|${locSlug}` -> localityId
+  const uniqueLocs = new Map<string, { city_id: string; name: string; slug: string; is_active: boolean }>();
+
   for (const r of validRecords) {
     const cityKey = `${r.district.toLowerCase()}|${r.state.toLowerCase()}`;
     const cityId = cityMap.get(cityKey);
     if (!cityId) continue;
 
-    // Clean post office name for locality candidate (remove B.O, S.O, H.O suffixes if present)
     const cleanLocalityName = r.office_name
       .replace(/\s+(B\.O|S\.O|H\.O|SO|BO|HO)$/i, "")
       .trim();
@@ -320,61 +338,104 @@ export async function importPostalData(
     const locSlug = slugify(cleanLocalityName);
     if (!locSlug) continue;
 
-    // Fetch or create locality
-    const { data: existingLoc } = await supabase
+    const key = `${cityId}|${locSlug}`;
+    if (!uniqueLocs.has(key)) {
+      uniqueLocs.set(key, {
+        city_id: cityId,
+        name: toTitleCase(cleanLocalityName),
+        slug: locSlug,
+        is_active: true,
+      });
+    }
+  }
+
+  console.log(`Batch upserting ${uniqueLocs.size} unique localities...`);
+  // Batch upsert localities in chunks of BATCH_SIZE (500)
+  const locArray = Array.from(uniqueLocs.values());
+  for (let i = 0; i < locArray.length; i += BATCH_SIZE) {
+    const chunk = locArray.slice(i, i + BATCH_SIZE);
+    const { data: upserted, error: locErr } = await supabase
       .from("localities")
-      .select("id")
-      .eq("city_id", cityId)
-      .eq("slug", locSlug)
-      .maybeSingle();
+      .upsert(chunk, { onConflict: "city_id,slug" })
+      .select("id, city_id, slug");
 
-    let localityId: string;
-    if (existingLoc) {
-      localityId = existingLoc.id;
+    if (locErr) {
+      console.warn(`Localities batch error [${i}]:`, locErr.message);
+      if (stats.errors.length < 20) {
+        stats.errors.push(`Localities batch error: ${locErr.message}`);
+      }
+    } else if (upserted) {
+      for (const loc of upserted) {
+        localityCache.set(`${loc.city_id}|${loc.slug}`, loc.id);
+      }
+      stats.localitiesCreated += upserted.length;
+    }
+
+    if ((i + BATCH_SIZE) % 10000 === 0 || i + BATCH_SIZE >= locArray.length) {
+      console.log(`  -> Localities progress: ${Math.min(i + BATCH_SIZE, locArray.length)} / ${locArray.length}`);
+    }
+  }
+
+  console.log("Preparing candidate locality mappings...");
+  // Batch upsert postal_pincode_localities mappings (deduplicated by pincode, locality_id)
+  const mappingsMap = new Map<
+    string,
+    {
+      pincode: string;
+      locality_id: string;
+      office_name: string;
+      source: string;
+    }
+  >();
+
+  for (const r of validRecords) {
+    const cityKey = `${r.district.toLowerCase()}|${r.state.toLowerCase()}`;
+    const cityId = cityMap.get(cityKey);
+    if (!cityId) continue;
+
+    const cleanLocalityName = r.office_name
+      .replace(/\s+(B\.O|S\.O|H\.O|SO|BO|HO)$/i, "")
+      .trim();
+
+    if (!cleanLocalityName) continue;
+
+    const locSlug = slugify(cleanLocalityName);
+    if (!locSlug) continue;
+
+    const localityId = localityCache.get(`${cityId}|${locSlug}`);
+    if (!localityId) continue;
+
+    const mapKey = `${r.pincode}|${localityId}`;
+    if (!mappingsMap.has(mapKey)) {
+      mappingsMap.set(mapKey, {
+        pincode: r.pincode,
+        locality_id: localityId,
+        office_name: r.office_name,
+        source: "india_post_candidate",
+      });
+    }
+  }
+
+  const mappingsToUpsert = Array.from(mappingsMap.values());
+
+  console.log(`Batch upserting ${mappingsToUpsert.length} candidate mappings...`);
+  for (let i = 0; i < mappingsToUpsert.length; i += BATCH_SIZE) {
+    const chunk = mappingsToUpsert.slice(i, i + BATCH_SIZE);
+    const { error: mapErr } = await supabase
+      .from("postal_pincode_localities")
+      .upsert(chunk, { onConflict: "pincode,locality_id" });
+
+    if (!mapErr) {
+      stats.mappingsCreated += chunk.length;
     } else {
-      const { data: newLoc, error: locErr } = await supabase
-        .from("localities")
-        .insert({
-          city_id: cityId,
-          name: toTitleCase(cleanLocalityName),
-          slug: locSlug,
-          is_active: true,
-        })
-        .select("id")
-        .single();
-
-      if (locErr || !newLoc) {
-        // Might fail on constraint if slug duplicate, select again
-        const { data: fallbackLoc } = await supabase
-          .from("localities")
-          .select("id")
-          .eq("city_id", cityId)
-          .eq("slug", locSlug)
-          .maybeSingle();
-
-        if (!fallbackLoc) continue;
-        localityId = fallbackLoc.id;
-      } else {
-        localityId = newLoc.id;
-        stats.localitiesCreated++;
+      console.warn(`Mappings batch error [${i}]:`, mapErr.message);
+      if (stats.errors.length < 20) {
+        stats.errors.push(`Mappings batch error: ${mapErr.message}`);
       }
     }
 
-    // Upsert postal_pincode_localities mapping preserving official office name and candidate provenance
-    const { error: mapErr } = await supabase
-      .from("postal_pincode_localities")
-      .upsert(
-        {
-          pincode: r.pincode,
-          locality_id: localityId,
-          office_name: r.office_name,
-          source: "india_post_candidate",
-        },
-        { onConflict: "pincode,locality_id" }
-      );
-
-    if (!mapErr) {
-      stats.mappingsCreated++;
+    if ((i + BATCH_SIZE) % 10000 === 0 || i + BATCH_SIZE >= mappingsToUpsert.length) {
+      console.log(`  -> Mappings progress: ${Math.min(i + BATCH_SIZE, mappingsToUpsert.length)} / ${mappingsToUpsert.length}`);
     }
   }
 
@@ -461,10 +522,10 @@ export const DEMO_INDIA_POSTAL_DATA: PostalRecordInput[] = [
 
 async function main() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
   if (!serviceRoleKey) {
-    console.error("SUPABASE_SERVICE_ROLE_KEY is required for postal data import script");
+    console.error("SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) is required for postal data import script");
     process.exit(1);
   }
 
