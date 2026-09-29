@@ -128,6 +128,7 @@ export type Database = {
       cities: {
         Row: {
           created_at: string
+          district: string | null
           id: string
           is_active: boolean
           name: string
@@ -136,6 +137,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          district?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -144,6 +146,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          district?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -151,6 +154,92 @@ export type Database = {
           state?: string
         }
         Relationships: []
+      }
+      india_postal_data: {
+        Row: {
+          circle: string | null
+          created_at: string
+          delivery_status: string | null
+          district: string
+          division: string | null
+          id: string
+          office_name: string
+          office_type: string | null
+          pincode: string
+          region: string | null
+          source: string
+          source_updated_at: string | null
+          state: string
+          taluk: string | null
+          updated_at: string
+        }
+        Insert: {
+          circle?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          district: string
+          division?: string | null
+          id?: string
+          office_name: string
+          office_type?: string | null
+          pincode: string
+          region?: string | null
+          source?: string
+          source_updated_at?: string | null
+          state: string
+          taluk?: string | null
+          updated_at?: string
+        }
+        Update: {
+          circle?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          district?: string
+          division?: string | null
+          id?: string
+          office_name?: string
+          office_type?: string | null
+          pincode?: string
+          region?: string | null
+          source?: string
+          source_updated_at?: string | null
+          state?: string
+          taluk?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      postal_pincode_localities: {
+        Row: {
+          created_at: string
+          id: string
+          locality_id: string
+          office_name: string | null
+          pincode: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          locality_id: string
+          office_name?: string | null
+          pincode: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locality_id?: string
+          office_name?: string | null
+          pincode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "postal_pincode_localities_locality_id_fkey"
+            columns: ["locality_id"]
+            isOneToOne: false
+            referencedRelation: "localities"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       conversation_read_states: {
         Row: {
@@ -485,6 +574,7 @@ export type Database = {
           description: string | null
           expires_at: string | null
           id: string
+          landmark: string | null
           locality_id: string | null
           pin_code: string | null
           price_paise: number | null
@@ -518,6 +608,7 @@ export type Database = {
           description?: string | null
           expires_at?: string | null
           id?: string
+          landmark?: string | null
           locality_id?: string | null
           pin_code?: string | null
           price_paise?: number | null
@@ -551,6 +642,7 @@ export type Database = {
           description?: string | null
           expires_at?: string | null
           id?: string
+          landmark?: string | null
           locality_id?: string | null
           pin_code?: string | null
           price_paise?: number | null
