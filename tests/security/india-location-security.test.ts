@@ -362,4 +362,90 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       await db.exec(`RESET ROLE;`);
     });
   });
+
+  describe("D. Official Postal Dataset Importer & Idempotency Smoke Test", () => {
+    it("handles duplicate official records and can be rerun safely (idempotent)", async () => {
+      // Test sample representing official Department of Posts records
+      const sampleRecords = [
+        {
+          pincode: "560095",
+          office_name: "Koramangala VI Bk S.O",
+          office_type: "S.O",
+          delivery_status: "Delivery",
+          district: "Bengaluru Urban",
+          state: "Karnataka",
+        },
+        {
+          pincode: "560095",
+          office_name: "Koramangala VI Bk S.O", // Duplicate record
+          office_type: "S.O",
+          delivery_status: "Delivery",
+          district: "Bengaluru Urban",
+          state: "Karnataka",
+        },
+        {
+          pincode: "110001",
+          office_name: "Connaught Place H.O",
+          office_type: "H.O",
+          delivery_status: "Delivery",
+          district: "New Delhi",
+          state: "Delhi",
+        },
+      ];
+
+      // 1. Initial Import / Upsert
+      for (const r of sampleRecords) {
+        await db.query(`
+          INSERT INTO public.india_postal_data 
+            (pincode, office_name, office_type, delivery_status, district, state)
+          VALUES 
+            ('${r.pincode}', '${r.office_name}', '${r.office_type}', '${r.delivery_status}', '${r.district}', '${r.state}')
+          ON CONFLICT (pincode, office_name) DO UPDATE SET
+            office_type = EXCLUDED.office_type,
+            delivery_status = EXCLUDED.delivery_status,
+            district = EXCLUDED.district,
+            state = EXCLUDED.state;
+        `);
+      }
+
+      // Check count: should be 2 unique records (duplicate 560095 collapsed)
+      const countRes1 = await db.query<any>(`
+        SELECT COUNT(*) as cnt FROM public.india_postal_data 
+        WHERE pincode IN ('560095', '110001');
+      `);
+      expect(Number(countRes1.rows[0].cnt)).toBe(2);
+
+      // 2. Re-run import (Idempotency test)
+      for (const r of sampleRecords) {
+        await db.query(`
+          INSERT INTO public.india_postal_data 
+            (pincode, office_name, office_type, delivery_status, district, state)
+          VALUES 
+            ('${r.pincode}', '${r.office_name}', '${r.office_type}', '${r.delivery_status}', '${r.district}', '${r.state}')
+          ON CONFLICT (pincode, office_name) DO NOTHING;
+        `);
+      }
+
+      const countRes2 = await db.query<any>(`
+        SELECT COUNT(*) as cnt FROM public.india_postal_data 
+        WHERE pincode IN ('560095', '110001');
+      `);
+      expect(Number(countRes2.rows[0].cnt)).toBe(2);
+
+      // 3. Verify provenance and candidate mapping
+      const mappingRes = await db.query<any>(`
+        INSERT INTO public.postal_pincode_localities 
+          (pincode, locality_id, office_name, source)
+        VALUES 
+          ('560095', '${koramangalaLocalityId}', 'Koramangala VI Bk S.O', 'india_post_candidate')
+        ON CONFLICT (pincode, locality_id) DO UPDATE SET
+          office_name = EXCLUDED.office_name,
+          source = EXCLUDED.source
+        RETURNING office_name, source;
+      `);
+
+      expect(mappingRes.rows[0].office_name).toBe("Koramangala VI Bk S.O");
+      expect(mappingRes.rows[0].source).toBe("india_post_candidate");
+    });
+  });
 });

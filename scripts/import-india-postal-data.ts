@@ -143,7 +143,7 @@ export async function importPostalData(
   const nowIso = new Date().toISOString();
 
   for (const raw of records) {
-    const pincode = normalizeText(raw.pincode);
+    const pincode = normalizeText(raw.pincode).replace(/\s+/g, "");
     const officeName = normalizeText(raw.officename);
     const district = normalizeText(raw.Districtname);
     const state = normalizeText(raw.statename);
@@ -327,23 +327,35 @@ export async function importPostalData(
 }
 
 export function parseCSVFile(filePath: string): PostalRecordInput[] {
-  const content = fs.readFileSync(filePath, "utf-8");
+  let content = fs.readFileSync(filePath, "utf-8");
+  if (content.charCodeAt(0) === 0xfeff) {
+    content = content.slice(1);
+  }
   const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length <= 1) return [];
 
-  const headers = parseCSVLine(lines[0]).map((h) => h.toLowerCase());
+  const rawHeaders = parseCSVLine(lines[0]);
+  const cleanHeaders = rawHeaders.map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ""));
   const records: PostalRecordInput[] = [];
 
-  const idxOffice = headers.findIndex((h) => h.includes("office") || h.includes("officename"));
-  const idxPincode = headers.findIndex((h) => h.includes("pin") || h.includes("pincode"));
-  const idxType = headers.findIndex((h) => h.includes("type") || h.includes("officetype"));
-  const idxDelivery = headers.findIndex((h) => h.includes("delivery") || h.includes("deliverystatus"));
-  const idxDivision = headers.findIndex((h) => h.includes("division"));
-  const idxRegion = headers.findIndex((h) => h.includes("region"));
-  const idxCircle = headers.findIndex((h) => h.includes("circle"));
-  const idxTaluk = headers.findIndex((h) => h.includes("taluk"));
-  const idxDistrict = headers.findIndex((h) => h.includes("district"));
-  const idxState = headers.findIndex((h) => h.includes("state"));
+  const idxOffice = cleanHeaders.findIndex(
+    (h) => h === "officename" || h === "poname" || (h.includes("office") && !h.includes("type") && !h.includes("status"))
+  );
+  const idxPincode = cleanHeaders.findIndex(
+    (h) => h === "pincode" || h === "pin" || h === "postalcode"
+  );
+  const idxType = cleanHeaders.findIndex(
+    (h) => h === "officetype" || h === "type"
+  );
+  const idxDelivery = cleanHeaders.findIndex(
+    (h) => h === "delivery" || h === "deliverystatus"
+  );
+  const idxDivision = cleanHeaders.findIndex((h) => h.includes("division"));
+  const idxRegion = cleanHeaders.findIndex((h) => h.includes("region"));
+  const idxCircle = cleanHeaders.findIndex((h) => h.includes("circle"));
+  const idxTaluk = cleanHeaders.findIndex((h) => h.includes("taluk") || h.includes("tehsil"));
+  const idxDistrict = cleanHeaders.findIndex((h) => h.includes("district"));
+  const idxState = cleanHeaders.findIndex((h) => h.includes("state"));
 
   for (let i = 1; i < lines.length; i++) {
     const cols = parseCSVLine(lines[i]);

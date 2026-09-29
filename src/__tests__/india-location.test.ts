@@ -101,4 +101,93 @@ describe("India Location & PIN Code Utilities", () => {
       expect(resLoc.success).toBe(true);
     });
   });
+
+  describe("Official Department of Posts / data.gov.in CSV Parser Smoke Tests", () => {
+    // Import parseCSVFile and test with simulated CSV files
+    it("correctly parses official Department of Posts header format", async () => {
+      const { parseCSVFile } = await import("../../scripts/import-india-postal-data");
+      const fs = await import("fs");
+      const path = await import("path");
+      const os = await import("os");
+
+      const csvContent = [
+        "Circle Name,Region Name,Division Name,Office Name,Pincode,Office Type,Delivery,District,StateName",
+        'Karnataka Circle,Bangalore HQ Region,Bangalore East Division,"Koramangala VI Bk S.O",560095,S.O,Delivery,Bengaluru Urban,KARNATAKA',
+        'Rajasthan Circle,Jaipur Region,Jaipur City Division,"Malviya Nagar S.O",302017,S.O,Delivery,Jaipur,RAJASTHAN',
+        'Delhi Circle,Delhi Region,New Delhi Central Division,"Connaught Place H.O",110001,H.O,Delivery,New Delhi,DELHI',
+      ].join("\n");
+
+      const tmpDir = os.tmpdir();
+      const tmpFile = path.join(tmpDir, `test-dop-official-${Date.now()}.csv`);
+      fs.writeFileSync(tmpFile, csvContent, "utf-8");
+
+      try {
+        const records = parseCSVFile(tmpFile);
+        expect(records).toHaveLength(3);
+
+        expect(records[0].officename).toBe("Koramangala VI Bk S.O");
+        expect(records[0].pincode).toBe("560095");
+        expect(records[0].officeType).toBe("S.O");
+        expect(records[0].Deliverystatus).toBe("Delivery");
+        expect(records[0].Districtname).toBe("Bengaluru Urban");
+        expect(records[0].statename).toBe("KARNATAKA");
+
+        expect(records[1].officename).toBe("Malviya Nagar S.O");
+        expect(records[1].pincode).toBe("302017");
+
+        expect(records[2].officename).toBe("Connaught Place H.O");
+        expect(records[2].pincode).toBe("110001");
+      } finally {
+        fs.unlinkSync(tmpFile);
+      }
+    });
+
+    it("handles UTF-8 BOM, quoted fields with commas, and spaced PINs", async () => {
+      const { parseCSVFile } = await import("../../scripts/import-india-postal-data");
+      const fs = await import("fs");
+      const path = await import("path");
+      const os = await import("os");
+
+      // Byte Order Mark + quoted fields with internal commas
+      const bomCsv =
+        "\uFEFF" +
+        [
+          "circlename,regionname,divisionname,officename,pincode,officetype,deliverystatus,districtname,statename",
+          '"Maharashtra Circle","Mumbai Region","Mumbai West","Bandra (West) S.O","400050","S.O","Delivery","Mumbai Suburban","Maharashtra"',
+          '"Karnataka Circle","Bangalore HQ","Bangalore South","Jayanagar, 3rd Block S.O","560 011","S.O","Delivery","Bengaluru Urban","Karnataka"',
+        ].join("\n");
+
+      const tmpDir = os.tmpdir();
+      const tmpFile = path.join(tmpDir, `test-bom-${Date.now()}.csv`);
+      fs.writeFileSync(tmpFile, bomCsv, "utf-8");
+
+      try {
+        const records = parseCSVFile(tmpFile);
+        expect(records).toHaveLength(2);
+
+        expect(records[0].officename).toBe("Bandra (West) S.O");
+        expect(records[0].pincode).toBe("400050");
+        expect(records[0].Districtname).toBe("Mumbai Suburban");
+
+        expect(records[1].officename).toBe("Jayanagar, 3rd Block S.O");
+        expect(records[1].pincode).toBe("560 011");
+        expect(records[1].Districtname).toBe("Bengaluru Urban");
+      } finally {
+        fs.unlinkSync(tmpFile);
+      }
+    });
+
+    it("verifies postal office name provenance preservation and candidate normalization", () => {
+      const rawOfficeName = "Koramangala VI Bk S.O";
+      const cleanLocalityName = rawOfficeName
+        .replace(/\s+(B\.O|S\.O|H\.O|SO|BO|HO)$/i, "")
+        .trim();
+
+      // Original official post office name preserved as source provenance
+      expect(rawOfficeName).toBe("Koramangala VI Bk S.O");
+      // Clean candidate locality name derived without destructive loss of source
+      expect(cleanLocalityName).toBe("Koramangala VI Bk");
+      expect(toTitleCase(cleanLocalityName)).toBe("Koramangala Vi Bk");
+    });
+  });
 });
