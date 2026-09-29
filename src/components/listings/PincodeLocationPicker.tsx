@@ -151,7 +151,7 @@ export default function PincodeLocationPicker({
             )}
             {pinCode.length === 6 && !isLoading && !errorMsg && derivedLocationText && (
               <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
-                ✓ Verified
+                PIN matched
               </span>
             )}
           </div>
@@ -218,7 +218,7 @@ export default function PincodeLocationPicker({
               onChange={() => {}}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-400"
             >
-              <option value="">(Derived automatically from verified PIN code)</option>
+              <option value="">(Derived automatically from matched PIN code)</option>
               {cities.map((city) => (
                 <option key={city.id} value={city.id}>
                   {city.name}, {city.state}
