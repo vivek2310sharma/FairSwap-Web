@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "test:security": "vitest run tests/security/",
     "supabase": "supabase",
-    "bootstrap:admin": "tsx scripts/bootstrap-admin.ts"
+    "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
+    "location:import": "tsx scripts/import-india-postal-data.ts"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

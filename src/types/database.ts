@@ -152,6 +152,95 @@ export type Database = {
         }
         Relationships: []
       }
+      india_postal_data: {
+        Row: {
+          circle: string | null
+          created_at: string
+          delivery_status: string | null
+          district: string
+          division: string | null
+          id: string
+          office_name: string
+          office_type: string | null
+          pincode: string
+          region: string | null
+          source: string
+          source_updated_at: string | null
+          state: string
+          taluk: string | null
+          updated_at: string
+        }
+        Insert: {
+          circle?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          district: string
+          division?: string | null
+          id?: string
+          office_name: string
+          office_type?: string | null
+          pincode: string
+          region?: string | null
+          source?: string
+          source_updated_at?: string | null
+          state: string
+          taluk?: string | null
+          updated_at?: string
+        }
+        Update: {
+          circle?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          district?: string
+          division?: string | null
+          id?: string
+          office_name?: string
+          office_type?: string | null
+          pincode?: string
+          region?: string | null
+          source?: string
+          source_updated_at?: string | null
+          state?: string
+          taluk?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      postal_pincode_localities: {
+        Row: {
+          created_at: string
+          id: string
+          locality_id: string
+          office_name: string | null
+          pincode: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          locality_id: string
+          office_name?: string | null
+          pincode: string
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locality_id?: string
+          office_name?: string | null
+          pincode?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "postal_pincode_localities_locality_id_fkey"
+            columns: ["locality_id"]
+            isOneToOne: false
+            referencedRelation: "localities"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       conversation_read_states: {
         Row: {
           conversation_id: string
@@ -485,6 +574,7 @@ export type Database = {
           description: string | null
           expires_at: string | null
           id: string
+          landmark: string | null
           locality_id: string | null
           pin_code: string | null
           price_paise: number | null
@@ -518,6 +608,7 @@ export type Database = {
           description?: string | null
           expires_at?: string | null
           id?: string
+          landmark?: string | null
           locality_id?: string | null
           pin_code?: string | null
           price_paise?: number | null
@@ -551,6 +642,7 @@ export type Database = {
           description?: string | null
           expires_at?: string | null
           id?: string
+          landmark?: string | null
           locality_id?: string | null
           pin_code?: string | null
           price_paise?: number | null
