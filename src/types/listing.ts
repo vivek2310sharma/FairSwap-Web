@@ -51,7 +51,6 @@ export interface City {
   id: string;
   name: string;
   state: string;
-  district?: string | null;
   slug: string;
   is_active: boolean;
   created_at: string;

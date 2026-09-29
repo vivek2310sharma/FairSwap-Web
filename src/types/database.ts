@@ -128,7 +128,6 @@ export type Database = {
       cities: {
         Row: {
           created_at: string
-          district: string | null
           id: string
           is_active: boolean
           name: string
@@ -137,7 +136,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          district?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -146,7 +144,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          district?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -216,6 +213,7 @@ export type Database = {
           locality_id: string
           office_name: string | null
           pincode: string
+          source: string
         }
         Insert: {
           created_at?: string
@@ -223,6 +221,7 @@ export type Database = {
           locality_id: string
           office_name?: string | null
           pincode: string
+          source?: string
         }
         Update: {
           created_at?: string
@@ -230,6 +229,7 @@ export type Database = {
           locality_id?: string
           office_name?: string | null
           pincode?: string
+          source?: string
         }
         Relationships: [
           {

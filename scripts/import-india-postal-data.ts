@@ -232,7 +232,6 @@ export async function importPostalData(
         .insert({
           name: cityInfo.name,
           state: cityInfo.state,
-          district: cityInfo.district,
           slug,
           is_active: true,
         })
@@ -256,7 +255,7 @@ export async function importPostalData(
     const cityId = cityMap.get(cityKey);
     if (!cityId) continue;
 
-    // Clean post office name for locality (remove B.O, S.O, H.O suffixes if present)
+    // Clean post office name for locality candidate (remove B.O, S.O, H.O suffixes if present)
     const cleanLocalityName = r.office_name
       .replace(/\s+(B\.O|S\.O|H\.O|SO|BO|HO)$/i, "")
       .trim();
@@ -306,7 +305,7 @@ export async function importPostalData(
       }
     }
 
-    // Upsert postal_pincode_localities mapping
+    // Upsert postal_pincode_localities mapping preserving official office name and candidate provenance
     const { error: mapErr } = await supabase
       .from("postal_pincode_localities")
       .upsert(
@@ -314,6 +313,7 @@ export async function importPostalData(
           pincode: r.pincode,
           locality_id: localityId,
           office_name: r.office_name,
+          source: "india_post_candidate",
         },
         { onConflict: "pincode,locality_id" }
       );
@@ -366,8 +366,8 @@ export function parseCSVFile(filePath: string): PostalRecordInput[] {
   return records;
 }
 
-// Default sample dataset for test/seed run if no CSV argument provided
-export const SAMPLE_INDIA_POSTAL_DATA: PostalRecordInput[] = [
+// Development and demo dataset (used only when --demo flag is explicitly specified)
+export const DEMO_INDIA_POSTAL_DATA: PostalRecordInput[] = [
   // Bengaluru Urban
   { officename: "Koramangala VI Bk S.O", pincode: "560095", Districtname: "Bengaluru Urban", statename: "Karnataka", Deliverystatus: "Delivery", Taluk: "Bengaluru South" },
   { officename: "Koramangala I Block S.O", pincode: "560034", Districtname: "Bengaluru Urban", statename: "Karnataka", Deliverystatus: "Delivery", Taluk: "Bengaluru South" },
@@ -401,15 +401,36 @@ async function main() {
     process.exit(1);
   }
 
-  const csvArg = process.argv[2];
+  const args = process.argv.slice(2);
+  const isDemo = args.includes("--demo");
+  const csvArg = args.find((a) => !a.startsWith("--"));
+
   let records: PostalRecordInput[];
 
-  if (csvArg && fs.existsSync(csvArg)) {
-    console.log(`Loading postal records from CSV file: ${csvArg}`);
-    records = parseCSVFile(csvArg);
+  if (isDemo) {
+    console.log("Running in explicit DEMO mode. Importing curated sample India postal dataset...");
+    records = DEMO_INDIA_POSTAL_DATA;
   } else {
-    console.log("No CSV file provided or file not found. Importing standard seed India postal dataset...");
-    records = SAMPLE_INDIA_POSTAL_DATA;
+    if (!csvArg) {
+      console.error(
+        "CRITICAL ERROR: Official postal CSV dataset file path is required.\n" +
+        "Usage: npx tsx scripts/import-india-postal-data.ts <path-to-pincode.csv> (or use --demo for dev seeding)"
+      );
+      process.exit(1);
+    }
+
+    if (!fs.existsSync(csvArg)) {
+      console.error(`CRITICAL ERROR: Postal dataset CSV file does not exist: "${csvArg}"`);
+      process.exit(1);
+    }
+
+    console.log(`Loading official postal records from CSV file: ${csvArg}`);
+    records = parseCSVFile(csvArg);
+
+    if (records.length === 0) {
+      console.error(`CRITICAL ERROR: No records found or CSV is malformed in "${csvArg}"`);
+      process.exit(1);
+    }
   }
 
   console.log(`Starting import of ${records.length} postal records...`);

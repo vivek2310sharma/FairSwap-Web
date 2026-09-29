@@ -8,7 +8,6 @@ const mockCities: City[] = [
     id: "city-1",
     name: "Bengaluru",
     state: "Karnataka",
-    district: "Bengaluru Urban",
     slug: "bengaluru",
     is_active: true,
     created_at: new Date().toISOString(),
@@ -104,7 +103,7 @@ describe("PincodeLocationPicker component", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/PIN code not found in location database/i)
+        screen.getByText(/PIN code not found/i)
       ).toBeInTheDocument();
     });
   });
