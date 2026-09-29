@@ -208,6 +208,39 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
 
       await db.exec(`RESET ROLE;`);
     });
+
+    it("asserts lookup_pincode is SECURITY INVOKER and PUBLIC does not have unintended execute privilege", async () => {
+      const procRes = await db.query<any>(`
+        SELECT prosecdef, proconfig
+        FROM pg_proc
+        JOIN pg_namespace n ON n.oid = pg_proc.pronamespace
+        WHERE n.nspname = 'public' AND proname = 'lookup_pincode';
+      `);
+      expect(procRes.rows).toHaveLength(1);
+      // prosecdef must be false for SECURITY INVOKER
+      expect(procRes.rows[0].prosecdef).toBe(false);
+
+      // Verify safe search_path is configured in proconfig
+      const proconfig = procRes.rows[0].proconfig;
+      expect(proconfig).toEqual(expect.arrayContaining([expect.stringContaining("search_path=")]));
+
+      // Assert PUBLIC pseudo-role does NOT have execute privilege
+      const pubPriv = await db.query<any>(`
+        SELECT has_function_privilege('public', 'public.lookup_pincode(text)', 'execute') as has_priv;
+      `);
+      expect(pubPriv.rows[0].has_priv).toBe(false);
+
+      // Assert anon and authenticated DO have execute privilege
+      const anonPriv = await db.query<any>(`
+        SELECT has_function_privilege('anon', 'public.lookup_pincode(text)', 'execute') as has_priv;
+      `);
+      expect(anonPriv.rows[0].has_priv).toBe(true);
+
+      const authPriv = await db.query<any>(`
+        SELECT has_function_privilege('authenticated', 'public.lookup_pincode(text)', 'execute') as has_priv;
+      `);
+      expect(authPriv.rows[0].has_priv).toBe(true);
+    });
   });
 
   describe("B. PostgreSQL Grants & RLS Write Boundaries", () => {

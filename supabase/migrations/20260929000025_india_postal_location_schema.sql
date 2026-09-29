@@ -69,7 +69,7 @@ CREATE OR REPLACE FUNCTION public.lookup_pincode(p_pincode text)
 RETURNS jsonb
 LANGUAGE plpgsql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
@@ -157,7 +157,9 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.lookup_pincode(text) TO anon, authenticated, service_role;
+REVOKE ALL ON FUNCTION public.lookup_pincode(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.lookup_pincode(text)
+  TO anon, authenticated, service_role;
 
 -- 8. Hardened Listing Submission Integrity: app_security.impl_seller_submit_listing
 -- Ensures server-side validation that PIN code is valid and locality belongs to the PIN code
