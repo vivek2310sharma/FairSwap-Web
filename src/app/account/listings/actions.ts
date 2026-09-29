@@ -59,6 +59,7 @@ export async function createDraftListingAction(
     price_type: (formData.get("price_type") as ListingPriceType) || null,
     price_paise: formData.get("price_paise") ? parseInt(formData.get("price_paise") as string, 10) : null,
     pin_code: (formData.get("pin_code") as string) || null,
+    landmark: (formData.get("landmark") as string) || null,
     category_attributes: categoryAttributes,
   };
 
@@ -84,6 +85,7 @@ export async function createDraftListingAction(
       price_type: validation.data.price_type,
       price_paise: validation.data.price_paise,
       pin_code: validation.data.pin_code,
+      landmark: validation.data.landmark,
       category_attributes: validation.data.category_attributes as unknown as Json,
     })
     .select("id")
@@ -144,6 +146,7 @@ export async function updateListingAction(
     price_type: (formData.get("price_type") as ListingPriceType) || null,
     price_paise: formData.get("price_paise") ? parseInt(formData.get("price_paise") as string, 10) : null,
     pin_code: (formData.get("pin_code") as string) || null,
+    landmark: (formData.get("landmark") as string) || null,
     category_attributes: categoryAttributes,
   };
 
@@ -169,6 +172,7 @@ export async function updateListingAction(
       price_type: validation.data.price_type,
       price_paise: validation.data.price_paise,
       pin_code: validation.data.pin_code,
+      landmark: validation.data.landmark,
       category_attributes: validation.data.category_attributes as unknown as Json,
     })
     .eq("id", listingId);

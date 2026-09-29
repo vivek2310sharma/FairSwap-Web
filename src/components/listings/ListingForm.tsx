@@ -14,6 +14,7 @@ import {
   submitListingSchema,
 } from "@/types/listing";
 import MediaUploader from "./MediaUploader";
+import PincodeLocationPicker from "./PincodeLocationPicker";
 import {
   createDraftListingAction,
   updateListingAction,
@@ -43,7 +44,7 @@ export default function ListingForm({
   const [selectedCategory, setSelectedCategory] = useState<string>(
     initialListing?.category_id || (categories.length > 0 ? categories[0].id : "")
   );
-  const [selectedCity, setSelectedCity] = useState<string>(
+  const [selectedCity] = useState<string>(
     initialListing?.city_id || (cities.length > 0 ? cities[0].id : "")
   );
   const [priceType, setPriceType] = useState<string>(initialListing?.price_type || "fixed");
@@ -63,9 +64,6 @@ export default function ListingForm({
   const activeCategoryAttributes = allAttributes.filter(
     (attr) => attr.category_id === selectedCategory
   );
-
-  // Filter localities for active city
-  const activeLocalities = localities.filter((loc) => loc.city_id === selectedCity);
 
   const handleAttributeChange = (name: string, value: unknown) => {
     setAttributesState((prev) => ({
@@ -342,85 +340,36 @@ export default function ListingForm({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="condition" className="block text-xs font-semibold text-gray-700">
-              Condition *
-            </label>
-            <select
-              id="condition"
-              name="condition"
-              defaultValue={initialListing?.condition || "good"}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            >
-              <option value="new">New (Unopened)</option>
-              <option value="like_new">Like New (Barely used)</option>
-              <option value="good">Good (Normal wear)</option>
-              <option value="fair">Fair (Visible wear, functional)</option>
-              <option value="poor">Poor (For parts / repair)</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="pin_code" className="block text-xs font-semibold text-gray-700">
-              PIN Code (Optional 6 digits)
-            </label>
-            <input
-              id="pin_code"
-              name="pin_code"
-              type="text"
-              pattern="^\d{6}$"
-              maxLength={6}
-              defaultValue={initialListing?.pin_code || ""}
-              placeholder="302017"
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
-          </div>
+        <div>
+          <label htmlFor="condition" className="block text-xs font-semibold text-gray-700">
+            Condition *
+          </label>
+          <select
+            id="condition"
+            name="condition"
+            defaultValue={initialListing?.condition || "good"}
+            className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            <option value="new">New (Unopened)</option>
+            <option value="like_new">Like New (Barely used)</option>
+            <option value="good">Good (Normal wear)</option>
+            <option value="fair">Fair (Visible wear, functional)</option>
+            <option value="poor">Poor (For parts / repair)</option>
+          </select>
         </div>
       </div>
 
       {/* Section 3: Location */}
       <div className="space-y-4">
         <h2 className="text-base font-semibold text-gray-900 border-b pb-2">3. Location</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="city_id" className="block text-xs font-semibold text-gray-700">
-              City *
-            </label>
-            <select
-              id="city_id"
-              name="city_id"
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            >
-              {cities.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.name}, {city.state}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="locality_id" className="block text-xs font-semibold text-gray-700">
-              Locality (Optional)
-            </label>
-            <select
-              id="locality_id"
-              name="locality_id"
-              defaultValue={initialListing?.locality_id || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            >
-              <option value="">Select locality...</option>
-              {activeLocalities.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <PincodeLocationPicker
+          initialPinCode={initialListing?.pin_code}
+          initialCityId={initialListing?.city_id || selectedCity}
+          initialLocalityId={initialListing?.locality_id}
+          initialLandmark={initialListing?.landmark}
+          cities={cities}
+          localities={localities}
+        />
       </div>
 
       {/* Section 4: Pricing */}
