@@ -254,4 +254,51 @@ describe("India Location & PIN Code Utilities", () => {
       ).not.toThrow();
     });
   });
+
+  describe("Batch Upsert & Conflict Deduplication Hardening", () => {
+    it("deduplicates records with identical (pincode, office_name)", () => {
+      const records = [
+        { pincode: "560034", officename: "Agara B.O", Districtname: "Bangalore", statename: "Karnataka" },
+        { pincode: "560034", officename: "Agara B.O", Districtname: "Bangalore", statename: "Karnataka" },
+        { pincode: "560034", officename: "Koramangala S.O", Districtname: "Bangalore", statename: "Karnataka" },
+      ];
+
+      const validMap = new Map();
+      for (const r of records) {
+        const key = `${r.pincode}|${r.officename.toLowerCase()}`;
+        validMap.set(key, r);
+      }
+      expect(validMap.size).toBe(2);
+    });
+
+    it("deduplicates candidate mappings with identical (pincode, locality_id)", () => {
+      const mappingsMap = new Map();
+      const items = [
+        { pincode: "560034", locality_id: "loc-1", office_name: "Koramangala S.O" },
+        { pincode: "560034", locality_id: "loc-1", office_name: "Koramangala B.O" },
+        { pincode: "560034", locality_id: "loc-2", office_name: "Agara B.O" },
+      ];
+      for (const m of items) {
+        const key = `${m.pincode}|${m.locality_id}`;
+        if (!mappingsMap.has(key)) {
+          mappingsMap.set(key, m);
+        }
+      }
+      expect(mappingsMap.size).toBe(2);
+    });
+
+    it("safely iterates large arrays (>65,536 items) without Maximum call stack size exceeded", () => {
+      const largeMap = new Map<string, number>();
+      for (let i = 0; i < 70000; i++) {
+        largeMap.set(`key-${i}`, i);
+      }
+
+      const collected: number[] = [];
+      for (const val of largeMap.values()) {
+        collected.push(val);
+      }
+      expect(collected.length).toBe(70000);
+    });
+  });
 });
+

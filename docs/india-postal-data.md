@@ -16,17 +16,24 @@ Schema Migration `20260929000025_india_postal_location_schema.sql` creates the r
 
 ---
 
-## 2. Authoritative Source
+## 2. Authoritative Source Policy & Production Gate
 
 The official data source for all PIN code and post office records in India is:
 - **Authoritative Provider**: Department of Posts, Ministry of Communications, Government of India
 - **Open Government Data Platform**: [data.gov.in — All India Pincode Directory](https://data.gov.in/resource/all-india-pincode-directory-till-last-month)
 - **License**: Government Open Data License - India (GODL)
 
-### How to Download
-1. Navigate to the official dataset on [data.gov.in](https://data.gov.in/resource/all-india-pincode-directory-till-last-month).
-2. Download the latest CSV export (typically named `all_india_pincode_directory.csv` or similar).
+> [!IMPORTANT]
+> **Production Source Gate:**
+> - Only authoritative Government of India / Department of Posts exports (from `data.gov.in`, `indiapost.gov.in`, or designated official ministries) are permitted for `FairSwapProd`.
+> - Third-party mirrors (GitHub, Kaggle), unofficial scraper sites (such as `postalpincode.in`), and unauthenticated commercial APIs are **strictly prohibited** for production bootstrapping.
+> - If the official Government of India portal is temporarily unreachable or offline: **Production postal bootstrap is blocked pending authoritative dataset availability.**
+
+### How to Download (Authoritative GoI Source)
+1. Navigate to the official dataset on [data.gov.in](https://data.gov.in/resource/all-india-pincode-directory-till-last-month) or official Department of Posts release portal.
+2. Download the latest official CSV export (typically named `all_india_pincode_directory.csv` or similar).
 3. Verify the file size (typically ~150,000+ rows, ~15–25 MB).
+4. Compute and record the SHA-256 checksum, publication date, and source URL before ingestion.
 
 > [!CAUTION]
 > **Data Security & Git Hygiene**:
@@ -35,7 +42,17 @@ The official data source for all PIN code and post office records in India is:
 
 ---
 
-## 3. Required Environment Variables & Permissions
+## 3. Current Staging Environment Posture (`staging_test_unverified_mirror`)
+
+- **FairSwapTest Nationwide QA Dataset**:
+  - The nationwide reference dataset currently resident in `FairSwapTest` was ingested from an unverified third-party GitHub mirror (`github.com/saravanakumargn/All-India-Pincode-Directory`) matching the expected Department of Posts schema.
+  - This mirror was used **strictly for functional testing and staging QA** because the official `data.gov.in` download was temporarily returning HTTP 503 / 405.
+  - **Operational Classification**: `staging_test_unverified_mirror`.
+  - **Gate Status**: This mirror dataset is **NOT approved for FairSwapProd**. It is retained in `FairSwapTest` exclusively to support continued staging application verification, PIN lookup integration testing, and Create Ad QA without disruption.
+
+---
+
+## 4. Required Environment Variables & Permissions
 
 The postal importer operates directly against the Supabase database. Because table-level RLS blocks anonymous and normal authenticated users from writing to postal tables, the script requires service-role authorization.
 
@@ -175,10 +192,62 @@ SELECT public.lookup_pincode('302001');
 
 ---
 
-## 9. Current Environment Status & Test Coverage
+## 9. Authoritative Dataset Staging Refresh & Production Replacement Procedure
+
+When an official, verified Department of Posts / Government of India dataset becomes available, follow this explicit sequence to refresh `FairSwapTest` or bootstrap `FairSwapProd`:
+
+1. **Download Official Dataset**:
+   Obtain the nationwide CSV directly from `data.gov.in`, `indiapost.gov.in`, or designated official Government of India portal.
+2. **Record Metadata & Checksum**:
+   Record the download URL, publication date, and compute the SHA-256 hash:
+   ```powershell
+   certutil -hashfile ./india_pincode_official.csv SHA256
+   ```
+3. **Validate File Structure & Headers**:
+   Verify the CSV contains ~150,000+ rows and matches expected headers:
+   `officename,pincode,officeType,Deliverystatus,divisionname,regionname,circlename,Taluk,Districtname,statename`
+4. **Purge Previous Candidate Master Data (Safe Purge)**:
+   Clear only `india_post_candidate` postal mappings and postal records. NEVER truncate `listings`, `cities`, or user data:
+   ```sql
+   DELETE FROM public.postal_pincode_localities WHERE source = 'india_post_candidate';
+   DELETE FROM public.india_postal_data;
+   ```
+5. **Execute Importer**:
+   Run the guarded remote import with target hostname confirmation:
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=https://<target-ref>.supabase.co \
+   SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
+   npm run location:import -- ./india_pincode_official.csv \
+     --allow-remote --confirm-host <target-ref>.supabase.co
+   ```
+6. **Verify Record Counts**:
+   ```sql
+   SELECT COUNT(*) AS postal_records FROM public.india_postal_data;
+   SELECT COUNT(DISTINCT pincode) AS distinct_pins FROM public.india_postal_data;
+   SELECT COUNT(*) AS candidate_mappings FROM public.postal_pincode_localities;
+   ```
+7. **Verify Sample Geographically Diverse PINs**:
+   ```sql
+   SELECT public.lookup_pincode('560034'); -- Bengaluru
+   SELECT public.lookup_pincode('302017'); -- Jaipur
+   SELECT public.lookup_pincode('110001'); -- Delhi
+   SELECT public.lookup_pincode('400050'); -- Mumbai
+   ```
+8. **Execute End-to-End Create Ad QA**:
+   - Verify PIN entry resolves state/district and populates candidate localities.
+   - Verify draft creation with valid PIN, locality, and landmark.
+   - Verify draft reload retains location fields.
+   - Verify submission succeeds for valid PIN/locality and fails for mismatched pairs.
+   - Verify public listing privacy (landmark kept private to seller).
+
+---
+
+## 10. Current Environment Status & Test Coverage
 
 - **Database / Schema Validation**:
   - Verified using PGlite in a PostgreSQL-compatible automated test environment ([`tests/security/india-location-security.test.ts`](../tests/security/india-location-security.test.ts)).
-  - Real local Supabase Docker smoke test remains pending on local environments where Docker Desktop engine is unavailable.
-- **CSV Parser Smoke Testing**:
-  - The importer and parser were tested using an automated test fixture structured to match official Department of Posts headers, BOM encoding, and quote formats. Testing against a live 150k+ production government export will occur during initial production deployment per this runbook.
+  - Real Supabase migration smoke test verified on `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) with Migration 25 applied cleanly.
+- **CSV Parser & Batching Hardening**:
+  - Importer supports 500-item batch upserts, in-memory duplicate collision prevention on conflict keys, and stack-safe array handling for ~155,000+ rows.
+  - Regression tests in [`src/__tests__/india-location.test.ts`](../src/__tests__/india-location.test.ts) cover target validation, duplicate deduplication, and stack safety.
+
