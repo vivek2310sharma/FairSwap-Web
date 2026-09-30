@@ -4,6 +4,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import fs from "fs";
 import path from "path";
+import { computeSourceRecordKey } from "../../scripts/import-india-postal-data";
 
 describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
   let db: PGlite;
@@ -628,6 +629,99 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       expect(res.rows).toHaveLength(2);
       expect(res.rows[0].district).toBe("District Alpha");
       expect(res.rows[1].district).toBe("District Beta");
+    });
+
+    it("automatically recomputes source_record_key on update to canonical fields and overwrites caller-provided stale keys", async () => {
+      // 1. Insert record with a caller-provided bogus key
+      const insertRes = await db.query<any>(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, division, region, circle, taluk, district, state, source_record_key)
+        VALUES 
+          ('560001', 'Bangalore GPO', 'G.P.O.', 'Delivery', 'Bangalore Division', 'Bangalore HQ', 'Karnataka Circle', 'Bangalore North', 'Bengaluru Urban', 'Karnataka', 'stale_key_111')
+        RETURNING id, source_record_key;
+      `);
+
+      const rowId = insertRes.rows[0].id;
+      const initialKey = insertRes.rows[0].source_record_key;
+
+      // Trigger must overwrite caller-provided key with deterministic hash on insert
+      expect(initialKey).not.toBe("stale_key_111");
+      expect(initialKey).toMatch(/^[a-f0-9]{32}$/);
+
+      // 2. Update canonical field (district) and attempt to inject another stale key
+      const updateRes = await db.query<any>(`
+        UPDATE public.india_postal_data
+        SET district = 'Bengaluru Rural',
+            source_record_key = 'stale_key_222'
+        WHERE id = $1
+        RETURNING source_record_key, district;
+      `, [rowId]);
+
+      const updatedKey = updateRes.rows[0].source_record_key;
+      expect(updatedKey).not.toBe("stale_key_222");
+      expect(updatedKey).not.toBe(initialKey);
+      expect(updatedKey).toMatch(/^[a-f0-9]{32}$/);
+
+      // 3. Verify updating office_name alters the key automatically
+      const updateOfficeRes = await db.query<any>(`
+        UPDATE public.india_postal_data
+        SET office_name = 'Bangalore Head Post Office'
+        WHERE id = $1
+        RETURNING source_record_key;
+      `, [rowId]);
+
+      expect(updateOfficeRes.rows[0].source_record_key).not.toBe(updatedKey);
+    });
+
+    it("asserts SQL trigger and TypeScript computeSourceRecordKey canonicalization are 100% identical", async () => {
+      // Test fixture with mixed case, leading/trailing spaces, multiple internal spaces, and null optional fields
+      const fixture = {
+        pincode: "560034",
+        office_name: "  Koramangala   VI   Bk   S.O  ",
+        office_type: "  S.O  ",
+        delivery_status: "  Delivery  ",
+        division: "  Bangalore   South   Division  ",
+        region: null,
+        circle: "  Karnataka   Circle  ",
+        taluk: null,
+        district: "  BENGALURU   URBAN  ",
+        state: "  karnataka  ",
+      };
+
+      const tsKey = computeSourceRecordKey({
+        pincode: fixture.pincode,
+        office_name: fixture.office_name,
+        office_type: fixture.office_type,
+        delivery_status: fixture.delivery_status,
+        division: fixture.division,
+        region: fixture.region,
+        circle: fixture.circle,
+        taluk: fixture.taluk,
+        district: fixture.district,
+        state: fixture.state,
+      });
+
+      const sqlRes = await db.query<any>(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, division, region, circle, taluk, district, state)
+        VALUES 
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING source_record_key;
+      `, [
+        fixture.pincode,
+        fixture.office_name,
+        fixture.office_type,
+        fixture.delivery_status,
+        fixture.division,
+        fixture.region,
+        fixture.circle,
+        fixture.taluk,
+        fixture.district,
+        fixture.state,
+      ]);
+
+      const sqlKey = sqlRes.rows[0].source_record_key;
+      expect(sqlKey).toBe(tsKey);
     });
   });
 });

@@ -165,6 +165,7 @@ export type Database = {
           pincode: string
           region: string | null
           source: string
+          source_record_key: string
           source_updated_at: string | null
           state: string
           taluk: string | null
@@ -182,6 +183,7 @@ export type Database = {
           pincode: string
           region?: string | null
           source?: string
+          source_record_key?: string
           source_updated_at?: string | null
           state: string
           taluk?: string | null
@@ -199,6 +201,7 @@ export type Database = {
           pincode?: string
           region?: string | null
           source?: string
+          source_record_key?: string
           source_updated_at?: string | null
           state?: string
           taluk?: string | null

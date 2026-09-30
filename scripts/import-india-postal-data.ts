@@ -43,6 +43,7 @@ export interface ImportTargetOptions {
   isDemo: boolean;
   source?: string | null;
   sourceUpdatedAt?: string | null;
+  expectSha256?: string | null;
   continueOnError?: boolean;
 }
 
@@ -57,6 +58,15 @@ export function validateImportTarget(url: string, options: ImportTargetOptions) 
 
   const hostname = parsed.hostname;
   const isLocal = LOCAL_HOSTS.includes(hostname);
+
+  if (options.expectSha256) {
+    const normalized = options.expectSha256.trim().toLowerCase();
+    if (!/^[a-f0-9]{64}$/.test(normalized)) {
+      throw new Error(
+        `SAFETY REJECTION: Invalid --expect-sha256 value "${options.expectSha256}". Must be a 64-character hex string.`
+      );
+    }
+  }
 
   if (options.source && !ALLOWED_IMPORT_SOURCES.includes(options.source as ImportSource)) {
     throw new Error(
@@ -118,7 +128,15 @@ export function validateImportTarget(url: string, options: ImportTargetOptions) 
     );
   }
 
-  // Production import gate: strictly require official source data.gov.in and disallow continue-on-error
+  // Remote import with source data.gov.in requires --expect-sha256
+  if (options.source === "data.gov.in" && !options.expectSha256) {
+    throw new Error(
+      `SAFETY REJECTION: Remote import with source "data.gov.in" requires explicit --expect-sha256 <64-hex-hash>.\n` +
+      `Current approved SHA-256: d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79`
+    );
+  }
+
+  // Production import gate: strictly require official source data.gov.in, require --expect-sha256, and disallow continue-on-error
   const isProduction = hostname === KNOWN_PRODUCTION_HOST || hostname.startsWith("kriuhwppxgxsyyrbjsau");
   if (isProduction) {
     if (options.continueOnError) {
@@ -129,6 +147,11 @@ export function validateImportTarget(url: string, options: ImportTargetOptions) 
     if (options.source !== "data.gov.in") {
       throw new Error(
         `SAFETY REJECTION: Production target "${hostname}" requires authoritative source "data.gov.in". Source "${options.source}" is strictly prohibited for production.`
+      );
+    }
+    if (!options.expectSha256) {
+      throw new Error(
+        `SAFETY REJECTION: Production target "${hostname}" strictly requires --expect-sha256 <64-hex-hash>.`
       );
     }
   }
@@ -150,38 +173,68 @@ export function toTitleCase(str: string): string {
     .join(" ");
 }
 
+export function canonicalizePostalField(val: string | undefined | null): string {
+  if (!val) return "";
+  return val
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 export const SENTINEL_ADMIN_VALUES = new Set(["", "na", "n/a", "null", "none", "-", "--"]);
 
 export function isSentinelAdminValue(val: string | undefined | null): boolean {
   if (!val) return true;
-  return SENTINEL_ADMIN_VALUES.has(val.trim().toLowerCase());
+  return SENTINEL_ADMIN_VALUES.has(canonicalizePostalField(val));
 }
 
 export function computeSourceRecordKey(fields: {
-  pincode: string;
-  office_name: string;
+  pincode?: string | null;
+  office_name?: string | null;
   office_type?: string | null;
   delivery_status?: string | null;
   division?: string | null;
   region?: string | null;
   circle?: string | null;
   taluk?: string | null;
-  district: string;
-  state: string;
+  district?: string | null;
+  state?: string | null;
 }): string {
   const parts = [
-    fields.pincode.trim().toLowerCase(),
-    fields.office_name.trim().toLowerCase(),
-    (fields.office_type || "").trim().toLowerCase(),
-    (fields.delivery_status || "").trim().toLowerCase(),
-    (fields.division || "").trim().toLowerCase(),
-    (fields.region || "").trim().toLowerCase(),
-    (fields.circle || "").trim().toLowerCase(),
-    (fields.taluk || "").trim().toLowerCase(),
-    fields.district.trim().toLowerCase(),
-    fields.state.trim().toLowerCase(),
+    canonicalizePostalField(fields.pincode),
+    canonicalizePostalField(fields.office_name),
+    canonicalizePostalField(fields.office_type),
+    canonicalizePostalField(fields.delivery_status),
+    canonicalizePostalField(fields.division),
+    canonicalizePostalField(fields.region),
+    canonicalizePostalField(fields.circle),
+    canonicalizePostalField(fields.taluk),
+    canonicalizePostalField(fields.district),
+    canonicalizePostalField(fields.state),
   ];
   return crypto.createHash("md5").update(parts.join("|"), "utf8").digest("hex");
+}
+
+export function computeFileSha256(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash("sha256");
+    const stream = fs.createReadStream(filePath);
+    stream.on("data", (chunk) => hash.update(chunk));
+    stream.on("end", () => resolve(hash.digest("hex").toLowerCase()));
+    stream.on("error", (err) => reject(err));
+  });
+}
+
+export async function verifyFileSha256(filePath: string, expectedSha256: string): Promise<boolean> {
+  const actual = await computeFileSha256(filePath);
+  if (actual.toLowerCase() !== expectedSha256.trim().toLowerCase()) {
+    throw new Error(
+      `SHA-256 checksum mismatch for "${filePath}":\n` +
+      `  Expected: ${expectedSha256.trim().toLowerCase()}\n` +
+      `  Actual:   ${actual.toLowerCase()}`
+    );
+  }
+  return true;
 }
 
 export function slugify(str: string): string {
@@ -346,14 +399,7 @@ export async function importPostalData(
   const BATCH_SIZE = 500;
   for (let i = 0; i < validRecords.length; i += BATCH_SIZE) {
     const batch = validRecords.slice(i, i + BATCH_SIZE);
-    const { error } = await (supabase as unknown as {
-      from: (table: string) => {
-        upsert: (
-          data: unknown,
-          options?: { onConflict?: string }
-        ) => Promise<{ error: { message: string } | null }>;
-      };
-    })
+    const { error } = await supabase
       .from("india_postal_data")
       .upsert(batch, { onConflict: "source,source_record_key" });
 
@@ -888,10 +934,15 @@ async function main() {
   const sourceUpdatedIdx = args.indexOf("--source-updated-at");
   const sourceUpdatedAt = sourceUpdatedIdx !== -1 ? args[sourceUpdatedIdx + 1] || null : null;
 
+  // Parse --expect-sha256 value (--expect-sha256 <64-hex>)
+  const expectSha256Idx = args.indexOf("--expect-sha256");
+  const expectSha256 = expectSha256Idx !== -1 ? args[expectSha256Idx + 1] || null : null;
+
   const flagsWithValue = new Set<string>();
   if (confirmHostIdx !== -1 && args[confirmHostIdx + 1]) flagsWithValue.add(args[confirmHostIdx + 1]);
   if (sourceIdx !== -1 && args[sourceIdx + 1]) flagsWithValue.add(args[sourceIdx + 1]);
   if (sourceUpdatedIdx !== -1 && args[sourceUpdatedIdx + 1]) flagsWithValue.add(args[sourceUpdatedIdx + 1]);
+  if (expectSha256Idx !== -1 && args[expectSha256Idx + 1]) flagsWithValue.add(args[expectSha256Idx + 1]);
 
   const csvArg = args.find((a) => !a.startsWith("--") && !flagsWithValue.has(a));
 
@@ -903,6 +954,11 @@ async function main() {
     if (!fs.existsSync(csvArg)) {
       console.error(`CRITICAL ERROR: Postal dataset CSV file does not exist: "${csvArg}"`);
       process.exit(1);
+    }
+    if (expectSha256) {
+      console.log(`Verifying local file SHA-256 against expected hash...`);
+      await verifyFileSha256(csvArg, expectSha256);
+      console.log(`SHA-256 verified successfully: ${expectSha256.toLowerCase()}`);
     }
     console.log(`Performing dry validation on: ${csvArg}`);
     const report = await dryValidatePostalCSV(csvArg);
@@ -939,6 +995,7 @@ async function main() {
     isDemo,
     source,
     sourceUpdatedAt,
+    expectSha256,
     continueOnError,
   };
 
@@ -959,13 +1016,13 @@ async function main() {
     if (!csvArg) {
       console.error(
         "CRITICAL ERROR: Postal CSV dataset file path is required.\n" +
-        "Usage: npx tsx scripts/import-india-postal-data.ts <path-to-pincode.csv> --source <source> [--source-updated-at <iso_timestamp>]\n" +
+        "Usage: npx tsx scripts/import-india-postal-data.ts <path-to-pincode.csv> --source <source> [--expect-sha256 <64-hex>] [--source-updated-at <iso_timestamp>]\n" +
         "\nLocal import:\n" +
         "  npx tsx scripts/import-india-postal-data.ts ./data.csv --source operator_curated_seed\n" +
         "\nRemote staging import:\n" +
         "  npx tsx scripts/import-india-postal-data.ts ./data.csv --allow-remote --confirm-host <staging-ref>.supabase.co --source github_mirror_unverified\n" +
         "\nRemote production import:\n" +
-        "  npx tsx scripts/import-india-postal-data.ts ./data.csv --allow-remote --confirm-host <prod-ref>.supabase.co --source data.gov.in"
+        "  npx tsx scripts/import-india-postal-data.ts ./data.csv --allow-remote --confirm-host <prod-ref>.supabase.co --source data.gov.in --expect-sha256 <sha256>"
       );
       process.exit(1);
     }
@@ -973,6 +1030,12 @@ async function main() {
     if (!fs.existsSync(csvArg)) {
       console.error(`CRITICAL ERROR: Postal dataset CSV file does not exist: "${csvArg}"`);
       process.exit(1);
+    }
+
+    if (expectSha256) {
+      console.log(`Verifying local file SHA-256 against expected hash...`);
+      await verifyFileSha256(csvArg, expectSha256);
+      console.log(`SHA-256 verified successfully: ${expectSha256.toLowerCase()}`);
     }
 
     console.log(`Loading postal records from CSV file: ${csvArg}`);

@@ -17,6 +17,7 @@ Schema Migrations:
 - Migration `20260929000025_india_postal_location_schema.sql` creates tables, indexes, grants, and submit integrity RPC.
 - Migration `20260930000026_fix_india_location_admin_and_lookup.sql` corrects `public.lookup_pincode` to strictly return State and District and prevents Taluk from masquerading as city.
 - Migration `20260930000027_support_multi_district_pincodes.sql` adds multi-district same-state PIN resolution without guessing, returning explicit district choices to the caller, while failing closed on cross-state conflicts with `CONFLICTING_POSTAL_STATES`.
+- Migration `20260930000028_harden_official_postal_snapshot.sql` introduces deterministic `source_record_key`, upgrades uniqueness to `UNIQUE (source, source_record_key)` to preserve post offices sharing names across districts/divisions, handles sentinel NA administrative values (`PINCODE_ADMIN_DATA_UNAVAILABLE`), and establishes automated trigger recomputation on INSERT or UPDATE.
 
 ---
 
@@ -34,11 +35,26 @@ The official source for all PIN code and post office records in India is:
 > - Third-party mirrors (GitHub, Kaggle), unofficial scraper sites (such as `postalpincode.in`), and unauthenticated commercial APIs are **strictly prohibited** for production bootstrapping.
 > - If the official Government of India portal is temporarily unreachable or offline: **Production postal bootstrap is blocked pending authoritative dataset availability.**
 
+### Official Snapshot Verification & Provenance Metrics
+The official Department of Posts snapshot file has been downloaded and verified:
+- **Official File Name**: `all-india-pincode-html-csv-Ver-2026.csv`
+- **File Size**: `20,810,655` bytes
+- **SHA-256 Checksum**: `d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79`
+- **Total CSV Rows**: `165,627`
+- **Unique Canonical Raw Records**: `165,621`
+- **Distinct PIN Codes**: `19,586`
+
+> [!NOTE]
+> **Snapshot-Record Fingerprint Semantics**:
+> `source_record_key` is a deterministic **snapshot-record fingerprint** derived from the 10 canonical postal fields, **not a permanent upstream entity ID**.
+> Upstream records from `data.gov.in` do not provide a permanent primary key.
+> Therefore, future monthly refreshes must use **controlled snapshot replacement/reconciliation**, not simple upsert-over-old-snapshot (which would orphan stale records whenever postal boundary details change). *(Note: Do not build that future refresh system now.)*
+
 ### Production Procedure (Authoritative GoI Source)
 1. Obtain the CSV directly from the authoritative data.gov.in resource.
-2. Record source URL/resource metadata and publication/update date.
-3. Compute FairSwap's own SHA-256 of the downloaded file (`certutil -hashfile ./india_pincode_official.csv SHA256`).
-4. Record that checksum in the deployment/import evidence. This proves exactly which downloaded bytes FairSwap imported without claiming the government published a checksum.
+2. Confirm the local file SHA-256 matches the approved checksum (`d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79`).
+3. Pass `--expect-sha256 <64-hex>` to the importer CLI. Remote imports targeting production or specifying `--source data.gov.in` strictly require this flag and will abort before reading data or contacting Supabase if it differs.
+4. Record source URL/resource metadata and publication/update date in deployment records.
 
 > [!CAUTION]
 > **Data Security & Git Hygiene**:
@@ -82,10 +98,11 @@ The postal importer operates directly against the Supabase database. Because tab
 The repository provides a CLI script: [`scripts/import-india-postal-data.ts`](../scripts/import-india-postal-data.ts) (aliased as `npm run location:import`).
 
 ### A. Provenance Parameters
-- `--source <source>`: **Mandatory** for remote imports. Supported values:
+- `--source <source>`: **Mandatory** for all non-demo CSV imports (both local and remote). Supported values:
   - `data.gov.in` (required for production)
   - `github_mirror_unverified` (allowed for staging QA)
   - `operator_curated_seed` (allowed for local development / prototype)
+- `--expect-sha256 <64-hex>`: **Mandatory** for any remote import with `--source data.gov.in`, and strictly enforced for `FairSwapProd`. Evaluates the file hash before parsing data or contacting Supabase.
 - `--source-updated-at <iso_timestamp>`: **Optional** official publication timestamp (e.g. `2026-08-01T00:00:00Z`). If omitted, stores `NULL`. Never assumes execution timestamp as source update time.
 - `--allow-remote`: Required when targeting remote Supabase instances.
 - `--confirm-host <hostname>`: Required when targeting remote instances; must exactly match destination hostname.
@@ -102,14 +119,15 @@ npm run location:import -- ./pincode_mirror.csv \
 ```
 
 ### C. Remote Production Import (Strict Official Mode)
-Fails closed with exit code 1 if source is not `data.gov.in`:
+Fails closed with exit code 1 if source is not `data.gov.in` or if `--expect-sha256` is missing or mismatched:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<prod-ref>.supabase.co \
 SUPABASE_SERVICE_ROLE_KEY=<prod-service-role-key> \
-npm run location:import -- ./india_pincode_official.csv \
+npm run location:import -- ./all-india-pincode-html-csv-Ver-2026.csv \
   --allow-remote \
   --confirm-host <prod-ref>.supabase.co \
   --source data.gov.in \
+  --expect-sha256 d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79 \
   --source-updated-at 2026-08-01T00:00:00Z
 ```
 
@@ -125,11 +143,11 @@ This seeds sample records for pilot cities (Bengaluru, Jaipur, Mumbai, Delhi) wi
 ## 6. Batching, Idempotency & Error Handling
 
 - **500-Item Batching**:
-  - `india_postal_data`: Batched in chunks of 500. Uses `ON CONFLICT (pincode, office_name) DO UPDATE`.
+  - `india_postal_data`: Batched in chunks of 500. Uses `ON CONFLICT (source, source_record_key) DO UPDATE`.
   - `localities`: Batched in chunks of 500. Uses `ON CONFLICT (city_id, slug) DO UPDATE`.
   - `postal_pincode_localities`: Batched in chunks of 500. Uses `ON CONFLICT (pincode, locality_id) DO UPDATE`.
 - **Deduplication Semantics**:
-  - Raw records deduplicated by exact `(pincode, office_name)` case match aligned with PostgreSQL database constraint.
+  - Raw records deduplicated by canonical fingerprint `(source, source_record_key)` aligned with PostgreSQL database constraint `UNIQUE (source, source_record_key)`.
   - Candidate mappings deduplicated by `(pincode, locality_id)`.
 - **Fail-Fast Safety**:
   - By default, any batch failure aborts remote import immediately with a descriptive error.

@@ -3,6 +3,10 @@ import { isValidIndianPincode, lookupPincodeServer } from "@/lib/location/pincod
 import { GET as pincodeRouteHandler } from "@/app/api/location/pincode/[pincode]/route";
 import { NextRequest } from "next/server";
 import { draftListingSchema, submitListingSchema } from "@/types/listing";
+import fs from "fs";
+import path from "path";
+import os from "os";
+import crypto from "crypto";
 import {
   normalizeText,
   toTitleCase,
@@ -11,6 +15,9 @@ import {
   validateImportTarget,
   isSentinelAdminValue,
   computeSourceRecordKey,
+  canonicalizePostalField,
+  computeFileSha256,
+  verifyFileSha256,
 } from "../../scripts/import-india-postal-data";
 
 vi.mock("@/lib/location/pincode", async (importOriginal) => {
@@ -276,7 +283,21 @@ describe("India Location & PIN Code Utilities", () => {
       ).toThrow(/requires authoritative source "data.gov.in"/);
     });
 
-    it("allows authoritative data.gov.in for production target", () => {
+    it("allows authoritative data.gov.in for production target when valid --expect-sha256 is provided", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+        sourceUpdatedAt: "2026-08-01T00:00:00Z",
+        expectSha256: "d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79",
+      };
+      expect(() =>
+        validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
+      ).not.toThrow();
+    });
+
+    it("rejects authoritative data.gov.in for production target when --expect-sha256 is missing", () => {
       const opts = {
         allowRemote: true,
         confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
@@ -286,7 +307,32 @@ describe("India Location & PIN Code Utilities", () => {
       };
       expect(() =>
         validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
-      ).not.toThrow();
+      ).toThrow(/requires explicit --expect-sha256/);
+    });
+
+    it("rejects remote staging import with source data.gov.in when --expect-sha256 is missing", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "wpppxlnbzqynvhpeuavd.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+      };
+      expect(() =>
+        validateImportTarget("https://wpppxlnbzqynvhpeuavd.supabase.co", opts)
+      ).toThrow(/requires explicit --expect-sha256/);
+    });
+
+    it("rejects malformed --expect-sha256 hex string", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "wpppxlnbzqynvhpeuavd.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+        expectSha256: "not-a-valid-64-hex",
+      };
+      expect(() =>
+        validateImportTarget("https://wpppxlnbzqynvhpeuavd.supabase.co", opts)
+      ).toThrow(/Must be a 64-character hex string/i);
     });
 
     it("rejects production target when --continue-on-error is supplied", () => {
@@ -295,6 +341,7 @@ describe("India Location & PIN Code Utilities", () => {
         confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
         isDemo: false,
         source: "data.gov.in",
+        expectSha256: "d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79",
         continueOnError: true,
       };
       expect(() =>
@@ -715,6 +762,54 @@ describe("India Location & PIN Code Utilities", () => {
         expect(officeDistrictA).not.toBe(officeDistrictB);
       });
     });
+
+    describe("canonicalizePostalField", () => {
+      it("normalizes null and undefined to empty string", () => {
+        expect(canonicalizePostalField(null)).toBe("");
+        expect(canonicalizePostalField(undefined)).toBe("");
+        expect(canonicalizePostalField("")).toBe("");
+      });
+
+      it("trims, collapses multiple internal whitespace characters to one space, and lowercases", () => {
+        expect(canonicalizePostalField("   Koramangala   VI   Bk   S.O   ")).toBe("koramangala vi bk s.o");
+        expect(canonicalizePostalField("  BENGALURU\t\tURBAN  ")).toBe("bengaluru urban");
+        expect(canonicalizePostalField("  Pendri  BO  ")).toBe("pendri bo");
+      });
+    });
+
+    describe("File SHA-256 Verification (verifyFileSha256)", () => {
+      it("allows file when SHA-256 checksum matches expected hash", async () => {
+        const tempPath = path.join(os.tmpdir(), `test-sha256-${Date.now()}.csv`);
+        fs.writeFileSync(tempPath, "official-pincode-test-content\n");
+        const expectedSha256 = crypto
+          .createHash("sha256")
+          .update("official-pincode-test-content\n")
+          .digest("hex");
+
+        const computed = await computeFileSha256(tempPath);
+        expect(computed).toBe(expectedSha256);
+
+        const result = await verifyFileSha256(tempPath, expectedSha256);
+        expect(result).toBe(true);
+
+        fs.unlinkSync(tempPath);
+      });
+
+      it("rejects file and throws error when SHA-256 checksum mismatches", async () => {
+        const tempPath = path.join(os.tmpdir(), `test-sha256-${Date.now()}.csv`);
+        fs.writeFileSync(tempPath, "corrupted-content\n");
+
+        await expect(
+          verifyFileSha256(
+            tempPath,
+            "d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79"
+          )
+        ).rejects.toThrow(/SHA-256 checksum mismatch/);
+
+        fs.unlinkSync(tempPath);
+      });
+    });
   });
 });
+
 

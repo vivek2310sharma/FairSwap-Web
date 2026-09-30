@@ -13,16 +13,16 @@ ALTER TABLE public.india_postal_data
 UPDATE public.india_postal_data
 SET source_record_key = md5(
   concat_ws('|',
-    lower(trim(pincode)),
-    lower(trim(office_name)),
-    lower(trim(COALESCE(office_type, ''))),
-    lower(trim(COALESCE(delivery_status, ''))),
-    lower(trim(COALESCE(division, ''))),
-    lower(trim(COALESCE(region, ''))),
-    lower(trim(COALESCE(circle, ''))),
-    lower(trim(COALESCE(taluk, ''))),
-    lower(trim(COALESCE(district, ''))),
-    lower(trim(COALESCE(state, '')))
+    lower(regexp_replace(trim(COALESCE(pincode, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(office_name, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(office_type, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(delivery_status, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(division, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(region, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(circle, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(taluk, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(district, '')), '\s+', ' ', 'g')),
+    lower(regexp_replace(trim(COALESCE(state, '')), '\s+', ' ', 'g'))
   )
 )
 WHERE source_record_key IS NULL;
@@ -50,28 +50,26 @@ ALTER TABLE public.india_postal_data
 CREATE INDEX IF NOT EXISTS idx_india_postal_data_source_record_key 
   ON public.india_postal_data(source, source_record_key);
 
--- C. Trigger to ensure deterministic source_record_key is always populated
+-- C. Trigger to ensure deterministic source_record_key is always populated/recomputed on INSERT or UPDATE
 CREATE OR REPLACE FUNCTION public.generate_postal_source_record_key()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  IF NEW.source_record_key IS NULL THEN
-    NEW.source_record_key := md5(
-      concat_ws('|',
-        lower(trim(NEW.pincode)),
-        lower(trim(NEW.office_name)),
-        lower(trim(COALESCE(NEW.office_type, ''))),
-        lower(trim(COALESCE(NEW.delivery_status, ''))),
-        lower(trim(COALESCE(NEW.division, ''))),
-        lower(trim(COALESCE(NEW.region, ''))),
-        lower(trim(COALESCE(NEW.circle, ''))),
-        lower(trim(COALESCE(NEW.taluk, ''))),
-        lower(trim(COALESCE(NEW.district, ''))),
-        lower(trim(COALESCE(NEW.state, '')))
-      )
-    );
-  END IF;
+  NEW.source_record_key := md5(
+    concat_ws('|',
+      lower(regexp_replace(trim(COALESCE(NEW.pincode, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.office_name, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.office_type, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.delivery_status, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.division, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.region, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.circle, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.taluk, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.district, '')), '\s+', ' ', 'g')),
+      lower(regexp_replace(trim(COALESCE(NEW.state, '')), '\s+', ' ', 'g'))
+    )
+  );
   RETURN NEW;
 END;
 $$;
@@ -82,7 +80,7 @@ BEFORE INSERT OR UPDATE ON public.india_postal_data
 FOR EACH ROW
 EXECUTE FUNCTION public.generate_postal_source_record_key();
 
--- C. Update public.lookup_pincode to handle sentinel NA administrative values
+-- D. Update public.lookup_pincode to handle sentinel NA administrative values
 CREATE OR REPLACE FUNCTION public.lookup_pincode(p_pincode text)
 RETURNS jsonb
 LANGUAGE plpgsql
