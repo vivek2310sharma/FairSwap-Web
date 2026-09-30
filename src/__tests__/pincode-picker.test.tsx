@@ -144,6 +144,27 @@ describe("PincodeLocationPicker component", () => {
     });
   });
 
+  it("displays user-facing message when PIN location details are unavailable (PINCODE_ADMIN_DATA_UNAVAILABLE)", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => ({
+        success: false,
+        error: "PINCODE_ADMIN_DATA_UNAVAILABLE",
+        message: "We recognize this PIN code, but its location details are currently unavailable.",
+      }),
+    } as Response);
+
+    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+
+    const pinInput = screen.getByLabelText(/PIN Code/i);
+    fireEvent.change(pinInput, { target: { value: "990003" } });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("We recognize this PIN code, but its location details are currently unavailable.")
+      ).toBeInTheDocument();
+    });
+  });
+
   it("handles single-state + multiple-district PIN with required district selection and locality filtering", async () => {
     const multiDistrictCities: City[] = [
       { id: "city-cd", name: "Central Delhi", state: "Delhi", slug: "central-delhi", is_active: true, created_at: "" },

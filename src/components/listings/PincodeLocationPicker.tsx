@@ -139,6 +139,8 @@ export default function PincodeLocationPicker({
             setErrorMsg("PIN code not found in our database. Please double-check your 6-digit PIN code or retry.");
           } else if (data.error === "CONFLICTING_POSTAL_STATES") {
             setErrorMsg("This PIN code spans multiple states. Please check your PIN code or contact support.");
+          } else if (data.error === "PINCODE_ADMIN_DATA_UNAVAILABLE") {
+            setErrorMsg("We recognize this PIN code, but its location details are currently unavailable.");
           } else {
             setErrorMsg(data.message || "Failed to lookup PIN code");
           }

@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as crypto from "node:crypto";
+import * as readline from "node:readline";
 import type { Database } from "../src/types/database";
 
 try {
@@ -148,6 +150,40 @@ export function toTitleCase(str: string): string {
     .join(" ");
 }
 
+export const SENTINEL_ADMIN_VALUES = new Set(["", "na", "n/a", "null", "none", "-", "--"]);
+
+export function isSentinelAdminValue(val: string | undefined | null): boolean {
+  if (!val) return true;
+  return SENTINEL_ADMIN_VALUES.has(val.trim().toLowerCase());
+}
+
+export function computeSourceRecordKey(fields: {
+  pincode: string;
+  office_name: string;
+  office_type?: string | null;
+  delivery_status?: string | null;
+  division?: string | null;
+  region?: string | null;
+  circle?: string | null;
+  taluk?: string | null;
+  district: string;
+  state: string;
+}): string {
+  const parts = [
+    fields.pincode.trim().toLowerCase(),
+    fields.office_name.trim().toLowerCase(),
+    (fields.office_type || "").trim().toLowerCase(),
+    (fields.delivery_status || "").trim().toLowerCase(),
+    (fields.division || "").trim().toLowerCase(),
+    (fields.region || "").trim().toLowerCase(),
+    (fields.circle || "").trim().toLowerCase(),
+    (fields.taluk || "").trim().toLowerCase(),
+    fields.district.trim().toLowerCase(),
+    fields.state.trim().toLowerCase(),
+  ];
+  return crypto.createHash("md5").update(parts.join("|"), "utf8").digest("hex");
+}
+
 export function slugify(str: string): string {
   return str
     .toLowerCase()
@@ -230,6 +266,7 @@ export async function importPostalData(
     district: string;
     state: string;
     source: string;
+    source_record_key: string;
     source_updated_at: string | null;
   }> = [];
   if (!targetOptions.isDemo && !targetOptions.source) {
@@ -267,8 +304,21 @@ export async function importPostalData(
       continue;
     }
 
-    // Exact identity aligned with PostgreSQL UNIQUE (pincode, office_name) constraint
-    const key = `${pincode}|${officeName}`;
+    const sourceRecordKey = computeSourceRecordKey({
+      pincode,
+      office_name: officeName,
+      office_type: normalizeText(raw.officeType) || null,
+      delivery_status: normalizeText(raw.Deliverystatus) || null,
+      division: normalizeText(raw.divisionname) || null,
+      region: normalizeText(raw.regionname) || null,
+      circle: normalizeText(raw.circlename) || null,
+      taluk: normalizeText(raw.Taluk) || null,
+      district,
+      state,
+    });
+
+    // Exact identity aligned with PostgreSQL UNIQUE (source, source_record_key) constraint
+    const key = `${effectiveSource}|${sourceRecordKey}`;
     validMap.set(key, {
       pincode,
       office_name: officeName,
@@ -281,6 +331,7 @@ export async function importPostalData(
       district: toTitleCase(district),
       state: toTitleCase(state),
       source: effectiveSource,
+      source_record_key: sourceRecordKey,
       source_updated_at: effectiveSourceUpdatedAt,
     });
   }
@@ -295,9 +346,16 @@ export async function importPostalData(
   const BATCH_SIZE = 500;
   for (let i = 0; i < validRecords.length; i += BATCH_SIZE) {
     const batch = validRecords.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase
+    const { error } = await (supabase as unknown as {
+      from: (table: string) => {
+        upsert: (
+          data: unknown,
+          options?: { onConflict?: string }
+        ) => Promise<{ error: { message: string } | null }>;
+      };
+    })
       .from("india_postal_data")
-      .upsert(batch, { onConflict: "pincode,office_name" });
+      .upsert(batch, { onConflict: "source,source_record_key" });
 
     if (error) {
       console.error(`Batch upsert error [${i}-${i + batch.length}]:`, error.message);
@@ -327,6 +385,9 @@ export async function importPostalData(
 
   const uniqueCities = new Map<string, { name: string; state: string; district: string }>();
   for (const r of validRecords) {
+    if (isSentinelAdminValue(r.district) || isSentinelAdminValue(r.state)) {
+      continue;
+    }
     const key = `${r.district.toLowerCase()}|${r.state.toLowerCase()}`;
     if (!uniqueCities.has(key)) {
       uniqueCities.set(key, { name: r.district, state: r.state, district: r.district });
@@ -401,6 +462,9 @@ export async function importPostalData(
   const uniqueLocs = new Map<string, { city_id: string; name: string; slug: string; is_active: boolean }>();
 
   for (const r of validRecords) {
+    if (isSentinelAdminValue(r.district) || isSentinelAdminValue(r.state)) {
+      continue;
+    }
     const cityKey = `${r.district.toLowerCase()}|${r.state.toLowerCase()}`;
     const cityId = cityMap.get(cityKey);
     if (!cityId) continue;
@@ -468,6 +532,9 @@ export async function importPostalData(
   >();
 
   for (const r of validRecords) {
+    if (isSentinelAdminValue(r.district) || isSentinelAdminValue(r.state)) {
+      continue;
+    }
     const cityKey = `${r.district.toLowerCase()}|${r.state.toLowerCase()}`;
     const cityId = cityMap.get(cityKey);
     if (!cityId) continue;
@@ -524,6 +591,204 @@ export async function importPostalData(
   }
 
   return stats;
+}
+
+export interface DryValidationReport {
+  totalRows: number;
+  validParsedRows: number;
+  distinctPins: number;
+  malformedPins: number;
+  naAdminRows: number;
+  affectedPins: number;
+  validPlusNAPins: number;
+  onlyNAAdminPins: number;
+  exactDuplicates: number;
+  duplicatePinOfficeGroups: number;
+  duplicatePinOfficeGroupsWithDifferingMetadata: number;
+  sameStateMultiDistrictPins: number;
+  multiStatePinsExcludingNA: number;
+}
+
+export async function dryValidatePostalCSV(filePath: string): Promise<DryValidationReport> {
+  const stream = fs.createReadStream(filePath, { encoding: "utf8" });
+  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+
+  let headerProcessed = false;
+  let idxOffice = -1;
+  let idxPincode = -1;
+  let idxType = -1;
+  let idxDelivery = -1;
+  let idxDivision = -1;
+  let idxRegion = -1;
+  let idxCircle = -1;
+  let idxTaluk = -1;
+  let idxDistrict = -1;
+  let idxState = -1;
+
+  let totalDataRows = 0;
+  let malformedPins = 0;
+  let naAdminRows = 0;
+
+  const pinMap = new Map<
+    string,
+    {
+      validDistricts: Set<string>;
+      validStates: Set<string>;
+      hasValid: boolean;
+      hasNA: boolean;
+      totalRows: number;
+    }
+  >();
+
+  const pinOfficeMap = new Map<string, { count: number; recordKeys: Set<string> }>();
+  const recordKeys = new Set<string>();
+  let exactDuplicates = 0;
+
+  for await (const line of rl) {
+    if (!line.trim()) continue;
+
+    if (!headerProcessed) {
+      const headers = parseCSVLine(line).map((h) => h.toLowerCase().trim());
+      idxOffice = headers.findIndex((h) => h.includes("office") && !h.includes("type"));
+      idxPincode = headers.findIndex((h) => h.includes("pincode"));
+      idxType = headers.findIndex((h) => h.includes("type"));
+      idxDelivery = headers.findIndex((h) => h === "delivery" || h === "deliverystatus");
+      idxDivision = headers.findIndex((h) => h.includes("division"));
+      idxRegion = headers.findIndex((h) => h.includes("region"));
+      idxCircle = headers.findIndex((h) => h.includes("circle"));
+      idxTaluk = headers.findIndex((h) => h.includes("taluk") || h.includes("tehsil"));
+      idxDistrict = headers.findIndex((h) => h.includes("district"));
+      idxState = headers.findIndex((h) => h.includes("state"));
+      headerProcessed = true;
+      continue;
+    }
+
+    totalDataRows++;
+    const cols = parseCSVLine(line);
+
+    const officename = idxOffice >= 0 ? cols[idxOffice] : cols[0];
+    const pincodeRaw = idxPincode >= 0 ? cols[idxPincode] : cols[1];
+    const officeType = idxType >= 0 ? cols[idxType] : undefined;
+    const delivery = idxDelivery >= 0 ? cols[idxDelivery] : undefined;
+    const division = idxDivision >= 0 ? cols[idxDivision] : undefined;
+    const region = idxRegion >= 0 ? cols[idxRegion] : undefined;
+    const circle = idxCircle >= 0 ? cols[idxCircle] : undefined;
+    const taluk = idxTaluk >= 0 ? cols[idxTaluk] : undefined;
+    const district = idxDistrict >= 0 ? cols[idxDistrict] : cols[cols.length - 2] || "";
+    const state = idxState >= 0 ? cols[idxState] : cols[cols.length - 1] || "";
+
+    const pincode = pincodeRaw.replace(/\s+/g, "");
+
+    if (!/^\d{6}$/.test(pincode)) {
+      malformedPins++;
+      continue;
+    }
+
+    const key = computeSourceRecordKey({
+      pincode,
+      office_name: officename,
+      office_type: officeType,
+      delivery_status: delivery,
+      division,
+      region,
+      circle,
+      taluk,
+      district,
+      state,
+    });
+
+    if (recordKeys.has(key)) {
+      exactDuplicates++;
+    } else {
+      recordKeys.add(key);
+    }
+
+    // Track PIN + office name groups and whether their stored metadata differs
+    const pinOfficeKey = `${pincode}|${officename.trim()}`;
+    let poEntry = pinOfficeMap.get(pinOfficeKey);
+    if (!poEntry) {
+      poEntry = { count: 0, recordKeys: new Set<string>() };
+      pinOfficeMap.set(pinOfficeKey, poEntry);
+    }
+    poEntry.count++;
+    poEntry.recordKeys.add(key);
+
+    const isDistNA = isSentinelAdminValue(district);
+    const isStateNA = isSentinelAdminValue(state);
+
+    if (isDistNA || isStateNA) {
+      naAdminRows++;
+    }
+
+    if (!pinMap.has(pincode)) {
+      pinMap.set(pincode, {
+        validDistricts: new Set<string>(),
+        validStates: new Set<string>(),
+        hasValid: false,
+        hasNA: false,
+        totalRows: 0,
+      });
+    }
+
+    const entry = pinMap.get(pincode)!;
+    entry.totalRows++;
+
+    if (isDistNA || isStateNA) {
+      entry.hasNA = true;
+    } else {
+      entry.hasValid = true;
+      entry.validDistricts.add(district.trim().toLowerCase());
+      entry.validStates.add(state.trim().toLowerCase());
+    }
+  }
+
+  let sameStateMultiDistrict = 0;
+  let multiStateExcludingNA = 0;
+  let onlyNAAdminPins = 0;
+  let validPlusNAPins = 0;
+
+  for (const [, entry] of pinMap.entries()) {
+    if (!entry.hasValid && entry.hasNA) {
+      onlyNAAdminPins++;
+    }
+    if (entry.hasValid && entry.hasNA) {
+      validPlusNAPins++;
+    }
+    if (entry.validStates.size === 1 && entry.validDistricts.size > 1) {
+      sameStateMultiDistrict++;
+    }
+    if (entry.validStates.size > 1) {
+      multiStateExcludingNA++;
+    }
+  }
+
+  let duplicatePinOfficeGroups = 0;
+  let duplicatePinOfficeGroupsWithDifferingMetadata = 0;
+
+  for (const [, poEntry] of pinOfficeMap.entries()) {
+    if (poEntry.count > 1) {
+      duplicatePinOfficeGroups++;
+      if (poEntry.recordKeys.size > 1) {
+        duplicatePinOfficeGroupsWithDifferingMetadata++;
+      }
+    }
+  }
+
+  return {
+    totalRows: totalDataRows,
+    validParsedRows: totalDataRows - malformedPins,
+    distinctPins: pinMap.size,
+    malformedPins,
+    naAdminRows,
+    affectedPins: onlyNAAdminPins + validPlusNAPins,
+    validPlusNAPins,
+    onlyNAAdminPins,
+    exactDuplicates,
+    duplicatePinOfficeGroups,
+    duplicatePinOfficeGroupsWithDifferingMetadata,
+    sameStateMultiDistrictPins: sameStateMultiDistrict,
+    multiStatePinsExcludingNA: multiStateExcludingNA,
+  };
 }
 
 export function parseCSVFile(filePath: string): PostalRecordInput[] {
@@ -605,15 +870,8 @@ export const DEMO_INDIA_POSTAL_DATA: PostalRecordInput[] = [
 ];
 
 async function main() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-
-  if (!serviceRoleKey) {
-    console.error("SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) is required for postal data import script");
-    process.exit(1);
-  }
-
   const args = process.argv.slice(2);
+  const validateOnly = args.includes("--validate-only") || args.includes("--dry-run");
   const isDemo = args.includes("--demo");
   const allowRemote = args.includes("--allow-remote");
   const continueOnError = args.includes("--continue-on-error");
@@ -636,6 +894,44 @@ async function main() {
   if (sourceUpdatedIdx !== -1 && args[sourceUpdatedIdx + 1]) flagsWithValue.add(args[sourceUpdatedIdx + 1]);
 
   const csvArg = args.find((a) => !a.startsWith("--") && !flagsWithValue.has(a));
+
+  if (validateOnly) {
+    if (!csvArg) {
+      console.error("CRITICAL ERROR: Postal CSV dataset file path is required for --validate-only.");
+      process.exit(1);
+    }
+    if (!fs.existsSync(csvArg)) {
+      console.error(`CRITICAL ERROR: Postal dataset CSV file does not exist: "${csvArg}"`);
+      process.exit(1);
+    }
+    console.log(`Performing dry validation on: ${csvArg}`);
+    const report = await dryValidatePostalCSV(csvArg);
+    console.log("----------------------------------------");
+    console.log("=== Postal CSV Dry Validation Report ===");
+    console.log(`total CSV rows:                                  ${report.totalRows.toLocaleString()}`);
+    console.log(`valid parsed rows:                               ${report.validParsedRows.toLocaleString()}`);
+    console.log(`malformed PINs:                                  ${report.malformedPins.toLocaleString()}`);
+    console.log(`distinct PINs:                                   ${report.distinctPins.toLocaleString()}`);
+    console.log(`unavailable admin rows:                          ${report.naAdminRows.toLocaleString()}`);
+    console.log(`PINs affected by unavailable admin values:       ${report.affectedPins.toLocaleString()}`);
+    console.log(`valid + unavailable admin PINs:                  ${report.validPlusNAPins.toLocaleString()}`);
+    console.log(`only-unavailable admin PINs:                     ${report.onlyNAAdminPins.toLocaleString()}`);
+    console.log(`exact source-record-key duplicates:              ${report.exactDuplicates.toLocaleString()}`);
+    console.log(`duplicate PIN + office-name groups:              ${report.duplicatePinOfficeGroups.toLocaleString()}`);
+    console.log(`duplicate groups with differing stored metadata: ${report.duplicatePinOfficeGroupsWithDifferingMetadata.toLocaleString()}`);
+    console.log(`same-state multi-district PINs:                  ${report.sameStateMultiDistrictPins.toLocaleString()}`);
+    console.log(`real multi-state PINs after sentinel exclusion:  ${report.multiStatePinsExcludingNA.toLocaleString()}`);
+    console.log("----------------------------------------");
+    return;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+
+  if (!serviceRoleKey) {
+    console.error("SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) is required for postal data import script");
+    process.exit(1);
+  }
 
   const targetOptions: ImportTargetOptions = {
     allowRemote,

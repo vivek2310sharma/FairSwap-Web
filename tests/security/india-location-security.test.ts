@@ -243,6 +243,60 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       expect(data.message).toMatch(/multiple states/i);
     });
 
+    it("handles sentinel NA values: returns PINCODE_ADMIN_DATA_UNAVAILABLE when PIN only has NA admin metadata", async () => {
+      await db.exec(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, district, state)
+        VALUES 
+          ('990003', 'NA Post Office', 'S.O', 'Delivery', 'NA', 'NA');
+      `);
+
+      const res = await db.query<any>(`SELECT public.lookup_pincode('990003') as result;`);
+      const data = res.rows[0].result;
+
+      expect(data.success).toBe(false);
+      expect(data.error).toBe("PINCODE_ADMIN_DATA_UNAVAILABLE");
+      expect(data.message).toBe("We recognize this PIN code, but its location details are currently unavailable");
+    });
+
+    it("resolves valid admin data when PIN has both valid and NA rows (ignoring NA sentinel)", async () => {
+      await db.exec(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, district, state)
+        VALUES 
+          ('990004', 'Valid Office', 'S.O', 'Delivery', 'Kolar', 'Karnataka'),
+          ('990004', 'Incomplete Office', 'S.O', 'Delivery', 'NA', 'NA');
+      `);
+
+      const res = await db.query<any>(`SELECT public.lookup_pincode('990004') as result;`);
+      const data = res.rows[0].result;
+
+      expect(data.success).toBe(true);
+      expect(data.state).toBe("Karnataka");
+      expect(data.district).toBe("Kolar");
+      expect(data.districts).toHaveLength(1);
+      expect(data.districts[0].name).toBe("Kolar");
+      // NA values should not appear in districts
+      expect(data.districts.map((d: any) => d.name.toLowerCase())).not.toContain("na");
+    });
+
+    it("does not trigger CONFLICTING_POSTAL_STATES when PIN has 1 real state plus NA sentinel rows", async () => {
+      await db.exec(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, district, state)
+        VALUES 
+          ('990005', 'Real State Office', 'S.O', 'Delivery', 'Mysuru', 'Karnataka'),
+          ('990005', 'NA State Office', 'S.O', 'Delivery', 'NA', 'NA');
+      `);
+
+      const res = await db.query<any>(`SELECT public.lookup_pincode('990005') as result;`);
+      const data = res.rows[0].result;
+
+      expect(data.success).toBe(true);
+      expect(data.state).toBe("Karnataka");
+      expect(data.district).toBe("Mysuru");
+    });
+
     it("resolves compatibility city_id strictly using both district name AND state", async () => {
       // Create city row for 'Jaipur', 'Rajasthan'
       const res = await db.query<any>(`SELECT public.lookup_pincode('302017') as result;`);
@@ -483,7 +537,7 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
         },
         {
           pincode: "560095",
-          office_name: "Koramangala VI Bk S.O", // Duplicate record
+          office_name: "Koramangala VI Bk S.O", // Exact canonical duplicate record
           office_type: "S.O",
           delivery_status: "Delivery",
           district: "Bengaluru Urban",
@@ -499,14 +553,14 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
         },
       ];
 
-      // 1. Initial Import / Upsert
+      // 1. Initial Import / Upsert using (source, source_record_key)
       for (const r of sampleRecords) {
         await db.query(`
           INSERT INTO public.india_postal_data 
             (pincode, office_name, office_type, delivery_status, district, state)
           VALUES 
             ('${r.pincode}', '${r.office_name}', '${r.office_type}', '${r.delivery_status}', '${r.district}', '${r.state}')
-          ON CONFLICT (pincode, office_name) DO UPDATE SET
+          ON CONFLICT (source, source_record_key) DO UPDATE SET
             office_type = EXCLUDED.office_type,
             delivery_status = EXCLUDED.delivery_status,
             district = EXCLUDED.district,
@@ -514,7 +568,7 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
         `);
       }
 
-      // Check count: should be 2 unique records (duplicate 560095 collapsed)
+      // Check count: should be 2 unique records (exact duplicate 560095 collapsed)
       const countRes1 = await db.query<any>(`
         SELECT COUNT(*) as cnt FROM public.india_postal_data 
         WHERE pincode IN ('560095', '110001');
@@ -528,7 +582,7 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
             (pincode, office_name, office_type, delivery_status, district, state)
           VALUES 
             ('${r.pincode}', '${r.office_name}', '${r.office_type}', '${r.delivery_status}', '${r.district}', '${r.state}')
-          ON CONFLICT (pincode, office_name) DO NOTHING;
+          ON CONFLICT (source, source_record_key) DO NOTHING;
         `);
       }
 
@@ -552,6 +606,28 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
 
       expect(mappingRes.rows[0].office_name).toBe("Koramangala VI Bk S.O");
       expect(mappingRes.rows[0].source).toBe("india_post_candidate");
+    });
+
+    it("preserves duplicate PIN + office_name records when their stored metadata differs", async () => {
+      // Official dataset contains groups with same pincode and office name but differing districts/divisions
+      await db.exec(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, district, state)
+        VALUES 
+          ('990099', 'Shared Office Name', 'B.O', 'Delivery', 'District Alpha', 'State Alpha'),
+          ('990099', 'Shared Office Name', 'B.O', 'Delivery', 'District Beta', 'State Alpha')
+        ON CONFLICT (source, source_record_key) DO NOTHING;
+      `);
+
+      const res = await db.query<any>(`
+        SELECT district FROM public.india_postal_data 
+        WHERE pincode = '990099' AND office_name = 'Shared Office Name'
+        ORDER BY district ASC;
+      `);
+
+      expect(res.rows).toHaveLength(2);
+      expect(res.rows[0].district).toBe("District Alpha");
+      expect(res.rows[1].district).toBe("District Beta");
     });
   });
 });

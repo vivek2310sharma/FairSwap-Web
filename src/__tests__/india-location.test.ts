@@ -9,6 +9,8 @@ import {
   slugify,
   parseCSVLine,
   validateImportTarget,
+  isSentinelAdminValue,
+  computeSourceRecordKey,
 } from "../../scripts/import-india-postal-data";
 
 vi.mock("@/lib/location/pincode", async (importOriginal) => {
@@ -502,6 +504,22 @@ describe("India Location & PIN Code Utilities", () => {
       expect(json.error).toBe("CONFLICTING_POSTAL_STATES");
     });
 
+    it("returns 422 when server reports PINCODE_ADMIN_DATA_UNAVAILABLE", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "PINCODE_ADMIN_DATA_UNAVAILABLE",
+        message: "We recognize this PIN code, but its location details are currently unavailable",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/123456");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "123456" }),
+      });
+      expect(res.status).toBe(422);
+      const json = await res.json();
+      expect(json.error).toBe("PINCODE_ADMIN_DATA_UNAVAILABLE");
+      expect(json.message).toBe("We recognize this PIN code, but its location details are currently unavailable");
+    });
+
     it("returns 500 when lookup suffers FETCH_ERROR or unexpected failure", async () => {
       vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
         success: false,
@@ -589,6 +607,113 @@ describe("India Location & PIN Code Utilities", () => {
       expect(json.districts[0].name).toBe("Central Delhi");
       expect(json.districts[1].name).toBe("New Delhi");
       expect(json.localities[0].district).toBe("New Delhi");
+    });
+  });
+
+  describe("Official Postal Snapshot Hardening & Identity (#81)", () => {
+    describe("isSentinelAdminValue", () => {
+      it("treats case-insensitive official sentinels as unavailable", () => {
+        expect(isSentinelAdminValue("NA")).toBe(true);
+        expect(isSentinelAdminValue("na")).toBe(true);
+        expect(isSentinelAdminValue("Na")).toBe(true);
+        expect(isSentinelAdminValue("N/A")).toBe(true);
+        expect(isSentinelAdminValue("n/a")).toBe(true);
+        expect(isSentinelAdminValue("NULL")).toBe(true);
+        expect(isSentinelAdminValue("null")).toBe(true);
+        expect(isSentinelAdminValue("NONE")).toBe(true);
+        expect(isSentinelAdminValue("none")).toBe(true);
+        expect(isSentinelAdminValue("-")).toBe(true);
+        expect(isSentinelAdminValue("--")).toBe(true);
+        expect(isSentinelAdminValue("")).toBe(true);
+        expect(isSentinelAdminValue("   ")).toBe(true);
+        expect(isSentinelAdminValue(null)).toBe(true);
+        expect(isSentinelAdminValue(undefined)).toBe(true);
+      });
+
+      it("treats genuine administrative state and district names as valid", () => {
+        expect(isSentinelAdminValue("Karnataka")).toBe(false);
+        expect(isSentinelAdminValue("Bengaluru Urban")).toBe(false);
+        expect(isSentinelAdminValue("Rajasthan")).toBe(false);
+        expect(isSentinelAdminValue("Delhi")).toBe(false);
+      });
+    });
+
+    describe("computeSourceRecordKey", () => {
+      it("produces deterministic MD5 fingerprint for identical inputs", () => {
+        const key1 = computeSourceRecordKey({
+          pincode: "560034",
+          office_name: "Koramangala I Block S.O",
+          office_type: "S.O",
+          delivery_status: "Delivery",
+          division: "Bangalore South",
+          region: "Bangalore HQ",
+          circle: "Karnataka",
+          taluk: "Bangalore South",
+          district: "Bengaluru Urban",
+          state: "Karnataka",
+        });
+
+        const key2 = computeSourceRecordKey({
+          pincode: " 560034 ",
+          office_name: "  koramangala i block s.o  ",
+          office_type: " s.o ",
+          delivery_status: " delivery ",
+          division: " bangalore south ",
+          region: " bangalore hq ",
+          circle: " karnataka ",
+          taluk: " bangalore south ",
+          district: " BENGALURU URBAN ",
+          state: " KARNATAKA ",
+        });
+
+        expect(key1).toBe(key2);
+        expect(key1).toMatch(/^[a-f0-9]{32}$/);
+      });
+
+      it("collapses records that differ only in ignored latitude/longitude", () => {
+        // Importer ignores lat/long; two records identical in all stored fields produce the same key
+        const recA = {
+          pincode: "560001",
+          office_name: "Bangalore G.P.O.",
+          office_type: "G.P.O.",
+          delivery_status: "Delivery",
+          district: "Bengaluru Urban",
+          state: "Karnataka",
+        };
+        const recB = {
+          pincode: "560001",
+          office_name: "Bangalore G.P.O.",
+          office_type: "G.P.O.",
+          delivery_status: "Delivery",
+          district: "Bengaluru Urban",
+          state: "Karnataka",
+        };
+        expect(computeSourceRecordKey(recA)).toBe(computeSourceRecordKey(recB));
+      });
+
+      it("produces differing keys when duplicate pincode + office_name have different districts/divisions", () => {
+        const officeDistrictA = computeSourceRecordKey({
+          pincode: "990099",
+          office_name: "Shared Office Name",
+          office_type: "B.O",
+          delivery_status: "Delivery",
+          division: "Division 1",
+          district: "District Alpha",
+          state: "State Alpha",
+        });
+
+        const officeDistrictB = computeSourceRecordKey({
+          pincode: "990099",
+          office_name: "Shared Office Name",
+          office_type: "B.O",
+          delivery_status: "Delivery",
+          division: "Division 2",
+          district: "District Beta",
+          state: "State Alpha",
+        });
+
+        expect(officeDistrictA).not.toBe(officeDistrictB);
+      });
     });
   });
 });

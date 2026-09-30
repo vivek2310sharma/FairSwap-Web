@@ -28,6 +28,8 @@ export async function GET(
         ? 404
         : result.error === "CONFLICTING_POSTAL_STATES"
         ? 409
+        : result.error === "PINCODE_ADMIN_DATA_UNAVAILABLE"
+        ? 422
         : 500;
     return NextResponse.json(result, { status });
   }

@@ -106,7 +106,12 @@ export interface PincodeLookupSuccess {
 
 export interface PincodeLookupFailure {
   success: false;
-  error: "INVALID_PINCODE" | "PINCODE_NOT_FOUND" | "CONFLICTING_POSTAL_STATES" | "FETCH_ERROR";
+  error:
+    | "INVALID_PINCODE"
+    | "PINCODE_NOT_FOUND"
+    | "CONFLICTING_POSTAL_STATES"
+    | "PINCODE_ADMIN_DATA_UNAVAILABLE"
+    | "FETCH_ERROR";
   message: string;
 }
 
