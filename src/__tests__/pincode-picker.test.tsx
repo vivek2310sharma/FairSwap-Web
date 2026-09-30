@@ -83,7 +83,7 @@ describe("PincodeLocationPicker component", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Bengaluru, Karnataka")).toBeInTheDocument();
+      expect(screen.getByText("Bengaluru Urban, Karnataka")).toBeInTheDocument();
     });
   });
 
@@ -178,5 +178,114 @@ describe("PincodeLocationPicker component", () => {
 
     fireEvent.change(landmarkInput, { target: { value: "Opposite City Mall" } });
     expect(landmarkInput).toHaveValue("Opposite City Mall");
+  });
+
+  it("displays <district>, <state> honestly and never promotes Taluk to user-facing city", async () => {
+    const mockLookupWithTaluk = {
+      success: true,
+      pincode: "560034",
+      state: "Karnataka",
+      district: "Bangalore",
+      city: "Bangalore", // legacy alias
+      city_id: "city-1",
+      localities: [
+        {
+          id: "loc-1",
+          name: "Koramangala",
+          slug: "koramangala",
+          city_id: "city-1",
+          city_name: "Bangalore",
+          state: "Karnataka",
+          district: "Bangalore",
+        },
+      ],
+      postal_offices: [
+        {
+          office_name: "Koramangala S.O",
+          taluk: "Bangalore South", // raw postal metadata
+          district: "Bangalore",
+          state: "Karnataka",
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => mockLookupWithTaluk,
+    } as Response);
+
+    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+
+    const pinInput = screen.getByLabelText(/PIN Code/i);
+    fireEvent.change(pinInput, { target: { value: "560034" } });
+
+    await waitFor(() => {
+      // Must display "Bangalore, Karnataka", NEVER "Bangalore South, Karnataka"
+      expect(screen.getByText("Bangalore, Karnataka")).toBeInTheDocument();
+      expect(screen.queryByText(/Bangalore South, Karnataka/)).not.toBeInTheDocument();
+    });
+
+    // Label must show "PIN matched"
+    expect(screen.getByText("PIN matched")).toBeInTheDocument();
+  });
+
+  it("derives hidden compatibility city_id from selected locality and does not fall back to unrelated city", async () => {
+    const unrelatedCities: City[] = [
+      { id: "city-99", name: "Jaipur", state: "Rajasthan", slug: "jaipur", is_active: true, created_at: "" },
+      { id: "city-1", name: "Bangalore", state: "Karnataka", slug: "bangalore", is_active: true, created_at: "" },
+    ];
+
+    const mockLookupNoDirectCity = {
+      success: true,
+      pincode: "560034",
+      state: "Karnataka",
+      district: "Bangalore",
+      city: "Bangalore",
+      city_id: null, // no direct city match from RPC
+      localities: [
+        {
+          id: "loc-1",
+          name: "Koramangala",
+          slug: "koramangala",
+          city_id: "city-1",
+          city_name: "Bangalore",
+          state: "Karnataka",
+          district: "Bangalore",
+        },
+        {
+          id: "loc-2",
+          name: "Agara",
+          slug: "agara",
+          city_id: "city-1",
+          city_name: "Bangalore",
+          state: "Karnataka",
+          district: "Bangalore",
+        },
+      ],
+      postal_offices: [],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => mockLookupNoDirectCity,
+    } as Response);
+
+    const { container } = render(
+      <PincodeLocationPicker cities={unrelatedCities} localities={[]} />
+    );
+
+    const pinInput = screen.getByLabelText(/PIN Code/i);
+    fireEvent.change(pinInput, { target: { value: "560034" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("Bangalore, Karnataka")).toBeInTheDocument();
+    });
+
+    const hiddenCityInput = container.querySelector('input[name="city_id"]') as HTMLInputElement;
+
+    // Select locality loc-1
+    const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
+    fireEvent.change(localitySelect, { target: { value: "loc-1" } });
+
+    // city_id must derive from locality's city_id ("city-1"), never unrelated first city ("city-99")
+    expect(hiddenCityInput.value).toBe("city-1");
   });
 });

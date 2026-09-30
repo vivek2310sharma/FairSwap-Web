@@ -48,20 +48,22 @@ export default function PincodeLocationPicker({
 
         if (data.success) {
           setErrorMsg(null);
-          setDerivedLocationText(`${data.city}, ${data.state}`);
+          setDerivedLocationText(`${data.district || data.city}, ${data.state}`);
 
           if (data.city_id) {
             setSelectedCityId(data.city_id);
           } else {
-            // Find existing city by name match from the lookup response
+            // Find existing compatibility district/city by exact district and state match
+            const targetDistrict = data.district || data.city;
             const match = cities.find(
-              (c) => c.name.toLowerCase() === data.city.toLowerCase() || c.name.toLowerCase() === data.district.toLowerCase()
+              (c) =>
+                c.name.toLowerCase() === targetDistrict.toLowerCase() &&
+                c.state.toLowerCase() === data.state.toLowerCase()
             );
             if (match) {
               setSelectedCityId(match.id);
             }
-            // No fallback: if we can't identify the city, leave it unset
-            // The lookup response text still shows the derived location
+            // Never fall back to an unrelated city
           }
 
           if (data.localities && data.localities.length > 0) {
@@ -217,11 +219,11 @@ export default function PincodeLocationPicker({
           </select>
         </div>
 
-        {/* City verification element (rendered disabled or hidden when unverified to satisfy contrast test while preventing bypass) */}
+        {/* District verification element (rendered disabled or hidden when unverified to satisfy contrast test while preventing bypass) */}
         {!derivedLocationText && (
           <div className="pt-2 border-t border-gray-200">
             <label htmlFor="city_picker_select" className="block text-xs font-semibold text-gray-700">
-              City *
+              District *
             </label>
             <select
               id="city_picker_select"

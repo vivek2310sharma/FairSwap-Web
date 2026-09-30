@@ -113,12 +113,13 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
     const cityRes = await db.query<any>(`
       INSERT INTO public.cities (name, state, slug, is_active)
       VALUES 
-        ('Bengaluru', 'Karnataka', 'bengaluru', true),
-        ('Jaipur', 'Rajasthan', 'jaipur-test', true)
+        ('Bengaluru', 'Karnataka', 'bengaluru', true)
       RETURNING id, name;
     `);
-    bengaluruCityId = cityRes.rows.find((r: any) => r.name === "Bengaluru")?.id;
-    jaipurCityId = cityRes.rows.find((r: any) => r.name === "Jaipur")?.id;
+    bengaluruCityId = cityRes.rows[0].id;
+
+    const jaipurQuery = await db.query<any>(`SELECT id FROM public.cities WHERE name = 'Jaipur' AND state = 'Rajasthan' LIMIT 1;`);
+    jaipurCityId = jaipurQuery.rows[0].id;
 
     const locRes = await db.query<any>(`
       INSERT INTO public.localities (city_id, name, slug, is_active)
@@ -175,10 +176,58 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       expect(data.pincode).toBe("560034");
       expect(data.state).toBe("Karnataka");
       expect(data.district).toBe("Bengaluru Urban");
+      expect(data.city).toBe("Bengaluru Urban"); // legacy alias reflects district
       expect(data.postal_offices).toHaveLength(2);
       expect(data.localities).toHaveLength(1);
       expect(data.localities[0].id).toBe(koramangalaLocalityId);
       expect(data.localities[0].name).toBe("Koramangala");
+      expect(data.localities[0].city_id).toBe(bengaluruCityId);
+    });
+
+    it("ensures Taluk is never promoted to city and remains raw postal metadata only", async () => {
+      await db.exec(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, taluk, district, state)
+        VALUES 
+          ('560099', 'Electronic City S.O', 'S.O', 'Delivery', 'Anekal', 'Bangalore Rural', 'Karnataka');
+      `);
+
+      const res = await db.query<any>(`SELECT public.lookup_pincode('560099') as result;`);
+      const data = res.rows[0].result;
+
+      expect(data.success).toBe(true);
+      expect(data.district).toBe("Bangalore Rural");
+      expect(data.city).toBe("Bangalore Rural"); // legacy alias is district, NOT taluk ('Anekal')
+      expect(data.postal_offices[0].taluk).toBe("Anekal");
+    });
+
+    it("explicitly rejects PIN codes with conflicting administrative boundaries", async () => {
+      // Seed conflicting records with differing districts under the same PIN code
+      await db.exec(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, district, state)
+        VALUES 
+          ('990001', 'Border Post Office A', 'S.O', 'Delivery', 'District One', 'State One'),
+          ('990001', 'Border Post Office B', 'S.O', 'Delivery', 'District Two', 'State One');
+      `);
+
+      const res = await db.query<any>(`SELECT public.lookup_pincode('990001') as result;`);
+      const data = res.rows[0].result;
+
+      expect(data.success).toBe(false);
+      expect(data.error).toBe("CONFLICTING_POSTAL_BOUNDARIES");
+      expect(data.message).toMatch(/multiple administrative districts or states/i);
+    });
+
+    it("resolves compatibility city_id strictly using both district name AND state", async () => {
+      // Create city row for 'Jaipur', 'Rajasthan'
+      const res = await db.query<any>(`SELECT public.lookup_pincode('302017') as result;`);
+      const data = res.rows[0].result;
+
+      expect(data.success).toBe(true);
+      expect(data.district).toBe("Jaipur");
+      expect(data.state).toBe("Rajasthan");
+      expect(data.city_id).toBe(jaipurCityId); // Matched because name = 'Jaipur' AND state = 'Rajasthan'
     });
 
     it("rejects invalid PIN code format", async () => {

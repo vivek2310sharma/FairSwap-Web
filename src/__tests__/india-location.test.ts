@@ -206,36 +206,129 @@ describe("India Location & PIN Code Utilities", () => {
       ).toThrow(/SAFETY REJECTION.*--allow-remote/);
     });
 
-    it("allows confirmed remote Supabase target", () => {
-      const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: false };
+    it("allows confirmed remote Supabase target with valid source", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "abc123.supabase.co",
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
       ).not.toThrow();
     });
 
+    it("rejects remote import without explicit --source", () => {
+      const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: false };
+      expect(() =>
+        validateImportTarget("https://abc123.supabase.co", opts)
+      ).toThrow(/Remote import requires explicit --source/);
+    });
+
+    it("allows github_mirror_unverified for staging remote target", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "wpppxlnbzqynvhpeuavd.supabase.co",
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
+      expect(() =>
+        validateImportTarget("https://wpppxlnbzqynvhpeuavd.supabase.co", opts)
+      ).not.toThrow();
+    });
+
+    it("rejects unverified source for production target", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
+      expect(() =>
+        validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
+      ).toThrow(/requires authoritative source "data.gov.in"/);
+    });
+
+    it("allows authoritative data.gov.in for production target", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+        sourceUpdatedAt: "2026-08-01T00:00:00Z",
+      };
+      expect(() =>
+        validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
+      ).not.toThrow();
+    });
+
+    it("rejects invalid --source-updated-at timestamp", () => {
+      const opts = {
+        allowRemote: false,
+        confirmHost: null,
+        isDemo: false,
+        sourceUpdatedAt: "not-a-date",
+      };
+      expect(() =>
+        validateImportTarget("http://127.0.0.1:54321", opts)
+      ).toThrow(/Invalid --source-updated-at timestamp/);
+    });
+
+    it("accepts valid ISO --source-updated-at timestamp", () => {
+      const opts = {
+        allowRemote: false,
+        confirmHost: null,
+        isDemo: false,
+        sourceUpdatedAt: "2026-09-01T12:00:00.000Z",
+      };
+      expect(() =>
+        validateImportTarget("http://127.0.0.1:54321", opts)
+      ).not.toThrow();
+    });
+
     it("rejects remote when --confirm-host does not match", () => {
-      const opts = { allowRemote: true, confirmHost: "wrong-ref.supabase.co", isDemo: false };
+      const opts = {
+        allowRemote: true,
+        confirmHost: "wrong-ref.supabase.co",
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
       ).toThrow(/does not match actual target/);
     });
 
     it("rejects --allow-remote without --confirm-host", () => {
-      const opts = { allowRemote: true, confirmHost: null, isDemo: false };
+      const opts = {
+        allowRemote: true,
+        confirmHost: null,
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
       ).toThrow(/requires --confirm-host/);
     });
 
     it("blocks --demo against remote target", () => {
-      const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: true };
+      const opts = {
+        allowRemote: true,
+        confirmHost: "abc123.supabase.co",
+        isDemo: true,
+        source: "operator_curated_seed",
+      };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
       ).toThrow(/--demo is not allowed against remote/);
     });
 
     it("blocks non-Supabase remote hosts", () => {
-      const opts = { allowRemote: true, confirmHost: "fairswap.org", isDemo: false };
+      const opts = {
+        allowRemote: true,
+        confirmHost: "fairswap.org",
+        isDemo: false,
+        source: "data.gov.in",
+      };
       expect(() =>
         validateImportTarget("https://fairswap.org", opts)
       ).toThrow(/not a recognized Supabase host/);
@@ -256,7 +349,7 @@ describe("India Location & PIN Code Utilities", () => {
   });
 
   describe("Batch Upsert & Conflict Deduplication Hardening", () => {
-    it("deduplicates records with identical (pincode, office_name)", () => {
+    it("exact (pincode, office_name) deduplication semantics", () => {
       const records = [
         { pincode: "560034", officename: "Agara B.O", Districtname: "Bangalore", statename: "Karnataka" },
         { pincode: "560034", officename: "Agara B.O", Districtname: "Bangalore", statename: "Karnataka" },
@@ -265,7 +358,8 @@ describe("India Location & PIN Code Utilities", () => {
 
       const validMap = new Map();
       for (const r of records) {
-        const key = `${r.pincode}|${r.officename.toLowerCase()}`;
+        // Aligned with DB constraint: (pincode, office_name)
+        const key = `${r.pincode}|${r.officename}`;
         validMap.set(key, r);
       }
       expect(validMap.size).toBe(2);
