@@ -123,25 +123,116 @@ describe("PincodeLocationPicker component", () => {
     });
   });
 
-  it("displays error message if PIN code maps to conflicting boundaries", async () => {
+  it("displays error message if PIN code maps to conflicting states (409)", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       json: async () => ({
         success: false,
-        error: "CONFLICTING_POSTAL_BOUNDARIES",
-        message: "PIN code maps to multiple administrative districts or states",
+        error: "CONFLICTING_POSTAL_STATES",
+        message: "PIN code maps to multiple states",
       }),
     } as Response);
 
     render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
 
     const pinInput = screen.getByLabelText(/PIN Code/i);
-    fireEvent.change(pinInput, { target: { value: "110001" } });
+    fireEvent.change(pinInput, { target: { value: "123456" } });
 
     await waitFor(() => {
       expect(
-        screen.getByText(/conflicting administrative boundaries/i)
+        screen.getByText(/PIN code spans multiple states/i)
       ).toBeInTheDocument();
     });
+  });
+
+  it("handles single-state + multiple-district PIN with required district selection and locality filtering", async () => {
+    const multiDistrictCities: City[] = [
+      { id: "city-cd", name: "Central Delhi", state: "Delhi", slug: "central-delhi", is_active: true, created_at: "" },
+      { id: "city-nd", name: "New Delhi", state: "Delhi", slug: "new-delhi", is_active: true, created_at: "" },
+    ];
+
+    const mockMultiDistrictLookup = {
+      success: true,
+      pincode: "110001",
+      state: "Delhi",
+      district: null,
+      city: null,
+      city_id: null,
+      districts: [
+        { name: "Central Delhi", city_id: "city-cd" },
+        { name: "New Delhi", city_id: "city-nd" },
+      ],
+      postal_offices: [],
+      localities: [
+        {
+          id: "loc-cp",
+          name: "Connaught Place",
+          slug: "connaught-place",
+          city_id: "city-nd",
+          city_name: "New Delhi",
+          district: "New Delhi",
+          state: "Delhi",
+        },
+        {
+          id: "loc-daryaganj",
+          name: "Daryaganj",
+          slug: "daryaganj",
+          city_id: "city-cd",
+          city_name: "Central Delhi",
+          district: "Central Delhi",
+          state: "Delhi",
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => mockMultiDistrictLookup,
+    } as Response);
+
+    const { container } = render(
+      <PincodeLocationPicker cities={multiDistrictCities} localities={[]} />
+    );
+
+    const pinInput = screen.getByLabelText(/PIN Code/i);
+    fireEvent.change(pinInput, { target: { value: "110001" } });
+
+    await waitFor(() => {
+      expect(screen.getByText("State: Delhi")).toBeInTheDocument();
+      expect(screen.getByText("PIN matched")).toBeInTheDocument();
+    });
+
+    // Top-level district/city/city_id are null/empty until selection
+    const hiddenCityInput = container.querySelector('input[name="city_id"]') as HTMLInputElement;
+    expect(hiddenCityInput.value).toBe("");
+
+    // District dropdown is rendered and populated
+    const districtSelect = screen.getByLabelText(/District \*/i);
+    expect(districtSelect).toBeInTheDocument();
+    expect(districtSelect).toHaveValue("");
+    expect(screen.getByRole("option", { name: "Central Delhi" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "New Delhi" })).toBeInTheDocument();
+
+    const localitySelect = screen.getByLabelText(/Area \/ Locality \*/i);
+    expect(localitySelect).toBeInTheDocument();
+    expect(screen.getByText(/-- Select District first --/i)).toBeInTheDocument();
+
+    // 1. Select "New Delhi"
+    fireEvent.change(districtSelect, { target: { value: "New Delhi" } });
+
+    // city_id set to "city-nd"
+    expect(hiddenCityInput.value).toBe("city-nd");
+
+    // Localities filtered to only New Delhi localities ("Connaught Place")
+    expect(screen.getByRole("option", { name: "Connaught Place" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Daryaganj" })).not.toBeInTheDocument();
+
+    // 2. Select "Central Delhi" (change district - clears locality)
+    fireEvent.change(districtSelect, { target: { value: "Central Delhi" } });
+
+    // city_id updated to "city-cd"
+    expect(hiddenCityInput.value).toBe("city-cd");
+    // Localities filtered to Central Delhi ("Daryaganj")
+    expect(screen.getByRole("option", { name: "Daryaganj" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Connaught Place" })).not.toBeInTheDocument();
   });
 
   it("changing one digit clears previous city + locality immediately", async () => {

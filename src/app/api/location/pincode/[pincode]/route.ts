@@ -26,7 +26,7 @@ export async function GET(
         ? 400
         : result.error === "PINCODE_NOT_FOUND"
         ? 404
-        : result.error === "CONFLICTING_POSTAL_BOUNDARIES"
+        : result.error === "CONFLICTING_POSTAL_STATES"
         ? 409
         : 500;
     return NextResponse.json(result, { status });

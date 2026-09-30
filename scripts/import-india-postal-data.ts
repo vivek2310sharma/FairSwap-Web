@@ -232,12 +232,18 @@ export async function importPostalData(
     source: string;
     source_updated_at: string | null;
   }> = [];
-  const validMap = new Map<string, (typeof validRecords)[0]>();
+  if (!targetOptions.isDemo && !targetOptions.source) {
+    throw new Error(
+      `SAFETY REJECTION: Non-demo CSV import requires explicit --source <source>.\n` +
+      `Allowed sources: ${ALLOWED_IMPORT_SOURCES.join(", ")}`
+    );
+  }
 
-  const effectiveSource =
-    targetOptions.source ||
-    (targetOptions.isDemo ? "operator_curated_seed" : "github_mirror_unverified");
+  const effectiveSource: ImportSource = targetOptions.isDemo
+    ? "operator_curated_seed"
+    : (targetOptions.source as ImportSource);
   const effectiveSourceUpdatedAt = targetOptions.sourceUpdatedAt || null;
+  const validMap = new Map<string, (typeof validRecords)[0]>();
 
   for (const raw of records) {
     const pincode = normalizeText(raw.pincode).replace(/\s+/g, "");

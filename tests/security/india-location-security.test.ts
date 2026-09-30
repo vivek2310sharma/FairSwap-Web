@@ -182,6 +182,7 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       expect(data.localities[0].id).toBe(koramangalaLocalityId);
       expect(data.localities[0].name).toBe("Koramangala");
       expect(data.localities[0].city_id).toBe(bengaluruCityId);
+      expect(data.localities[0].district).toBe("Bengaluru");
     });
 
     it("ensures Taluk is never promoted to city and remains raw postal metadata only", async () => {
@@ -201,8 +202,8 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       expect(data.postal_offices[0].taluk).toBe("Anekal");
     });
 
-    it("explicitly rejects PIN codes with conflicting administrative boundaries", async () => {
-      // Seed conflicting records with differing districts under the same PIN code
+    it("supports multi-district PIN codes within the same state and returns district choices", async () => {
+      // Seed records with differing districts under the same PIN code and same state
       await db.exec(`
         INSERT INTO public.india_postal_data 
           (pincode, office_name, office_type, delivery_status, district, state)
@@ -214,9 +215,32 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       const res = await db.query<any>(`SELECT public.lookup_pincode('990001') as result;`);
       const data = res.rows[0].result;
 
+      expect(data.success).toBe(true);
+      expect(data.pincode).toBe("990001");
+      expect(data.state).toBe("State One");
+      expect(data.district).toBeNull();
+      expect(data.city).toBeNull();
+      expect(data.city_id).toBeNull();
+      expect(data.districts).toHaveLength(2);
+      expect(data.districts.map((d: any) => d.name)).toEqual(["District One", "District Two"]);
+    });
+
+    it("explicitly rejects cross-state PIN codes with CONFLICTING_POSTAL_STATES", async () => {
+      // Seed records with differing states under the same PIN code
+      await db.exec(`
+        INSERT INTO public.india_postal_data 
+          (pincode, office_name, office_type, delivery_status, district, state)
+        VALUES 
+          ('990002', 'Interstate Office A', 'S.O', 'Delivery', 'District A', 'State Alpha'),
+          ('990002', 'Interstate Office B', 'S.O', 'Delivery', 'District B', 'State Beta');
+      `);
+
+      const res = await db.query<any>(`SELECT public.lookup_pincode('990002') as result;`);
+      const data = res.rows[0].result;
+
       expect(data.success).toBe(false);
-      expect(data.error).toBe("CONFLICTING_POSTAL_BOUNDARIES");
-      expect(data.message).toMatch(/multiple administrative districts or states/i);
+      expect(data.error).toBe("CONFLICTING_POSTAL_STATES");
+      expect(data.message).toMatch(/multiple states/i);
     });
 
     it("resolves compatibility city_id strictly using both district name AND state", async () => {

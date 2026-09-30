@@ -15,7 +15,8 @@ FairSwap uses a **PIN-first** location model:
 
 Schema Migrations:
 - Migration `20260929000025_india_postal_location_schema.sql` creates tables, indexes, grants, and submit integrity RPC.
-- Migration `20260930000026_fix_india_location_admin_and_lookup.sql` corrects `public.lookup_pincode` to strictly return State and District, prevents Taluk from masquerading as city, and detects conflicting administrative boundaries within a single PIN.
+- Migration `20260930000026_fix_india_location_admin_and_lookup.sql` corrects `public.lookup_pincode` to strictly return State and District and prevents Taluk from masquerading as city.
+- Migration `20260930000027_support_multi_district_pincodes.sql` adds multi-district same-state PIN resolution without guessing, returning explicit district choices to the caller, while failing closed on cross-state conflicts with `CONFLICTING_POSTAL_STATES`.
 
 ---
 
@@ -54,6 +55,8 @@ The official source for all PIN code and post office records in India is:
   - **Operational Classification**: `github_mirror_unverified`.
   - **Gate Status**: This mirror dataset is **NOT approved for FairSwapProd**. It is retained in `FairSwapTest` exclusively to support continued staging application verification, PIN lookup integration testing, and Create Ad QA without disruption.
   - **FairSwapTest Provenance Repair**: The staging dataset in `FairSwapTest` was repaired in place on 2026-09-30 so that all 154,789 rows truthfully declare `source = 'github_mirror_unverified'` and `source_updated_at = NULL`.
+  - **Multi-District Classification in Staging Mirror**:
+    The unverified staging mirror contains 1,246 PINs associated with multiple district labels. These may represent genuine cross-district postal coverage, administrative renames/boundary changes, stale source records, or mirror inconsistencies. FairSwap therefore handles multi-district same-state PINs without guessing while production validation remains gated on the authoritative data.gov.in dataset.
 
 ---
 

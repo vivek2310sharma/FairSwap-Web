@@ -386,6 +386,17 @@ describe("India Location & PIN Code Utilities", () => {
         validateImportTarget("http://localhost:54321", opts)
       ).not.toThrow();
     });
+
+    it("rejects direct programmatic importPostalData call without source", async () => {
+      const { importPostalData } = await import("../../scripts/import-india-postal-data");
+      await expect(
+        importPostalData([], "http://127.0.0.1:54321", "service-key", {
+          allowRemote: false,
+          confirmHost: null,
+          isDemo: false,
+        })
+      ).rejects.toThrow(/Non-demo CSV import requires explicit --source/);
+    });
   });
 
   describe("Batch Upsert & Conflict Deduplication Hardening", () => {
@@ -476,19 +487,19 @@ describe("India Location & PIN Code Utilities", () => {
       expect(json.error).toBe("PINCODE_NOT_FOUND");
     });
 
-    it("returns 409 when pincode maps to conflicting postal boundaries", async () => {
+    it("returns 409 when pincode maps to conflicting postal states", async () => {
       vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
         success: false,
-        error: "CONFLICTING_POSTAL_BOUNDARIES",
-        message: "PIN code maps to multiple administrative districts or states",
+        error: "CONFLICTING_POSTAL_STATES",
+        message: "PIN code maps to multiple states",
       });
-      const req = new NextRequest("http://localhost/api/location/pincode/110001");
+      const req = new NextRequest("http://localhost/api/location/pincode/123456");
       const res = await pincodeRouteHandler(req, {
-        params: Promise.resolve({ pincode: "110001" }),
+        params: Promise.resolve({ pincode: "123456" }),
       });
       expect(res.status).toBe(409);
       const json = await res.json();
-      expect(json.error).toBe("CONFLICTING_POSTAL_BOUNDARIES");
+      expect(json.error).toBe("CONFLICTING_POSTAL_STATES");
     });
 
     it("returns 500 when lookup suffers FETCH_ERROR or unexpected failure", async () => {
@@ -506,7 +517,7 @@ describe("India Location & PIN Code Utilities", () => {
       expect(json.error).toBe("FETCH_ERROR");
     });
 
-    it("returns 200 on successful lookup", async () => {
+    it("returns 200 on single-state + single-district lookup", async () => {
       vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
         success: true,
         pincode: "560034",
@@ -514,8 +525,19 @@ describe("India Location & PIN Code Utilities", () => {
         district: "Bengaluru Urban",
         city: "Bengaluru",
         city_id: "city-1",
+        districts: [{ name: "Bengaluru Urban", city_id: "city-1" }],
         postal_offices: [],
-        localities: [],
+        localities: [
+          {
+            id: "loc-1",
+            name: "Koramangala",
+            slug: "koramangala",
+            city_id: "city-1",
+            city_name: "Bengaluru",
+            district: "Bengaluru Urban",
+            state: "Karnataka",
+          },
+        ],
       });
       const req = new NextRequest("http://localhost/api/location/pincode/560034");
       const res = await pincodeRouteHandler(req, {
@@ -525,6 +547,48 @@ describe("India Location & PIN Code Utilities", () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.district).toBe("Bengaluru Urban");
+      expect(json.localities[0].district).toBe("Bengaluru Urban");
+    });
+
+    it("returns 200 on single-state + multiple-district lookup with null top-level district and populated districts array", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: true,
+        pincode: "110001",
+        state: "Delhi",
+        district: null,
+        city: null,
+        city_id: null,
+        districts: [
+          { name: "Central Delhi", city_id: "city-cd" },
+          { name: "New Delhi", city_id: "city-nd" },
+        ],
+        postal_offices: [],
+        localities: [
+          {
+            id: "loc-cp",
+            name: "Connaught Place",
+            slug: "connaught-place",
+            city_id: "city-nd",
+            city_name: "New Delhi",
+            district: "New Delhi",
+            state: "Delhi",
+          },
+        ],
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/110001");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "110001" }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.district).toBeNull();
+      expect(json.city).toBeNull();
+      expect(json.city_id).toBeNull();
+      expect(json.districts).toHaveLength(2);
+      expect(json.districts[0].name).toBe("Central Delhi");
+      expect(json.districts[1].name).toBe("New Delhi");
+      expect(json.localities[0].district).toBe("New Delhi");
     });
   });
 });
