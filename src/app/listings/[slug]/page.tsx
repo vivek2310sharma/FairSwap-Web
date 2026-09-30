@@ -216,8 +216,9 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                   <div className="flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5 text-brand-600" aria-hidden="true" />
                     <span>
-                      {listing.city?.name}
-                      {listing.locality?.name ? `, ${listing.locality.name}` : ""}
+                      {listing.locality?.name
+                        ? `${listing.locality.name}, ${listing.city?.name}`
+                        : listing.city?.name}
                     </span>
                   </div>
 

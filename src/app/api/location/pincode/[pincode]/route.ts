@@ -21,7 +21,14 @@ export async function GET(
   const result = await lookupPincodeServer(pincode);
 
   if (!result.success) {
-    const status = result.error === "INVALID_PINCODE" ? 400 : result.error === "PINCODE_NOT_FOUND" ? 404 : 500;
+    const status =
+      result.error === "INVALID_PINCODE"
+        ? 400
+        : result.error === "PINCODE_NOT_FOUND"
+        ? 404
+        : result.error === "CONFLICTING_POSTAL_BOUNDARIES"
+        ? 409
+        : 500;
     return NextResponse.json(result, { status });
   }
 

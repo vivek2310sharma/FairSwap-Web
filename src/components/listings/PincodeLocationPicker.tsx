@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import type { City, Locality, PincodeLookupResult } from "@/types/listing";
 
 interface PincodeLocationPickerProps {
@@ -37,14 +37,29 @@ export default function PincodeLocationPicker({
   });
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const activeLookupSeq = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const performLookup = useCallback(
     async (pin: string) => {
+      const seq = ++activeLookupSeq.current;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       setIsLoading(true);
       setErrorMsg(null);
 
       try {
-        const res = await fetch(`/api/location/pincode/${pin}`);
+        const res = await fetch(`/api/location/pincode/${pin}`, { signal: controller.signal });
         const data: PincodeLookupResult = await res.json();
+
+        // If a newer lookup was initiated, discard this stale response
+        if (seq !== activeLookupSeq.current) {
+          return;
+        }
 
         if (data.success) {
           setErrorMsg(null);
@@ -88,11 +103,16 @@ export default function PincodeLocationPicker({
           setAvailableLocalities([]);
           if (data.error === "PINCODE_NOT_FOUND") {
             setErrorMsg("PIN code not found in our database. Please double-check your 6-digit PIN code or retry.");
+          } else if (data.error === "CONFLICTING_POSTAL_BOUNDARIES") {
+            setErrorMsg("This PIN code maps to conflicting administrative boundaries. Please contact support or retry.");
           } else {
             setErrorMsg(data.message || "Failed to lookup PIN code");
           }
         }
       } catch (err: unknown) {
+        if ((err as Error)?.name === "AbortError" || seq !== activeLookupSeq.current) {
+          return;
+        }
         console.error("PIN lookup request error:", err);
         setDerivedLocationText(null);
         setSelectedCityId("");
@@ -100,7 +120,9 @@ export default function PincodeLocationPicker({
         setAvailableLocalities([]);
         setErrorMsg("Network error checking PIN code. Please retry.");
       } finally {
-        setIsLoading(false);
+        if (seq === activeLookupSeq.current) {
+          setIsLoading(false);
+        }
       }
     },
     [cities, selectedLocalityId]
@@ -108,17 +130,28 @@ export default function PincodeLocationPicker({
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+    if (val === pinCode) return;
+
     setPinCode(val);
 
-    if (val.length < 6) {
-      setDerivedLocationText(null);
-      setErrorMsg(null);
-      setSelectedLocalityId("");
-      if (val.length === 0) {
-        setSelectedCityId("");
-      }
-    } else if (val.length === 6) {
+    // Cancel in-flight request and increment sequence so late responses are discarded
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    activeLookupSeq.current++;
+
+    // Immediately invalidate all previous resolved state
+    setDerivedLocationText(null);
+    setSelectedCityId("");
+    setSelectedLocalityId("");
+    setAvailableLocalities([]);
+    setErrorMsg(null);
+
+    if (val.length === 6) {
       performLookup(val);
+    } else {
+      setIsLoading(false);
     }
   };
 

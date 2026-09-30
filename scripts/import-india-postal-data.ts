@@ -71,8 +71,16 @@ export function validateImportTarget(url: string, options: ImportTargetOptions) 
     }
   }
 
+  // For any non-demo CSV import, require --source regardless of whether target is local or remote
+  if (!options.isDemo && !options.source) {
+    throw new Error(
+      `SAFETY REJECTION: Non-demo CSV import requires explicit --source <source>.\n` +
+      `Allowed sources: ${ALLOWED_IMPORT_SOURCES.join(", ")}`
+    );
+  }
+
   if (isLocal) {
-    return; // Local targets always allowed
+    return; // Local targets allowed once non-demo source is validated
   }
 
   // Remote target checks
@@ -108,20 +116,19 @@ export function validateImportTarget(url: string, options: ImportTargetOptions) 
     );
   }
 
-  // Remote import requires explicit --source
-  if (!options.source) {
-    throw new Error(
-      `SAFETY REJECTION: Remote import requires explicit --source <source>.\n` +
-      `Allowed sources: ${ALLOWED_IMPORT_SOURCES.join(", ")}`
-    );
-  }
-
-  // Production import gate: strictly require official source data.gov.in
+  // Production import gate: strictly require official source data.gov.in and disallow continue-on-error
   const isProduction = hostname === KNOWN_PRODUCTION_HOST || hostname.startsWith("kriuhwppxgxsyyrbjsau");
-  if (isProduction && options.source !== "data.gov.in") {
-    throw new Error(
-      `SAFETY REJECTION: Production target "${hostname}" requires authoritative source "data.gov.in". Source "${options.source}" is strictly prohibited for production.`
-    );
+  if (isProduction) {
+    if (options.continueOnError) {
+      throw new Error(
+        `SAFETY REJECTION: Production target "${hostname}" does not allow --continue-on-error. Production nationwide import must remain fail-fast.`
+      );
+    }
+    if (options.source !== "data.gov.in") {
+      throw new Error(
+        `SAFETY REJECTION: Production target "${hostname}" requires authoritative source "data.gov.in". Source "${options.source}" is strictly prohibited for production.`
+      );
+    }
   }
 }
 
@@ -649,8 +656,10 @@ async function main() {
   } else {
     if (!csvArg) {
       console.error(
-        "CRITICAL ERROR: Official postal CSV dataset file path is required.\n" +
-        "Usage: npx tsx scripts/import-india-postal-data.ts <path-to-pincode.csv> (or use --demo for dev seeding)\n" +
+        "CRITICAL ERROR: Postal CSV dataset file path is required.\n" +
+        "Usage: npx tsx scripts/import-india-postal-data.ts <path-to-pincode.csv> --source <source> [--source-updated-at <iso_timestamp>]\n" +
+        "\nLocal import:\n" +
+        "  npx tsx scripts/import-india-postal-data.ts ./data.csv --source operator_curated_seed\n" +
         "\nRemote staging import:\n" +
         "  npx tsx scripts/import-india-postal-data.ts ./data.csv --allow-remote --confirm-host <staging-ref>.supabase.co --source github_mirror_unverified\n" +
         "\nRemote production import:\n" +
@@ -664,7 +673,14 @@ async function main() {
       process.exit(1);
     }
 
-    console.log(`Loading official postal records from CSV file: ${csvArg}`);
+    console.log(`Loading postal records from CSV file: ${csvArg}`);
+    console.log(`Source classification: ${source || "unspecified"}`);
+    if (source === "data.gov.in") {
+      console.log("Authoritative status: Official Government of India / Department of Posts dataset");
+    } else {
+      console.log("Authoritative status: Unverified or non-production dataset");
+    }
+
     records = parseCSVFile(csvArg);
 
     if (records.length === 0) {

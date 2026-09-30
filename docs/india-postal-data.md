@@ -33,11 +33,11 @@ The official source for all PIN code and post office records in India is:
 > - Third-party mirrors (GitHub, Kaggle), unofficial scraper sites (such as `postalpincode.in`), and unauthenticated commercial APIs are **strictly prohibited** for production bootstrapping.
 > - If the official Government of India portal is temporarily unreachable or offline: **Production postal bootstrap is blocked pending authoritative dataset availability.**
 
-### How to Download (Authoritative GoI Source)
-1. Navigate to the official dataset on [data.gov.in](https://data.gov.in/resource/all-india-pincode-directory-till-last-month).
-2. Download the latest official CSV export (typically named `all_india_pincode_directory.csv` or similar).
-3. Verify the file size (typically ~150,000+ rows, ~15–25 MB).
-4. Compute and record the SHA-256 checksum, publication date, and source URL before ingestion.
+### Production Procedure (Authoritative GoI Source)
+1. Obtain the CSV directly from the authoritative data.gov.in resource.
+2. Record source URL/resource metadata and publication/update date.
+3. Compute FairSwap's own SHA-256 of the downloaded file (`certutil -hashfile ./india_pincode_official.csv SHA256`).
+4. Record that checksum in the deployment/import evidence. This proves exactly which downloaded bytes FairSwap imported without claiming the government published a checksum.
 
 > [!CAUTION]
 > **Data Security & Git Hygiene**:

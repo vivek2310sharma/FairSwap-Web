@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { isValidIndianPincode } from "@/lib/location/pincode";
+import { describe, it, expect, vi } from "vitest";
+import { isValidIndianPincode, lookupPincodeServer } from "@/lib/location/pincode";
+import { GET as pincodeRouteHandler } from "@/app/api/location/pincode/[pincode]/route";
+import { NextRequest } from "next/server";
 import { draftListingSchema, submitListingSchema } from "@/types/listing";
 import {
   normalizeText,
@@ -8,6 +10,14 @@ import {
   parseCSVLine,
   validateImportTarget,
 } from "../../scripts/import-india-postal-data";
+
+vi.mock("@/lib/location/pincode", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/location/pincode")>();
+  return {
+    ...actual,
+    lookupPincodeServer: vi.fn(),
+  };
+});
 
 describe("India Location & PIN Code Utilities", () => {
   describe("isValidIndianPincode", () => {
@@ -193,16 +203,31 @@ describe("India Location & PIN Code Utilities", () => {
   });
 
   describe("Import Target Validation (validateImportTarget)", () => {
-    const localOpts = { allowRemote: false, confirmHost: null, isDemo: false };
+    const localOptsWithSource = {
+      allowRemote: false,
+      confirmHost: null,
+      isDemo: false,
+      source: "operator_curated_seed",
+    };
 
-    it("allows local targets by default", () => {
-      expect(() => validateImportTarget("http://127.0.0.1:54321", localOpts)).not.toThrow();
-      expect(() => validateImportTarget("http://localhost:54321", localOpts)).not.toThrow();
+    it("allows local targets by default when source is specified", () => {
+      expect(() => validateImportTarget("http://127.0.0.1:54321", localOptsWithSource)).not.toThrow();
+      expect(() => validateImportTarget("http://localhost:54321", localOptsWithSource)).not.toThrow();
+    });
+
+    it("rejects local non-demo import without explicit --source", () => {
+      expect(() =>
+        validateImportTarget("http://127.0.0.1:54321", {
+          allowRemote: false,
+          confirmHost: null,
+          isDemo: false,
+        })
+      ).toThrow(/Non-demo CSV import requires explicit --source/);
     });
 
     it("blocks accidental remote target without --allow-remote", () => {
       expect(() =>
-        validateImportTarget("https://abc123.supabase.co", localOpts)
+        validateImportTarget("https://abc123.supabase.co", localOptsWithSource)
       ).toThrow(/SAFETY REJECTION.*--allow-remote/);
     });
 
@@ -222,7 +247,7 @@ describe("India Location & PIN Code Utilities", () => {
       const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: false };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
-      ).toThrow(/Remote import requires explicit --source/);
+      ).toThrow(/Non-demo CSV import requires explicit --source/);
     });
 
     it("allows github_mirror_unverified for staging remote target", () => {
@@ -262,11 +287,25 @@ describe("India Location & PIN Code Utilities", () => {
       ).not.toThrow();
     });
 
+    it("rejects production target when --continue-on-error is supplied", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+        continueOnError: true,
+      };
+      expect(() =>
+        validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
+      ).toThrow(/does not allow --continue-on-error/);
+    });
+
     it("rejects invalid --source-updated-at timestamp", () => {
       const opts = {
         allowRemote: false,
         confirmHost: null,
         isDemo: false,
+        source: "operator_curated_seed",
         sourceUpdatedAt: "not-a-date",
       };
       expect(() =>
@@ -279,6 +318,7 @@ describe("India Location & PIN Code Utilities", () => {
         allowRemote: false,
         confirmHost: null,
         isDemo: false,
+        source: "operator_curated_seed",
         sourceUpdatedAt: "2026-09-01T12:00:00.000Z",
       };
       expect(() =>
@@ -336,11 +376,11 @@ describe("India Location & PIN Code Utilities", () => {
 
     it("rejects invalid URLs", () => {
       expect(() =>
-        validateImportTarget("not-a-url", localOpts)
+        validateImportTarget("not-a-url", localOptsWithSource)
       ).toThrow(/Invalid Supabase URL/);
     });
 
-    it("allows --demo on local target", () => {
+    it("allows --demo on local target without explicit source", () => {
       const opts = { allowRemote: false, confirmHost: null, isDemo: true };
       expect(() =>
         validateImportTarget("http://localhost:54321", opts)
@@ -392,6 +432,99 @@ describe("India Location & PIN Code Utilities", () => {
         collected.push(val);
       }
       expect(collected.length).toBe(70000);
+    });
+  });
+
+  describe("Pincode API Route (GET /api/location/pincode/[pincode])", () => {
+    it("returns 400 when pincode is not exactly 6 digits", async () => {
+      const req = new NextRequest("http://localhost/api/location/pincode/12345");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "12345" }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error).toBe("INVALID_PINCODE");
+    });
+
+    it("returns 400 when server reports INVALID_PINCODE", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "INVALID_PINCODE",
+        message: "PIN code must be exactly 6 numeric digits",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/000000");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "000000" }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error).toBe("INVALID_PINCODE");
+    });
+
+    it("returns 404 when pincode is not found", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "PINCODE_NOT_FOUND",
+        message: "PIN code not found in postal database",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/999999");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "999999" }),
+      });
+      expect(res.status).toBe(404);
+      const json = await res.json();
+      expect(json.error).toBe("PINCODE_NOT_FOUND");
+    });
+
+    it("returns 409 when pincode maps to conflicting postal boundaries", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "CONFLICTING_POSTAL_BOUNDARIES",
+        message: "PIN code maps to multiple administrative districts or states",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/110001");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "110001" }),
+      });
+      expect(res.status).toBe(409);
+      const json = await res.json();
+      expect(json.error).toBe("CONFLICTING_POSTAL_BOUNDARIES");
+    });
+
+    it("returns 500 when lookup suffers FETCH_ERROR or unexpected failure", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "FETCH_ERROR",
+        message: "Failed to resolve location for this PIN code",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/560034");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "560034" }),
+      });
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error).toBe("FETCH_ERROR");
+    });
+
+    it("returns 200 on successful lookup", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: true,
+        pincode: "560034",
+        state: "Karnataka",
+        district: "Bengaluru Urban",
+        city: "Bengaluru",
+        city_id: "city-1",
+        postal_offices: [],
+        localities: [],
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/560034");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "560034" }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.district).toBe("Bengaluru Urban");
     });
   });
 });

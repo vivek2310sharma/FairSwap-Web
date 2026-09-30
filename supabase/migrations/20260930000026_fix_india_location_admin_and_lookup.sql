@@ -33,8 +33,8 @@ BEGIN
 
   -- 1. Check existence and detect boundary conflict across state and district
   SELECT 
-    count(DISTINCT state),
-    count(DISTINCT district),
+    count(DISTINCT lower(trim(state))),
+    count(DISTINCT lower(trim(district))),
     min(state),
     min(district)
   INTO v_state_count, v_district_count, v_state, v_district

@@ -79,7 +79,10 @@ describe("PincodeLocationPicker component", () => {
     fireEvent.change(pinInput, { target: { value: "560034" } });
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("/api/location/pincode/560034");
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/location/pincode/560034",
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     await waitFor(() => {
@@ -113,12 +116,69 @@ describe("PincodeLocationPicker component", () => {
 
     fireEvent.click(retryBtn);
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("/api/location/pincode/999999");
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/location/pincode/999999",
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
   });
 
-  it("clears stale locality when PIN code changes", async () => {
-    const mockLookup560034 = {
+  it("displays error message if PIN code maps to conflicting boundaries", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => ({
+        success: false,
+        error: "CONFLICTING_POSTAL_BOUNDARIES",
+        message: "PIN code maps to multiple administrative districts or states",
+      }),
+    } as Response);
+
+    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+
+    const pinInput = screen.getByLabelText(/PIN Code/i);
+    fireEvent.change(pinInput, { target: { value: "110001" } });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/conflicting administrative boundaries/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("changing one digit clears previous city + locality immediately", async () => {
+    const { container } = render(
+      <PincodeLocationPicker
+        cities={mockCities}
+        localities={mockLocalities}
+        initialPinCode="560034"
+        initialLocalityId="loc-1"
+        initialCityId="city-1"
+      />
+    );
+
+    const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
+    expect(localitySelect).toHaveValue("loc-1");
+    const hiddenCity = container.querySelector('input[name="city_id"]') as HTMLInputElement;
+    expect(hiddenCity.value).toBe("city-1");
+
+    // Change one digit (560034 -> 560035)
+    global.fetch = vi.fn().mockReturnValue(new Promise(() => {})); // pending forever
+    const pinInput = screen.getByLabelText(/PIN Code/i);
+    fireEvent.change(pinInput, { target: { value: "560035" } });
+
+    // Immediately invalidated before any network completion
+    expect(localitySelect).toHaveValue("");
+    expect(hiddenCity.value).toBe("");
+    expect(container.querySelector('input[name="locality_id"]')).toHaveValue("");
+    expect(screen.queryByText(/PIN matched/i)).not.toBeInTheDocument();
+  });
+
+  it("stale lookup response cannot overwrite newer PIN resolution", async () => {
+    let resolveFirstLookup: ((val: unknown) => void) | undefined;
+    const firstLookupPromise = new Promise((resolve) => {
+      resolveFirstLookup = resolve;
+    });
+
+    const secondLookupResponse = {
       success: true,
       pincode: "560034",
       state: "Karnataka",
@@ -139,29 +199,66 @@ describe("PincodeLocationPicker component", () => {
       postal_offices: [],
     };
 
-    global.fetch = vi.fn().mockResolvedValue({
-      json: async () => mockLookup560034,
+    const firstLookupResponse = {
+      success: true,
+      pincode: "302017",
+      state: "Rajasthan",
+      district: "Jaipur",
+      city: "Jaipur",
+      city_id: "city-jaipur",
+      localities: [
+        {
+          id: "loc-jaipur",
+          name: "Malviya Nagar",
+          slug: "malviya-nagar",
+          city_id: "city-jaipur",
+          city_name: "Jaipur",
+          state: "Rajasthan",
+          district: "Jaipur",
+        },
+      ],
+      postal_offices: [],
+    };
+
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("302017")) {
+        // Slow first request
+        return firstLookupPromise;
+      }
+      if (url.includes("560034")) {
+        // Fast second request
+        return Promise.resolve({
+          json: async () => secondLookupResponse,
+        } as Response);
+      }
+      return Promise.reject(new Error("unexpected url"));
+    });
+
+    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+    const pinInput = screen.getByLabelText(/PIN Code/i);
+
+    // 1. User types first PIN (302017) -> starts slow request A
+    fireEvent.change(pinInput, { target: { value: "302017" } });
+
+    // 2. User quickly corrects PIN to 560034 -> starts fast request B
+    fireEvent.change(pinInput, { target: { value: "560034" } });
+
+    // 3. Request B finishes and renders Bengaluru Urban, Karnataka
+    await waitFor(() => {
+      expect(screen.getByText("Bengaluru Urban, Karnataka")).toBeInTheDocument();
+    });
+
+    // 4. Stale Request A finishes later
+    resolveFirstLookup!({
+      json: async () => firstLookupResponse,
     } as Response);
 
-    render(
-      <PincodeLocationPicker
-        cities={mockCities}
-        localities={mockLocalities}
-        initialPinCode="560034"
-        initialLocalityId="loc-1"
-        initialCityId="city-1"
-      />
-    );
+    // Give microtasks time to run
+    await new Promise((r) => setTimeout(r, 50));
 
-    const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
-    expect(localitySelect).toHaveValue("loc-1");
-
-    // Change PIN to 5 digits (partial edit)
-    const pinInput = screen.getByLabelText(/PIN Code/i);
-    fireEvent.change(pinInput, { target: { value: "56003" } });
-
-    // Locality selection should be cleared immediately
-    expect(localitySelect).toHaveValue("");
+    // Stale Request A MUST NOT overwrite Request B
+    expect(screen.getByText("Bengaluru Urban, Karnataka")).toBeInTheDocument();
+    expect(screen.queryByText(/Jaipur/i)).not.toBeInTheDocument();
   });
 
   it("updates landmark input correctly", () => {

@@ -100,7 +100,7 @@ export interface PincodeLookupSuccess {
 
 export interface PincodeLookupFailure {
   success: false;
-  error: "INVALID_PINCODE" | "PINCODE_NOT_FOUND" | "FETCH_ERROR";
+  error: "INVALID_PINCODE" | "PINCODE_NOT_FOUND" | "CONFLICTING_POSTAL_BOUNDARIES" | "FETCH_ERROR";
   message: string;
 }
 
