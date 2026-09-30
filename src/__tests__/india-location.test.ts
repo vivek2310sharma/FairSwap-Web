@@ -1,13 +1,32 @@
-import { describe, it, expect } from "vitest";
-import { isValidIndianPincode } from "@/lib/location/pincode";
+import { describe, it, expect, vi } from "vitest";
+import { isValidIndianPincode, lookupPincodeServer } from "@/lib/location/pincode";
+import { GET as pincodeRouteHandler } from "@/app/api/location/pincode/[pincode]/route";
+import { NextRequest } from "next/server";
 import { draftListingSchema, submitListingSchema } from "@/types/listing";
+import fs from "fs";
+import path from "path";
+import os from "os";
+import crypto from "crypto";
 import {
   normalizeText,
   toTitleCase,
   slugify,
   parseCSVLine,
   validateImportTarget,
+  isSentinelAdminValue,
+  computeSourceRecordKey,
+  canonicalizePostalField,
+  computeFileSha256,
+  verifyFileSha256,
 } from "../../scripts/import-india-postal-data";
+
+vi.mock("@/lib/location/pincode", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/location/pincode")>();
+  return {
+    ...actual,
+    lookupPincodeServer: vi.fn(),
+  };
+});
 
 describe("India Location & PIN Code Utilities", () => {
   describe("isValidIndianPincode", () => {
@@ -193,49 +212,212 @@ describe("India Location & PIN Code Utilities", () => {
   });
 
   describe("Import Target Validation (validateImportTarget)", () => {
-    const localOpts = { allowRemote: false, confirmHost: null, isDemo: false };
+    const localOptsWithSource = {
+      allowRemote: false,
+      confirmHost: null,
+      isDemo: false,
+      source: "operator_curated_seed",
+    };
 
-    it("allows local targets by default", () => {
-      expect(() => validateImportTarget("http://127.0.0.1:54321", localOpts)).not.toThrow();
-      expect(() => validateImportTarget("http://localhost:54321", localOpts)).not.toThrow();
+    it("allows local targets by default when source is specified", () => {
+      expect(() => validateImportTarget("http://127.0.0.1:54321", localOptsWithSource)).not.toThrow();
+      expect(() => validateImportTarget("http://localhost:54321", localOptsWithSource)).not.toThrow();
+    });
+
+    it("rejects local non-demo import without explicit --source", () => {
+      expect(() =>
+        validateImportTarget("http://127.0.0.1:54321", {
+          allowRemote: false,
+          confirmHost: null,
+          isDemo: false,
+        })
+      ).toThrow(/Non-demo CSV import requires explicit --source/);
     });
 
     it("blocks accidental remote target without --allow-remote", () => {
       expect(() =>
-        validateImportTarget("https://abc123.supabase.co", localOpts)
+        validateImportTarget("https://abc123.supabase.co", localOptsWithSource)
       ).toThrow(/SAFETY REJECTION.*--allow-remote/);
     });
 
-    it("allows confirmed remote Supabase target", () => {
-      const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: false };
+    it("allows confirmed remote Supabase target with valid source", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "abc123.supabase.co",
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
       ).not.toThrow();
     });
 
+    it("rejects remote import without explicit --source", () => {
+      const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: false };
+      expect(() =>
+        validateImportTarget("https://abc123.supabase.co", opts)
+      ).toThrow(/Non-demo CSV import requires explicit --source/);
+    });
+
+    it("allows github_mirror_unverified for staging remote target", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "wpppxlnbzqynvhpeuavd.supabase.co",
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
+      expect(() =>
+        validateImportTarget("https://wpppxlnbzqynvhpeuavd.supabase.co", opts)
+      ).not.toThrow();
+    });
+
+    it("rejects unverified source for production target", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
+      expect(() =>
+        validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
+      ).toThrow(/requires authoritative source "data.gov.in"/);
+    });
+
+    it("allows authoritative data.gov.in for production target when valid --expect-sha256 is provided", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+        sourceUpdatedAt: "2026-08-01T00:00:00Z",
+        expectSha256: "d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79",
+      };
+      expect(() =>
+        validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
+      ).not.toThrow();
+    });
+
+    it("rejects authoritative data.gov.in for production target when --expect-sha256 is missing", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+        sourceUpdatedAt: "2026-08-01T00:00:00Z",
+      };
+      expect(() =>
+        validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
+      ).toThrow(/requires explicit --expect-sha256/);
+    });
+
+    it("rejects remote staging import with source data.gov.in when --expect-sha256 is missing", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "wpppxlnbzqynvhpeuavd.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+      };
+      expect(() =>
+        validateImportTarget("https://wpppxlnbzqynvhpeuavd.supabase.co", opts)
+      ).toThrow(/requires explicit --expect-sha256/);
+    });
+
+    it("rejects malformed --expect-sha256 hex string", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "wpppxlnbzqynvhpeuavd.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+        expectSha256: "not-a-valid-64-hex",
+      };
+      expect(() =>
+        validateImportTarget("https://wpppxlnbzqynvhpeuavd.supabase.co", opts)
+      ).toThrow(/Must be a 64-character hex string/i);
+    });
+
+    it("rejects production target when --continue-on-error is supplied", () => {
+      const opts = {
+        allowRemote: true,
+        confirmHost: "kriuhwppxgxsyyrbjsau.supabase.co",
+        isDemo: false,
+        source: "data.gov.in",
+        expectSha256: "d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79",
+        continueOnError: true,
+      };
+      expect(() =>
+        validateImportTarget("https://kriuhwppxgxsyyrbjsau.supabase.co", opts)
+      ).toThrow(/does not allow --continue-on-error/);
+    });
+
+    it("rejects invalid --source-updated-at timestamp", () => {
+      const opts = {
+        allowRemote: false,
+        confirmHost: null,
+        isDemo: false,
+        source: "operator_curated_seed",
+        sourceUpdatedAt: "not-a-date",
+      };
+      expect(() =>
+        validateImportTarget("http://127.0.0.1:54321", opts)
+      ).toThrow(/Invalid --source-updated-at timestamp/);
+    });
+
+    it("accepts valid ISO --source-updated-at timestamp", () => {
+      const opts = {
+        allowRemote: false,
+        confirmHost: null,
+        isDemo: false,
+        source: "operator_curated_seed",
+        sourceUpdatedAt: "2026-09-01T12:00:00.000Z",
+      };
+      expect(() =>
+        validateImportTarget("http://127.0.0.1:54321", opts)
+      ).not.toThrow();
+    });
+
     it("rejects remote when --confirm-host does not match", () => {
-      const opts = { allowRemote: true, confirmHost: "wrong-ref.supabase.co", isDemo: false };
+      const opts = {
+        allowRemote: true,
+        confirmHost: "wrong-ref.supabase.co",
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
       ).toThrow(/does not match actual target/);
     });
 
     it("rejects --allow-remote without --confirm-host", () => {
-      const opts = { allowRemote: true, confirmHost: null, isDemo: false };
+      const opts = {
+        allowRemote: true,
+        confirmHost: null,
+        isDemo: false,
+        source: "github_mirror_unverified",
+      };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
       ).toThrow(/requires --confirm-host/);
     });
 
     it("blocks --demo against remote target", () => {
-      const opts = { allowRemote: true, confirmHost: "abc123.supabase.co", isDemo: true };
+      const opts = {
+        allowRemote: true,
+        confirmHost: "abc123.supabase.co",
+        isDemo: true,
+        source: "operator_curated_seed",
+      };
       expect(() =>
         validateImportTarget("https://abc123.supabase.co", opts)
       ).toThrow(/--demo is not allowed against remote/);
     });
 
     it("blocks non-Supabase remote hosts", () => {
-      const opts = { allowRemote: true, confirmHost: "fairswap.org", isDemo: false };
+      const opts = {
+        allowRemote: true,
+        confirmHost: "fairswap.org",
+        isDemo: false,
+        source: "data.gov.in",
+      };
       expect(() =>
         validateImportTarget("https://fairswap.org", opts)
       ).toThrow(/not a recognized Supabase host/);
@@ -243,20 +425,31 @@ describe("India Location & PIN Code Utilities", () => {
 
     it("rejects invalid URLs", () => {
       expect(() =>
-        validateImportTarget("not-a-url", localOpts)
+        validateImportTarget("not-a-url", localOptsWithSource)
       ).toThrow(/Invalid Supabase URL/);
     });
 
-    it("allows --demo on local target", () => {
+    it("allows --demo on local target without explicit source", () => {
       const opts = { allowRemote: false, confirmHost: null, isDemo: true };
       expect(() =>
         validateImportTarget("http://localhost:54321", opts)
       ).not.toThrow();
     });
+
+    it("rejects direct programmatic importPostalData call without source", async () => {
+      const { importPostalData } = await import("../../scripts/import-india-postal-data");
+      await expect(
+        importPostalData([], "http://127.0.0.1:54321", "service-key", {
+          allowRemote: false,
+          confirmHost: null,
+          isDemo: false,
+        })
+      ).rejects.toThrow(/Non-demo CSV import requires explicit --source/);
+    });
   });
 
   describe("Batch Upsert & Conflict Deduplication Hardening", () => {
-    it("deduplicates records with identical (pincode, office_name)", () => {
+    it("exact (pincode, office_name) deduplication semantics", () => {
       const records = [
         { pincode: "560034", officename: "Agara B.O", Districtname: "Bangalore", statename: "Karnataka" },
         { pincode: "560034", officename: "Agara B.O", Districtname: "Bangalore", statename: "Karnataka" },
@@ -265,7 +458,8 @@ describe("India Location & PIN Code Utilities", () => {
 
       const validMap = new Map();
       for (const r of records) {
-        const key = `${r.pincode}|${r.officename.toLowerCase()}`;
+        // Aligned with DB constraint: (pincode, office_name)
+        const key = `${r.pincode}|${r.officename}`;
         validMap.set(key, r);
       }
       expect(validMap.size).toBe(2);
@@ -300,5 +494,322 @@ describe("India Location & PIN Code Utilities", () => {
       expect(collected.length).toBe(70000);
     });
   });
+
+  describe("Pincode API Route (GET /api/location/pincode/[pincode])", () => {
+    it("returns 400 when pincode is not exactly 6 digits", async () => {
+      const req = new NextRequest("http://localhost/api/location/pincode/12345");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "12345" }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error).toBe("INVALID_PINCODE");
+    });
+
+    it("returns 400 when server reports INVALID_PINCODE", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "INVALID_PINCODE",
+        message: "PIN code must be exactly 6 numeric digits",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/000000");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "000000" }),
+      });
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.error).toBe("INVALID_PINCODE");
+    });
+
+    it("returns 404 when pincode is not found", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "PINCODE_NOT_FOUND",
+        message: "PIN code not found in postal database",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/999999");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "999999" }),
+      });
+      expect(res.status).toBe(404);
+      const json = await res.json();
+      expect(json.error).toBe("PINCODE_NOT_FOUND");
+    });
+
+    it("returns 409 when pincode maps to conflicting postal states", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "CONFLICTING_POSTAL_STATES",
+        message: "PIN code maps to multiple states",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/123456");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "123456" }),
+      });
+      expect(res.status).toBe(409);
+      const json = await res.json();
+      expect(json.error).toBe("CONFLICTING_POSTAL_STATES");
+    });
+
+    it("returns 422 when server reports PINCODE_ADMIN_DATA_UNAVAILABLE", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "PINCODE_ADMIN_DATA_UNAVAILABLE",
+        message: "We recognize this PIN code, but its location details are currently unavailable",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/123456");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "123456" }),
+      });
+      expect(res.status).toBe(422);
+      const json = await res.json();
+      expect(json.error).toBe("PINCODE_ADMIN_DATA_UNAVAILABLE");
+      expect(json.message).toBe("We recognize this PIN code, but its location details are currently unavailable");
+    });
+
+    it("returns 500 when lookup suffers FETCH_ERROR or unexpected failure", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: false,
+        error: "FETCH_ERROR",
+        message: "Failed to resolve location for this PIN code",
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/560034");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "560034" }),
+      });
+      expect(res.status).toBe(500);
+      const json = await res.json();
+      expect(json.error).toBe("FETCH_ERROR");
+    });
+
+    it("returns 200 on single-state + single-district lookup", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: true,
+        pincode: "560034",
+        state: "Karnataka",
+        district: "Bengaluru Urban",
+        city: "Bengaluru",
+        city_id: "city-1",
+        districts: [{ name: "Bengaluru Urban", city_id: "city-1" }],
+        postal_offices: [],
+        localities: [
+          {
+            id: "loc-1",
+            name: "Koramangala",
+            slug: "koramangala",
+            city_id: "city-1",
+            city_name: "Bengaluru",
+            district: "Bengaluru Urban",
+            state: "Karnataka",
+          },
+        ],
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/560034");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "560034" }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.district).toBe("Bengaluru Urban");
+      expect(json.localities[0].district).toBe("Bengaluru Urban");
+    });
+
+    it("returns 200 on single-state + multiple-district lookup with null top-level district and populated districts array", async () => {
+      vi.mocked(lookupPincodeServer).mockResolvedValueOnce({
+        success: true,
+        pincode: "110001",
+        state: "Delhi",
+        district: null,
+        city: null,
+        city_id: null,
+        districts: [
+          { name: "Central Delhi", city_id: "city-cd" },
+          { name: "New Delhi", city_id: "city-nd" },
+        ],
+        postal_offices: [],
+        localities: [
+          {
+            id: "loc-cp",
+            name: "Connaught Place",
+            slug: "connaught-place",
+            city_id: "city-nd",
+            city_name: "New Delhi",
+            district: "New Delhi",
+            state: "Delhi",
+          },
+        ],
+      });
+      const req = new NextRequest("http://localhost/api/location/pincode/110001");
+      const res = await pincodeRouteHandler(req, {
+        params: Promise.resolve({ pincode: "110001" }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.district).toBeNull();
+      expect(json.city).toBeNull();
+      expect(json.city_id).toBeNull();
+      expect(json.districts).toHaveLength(2);
+      expect(json.districts[0].name).toBe("Central Delhi");
+      expect(json.districts[1].name).toBe("New Delhi");
+      expect(json.localities[0].district).toBe("New Delhi");
+    });
+  });
+
+  describe("Official Postal Snapshot Hardening & Identity (#81)", () => {
+    describe("isSentinelAdminValue", () => {
+      it("treats case-insensitive official sentinels as unavailable", () => {
+        expect(isSentinelAdminValue("NA")).toBe(true);
+        expect(isSentinelAdminValue("na")).toBe(true);
+        expect(isSentinelAdminValue("Na")).toBe(true);
+        expect(isSentinelAdminValue("N/A")).toBe(true);
+        expect(isSentinelAdminValue("n/a")).toBe(true);
+        expect(isSentinelAdminValue("NULL")).toBe(true);
+        expect(isSentinelAdminValue("null")).toBe(true);
+        expect(isSentinelAdminValue("NONE")).toBe(true);
+        expect(isSentinelAdminValue("none")).toBe(true);
+        expect(isSentinelAdminValue("-")).toBe(true);
+        expect(isSentinelAdminValue("--")).toBe(true);
+        expect(isSentinelAdminValue("")).toBe(true);
+        expect(isSentinelAdminValue("   ")).toBe(true);
+        expect(isSentinelAdminValue(null)).toBe(true);
+        expect(isSentinelAdminValue(undefined)).toBe(true);
+      });
+
+      it("treats genuine administrative state and district names as valid", () => {
+        expect(isSentinelAdminValue("Karnataka")).toBe(false);
+        expect(isSentinelAdminValue("Bengaluru Urban")).toBe(false);
+        expect(isSentinelAdminValue("Rajasthan")).toBe(false);
+        expect(isSentinelAdminValue("Delhi")).toBe(false);
+      });
+    });
+
+    describe("computeSourceRecordKey", () => {
+      it("produces deterministic MD5 fingerprint for identical inputs", () => {
+        const key1 = computeSourceRecordKey({
+          pincode: "560034",
+          office_name: "Koramangala I Block S.O",
+          office_type: "S.O",
+          delivery_status: "Delivery",
+          division: "Bangalore South",
+          region: "Bangalore HQ",
+          circle: "Karnataka",
+          taluk: "Bangalore South",
+          district: "Bengaluru Urban",
+          state: "Karnataka",
+        });
+
+        const key2 = computeSourceRecordKey({
+          pincode: " 560034 ",
+          office_name: "  koramangala i block s.o  ",
+          office_type: " s.o ",
+          delivery_status: " delivery ",
+          division: " bangalore south ",
+          region: " bangalore hq ",
+          circle: " karnataka ",
+          taluk: " bangalore south ",
+          district: " BENGALURU URBAN ",
+          state: " KARNATAKA ",
+        });
+
+        expect(key1).toBe(key2);
+        expect(key1).toMatch(/^[a-f0-9]{32}$/);
+      });
+
+      it("collapses records that differ only in ignored latitude/longitude", () => {
+        // Importer ignores lat/long; two records identical in all stored fields produce the same key
+        const recA = {
+          pincode: "560001",
+          office_name: "Bangalore G.P.O.",
+          office_type: "G.P.O.",
+          delivery_status: "Delivery",
+          district: "Bengaluru Urban",
+          state: "Karnataka",
+        };
+        const recB = {
+          pincode: "560001",
+          office_name: "Bangalore G.P.O.",
+          office_type: "G.P.O.",
+          delivery_status: "Delivery",
+          district: "Bengaluru Urban",
+          state: "Karnataka",
+        };
+        expect(computeSourceRecordKey(recA)).toBe(computeSourceRecordKey(recB));
+      });
+
+      it("produces differing keys when duplicate pincode + office_name have different districts/divisions", () => {
+        const officeDistrictA = computeSourceRecordKey({
+          pincode: "990099",
+          office_name: "Shared Office Name",
+          office_type: "B.O",
+          delivery_status: "Delivery",
+          division: "Division 1",
+          district: "District Alpha",
+          state: "State Alpha",
+        });
+
+        const officeDistrictB = computeSourceRecordKey({
+          pincode: "990099",
+          office_name: "Shared Office Name",
+          office_type: "B.O",
+          delivery_status: "Delivery",
+          division: "Division 2",
+          district: "District Beta",
+          state: "State Alpha",
+        });
+
+        expect(officeDistrictA).not.toBe(officeDistrictB);
+      });
+    });
+
+    describe("canonicalizePostalField", () => {
+      it("normalizes null and undefined to empty string", () => {
+        expect(canonicalizePostalField(null)).toBe("");
+        expect(canonicalizePostalField(undefined)).toBe("");
+        expect(canonicalizePostalField("")).toBe("");
+      });
+
+      it("trims, collapses multiple internal whitespace characters to one space, and lowercases", () => {
+        expect(canonicalizePostalField("   Koramangala   VI   Bk   S.O   ")).toBe("koramangala vi bk s.o");
+        expect(canonicalizePostalField("  BENGALURU\t\tURBAN  ")).toBe("bengaluru urban");
+        expect(canonicalizePostalField("  Pendri  BO  ")).toBe("pendri bo");
+      });
+    });
+
+    describe("File SHA-256 Verification (verifyFileSha256)", () => {
+      it("allows file when SHA-256 checksum matches expected hash", async () => {
+        const tempPath = path.join(os.tmpdir(), `test-sha256-${Date.now()}.csv`);
+        fs.writeFileSync(tempPath, "official-pincode-test-content\n");
+        const expectedSha256 = crypto
+          .createHash("sha256")
+          .update("official-pincode-test-content\n")
+          .digest("hex");
+
+        const computed = await computeFileSha256(tempPath);
+        expect(computed).toBe(expectedSha256);
+
+        const result = await verifyFileSha256(tempPath, expectedSha256);
+        expect(result).toBe(true);
+
+        fs.unlinkSync(tempPath);
+      });
+
+      it("rejects file and throws error when SHA-256 checksum mismatches", async () => {
+        const tempPath = path.join(os.tmpdir(), `test-sha256-${Date.now()}.csv`);
+        fs.writeFileSync(tempPath, "corrupted-content\n");
+
+        await expect(
+          verifyFileSha256(
+            tempPath,
+            "d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79"
+          )
+        ).rejects.toThrow(/SHA-256 checksum mismatch/);
+
+        fs.unlinkSync(tempPath);
+      });
+    });
+  });
 });
+
 

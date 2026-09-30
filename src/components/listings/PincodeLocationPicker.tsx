@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import type { City, Locality, PincodeLookupResult } from "@/types/listing";
 
 interface PincodeLocationPickerProps {
@@ -27,7 +27,15 @@ export default function PincodeLocationPicker({
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [derivedLocationText, setDerivedLocationText] = useState<string | null>(null);
-  const [availableLocalities, setAvailableLocalities] = useState<Array<{ id: string; name: string; city_id: string }>>(() => {
+  const [resolvedState, setResolvedState] = useState<string | null>(null);
+  const [availableDistricts, setAvailableDistricts] = useState<Array<{ name: string; city_id: string | null }>>([]);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+  const [allPincodeLocalities, setAllPincodeLocalities] = useState<
+    Array<{ id: string; name: string; city_id: string; district: string }>
+  >([]);
+  const [availableLocalities, setAvailableLocalities] = useState<
+    Array<{ id: string; name: string; city_id: string; district?: string }>
+  >(() => {
     if (initialCityId) {
       return localities
         .filter((loc) => loc.city_id === initialCityId)
@@ -37,86 +45,197 @@ export default function PincodeLocationPicker({
   });
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const activeLookupSeq = useRef<number>(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const performLookup = useCallback(
     async (pin: string) => {
+      const seq = ++activeLookupSeq.current;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       setIsLoading(true);
       setErrorMsg(null);
 
       try {
-        const res = await fetch(`/api/location/pincode/${pin}`);
+        const res = await fetch(`/api/location/pincode/${pin}`, { signal: controller.signal });
         const data: PincodeLookupResult = await res.json();
+
+        // If a newer lookup was initiated, discard this stale response
+        if (seq !== activeLookupSeq.current) {
+          return;
+        }
 
         if (data.success) {
           setErrorMsg(null);
-          setDerivedLocationText(`${data.city}, ${data.state}`);
+          setResolvedState(data.state);
+          const districts = data.districts || [];
+          setAvailableDistricts(districts);
 
-          if (data.city_id) {
-            setSelectedCityId(data.city_id);
-          } else {
-            // Find existing city by name match from the lookup response
-            const match = cities.find(
-              (c) => c.name.toLowerCase() === data.city.toLowerCase() || c.name.toLowerCase() === data.district.toLowerCase()
-            );
-            if (match) {
-              setSelectedCityId(match.id);
+          const locList = (data.localities || []).map((l) => ({
+            id: l.id,
+            name: l.name,
+            city_id: l.city_id,
+            district: l.district || "",
+          }));
+          setAllPincodeLocalities(locList);
+
+          // If exactly one district exists, auto-resolve
+          if (data.district || districts.length === 1) {
+            const singleDistrict = data.district || districts[0]?.name;
+            setDerivedLocationText(`${singleDistrict}, ${data.state}`);
+            setSelectedDistrict(singleDistrict);
+
+            let cityId = data.city_id || districts[0]?.city_id || "";
+            if (!cityId) {
+              const match = cities.find(
+                (c) =>
+                  c.name.toLowerCase() === singleDistrict.toLowerCase() &&
+                  c.state.toLowerCase() === data.state.toLowerCase()
+              );
+              if (match) {
+                cityId = match.id;
+              }
             }
-            // No fallback: if we can't identify the city, leave it unset
-            // The lookup response text still shows the derived location
-          }
+            setSelectedCityId(cityId);
 
-          if (data.localities && data.localities.length > 0) {
-            const locList = data.localities.map((l) => ({ id: l.id, name: l.name, city_id: l.city_id }));
             setAvailableLocalities(locList);
-
             if (locList.length === 1) {
               setSelectedLocalityId(locList[0].id);
-              // Derive city from the single auto-selected locality
-              setSelectedCityId(locList[0].city_id);
+              if (locList[0].city_id) {
+                setSelectedCityId(locList[0].city_id);
+              }
             } else if (!locList.some((l) => l.id === selectedLocalityId)) {
               setSelectedLocalityId("");
             }
-          } else {
-            setAvailableLocalities([]);
+          } else if (districts.length > 1) {
+            // Multi-district PIN: require explicit district selection
+            setDerivedLocationText(null);
+            setSelectedDistrict("");
+            setSelectedCityId("");
             setSelectedLocalityId("");
+            setAvailableLocalities([]);
+          } else {
+            setDerivedLocationText(null);
+            setSelectedDistrict("");
+            setSelectedCityId("");
+            setSelectedLocalityId("");
+            setAvailableLocalities([]);
           }
         } else {
           setDerivedLocationText(null);
+          setResolvedState(null);
+          setAvailableDistricts([]);
+          setSelectedDistrict("");
           setSelectedCityId("");
           setSelectedLocalityId("");
           setAvailableLocalities([]);
+          setAllPincodeLocalities([]);
+
           if (data.error === "PINCODE_NOT_FOUND") {
             setErrorMsg("PIN code not found in our database. Please double-check your 6-digit PIN code or retry.");
+          } else if (data.error === "CONFLICTING_POSTAL_STATES") {
+            setErrorMsg("This PIN code spans multiple states. Please check your PIN code or contact support.");
+          } else if (data.error === "PINCODE_ADMIN_DATA_UNAVAILABLE") {
+            setErrorMsg("We recognize this PIN code, but its location details are currently unavailable.");
           } else {
             setErrorMsg(data.message || "Failed to lookup PIN code");
           }
         }
       } catch (err: unknown) {
+        if ((err as Error)?.name === "AbortError" || seq !== activeLookupSeq.current) {
+          return;
+        }
         console.error("PIN lookup request error:", err);
         setDerivedLocationText(null);
+        setResolvedState(null);
+        setAvailableDistricts([]);
+        setSelectedDistrict("");
         setSelectedCityId("");
         setSelectedLocalityId("");
         setAvailableLocalities([]);
+        setAllPincodeLocalities([]);
         setErrorMsg("Network error checking PIN code. Please retry.");
       } finally {
-        setIsLoading(false);
+        if (seq === activeLookupSeq.current) {
+          setIsLoading(false);
+        }
       }
     },
     [cities, selectedLocalityId]
   );
 
+  const handleDistrictChange = (districtName: string) => {
+    setSelectedDistrict(districtName);
+    setSelectedLocalityId(""); // changing district clears the selected locality
+
+    if (!districtName) {
+      setSelectedCityId("");
+      setAvailableLocalities([]);
+      return;
+    }
+
+    const distInfo = availableDistricts.find((d) => d.name === districtName);
+    let cityId = distInfo?.city_id || "";
+    if (!cityId) {
+      const match = cities.find(
+        (c) =>
+          c.name.toLowerCase() === districtName.toLowerCase() &&
+          c.state.toLowerCase() === (resolvedState || "").toLowerCase()
+      );
+      if (match) {
+        cityId = match.id;
+      }
+    }
+    setSelectedCityId(cityId);
+
+    // Filter Area / Locality candidates to this selected district
+    const filtered = allPincodeLocalities.filter(
+      (l) =>
+        l.district.toLowerCase() === districtName.toLowerCase() ||
+        (cityId && l.city_id === cityId)
+    );
+    setAvailableLocalities(filtered);
+
+    if (filtered.length === 1) {
+      setSelectedLocalityId(filtered[0].id);
+      if (filtered[0].city_id) {
+        setSelectedCityId(filtered[0].city_id);
+      }
+    }
+  };
+
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+    if (val === pinCode) return;
+
     setPinCode(val);
 
-    if (val.length < 6) {
-      setDerivedLocationText(null);
-      setErrorMsg(null);
-      setSelectedLocalityId("");
-      if (val.length === 0) {
-        setSelectedCityId("");
-      }
-    } else if (val.length === 6) {
+    // Cancel in-flight request and increment sequence so late responses are discarded
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    activeLookupSeq.current++;
+
+    // Immediately invalidate all previous resolved state
+    setDerivedLocationText(null);
+    setResolvedState(null);
+    setAvailableDistricts([]);
+    setSelectedDistrict("");
+    setSelectedCityId("");
+    setSelectedLocalityId("");
+    setAvailableLocalities([]);
+    setAllPincodeLocalities([]);
+    setErrorMsg(null);
+
+    if (val.length === 6) {
       performLookup(val);
+    } else {
+      setIsLoading(false);
     }
   };
 
@@ -153,7 +272,7 @@ export default function PincodeLocationPicker({
                 Searching location...
               </span>
             )}
-            {pinCode.length === 6 && !isLoading && !errorMsg && derivedLocationText && (
+            {pinCode.length === 6 && !isLoading && !errorMsg && (derivedLocationText || resolvedState) && (
               <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
                 PIN matched
               </span>
@@ -175,10 +294,40 @@ export default function PincodeLocationPicker({
           )}
         </div>
 
-        {/* Derived State & City Header */}
+        {/* Derived State & District Header (single-district PIN) */}
         {derivedLocationText && (
           <div className="text-sm font-semibold text-gray-900 bg-white px-3 py-2 rounded border border-emerald-200">
             {derivedLocationText}
+          </div>
+        )}
+
+        {/* State indicator (multi-district PIN) */}
+        {resolvedState && !derivedLocationText && (
+          <div className="text-sm font-semibold text-gray-900 bg-white px-3 py-2 rounded border border-emerald-200">
+            State: {resolvedState}
+          </div>
+        )}
+
+        {/* District selection dropdown: active when PIN maps to multiple districts */}
+        {availableDistricts.length > 1 && (
+          <div>
+            <label htmlFor="city_picker_select" className="block text-xs font-semibold text-gray-700">
+              District *
+            </label>
+            <select
+              id="city_picker_select"
+              value={selectedDistrict}
+              onChange={(e) => handleDistrictChange(e.target.value)}
+              disabled={isLoading}
+              className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-400"
+            >
+              <option value="">-- Select District --</option>
+              {availableDistricts.map((d) => (
+                <option key={d.name} value={d.name}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
@@ -193,7 +342,6 @@ export default function PincodeLocationPicker({
             onChange={(e) => {
               const locId = e.target.value;
               setSelectedLocalityId(locId);
-              // Derive city from the selected locality
               const selectedLoc = availableLocalities.find((l) => l.id === locId);
               if (selectedLoc) {
                 setSelectedCityId(selectedLoc.city_id);
@@ -205,6 +353,8 @@ export default function PincodeLocationPicker({
             <option value="">
               {availableLocalities.length > 0
                 ? "-- Select Area / Locality --"
+                : availableDistricts.length > 1 && !selectedDistrict
+                ? "-- Select District first --"
                 : pinCode.length === 6 && errorMsg
                 ? "-- Enter a valid PIN to view localities --"
                 : "-- Enter 6-digit PIN code first --"}
@@ -217,11 +367,11 @@ export default function PincodeLocationPicker({
           </select>
         </div>
 
-        {/* City verification element (rendered disabled or hidden when unverified to satisfy contrast test while preventing bypass) */}
-        {!derivedLocationText && (
+        {/* District verification element (rendered disabled when unverified to satisfy contrast test while preventing bypass) */}
+        {!derivedLocationText && availableDistricts.length <= 1 && (
           <div className="pt-2 border-t border-gray-200">
             <label htmlFor="city_picker_select" className="block text-xs font-semibold text-gray-700">
-              City *
+              District *
             </label>
             <select
               id="city_picker_select"

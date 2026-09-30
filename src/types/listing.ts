@@ -77,30 +77,41 @@ export interface PostalOfficeInfo {
   state: string;
 }
 
+export interface PincodeDistrictInfo {
+  name: string;
+  city_id: string | null;
+}
+
 export interface PincodeLocalityInfo {
   id: string;
   name: string;
   slug: string;
   city_id: string;
   city_name: string;
+  district: string;
   state: string;
-  district: string | null;
 }
 
 export interface PincodeLookupSuccess {
   success: true;
   pincode: string;
   state: string;
-  district: string;
-  city: string;
+  district: string | null;
+  city: string | null;
   city_id: string | null;
-  postal_offices: PostalOfficeInfo[];
+  districts: PincodeDistrictInfo[];
   localities: PincodeLocalityInfo[];
+  postal_offices: PostalOfficeInfo[];
 }
 
 export interface PincodeLookupFailure {
   success: false;
-  error: "INVALID_PINCODE" | "PINCODE_NOT_FOUND" | "FETCH_ERROR";
+  error:
+    | "INVALID_PINCODE"
+    | "PINCODE_NOT_FOUND"
+    | "CONFLICTING_POSTAL_STATES"
+    | "PINCODE_ADMIN_DATA_UNAVAILABLE"
+    | "FETCH_ERROR";
   message: string;
 }
 
