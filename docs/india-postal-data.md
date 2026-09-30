@@ -41,8 +41,14 @@ The official Department of Posts snapshot file has been downloaded and verified:
 - **File Size**: `20,810,655` bytes
 - **SHA-256 Checksum**: `d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79`
 - **Total CSV Rows**: `165,627`
-- **Unique Canonical Raw Records**: `165,621`
+- **Canonical Duplicate Rows**: `7`
+- **Unique Canonical Raw Records**: `165,620`
 - **Distinct PIN Codes**: `19,586`
+
+> [!NOTE]
+> **Canonical Deduplication Breakdown**:
+> 165,627 input rows - 7 canonical duplicates after whitespace/case normalization = 165,620 unique source records.
+> *(The canonicalization deliberately collapses internal whitespace to a single space; this changed from the earlier pre-normalization estimate of 165,621 because `"Pendri  BO"` [with two spaces] and `"Pendri BO"` [with one space] canonicalize to the exact same record).*
 
 > [!NOTE]
 > **Snapshot-Record Fingerprint Semantics**:
@@ -103,7 +109,7 @@ The repository provides a CLI script: [`scripts/import-india-postal-data.ts`](..
   - `github_mirror_unverified` (allowed for staging QA)
   - `operator_curated_seed` (allowed for local development / prototype)
 - `--expect-sha256 <64-hex>`: **Mandatory** for any remote import with `--source data.gov.in`, and strictly enforced for `FairSwapProd`. Evaluates the file hash before parsing data or contacting Supabase.
-- `--source-updated-at <iso_timestamp>`: **Optional** official publication timestamp (e.g. `2026-08-01T00:00:00Z`). If omitted, stores `NULL`. Never assumes execution timestamp as source update time.
+- `--source-updated-at <iso_timestamp>`: **Optional** official publication timestamp (e.g. `2026-08-01T00:00:00Z`). If omitted, stores `NULL`. Never assumes execution timestamp as source update time. Prefer omitting this parameter and storing `NULL` if there is any uncertainty regarding upstream resource timestamps.
 - `--allow-remote`: Required when targeting remote Supabase instances.
 - `--confirm-host <hostname>`: Required when targeting remote instances; must exactly match destination hostname.
 - `--continue-on-error`: Optional flag for dev ingestion to continue after batch failures. Default is **fail-fast** (aborts on batch error).
@@ -119,7 +125,7 @@ npm run location:import -- ./pincode_mirror.csv \
 ```
 
 ### C. Remote Production Import (Strict Official Mode)
-Fails closed with exit code 1 if source is not `data.gov.in` or if `--expect-sha256` is missing or mismatched:
+Fails closed with exit code 1 if source is not `data.gov.in` or if `--expect-sha256` is missing or mismatched (omits `--source-updated-at` to store `NULL` unless confirmed):
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://<prod-ref>.supabase.co \
 SUPABASE_SERVICE_ROLE_KEY=<prod-service-role-key> \
@@ -127,8 +133,7 @@ npm run location:import -- ./all-india-pincode-html-csv-Ver-2026.csv \
   --allow-remote \
   --confirm-host <prod-ref>.supabase.co \
   --source data.gov.in \
-  --expect-sha256 d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79 \
-  --source-updated-at 2026-08-01T00:00:00Z
+  --expect-sha256 d06f4c5f20aabd116a1918a328c17e526755f29a831e9c3599589ba63d76ba79
 ```
 
 ### D. Local Development Seeding (Demo Mode)
