@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createServiceRoleClient } from "@/lib/supabase/service";
 import { logger } from "@/lib/logger";
 import ModerationActions from "./ModerationActions";
 
@@ -41,11 +40,34 @@ export default async function AdminListingDetailPage({
     redirect("/admin");
   }
 
-  const serviceClient = createServiceRoleClient();
-  const { data: listing, error } = await serviceClient
+  const { data: listing, error } = await supabase
     .from("listings")
     .select(`
-      *,
+      id,
+      seller_id,
+      slug,
+      category_id,
+      city_id,
+      locality_id,
+      title,
+      description,
+      condition,
+      price_type,
+      price_paise,
+      category_attributes,
+      status,
+      cover_photo_id,
+      created_at,
+      updated_at,
+      submitted_at,
+      published_at,
+      expires_at,
+      sold_at,
+      revision,
+      renewal_count,
+      rejection_reason,
+      removal_reason,
+      removed_by,
       categories(name, slug),
       cities(name, state),
       localities(name)
@@ -66,19 +88,48 @@ export default async function AdminListingDetailPage({
     notFound();
   }
 
+  type StaffLocationRpcResult = {
+    listing_id: string;
+    pin_code: string | null;
+    landmark: string | null;
+  };
+
+  // Fetch private location fields through staff-authorized RPC
+  const { data: privLocData, error: privLocError } = await supabase.rpc(
+    "get_staff_listing_location_private" as unknown as never,
+    { p_listing_id: id } as unknown as void
+  );
+
+  if (privLocError) {
+    logger.warn("admin.moderation_private_location_rpc_failed", {
+      listing_id: id,
+      error_code: privLocError.code,
+      message: privLocError.message,
+    });
+  }
+
+  const locRows = privLocData as unknown as StaffLocationRpcResult[] | null;
+  const privateLoc = Array.isArray(locRows) ? locRows[0] : (locRows as StaffLocationRpcResult | null);
+
+  const moderationListing = {
+    ...listing,
+    pin_code: privateLoc?.pin_code ?? null,
+    landmark: privateLoc?.landmark ?? null,
+  };
+
   // Fetch seller profile separately
   let sellerProfile: { display_name: string; avatar_url: string | null } | null = null;
-  if (listing.seller_id) {
+  if (moderationListing.seller_id) {
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
       .select("display_name, avatar_url")
-      .eq("id", listing.seller_id)
+      .eq("id", moderationListing.seller_id)
       .maybeSingle();
 
     if (profileError) {
       logger.warn("admin.moderation_seller_profile_fetch_failed", {
         listing_id: id,
-        seller_id: listing.seller_id,
+        seller_id: moderationListing.seller_id,
         error_code: profileError.code,
       });
     } else {
@@ -100,26 +151,26 @@ export default async function AdminListingDetailPage({
     .eq("listing_id", id)
     .order("created_at", { ascending: true });
 
-  const isSelfListing = listing.seller_id === user.id;
+  const isSelfListing = moderationListing.seller_id === user.id;
   const allMediaReady =
     (media && media.length > 0 && media.every((m) => m.processing_status === "ready")) || false;
 
   const price =
-    listing.price_type === "free"
+    moderationListing.price_type === "free"
       ? "Free"
-      : listing.price_paise
-      ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
+      : moderationListing.price_paise
+      ? `₹${(moderationListing.price_paise / 100).toLocaleString("en-IN")}`
       : "Not set";
 
-  const categoryName = Array.isArray(listing.categories)
-    ? listing.categories[0]?.name
-    : (listing.categories as { name?: string } | null)?.name;
-  const cityName = Array.isArray(listing.cities)
-    ? listing.cities[0]?.name
-    : (listing.cities as { name?: string } | null)?.name;
-  const localityName = Array.isArray(listing.localities)
-    ? listing.localities[0]?.name
-    : (listing.localities as { name?: string } | null)?.name;
+  const categoryName = Array.isArray(moderationListing.categories)
+    ? moderationListing.categories[0]?.name
+    : (moderationListing.categories as { name?: string } | null)?.name;
+  const cityName = Array.isArray(moderationListing.cities)
+    ? moderationListing.cities[0]?.name
+    : (moderationListing.cities as { name?: string } | null)?.name;
+  const localityName = Array.isArray(moderationListing.localities)
+    ? moderationListing.localities[0]?.name
+    : (moderationListing.localities as { name?: string } | null)?.name;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 space-y-8">
@@ -128,17 +179,17 @@ export default async function AdminListingDetailPage({
           ← Back to Moderation Queue
         </Link>
         <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-gray-900">{listing.title}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{moderationListing.title}</h1>
           <span className="rounded bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 uppercase tracking-wider">
-            {listing.status} • Rev {listing.revision}
+            {moderationListing.status} • Rev {moderationListing.revision}
           </span>
         </div>
       </div>
 
       <ModerationActions
-        listingId={listing.id}
+        listingId={moderationListing.id}
         isSelfListing={isSelfListing}
-        canApprove={allMediaReady && listing.status === "pending_review"}
+        canApprove={allMediaReady && moderationListing.status === "pending_review"}
       />
 
       {/* Grid of details */}
@@ -156,7 +207,7 @@ export default async function AdminListingDetailPage({
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {media?.map((photo) => {
-                  const isCover = listing.cover_photo_id === photo.id;
+                  const isCover = moderationListing.cover_photo_id === photo.id;
                   return (
                     <div
                       key={photo.id}
@@ -166,7 +217,7 @@ export default async function AdminListingDetailPage({
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={`/api/listings/${listing.id}/media/${photo.id}/medium`}
+                        src={`/api/listings/${moderationListing.id}/media/${photo.id}/medium`}
                         alt={photo.original_filename}
                         className="h-full w-full object-cover"
                       />
@@ -189,17 +240,17 @@ export default async function AdminListingDetailPage({
           <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm space-y-2">
             <h2 className="text-sm font-bold text-gray-900">Description</h2>
             <p className="whitespace-pre-line text-sm text-gray-700">
-              {listing.description || "No description provided."}
+              {moderationListing.description || "No description provided."}
             </p>
           </div>
 
           {/* Category Attributes */}
           <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm space-y-3">
             <h2 className="text-sm font-bold text-gray-900">Custom Category Attributes</h2>
-            {listing.category_attributes &&
-            Object.keys(listing.category_attributes).length > 0 ? (
+            {moderationListing.category_attributes &&
+            Object.keys(moderationListing.category_attributes).length > 0 ? (
               <dl className="grid grid-cols-2 gap-4 text-xs">
-                {Object.entries(listing.category_attributes).map(([key, val]) => (
+                {Object.entries(moderationListing.category_attributes).map(([key, val]) => (
                   <div key={key} className="border-b pb-1">
                     <dt className="font-semibold text-gray-500 capitalize">{key.replace("_", " ")}</dt>
                     <dd className="text-gray-900 font-medium">{String(val)}</dd>
@@ -223,7 +274,7 @@ export default async function AdminListingDetailPage({
               </div>
               <div className="flex justify-between border-b pb-1">
                 <dt className="text-gray-500">Condition</dt>
-                <dd className="font-medium text-gray-900 capitalize">{listing.condition || "N/A"}</dd>
+                <dd className="font-medium text-gray-900 capitalize">{moderationListing.condition || "N/A"}</dd>
               </div>
               <div className="flex justify-between border-b pb-1">
                 <dt className="text-gray-500">Category</dt>
@@ -238,8 +289,14 @@ export default async function AdminListingDetailPage({
               </div>
               <div className="flex justify-between border-b pb-1">
                 <dt className="text-gray-500">PIN Code</dt>
-                <dd className="font-medium text-gray-900">{listing.pin_code || "N/A"}</dd>
+                <dd className="font-medium text-gray-900">{moderationListing.pin_code || "N/A"}</dd>
               </div>
+              {moderationListing.landmark && (
+                <div className="flex justify-between border-b pb-1">
+                  <dt className="text-gray-500">Landmark</dt>
+                  <dd className="font-medium text-gray-900">{moderationListing.landmark}</dd>
+                </div>
+              )}
               <div className="flex justify-between border-b pb-1">
                 <dt className="text-gray-500">Seller</dt>
                 <dd className="font-medium text-gray-900">

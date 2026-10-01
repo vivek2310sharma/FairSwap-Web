@@ -10,11 +10,13 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
   let db: PGlite;
 
   const sellerUserId = "00000000-0000-0000-0000-000000000020";
+  const userAId = "00000000-0000-0000-0000-000000000030";
   let bengaluruCityId: string;
   let jaipurCityId: string;
   let koramangalaLocalityId: string;
   let malviyaNagarLocalityId: string;
   let testCategoryId: string;
+  let activeListingId: string;
 
   beforeAll(async () => {
     db = new PGlite();
@@ -727,9 +729,6 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
   });
 
   describe("G. Release-Blocking Public Location Privacy Hardening (#81)", () => {
-    const userAId = "00000000-0000-0000-0000-000000000030";
-    let activeListingId: string;
-
     beforeAll(async () => {
       // Create user A in auth.users
       const validMeta = JSON.stringify({
@@ -899,6 +898,185 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       `);
       await db.exec(`RESET ROLE;`);
       expect(browseRes.rows.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("H. Staff-Private Listing Location RPC Access Control (#81)", () => {
+    const modUserAal1Id = "00000000-0000-0000-0000-000000000041";
+    const modUserSuspendedId = "00000000-0000-0000-0000-000000000042";
+    const modUserActiveId = "00000000-0000-0000-0000-000000000043";
+    const adminUserActiveId = "00000000-0000-0000-0000-000000000044";
+
+    beforeAll(async () => {
+      const validMeta = JSON.stringify({
+        display_name: "Staff Test User",
+        terms_accepted: "true",
+        terms_version: "2026-09-18",
+        privacy_policy_version: "2026-09-18",
+        acceptable_use_version: "2026-09-18",
+        age_confirmed: "true",
+      });
+
+      await db.exec(`
+        INSERT INTO auth.users (id, email, raw_user_meta_data)
+        VALUES 
+          ('${modUserAal1Id}', 'mod_aal1@fairswap.test', '${validMeta}'::jsonb),
+          ('${modUserSuspendedId}', 'mod_suspended@fairswap.test', '${validMeta}'::jsonb),
+          ('${modUserActiveId}', 'mod_active@fairswap.test', '${validMeta}'::jsonb),
+          ('${adminUserActiveId}', 'admin_active@fairswap.test', '${validMeta}'::jsonb)
+        ON CONFLICT (id) DO NOTHING;
+
+        INSERT INTO public.staff_roles (user_id, role)
+        VALUES 
+          ('${modUserAal1Id}', 'moderator'),
+          ('${modUserSuspendedId}', 'moderator'),
+          ('${modUserActiveId}', 'moderator'),
+          ('${adminUserActiveId}', 'administrator')
+        ON CONFLICT (user_id) DO UPDATE SET role = EXCLUDED.role;
+
+        UPDATE public.user_accounts
+        SET account_status = 'suspended'
+        WHERE user_id = '${modUserSuspendedId}';
+
+        UPDATE public.user_accounts
+        SET account_status = 'active'
+        WHERE user_id IN ('${modUserAal1Id}', '${modUserActiveId}', '${adminUserActiveId}');
+      `);
+    });
+
+    it("DENIES normal authenticated user without staff role from calling get_staff_listing_location_private", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${userAId}'::uuid $$ LANGUAGE sql STABLE;
+        CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb AS $$ SELECT '{"aal": "aal2"}'::jsonb $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      let errorThrown = false;
+      let errorMsg = "";
+      try {
+        await db.query(`SELECT * FROM public.get_staff_listing_location_private('${activeListingId}');`);
+      } catch (err: any) {
+        errorThrown = true;
+        errorMsg = err.message;
+      } finally {
+        await db.exec(`RESET ROLE;`);
+      }
+      expect(errorThrown).toBe(true);
+      expect(errorMsg).toMatch(/FORBIDDEN/i);
+    });
+
+    it("DENIES moderator at AAL1 from calling get_staff_listing_location_private", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${modUserAal1Id}'::uuid $$ LANGUAGE sql STABLE;
+        CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb AS $$ SELECT '{"aal": "aal1"}'::jsonb $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      let errorThrown = false;
+      let errorMsg = "";
+      try {
+        await db.query(`SELECT * FROM public.get_staff_listing_location_private('${activeListingId}');`);
+      } catch (err: any) {
+        errorThrown = true;
+        errorMsg = err.message;
+      } finally {
+        await db.exec(`RESET ROLE;`);
+      }
+      expect(errorThrown).toBe(true);
+      expect(errorMsg).toMatch(/FORBIDDEN/i);
+    });
+
+    it("DENIES moderator at AAL2 with non-active account_status from calling get_staff_listing_location_private", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${modUserSuspendedId}'::uuid $$ LANGUAGE sql STABLE;
+        CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb AS $$ SELECT '{"aal": "aal2"}'::jsonb $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      let errorThrown = false;
+      let errorMsg = "";
+      try {
+        await db.query(`SELECT * FROM public.get_staff_listing_location_private('${activeListingId}');`);
+      } catch (err: any) {
+        errorThrown = true;
+        errorMsg = err.message;
+      } finally {
+        await db.exec(`RESET ROLE;`);
+      }
+      expect(errorThrown).toBe(true);
+      expect(errorMsg).toMatch(/FORBIDDEN/i);
+    });
+
+    it("ALLOWS active moderator at AAL2 to call get_staff_listing_location_private and returns exact fields", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${modUserActiveId}'::uuid $$ LANGUAGE sql STABLE;
+        CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb AS $$ SELECT '{"aal": "aal2"}'::jsonb $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      const res = await db.query<any>(`
+        SELECT * FROM public.get_staff_listing_location_private('${activeListingId}');
+      `);
+      await db.exec(`RESET ROLE;`);
+
+      expect(res.rows.length).toBe(1);
+      const row = res.rows[0];
+      const keys = Object.keys(row).sort();
+      expect(keys).toEqual(["landmark", "listing_id", "pin_code"]);
+      expect(row.listing_id).toBe(activeListingId);
+      expect(row.pin_code).toBe("560034");
+      expect(row.landmark).toBe("Near Forum Mall");
+    });
+
+    it("ALLOWS active administrator at AAL2 to call get_staff_listing_location_private", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${adminUserActiveId}'::uuid $$ LANGUAGE sql STABLE;
+        CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb AS $$ SELECT '{"aal": "aal2"}'::jsonb $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      const res = await db.query<any>(`
+        SELECT * FROM public.get_staff_listing_location_private('${activeListingId}');
+      `);
+      await db.exec(`RESET ROLE;`);
+
+      expect(res.rows.length).toBe(1);
+      const row = res.rows[0];
+      const keys = Object.keys(row).sort();
+      expect(keys).toEqual(["landmark", "listing_id", "pin_code"]);
+      expect(row.listing_id).toBe(activeListingId);
+      expect(row.pin_code).toBe("560034");
+      expect(row.landmark).toBe("Near Forum Mall");
+    });
+
+    it("DENIES anon role from calling get_staff_listing_location_private directly", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT null::uuid $$ LANGUAGE sql STABLE;
+        CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb AS $$ SELECT '{}'::jsonb $$ LANGUAGE sql STABLE;
+        SET ROLE anon;
+      `);
+      let errorThrown = false;
+      let errorMsg = "";
+      try {
+        await db.query(`SELECT * FROM public.get_staff_listing_location_private('${activeListingId}');`);
+      } catch (err: any) {
+        errorThrown = true;
+        errorMsg = err.message;
+      } finally {
+        await db.exec(`RESET ROLE;`);
+      }
+      expect(errorThrown).toBe(true);
+      expect(errorMsg).toMatch(/permission denied/i);
+    });
+
+    it("ALLOWS authorized staff at AAL2 to read base listing columns via listings RLS staff branch", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${modUserActiveId}'::uuid $$ LANGUAGE sql STABLE;
+        CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb AS $$ SELECT '{"aal": "aal2"}'::jsonb $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      const res = await db.query<any>(`
+        SELECT id, title, status FROM public.listings WHERE id = '${activeListingId}';
+      `);
+      await db.exec(`RESET ROLE;`);
+
+      expect(res.rows.length).toBe(1);
+      expect(res.rows[0].id).toBe(activeListingId);
     });
   });
 });
