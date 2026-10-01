@@ -28,6 +28,8 @@ interface ListingFormProps {
   initialListing?: Listing | null;
   initialMedia?: ListingMedia[];
   initialLocationLookup?: PincodeLookupResult | null;
+  isMaintenanceActive?: boolean;
+  maintenanceMessage?: string;
 }
 
 export default function ListingForm({
@@ -37,6 +39,8 @@ export default function ListingForm({
   initialListing,
   initialMedia = [],
   initialLocationLookup,
+  isMaintenanceActive = false,
+  maintenanceMessage,
 }: ListingFormProps) {
   const router = useRouter();
   const isEditing = !!initialListing;
@@ -73,6 +77,14 @@ export default function ListingForm({
   };
 
   const processForm = async (form: HTMLFormElement, shouldSubmitForReview: boolean) => {
+    if (isMaintenanceActive) {
+      setFormError(
+        maintenanceMessage ||
+          "Listing creation and editing are temporarily paused while we upgrade location reference data. Active listings and buyer messages remain accessible. Please try again shortly."
+      );
+      return;
+    }
+
     setFormError(null);
     setFormSuccess(null);
     setIsSubmitting(true);
@@ -221,6 +233,28 @@ export default function ListingForm({
             Saving changes to this listing will return it to <strong>Draft</strong> state, where you
             can complete your edits and submit again.
           </p>
+        </div>
+      )}
+
+      {isMaintenanceActive && (
+        <div
+          role="alert"
+          aria-live="polite"
+          data-testid="seller-write-maintenance-banner"
+          className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900"
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-xl" aria-hidden="true">⚠️</span>
+            <div>
+              <h2 className="text-sm font-semibold text-amber-900">
+                Listing Maintenance in Progress
+              </h2>
+              <p className="mt-1 text-sm text-amber-800">
+                {maintenanceMessage ||
+                  "Listing creation and editing are temporarily paused while we upgrade location reference data. Active listings and buyer messages remain accessible. Please try again shortly."}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -430,8 +464,8 @@ export default function ListingForm({
       <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-6">
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          disabled={isSubmitting || isMaintenanceActive}
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Saving..." : isEditing ? "Save Changes" : "Save as Draft"}
         </button>
@@ -439,14 +473,15 @@ export default function ListingForm({
         {isEditing && (
           <button
             type="button"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isMaintenanceActive}
             onClick={(e) => {
+              if (isMaintenanceActive) return;
               const form = (e.target as HTMLElement).closest("form");
               if (form) {
                 processForm(form, true);
               }
             }}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50"
+            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Submitting..." : "Submit for Review"}
           </button>
