@@ -218,24 +218,31 @@ export async function submitListingAction(listingId: string): Promise<ListingAct
   // Server-side location integrity check
   const { data: listingData } = await supabase
     .from("listings")
-    .select("pin_code, locality_id")
+    .select("locality_id")
     .eq("id", listingId)
     .single();
 
-  if (!listingData?.pin_code || !/^\d{6}$/.test(listingData.pin_code)) {
+  const { data: privLocData } = await supabase.rpc(
+    "get_seller_listing_location_private",
+    { p_listing_id: listingId }
+  );
+  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : privLocData;
+  const pinCode = privateLoc?.pin_code;
+
+  if (!pinCode || !/^\d{6}$/.test(pinCode)) {
     return { error: "A valid 6-digit Indian PIN code is required to submit a listing." };
   }
 
-  if (listingData.locality_id) {
+  if (listingData?.locality_id) {
     const { data: mapping } = await supabase
       .from("postal_pincode_localities")
       .select("id")
-      .eq("pincode", listingData.pin_code)
+      .eq("pincode", pinCode)
       .eq("locality_id", listingData.locality_id)
       .maybeSingle();
 
     if (!mapping) {
-      return { error: `The selected locality is not valid for PIN code ${listingData.pin_code}.` };
+      return { error: `The selected locality is not valid for PIN code ${pinCode}.` };
     }
   }
 

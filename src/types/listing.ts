@@ -187,8 +187,6 @@ export interface PublicListingCard {
   condition: ListingCondition | null;
   price_type: ListingPriceType | null;
   price_paise: number | null;
-  pin_code: string | null;
-  landmark?: string | null;
   category_attributes: Record<string, unknown>;
   status: ListingStatus;
   created_at: string;

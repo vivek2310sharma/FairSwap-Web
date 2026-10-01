@@ -39,8 +39,12 @@ vi.mock("@/lib/compliance/policy-acceptance", () => ({
   requireCurrentPolicyAcceptance: vi.fn().mockResolvedValue({ allowed: true }),
 }));
 
-// Mock Supabase server client
-const mockRpc = vi.fn().mockResolvedValue({ data: null, error: null });
+const mockRpc = vi.fn().mockImplementation((fn: string) => {
+  if (fn === "get_seller_listing_location_private") {
+    return Promise.resolve({ data: [{ pin_code: "560034", landmark: "Near Forum Mall" }], error: null });
+  }
+  return Promise.resolve({ data: null, error: null });
+});
 const mockInsert = vi.fn().mockReturnValue({
   select: vi.fn().mockReturnValue({
     single: vi.fn().mockResolvedValue({ data: { id: "new-listing-1" }, error: null }),
@@ -194,7 +198,6 @@ describe("Seller-Write Maintenance Guard Tests", () => {
       });
 
       it("allows submitListingAction to proceed", async () => {
-        mockRpc.mockResolvedValueOnce({ data: null, error: null });
         const result = await submitListingAction("listing-123");
         expect(result.error).toBeUndefined();
         expect(result.success).toBe(true);

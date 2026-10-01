@@ -725,4 +725,180 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       expect(sqlKey).toBe(tsKey);
     });
   });
+
+  describe("G. Release-Blocking Public Location Privacy Hardening (#81)", () => {
+    const userAId = "00000000-0000-0000-0000-000000000030";
+    let activeListingId: string;
+
+    beforeAll(async () => {
+      // Create user A in auth.users
+      const validMeta = JSON.stringify({
+        display_name: "Test User A",
+        terms_accepted: "true",
+        terms_version: "2026-09-18",
+        privacy_policy_version: "2026-09-18",
+        acceptable_use_version: "2026-09-18",
+        age_confirmed: "true",
+      });
+      await db.exec(`
+        INSERT INTO auth.users (id, email, raw_user_meta_data)
+        VALUES ('${userAId}', 'user_a@fairswap.test', '${validMeta}'::jsonb)
+        ON CONFLICT (id) DO NOTHING;
+      `);
+
+      // Create an active listing owned by sellerUserId (user B)
+      const listingRes = await db.query<any>(`
+        INSERT INTO public.listings (
+          seller_id, category_id, city_id, locality_id, title, description, condition, price_type, price_paise, pin_code, landmark, category_attributes, status, published_at
+        ) VALUES (
+          '${sellerUserId}', '${testCategoryId}', '${bengaluruCityId}', '${koramangalaLocalityId}',
+          'Privacy Test Active Listing', 'Publicly searchable description',
+          'good', 'fixed', 500000, '560034', 'Near Forum Mall', '{}'::jsonb, 'active', clock_timestamp()
+        ) RETURNING id;
+      `);
+      activeListingId = listingRes.rows[0].id;
+
+      // Add media and mark processing_status = 'ready'
+      const mediaRes = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, thumbnail_storage_path)
+        VALUES ('${activeListingId}', '${sellerUserId}', 'thumb.webp', 'image/webp', 5000, 'thumb.webp')
+        RETURNING id;
+      `);
+      const mediaId = mediaRes.rows[0].id;
+
+      await db.query(`
+        UPDATE public.listing_media
+        SET processing_status = 'ready'
+        WHERE id = '${mediaId}';
+      `);
+
+      // Update listing to active status with cover photo and published timestamp
+      await db.query(`
+        UPDATE public.listings
+        SET status = 'active',
+            cover_photo_id = '${mediaId}',
+            published_at = clock_timestamp()
+        WHERE id = '${activeListingId}';
+      `);
+    });
+
+    it("DENIES anon active-listing pin_code direct read", async () => {
+      await db.exec(`SET ROLE anon;`);
+      let errorThrown = false;
+      try {
+        await db.query(`SELECT pin_code FROM public.listings WHERE id = '${activeListingId}';`);
+      } catch (err: any) {
+        errorThrown = true;
+        expect(err.message).toMatch(/permission denied/i);
+      } finally {
+        await db.exec(`RESET ROLE;`);
+      }
+      expect(errorThrown).toBe(true);
+    });
+
+    it("DENIES anon active-listing landmark direct read", async () => {
+      await db.exec(`SET ROLE anon;`);
+      let errorThrown = false;
+      try {
+        await db.query(`SELECT landmark FROM public.listings WHERE id = '${activeListingId}';`);
+      } catch (err: any) {
+        errorThrown = true;
+        expect(err.message).toMatch(/permission denied/i);
+      } finally {
+        await db.exec(`RESET ROLE;`);
+      }
+      expect(errorThrown).toBe(true);
+    });
+
+    it("DENIES authenticated user A from reading pin_code of listing owned by user B", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${userAId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      let errorThrown = false;
+      try {
+        await db.query(`SELECT pin_code FROM public.listings WHERE id = '${activeListingId}';`);
+      } catch (err: any) {
+        errorThrown = true;
+        expect(err.message).toMatch(/permission denied/i);
+      } finally {
+        await db.exec(`RESET ROLE;`);
+      }
+      expect(errorThrown).toBe(true);
+    });
+
+    it("DENIES authenticated user A from reading landmark of listing owned by user B", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${userAId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      let errorThrown = false;
+      try {
+        await db.query(`SELECT landmark FROM public.listings WHERE id = '${activeListingId}';`);
+      } catch (err: any) {
+        errorThrown = true;
+        expect(err.message).toMatch(/permission denied/i);
+      } finally {
+        await db.exec(`RESET ROLE;`);
+      }
+      expect(errorThrown).toBe(true);
+    });
+
+    it("PREVENTS authenticated user A from obtaining user B's location via get_seller_listing_location_private", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${userAId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      const privRes = await db.query<any>(`
+        SELECT * FROM public.get_seller_listing_location_private('${activeListingId}');
+      `);
+      await db.exec(`RESET ROLE;`);
+      expect(privRes.rows.length).toBe(0);
+    });
+
+    it("ALLOWS seller owner to read own listing pin_code and landmark through intended private path", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      const privRes = await db.query<any>(`
+        SELECT * FROM public.get_seller_listing_location_private('${activeListingId}');
+      `);
+      await db.exec(`RESET ROLE;`);
+      expect(privRes.rows.length).toBe(1);
+      expect(privRes.rows[0].pin_code).toBe("560034");
+      expect(privRes.rows[0].landmark).toBe("Near Forum Mall");
+    });
+
+    it("ensures search_public_listings JSON payload contains NO pin_code or landmark keys", async () => {
+      const searchRes = await db.query<any>(`SELECT public.search_public_listings() as result;`);
+      const items = searchRes.rows[0].result.items;
+      expect(items.length).toBeGreaterThan(0);
+      for (const item of items) {
+        expect(item).not.toHaveProperty("pin_code");
+        expect(item).not.toHaveProperty("landmark");
+      }
+    });
+
+    it("ensures public listing media still loads for active listings", async () => {
+      await db.exec(`SET ROLE anon;`);
+      const mediaRes = await db.query<any>(`
+        SELECT id, thumbnail_storage_path FROM public.listing_media WHERE listing_id = '${activeListingId}';
+      `);
+      await db.exec(`RESET ROLE;`);
+      expect(mediaRes.rows.length).toBeGreaterThan(0);
+    });
+
+    it("ensures authenticated users can still browse public listings", async () => {
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${userAId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+      const browseRes = await db.query<any>(`
+        SELECT id, title, locality_id FROM public.listings WHERE status = 'active';
+      `);
+      await db.exec(`RESET ROLE;`);
+      expect(browseRes.rows.length).toBeGreaterThan(0);
+    });
+  });
 });

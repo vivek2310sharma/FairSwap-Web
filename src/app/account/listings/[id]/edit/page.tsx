@@ -26,19 +26,58 @@ export default async function EditListingPage({
   }
 
   // Fetch listing
-  const { data: listing, error: listingError } = await supabase
+  const { data: baseListing, error: listingError } = await supabase
     .from("listings")
-    .select("*")
+    .select(`
+      id,
+      seller_id,
+      slug,
+      category_id,
+      city_id,
+      locality_id,
+      title,
+      description,
+      condition,
+      price_type,
+      price_paise,
+      category_attributes,
+      status,
+      revision,
+      renewal_count,
+      rejection_reason,
+      removal_reason,
+      removed_by,
+      cover_photo_id,
+      created_at,
+      updated_at,
+      submitted_at,
+      published_at,
+      expires_at,
+      sold_at
+    `)
     .eq("id", id)
-    .single<Listing>();
+    .single();
 
-  if (listingError || !listing) {
+  if (listingError || !baseListing) {
     notFound();
   }
 
-  if (listing.seller_id !== user.id) {
+  if (baseListing.seller_id !== user.id) {
     redirect("/account/listings");
   }
+
+  // Fetch private location fields via owner-private path
+  const { data: privLocData } = await supabase.rpc(
+    "get_seller_listing_location_private",
+    { p_listing_id: id }
+  );
+  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : privLocData;
+
+  const listing: Listing = {
+    ...(baseListing as Omit<Listing, "pin_code" | "landmark">),
+    pin_code: privateLoc?.pin_code ?? null,
+    landmark: privateLoc?.landmark ?? null,
+  };
 
   // Fetch photos
   const { data: media } = await supabase

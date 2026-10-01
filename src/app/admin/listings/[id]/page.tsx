@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
 import { logger } from "@/lib/logger";
 import ModerationActions from "./ModerationActions";
 
@@ -40,7 +41,8 @@ export default async function AdminListingDetailPage({
     redirect("/admin");
   }
 
-  const { data: listing, error } = await supabase
+  const serviceClient = createServiceRoleClient();
+  const { data: listing, error } = await serviceClient
     .from("listings")
     .select(`
       *,
