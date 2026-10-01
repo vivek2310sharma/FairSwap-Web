@@ -6,6 +6,10 @@ import { logger } from "@/lib/logger";
 import { draftListingSchema, ListingCondition, ListingPriceType } from "@/types/listing";
 import type { Json } from "@/types/database";
 import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
+import {
+  isSellerWriteMaintenanceEnabled,
+  SELLER_WRITE_MAINTENANCE_MESSAGE,
+} from "@/lib/maintenance/seller-writes";
 
 export type ListingActionResult = {
   error?: string;
@@ -20,6 +24,9 @@ export async function createDraftListingAction(
   prevState: ListingActionResult | null,
   formData: FormData
 ): Promise<ListingActionResult> {
+  if (isSellerWriteMaintenanceEnabled()) {
+    return { error: SELLER_WRITE_MAINTENANCE_MESSAGE };
+  }
   const supabase = await createClient();
 
   const guard = await requireCurrentPolicyAcceptance(supabase, "/account/listings");
@@ -105,6 +112,9 @@ export async function updateListingAction(
   listingId: string,
   formData: FormData
 ): Promise<ListingActionResult> {
+  if (isSellerWriteMaintenanceEnabled()) {
+    return { error: SELLER_WRITE_MAINTENANCE_MESSAGE };
+  }
   const supabase = await createClient();
 
   const guard = await requireCurrentPolicyAcceptance(supabase, `/account/listings/${listingId}/edit`);
@@ -187,6 +197,9 @@ export async function updateListingAction(
 }
 
 export async function submitListingAction(listingId: string): Promise<ListingActionResult> {
+  if (isSellerWriteMaintenanceEnabled()) {
+    return { error: SELLER_WRITE_MAINTENANCE_MESSAGE };
+  }
   const supabase = await createClient();
 
   const guard = await requireCurrentPolicyAcceptance(supabase, "/account/listings");
