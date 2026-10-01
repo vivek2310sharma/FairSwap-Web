@@ -4,12 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
 import { Category, CategoryAttribute, City, Listing, ListingMedia, PincodeLookupResult } from "@/types/listing";
 import { lookupPincodeServer } from "@/lib/location/pincode";
+import {
+  isSellerWriteMaintenanceEnabled,
+  SELLER_WRITE_MAINTENANCE_MESSAGE,
+} from "@/lib/maintenance/seller-writes";
 
 export default async function EditListingPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const isMaintenanceActive = isSellerWriteMaintenanceEnabled();
   const { id } = await params;
   const supabase = await createClient();
   const {
@@ -89,6 +94,8 @@ export default async function EditListingPage({
         initialListing={listing}
         initialMedia={(media as ListingMedia[]) || []}
         initialLocationLookup={initialLocationLookup}
+        isMaintenanceActive={isMaintenanceActive}
+        maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}
       />
     </div>
   );

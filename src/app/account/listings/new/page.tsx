@@ -4,7 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
 import { Category, CategoryAttribute, City } from "@/types/listing";
 
+import {
+  isSellerWriteMaintenanceEnabled,
+  SELLER_WRITE_MAINTENANCE_MESSAGE,
+} from "@/lib/maintenance/seller-writes";
+
 export default async function NewListingPage() {
+  const isMaintenanceActive = isSellerWriteMaintenanceEnabled();
   const supabase = await createClient();
   const {
     data: { user },
@@ -51,6 +57,8 @@ export default async function NewListingPage() {
         categories={(categories as Category[]) || []}
         allAttributes={(allAttributes as CategoryAttribute[]) || []}
         cities={(cities as City[]) || []}
+        isMaintenanceActive={isMaintenanceActive}
+        maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}
       />
     </div>
   );
