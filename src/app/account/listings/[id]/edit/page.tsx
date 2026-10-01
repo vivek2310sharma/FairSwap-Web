@@ -3,12 +3,17 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
 import { Category, CategoryAttribute, City, Locality, Listing, ListingMedia } from "@/types/listing";
+import {
+  isSellerWriteMaintenanceEnabled,
+  SELLER_WRITE_MAINTENANCE_MESSAGE,
+} from "@/lib/maintenance/seller-writes";
 
 export default async function EditListingPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const isMaintenanceActive = isSellerWriteMaintenanceEnabled();
   const { id } = await params;
   const supabase = await createClient();
   const {
@@ -88,6 +93,8 @@ export default async function EditListingPage({
         localities={(localities as Locality[]) || []}
         initialListing={listing}
         initialMedia={(media as ListingMedia[]) || []}
+        isMaintenanceActive={isMaintenanceActive}
+        maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}
       />
     </div>
   );
