@@ -82,8 +82,9 @@ export function ListingCard({ listing, isFavourited = false }: ListingCardProps)
         <div className="mt-auto pt-3 flex items-center gap-1.5 text-xs text-muted">
           <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span className="truncate">
-            {listing.city?.name}
-            {listing.locality?.name ? `, ${listing.locality.name}` : ""}
+            {listing.locality?.name
+              ? `${listing.locality.name}, ${listing.city?.name}`
+              : listing.city?.name}
           </span>
         </div>
       </div>

@@ -382,19 +382,34 @@ corepack pnpm build
 1. **Compatibility Check**: Before rolling back the frontend in Vercel, verify whether the prior build artifact is compatible with the current database schema.
    * FairSwap strictly follows a **forward-only database migration strategy**; schema rollbacks are not executed in place.
    * If the previous frontend build is backward-compatible with the migrated schema: proceed with frontend rollback.
-   * If the previous frontend build relies on obsolete database structures: do **not** roll back frontend alone. Deploy a forward corrective patch.
+   * **Location Contract Guard (Issue #81)**: If database migrations 25–30 have been applied, **DO NOT reopen listing writes on the old UI**. The old frontend code permits listing submissions without validated PIN codes and sends raw unconstrained locality strings, which triggers contract failures in `app_security.impl_seller_submit_listing`. If a deployment fails after database migrations, keep seller-write maintenance active and forward-deploy a fix.
 2. Navigate to the **Deployments** tab in the Vercel dashboard.
 3. Identify the last known-good deployment commit SHA.
 4. Click the deployment menu `...` and select **Instant Rollback**.
 5. Traffic is routed to the prior build artifact within seconds without rebuilding.
 
-### B. Database Forward Corrective Strategy
-* FairSwap enforces a **forward-only corrective migration strategy**.
-* Do **NOT** execute destructive `DROP TABLE` or destructive down-migrations in active production.
-* If a defect is discovered in a deployed migration, write and push a new forward corrective migration (e.g. Migration 22) that safely repairs constraints or functions while preserving data.
-* Full database restore from backup is reserved strictly for catastrophic data loss disaster recovery scenarios.
+### B. Database Migration & Rollback Semantics (Migrations 25–30)
+* **Non-Atomic Migration Series**: Running `npx supabase db push` executes migration scripts sequentially; it is **NOT globally atomic**.
+* **Before Migration 25**: If the deployment is aborted before executing Migration 25, the database remains in its previous state (**safe abort**).
+* **After Any Migration Succeeds**:
+  * Do **NOT** assume all prior migrations rolled back if a later migration fails.
+  * Keep the listing maintenance window enabled.
+  * Inspect the actual migration state via `supabase_migrations.schema_migrations`.
+  * Continue forward by diagnosing and repairing the specific migration or performing an explicitly reviewed DB forward fix.
+* **Ingestion Interruption / Failure**:
+  * If the nationwide CSV ingestion is interrupted or fails after checksum verification, do **NOT** automatically purge or truncate production postal/locality data as the first action.
+  * The importer is designed around idempotent upserts (`ON CONFLICT ... DO UPDATE`).
+  * Diagnose the transient issue and re-run the same SHA-256-locked importer to converge the snapshot safely.
 
-### C. Storage Media Recovery
+### C. Seller-Write Maintenance Window Protocol
+* **Unconditional Table Triggers Prohibited**: An unconditional `BEFORE INSERT OR UPDATE ON public.listings` trigger must **not** be used, as it blocks administrative moderation reviews, staff audit logs, and system operations.
+* **Scoped Seller-Write Guard**: Use a server-side environment variable toggle (`MAINTENANCE_SELLER_WRITES="true"`) rather than a client-inlined `NEXT_PUBLIC_*` variable.
+  * Server actions (`createListing`, `updateListing`, `submitListingForReview`) read `process.env.MAINTENANCE_SELLER_WRITES` and reject write operations with a clear maintenance explanation.
+  * Server-rendered Create (`/account/listings/new`) and Edit (`/account/listings/[id]/edit`) pages read the same flag and pass maintenance state/banner messages to the client UI.
+  * Buyer-seller messaging, discovery/search, user authentication, and staff/admin tools remain 100% operational.
+  * **Vercel Activation Semantics**: Changing an environment variable in Vercel project settings does not dynamically update an already-running deployment. Toggling the maintenance state requires activating/promoting a deployment containing the updated variable value. (See [`docs/india-postal-data.md`](../india-postal-data.md) Section 11 for complete procedure).
+
+### D. Storage Media Recovery
 * If specific image assets are accidentally deleted or corrupted, restore missing image bytes by querying the backup manifest and uploading to the affected bucket via `scripts/backup-storage.ts` tooling without overwriting unrelated active objects.
 
 ---

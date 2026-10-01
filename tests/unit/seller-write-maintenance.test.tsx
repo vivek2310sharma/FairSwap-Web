@@ -12,7 +12,7 @@ import {
   transitionListingAction,
 } from "@/app/account/listings/actions";
 import ListingForm from "@/components/listings/ListingForm";
-import type { Category, City, Locality, Listing } from "@/types/listing";
+import type { Category, City, Listing } from "@/types/listing";
 
 // Mock next/navigation and next/cache
 vi.mock("next/navigation", () => ({
@@ -49,8 +49,27 @@ const mockInsert = vi.fn().mockReturnValue({
 const mockUpdate = vi.fn().mockReturnValue({
   eq: vi.fn().mockResolvedValue({ data: null, error: null }),
 });
+const mockSelect = vi.fn().mockReturnValue({
+  eq: vi.fn().mockReturnValue({
+    single: vi.fn().mockResolvedValue({
+      data: { pin_code: "560034", locality_id: "loc-1" },
+      error: null,
+    }),
+    eq: vi.fn().mockReturnValue({
+      maybeSingle: vi.fn().mockResolvedValue({
+        data: { id: "mapping-1" },
+        error: null,
+      }),
+    }),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: { id: "mapping-1" },
+      error: null,
+    }),
+  }),
+});
 const mockFrom = vi.fn().mockImplementation(() => {
   return {
+    select: mockSelect,
     insert: mockInsert,
     update: mockUpdate,
   };
@@ -205,15 +224,6 @@ describe("Seller-Write Maintenance Guard Tests", () => {
       created_at: new Date().toISOString(),
     };
 
-    const dummyLocality: Locality = {
-      id: "33333333-3333-3333-3333-333333333333",
-      city_id: "22222222-2222-2222-2222-222222222222",
-      name: "Koramangala",
-      slug: "koramangala",
-      is_active: true,
-      created_at: new Date().toISOString(),
-    };
-
     const dummyListing: Listing = {
       id: "listing-123",
       seller_id: "seller-1",
@@ -226,6 +236,7 @@ describe("Seller-Write Maintenance Guard Tests", () => {
       city_id: "22222222-2222-2222-2222-222222222222",
       locality_id: "33333333-3333-3333-3333-333333333333",
       pin_code: "560034",
+      landmark: "Near Forum Mall",
       status: "draft",
       rejection_reason: null,
       removal_reason: null,
@@ -249,7 +260,6 @@ describe("Seller-Write Maintenance Guard Tests", () => {
           categories={[dummyCategory]}
           allAttributes={[]}
           cities={[dummyCity]}
-          localities={[dummyLocality]}
           isMaintenanceActive={true}
           maintenanceMessage={SELLER_WRITE_MAINTENANCE_MESSAGE}
         />
@@ -269,7 +279,6 @@ describe("Seller-Write Maintenance Guard Tests", () => {
           categories={[dummyCategory]}
           allAttributes={[]}
           cities={[dummyCity]}
-          localities={[dummyLocality]}
           initialListing={dummyListing}
           isMaintenanceActive={true}
           maintenanceMessage={SELLER_WRITE_MAINTENANCE_MESSAGE}
@@ -293,7 +302,6 @@ describe("Seller-Write Maintenance Guard Tests", () => {
           categories={[dummyCategory]}
           allAttributes={[]}
           cities={[dummyCity]}
-          localities={[dummyLocality]}
           initialListing={dummyListing}
           isMaintenanceActive={false}
         />
