@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { PincodeLookupResult } from "@/types/listing";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Validates whether a given string is a valid 6-digit Indian PIN code.
@@ -11,7 +12,10 @@ export function isValidIndianPincode(pincode: string): boolean {
 /**
  * Server-side lookup of Indian PIN code data via FairSwap Supabase RPC.
  */
-export async function lookupPincodeServer(pincode: string): Promise<PincodeLookupResult> {
+export async function lookupPincodeServer(
+  pincode: string,
+  client?: SupabaseClient
+): Promise<PincodeLookupResult> {
   const cleanPin = pincode.trim();
 
   if (!isValidIndianPincode(cleanPin)) {
@@ -23,7 +27,7 @@ export async function lookupPincodeServer(pincode: string): Promise<PincodeLooku
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = client || (await createClient());
     
     // Call lookup_pincode RPC
     const { data, error } = await supabase.rpc("lookup_pincode" as unknown as never, {

@@ -139,11 +139,11 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
     // Seed test postal records
     await db.exec(`
       INSERT INTO public.india_postal_data 
-        (pincode, office_name, office_type, delivery_status, district, state)
+        (pincode, office_name, office_type, delivery_status, district, state, source)
       VALUES 
-        ('560034', 'Koramangala I Block S.O', 'S.O', 'Delivery', 'Bengaluru Urban', 'Karnataka'),
-        ('560034', 'Agara S.O', 'S.O', 'Non-Delivery', 'Bengaluru Urban', 'Karnataka'),
-        ('302017', 'Malviya Nagar S.O', 'S.O', 'Delivery', 'Jaipur', 'Rajasthan');
+        ('560034', 'Koramangala I Block S.O', 'S.O', 'Delivery', 'Bengaluru Urban', 'Karnataka', 'data.gov.in'),
+        ('560034', 'Agara S.O', 'S.O', 'Non-Delivery', 'Bengaluru Urban', 'Karnataka', 'data.gov.in'),
+        ('302017', 'Malviya Nagar S.O', 'S.O', 'Delivery', 'Jaipur', 'Rajasthan', 'data.gov.in');
 
       INSERT INTO public.postal_pincode_localities 
         (pincode, locality_id, office_name, source)
@@ -189,9 +189,9 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
     it("ensures Taluk is never promoted to city and remains raw postal metadata only", async () => {
       await db.exec(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, taluk, district, state)
+          (pincode, office_name, office_type, delivery_status, taluk, district, state, source)
         VALUES 
-          ('560099', 'Electronic City S.O', 'S.O', 'Delivery', 'Anekal', 'Bangalore Rural', 'Karnataka');
+          ('560099', 'Electronic City S.O', 'S.O', 'Delivery', 'Anekal', 'Bangalore Rural', 'Karnataka', 'data.gov.in');
       `);
 
       const res = await db.query<any>(`SELECT public.lookup_pincode('560099') as result;`);
@@ -207,10 +207,10 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       // Seed records with differing districts under the same PIN code and same state
       await db.exec(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, district, state)
+          (pincode, office_name, office_type, delivery_status, district, state, source)
         VALUES 
-          ('990001', 'Border Post Office A', 'S.O', 'Delivery', 'District One', 'State One'),
-          ('990001', 'Border Post Office B', 'S.O', 'Delivery', 'District Two', 'State One');
+          ('990001', 'Border Post Office A', 'S.O', 'Delivery', 'District One', 'State One', 'data.gov.in'),
+          ('990001', 'Border Post Office B', 'S.O', 'Delivery', 'District Two', 'State One', 'data.gov.in');
       `);
 
       const res = await db.query<any>(`SELECT public.lookup_pincode('990001') as result;`);
@@ -230,10 +230,10 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       // Seed records with differing states under the same PIN code
       await db.exec(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, district, state)
+          (pincode, office_name, office_type, delivery_status, district, state, source)
         VALUES 
-          ('990002', 'Interstate Office A', 'S.O', 'Delivery', 'District A', 'State Alpha'),
-          ('990002', 'Interstate Office B', 'S.O', 'Delivery', 'District B', 'State Beta');
+          ('990002', 'Interstate Office A', 'S.O', 'Delivery', 'District A', 'State Alpha', 'data.gov.in'),
+          ('990002', 'Interstate Office B', 'S.O', 'Delivery', 'District B', 'State Beta', 'data.gov.in');
       `);
 
       const res = await db.query<any>(`SELECT public.lookup_pincode('990002') as result;`);
@@ -247,9 +247,9 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
     it("handles sentinel NA values: returns PINCODE_ADMIN_DATA_UNAVAILABLE when PIN only has NA admin metadata", async () => {
       await db.exec(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, district, state)
+          (pincode, office_name, office_type, delivery_status, district, state, source)
         VALUES 
-          ('990003', 'NA Post Office', 'S.O', 'Delivery', 'NA', 'NA');
+          ('990003', 'NA Post Office', 'S.O', 'Delivery', 'NA', 'NA', 'data.gov.in');
       `);
 
       const res = await db.query<any>(`SELECT public.lookup_pincode('990003') as result;`);
@@ -263,10 +263,10 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
     it("resolves valid admin data when PIN has both valid and NA rows (ignoring NA sentinel)", async () => {
       await db.exec(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, district, state)
+          (pincode, office_name, office_type, delivery_status, district, state, source)
         VALUES 
-          ('990004', 'Valid Office', 'S.O', 'Delivery', 'Kolar', 'Karnataka'),
-          ('990004', 'Incomplete Office', 'S.O', 'Delivery', 'NA', 'NA');
+          ('990004', 'Valid Office', 'S.O', 'Delivery', 'Kolar', 'Karnataka', 'data.gov.in'),
+          ('990004', 'Incomplete Office', 'S.O', 'Delivery', 'NA', 'NA', 'data.gov.in');
       `);
 
       const res = await db.query<any>(`SELECT public.lookup_pincode('990004') as result;`);
@@ -284,10 +284,10 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
     it("does not trigger CONFLICTING_POSTAL_STATES when PIN has 1 real state plus NA sentinel rows", async () => {
       await db.exec(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, district, state)
+          (pincode, office_name, office_type, delivery_status, district, state, source)
         VALUES 
-          ('990005', 'Real State Office', 'S.O', 'Delivery', 'Mysuru', 'Karnataka'),
-          ('990005', 'NA State Office', 'S.O', 'Delivery', 'NA', 'NA');
+          ('990005', 'Real State Office', 'S.O', 'Delivery', 'Mysuru', 'Karnataka', 'data.gov.in'),
+          ('990005', 'NA State Office', 'S.O', 'Delivery', 'NA', 'NA', 'data.gov.in');
       `);
 
       const res = await db.query<any>(`SELECT public.lookup_pincode('990005') as result;`);
@@ -558,9 +558,9 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       for (const r of sampleRecords) {
         await db.query(`
           INSERT INTO public.india_postal_data 
-            (pincode, office_name, office_type, delivery_status, district, state)
+            (pincode, office_name, office_type, delivery_status, district, state, source)
           VALUES 
-            ('${r.pincode}', '${r.office_name}', '${r.office_type}', '${r.delivery_status}', '${r.district}', '${r.state}')
+            ('${r.pincode}', '${r.office_name}', '${r.office_type}', '${r.delivery_status}', '${r.district}', '${r.state}', 'data.gov.in')
           ON CONFLICT (source, source_record_key) DO UPDATE SET
             office_type = EXCLUDED.office_type,
             delivery_status = EXCLUDED.delivery_status,
@@ -580,9 +580,9 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       for (const r of sampleRecords) {
         await db.query(`
           INSERT INTO public.india_postal_data 
-            (pincode, office_name, office_type, delivery_status, district, state)
+            (pincode, office_name, office_type, delivery_status, district, state, source)
           VALUES 
-            ('${r.pincode}', '${r.office_name}', '${r.office_type}', '${r.delivery_status}', '${r.district}', '${r.state}')
+            ('${r.pincode}', '${r.office_name}', '${r.office_type}', '${r.delivery_status}', '${r.district}', '${r.state}', 'data.gov.in')
           ON CONFLICT (source, source_record_key) DO NOTHING;
         `);
       }
@@ -613,10 +613,10 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       // Official dataset contains groups with same pincode and office name but differing districts/divisions
       await db.exec(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, district, state)
+          (pincode, office_name, office_type, delivery_status, district, state, source)
         VALUES 
-          ('990099', 'Shared Office Name', 'B.O', 'Delivery', 'District Alpha', 'State Alpha'),
-          ('990099', 'Shared Office Name', 'B.O', 'Delivery', 'District Beta', 'State Alpha')
+          ('990099', 'Shared Office Name', 'B.O', 'Delivery', 'District Alpha', 'State Alpha', 'data.gov.in'),
+          ('990099', 'Shared Office Name', 'B.O', 'Delivery', 'District Beta', 'State Alpha', 'data.gov.in')
         ON CONFLICT (source, source_record_key) DO NOTHING;
       `);
 
@@ -635,9 +635,9 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
       // 1. Insert record with a caller-provided bogus key
       const insertRes = await db.query<any>(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, division, region, circle, taluk, district, state, source_record_key)
+          (pincode, office_name, office_type, delivery_status, division, region, circle, taluk, district, state, source_record_key, source)
         VALUES 
-          ('560001', 'Bangalore GPO', 'G.P.O.', 'Delivery', 'Bangalore Division', 'Bangalore HQ', 'Karnataka Circle', 'Bangalore North', 'Bengaluru Urban', 'Karnataka', 'stale_key_111')
+          ('560001', 'Bangalore GPO', 'G.P.O.', 'Delivery', 'Bangalore Division', 'Bangalore HQ', 'Karnataka Circle', 'Bangalore North', 'Bengaluru Urban', 'Karnataka', 'stale_key_111', 'data.gov.in')
         RETURNING id, source_record_key;
       `);
 
@@ -703,11 +703,12 @@ describe("India Location & Postal Database RLS & Security Tests (#81)", () => {
 
       const sqlRes = await db.query<any>(`
         INSERT INTO public.india_postal_data 
-          (pincode, office_name, office_type, delivery_status, division, region, circle, taluk, district, state)
+          (source, pincode, office_name, office_type, delivery_status, division, region, circle, taluk, district, state)
         VALUES 
-          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING source_record_key;
       `, [
+        'data.gov.in',
         fixture.pincode,
         fixture.office_name,
         fixture.office_type,

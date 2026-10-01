@@ -18,6 +18,8 @@ Schema Migrations:
 - Migration `20260930000026_fix_india_location_admin_and_lookup.sql` corrects `public.lookup_pincode` to strictly return State and District and prevents Taluk from masquerading as city.
 - Migration `20260930000027_support_multi_district_pincodes.sql` adds multi-district same-state PIN resolution without guessing, returning explicit district choices to the caller, while failing closed on cross-state conflicts with `CONFLICTING_POSTAL_STATES`.
 - Migration `20260930000028_harden_official_postal_snapshot.sql` introduces deterministic `source_record_key`, upgrades uniqueness to `UNIQUE (source, source_record_key)` to preserve post offices sharing names across districts/divisions, handles sentinel NA administrative values (`PINCODE_ADMIN_DATA_UNAVAILABLE`), and establishes automated trigger recomputation on INSERT or UPDATE.
+- Migration `20261001000029_fix_listing_landmark_column_permissions.sql` explicitly grants authenticated users INSERT and UPDATE permissions on `public.listings.landmark`.
+- Migration `20261001000030_require_explicit_postal_source.sql` drops the DEFAULT constraint on `public.india_postal_data.source` so data.gov.in provenance must never be assigned implicitly.
 
 ---
 
@@ -180,8 +182,10 @@ FROM public.postal_pincode_localities
 GROUP BY source;
 
 -- 4. Test RPC lookup returns district and state (never taluk as city)
-SELECT public.lookup_pincode('560034'); -- Bengaluru
-SELECT public.lookup_pincode('302017'); -- Jaipur
+SELECT public.lookup_pincode('560034'); -- Bengaluru Urban, Karnataka (single district)
+SELECT public.lookup_pincode('302017'); -- Jaipur, Rajasthan (single district)
+SELECT public.lookup_pincode('110001'); -- New Delhi, Delhi (single district: New Delhi)
+SELECT public.lookup_pincode('110003'); -- Delhi (multi-district selector: New Delhi, South, South East)
 ```
 
 ---
@@ -200,3 +204,81 @@ WHERE source = 'data.gov.in';
 -- Confirm postal_pincode_localities mapping source remains india_post_candidate
 SELECT source, COUNT(*) FROM public.postal_pincode_localities GROUP BY source;
 ```
+
+---
+
+## 9. Production Preflight: Import Duration & Maintenance Window
+
+During nationwide staging replacement, the actual verified import metrics were:
+- **Dataset Size**: 165,627 input rows, producing 165,620 unique canonical records across 332 batches (batch size: 500).
+- **Actual Ingestion Duration**: **~11 minutes 6 seconds** (666 seconds).
+- **Operational Requirement**:
+  - Do **NOT** plan production maintenance around hypothetical 75–90 second benchmarks.
+  - Operators must budget a **~15–20 minute listing maintenance window** for the nationwide postal import and post-ingestion verification, subject to actual production network and database load.
+
+### Verification Key Expectations
+- **PIN `110001`**: Evaluates to `New Delhi, Delhi` (single district). It must **not** be expected to return `Central Delhi/New Delhi`.
+- **PIN `110003`**: Evaluates to multi-district Delhi (`requires_district_selection = true`), prompting the user to select between `New Delhi`, `South`, and `South East`.
+
+---
+
+## 10. Production Migration & Rollback Semantics
+
+### Database Migration Atomicity
+Running `npx supabase db push` for Migrations 25–30 executes each migration sequentially; it is **NOT globally atomic** across the entire series.
+- **Before Migration 25**: If aborted prior to executing Migration 25, the database remains in its pre-Issue #81 state (**safe abort**).
+- **After Any Migration Succeeds (25–30)**:
+  - Do **NOT** assume all prior migrations rolled back if a later migration fails.
+  - Keep the listing maintenance window enabled.
+  - Inspect the exact applied migration state in `supabase_migrations.schema_migrations`.
+  - Continue forward by diagnosing and repairing the specific migration, or execute an explicitly reviewed database forward fix.
+
+### Ingestion Failure & Idempotent Retry
+- If the nationwide CSV ingestion is interrupted or fails after SHA-256 verification (e.g. transient network timeout or connection reset):
+  - Do **NOT** automatically purge or truncate production postal/locality tables as the first response.
+  - The import script is built with idempotent upserts (`ON CONFLICT (source, source_record_key) DO UPDATE`, `ON CONFLICT (city_id, slug) DO UPDATE`, `ON CONFLICT (pincode, locality_id) DO UPDATE`).
+  - Diagnose the specific batch failure and **re-run the exact same SHA-256-locked importer**. It will resume and converge the snapshot safely without generating duplicate rows.
+
+### Vercel Deployment Failure Post-DB Push
+- If the new Vercel application deployment fails after database migrations 25–30 have been applied:
+  - **DO NOT reopen listing writes on the old UI.**
+  - An application code rollback to the pre-Issue #81 UI is **NOT compatible** with the new database contract. The old UI allows submissions without mandatory PIN codes and passes raw unconstrained locality strings, which will trigger database constraint errors in `app_security.impl_seller_submit_listing`.
+  - Keep listing maintenance active and repair/forward-deploy the application frontend.
+
+---
+
+## 11. Production-Safe Seller-Write Maintenance Window Mechanism
+
+### Motivation & Risk with DB Triggers
+An unconditional database trigger such as `BEFORE INSERT OR UPDATE ON public.listings` is **prohibited for maintenance windows**. Because the `listings` table is shared between seller authoring and platform administration, an unconditional table trigger blocks critical administrative, moderation, and system operations:
+- Moderator review transitions (`pending_review` -> `active` / `rejected`)
+- Staff audit log recording and abuse report resolutions
+- System cleanups or background jobs
+
+### Recommended Mechanism: Application Seller-Write Maintenance Guard
+The smallest, production-safe mechanism blocks seller draft mutations while keeping the rest of the marketplace operational:
+1. **Scope of Block**:
+   - Blocks Create Listing (`/account/listings/new` form submission and page entry banner).
+   - Blocks Seller Draft Edits (`/account/listings/[id]/edit` form submission and page entry banner).
+   - Blocks Seller Submit for Review (`submitListingForReview`).
+2. **Operations Remaining Fully Operational**:
+   - Public marketplace browsing, item discovery, category filters, and search (`/listings`, `/search`).
+   - Buyer-seller messaging and real-time chat.
+   - User authentication, profile settings, favourites.
+   - Staff administration, listing moderation, reports, and audit logging (`/admin/*`).
+3. **Server Action Protection**:
+   - The guard is checked directly inside Next.js server actions (`createListing`, `updateListing`, `submitListingForReview`), returning a friendly, actionable error:
+     > *"Listing creation and editing are temporarily paused while we upgrade location reference data. Active listings and buyer messages remain accessible. Please try again shortly."*
+   - This ensures stale browser tabs opened before maintenance cannot bypass the UI block.
+4. **Configuration & Decoupled Toggle Procedure**:
+   - The guard is controlled via a decoupled configuration toggle (e.g. `NEXT_PUBLIC_MAINTENANCE_SELLER_WRITES="true"` in Vercel environment variables, or an application-level Edge Config / KV flag) that **does not depend on Migrations 25–30**.
+   - **Enable Procedure**:
+     1. Set `NEXT_PUBLIC_MAINTENANCE_SELLER_WRITES="true"` in Vercel project environment settings.
+     2. Redeploy / promote to activate maintenance message on listing authoring routes.
+     3. Verify Create Listing displays maintenance banner and server action rejects mutation.
+     4. Proceed with `supabase db push` (Migrations 25–30) and nationwide CSV import.
+   - **Disable Procedure**:
+     1. Verify migrations, CSV import, and sanity checks (110001, 110003, 560034) pass.
+     2. Set `NEXT_PUBLIC_MAINTENANCE_SELLER_WRITES="false"`.
+     3. Redeploy / promote to restore full seller authoring capabilities.
+*(Note: This mechanism is proposed for production rollout planning and is not deployed to production in this task).*

@@ -6,11 +6,11 @@ import {
   Category,
   CategoryAttribute,
   City,
-  Locality,
   Listing,
   ListingMedia,
   ListingCondition,
   ListingPriceType,
+  PincodeLookupResult,
   submitListingSchema,
 } from "@/types/listing";
 import MediaUploader from "./MediaUploader";
@@ -25,18 +25,18 @@ interface ListingFormProps {
   categories: Category[];
   allAttributes: CategoryAttribute[];
   cities: City[];
-  localities: Locality[];
   initialListing?: Listing | null;
   initialMedia?: ListingMedia[];
+  initialLocationLookup?: PincodeLookupResult | null;
 }
 
 export default function ListingForm({
   categories,
   allAttributes,
   cities,
-  localities,
   initialListing,
   initialMedia = [],
+  initialLocationLookup,
 }: ListingFormProps) {
   const router = useRouter();
   const isEditing = !!initialListing;
@@ -367,8 +367,8 @@ export default function ListingForm({
           initialCityId={initialListing?.city_id || selectedCity}
           initialLocalityId={initialListing?.locality_id}
           initialLandmark={initialListing?.landmark}
+          initialLookup={initialLocationLookup}
           cities={cities}
-          localities={localities}
         />
       </div>
 
