@@ -64,7 +64,6 @@ describe("Listing Defect Remediation Unit Tests", () => {
           categories={[dummyCategory]}
           allAttributes={[dummyAttribute]}
           cities={[dummyCity]}
-          localities={[]}
         />
       );
 

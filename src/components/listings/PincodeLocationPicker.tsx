@@ -1,15 +1,215 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
-import type { City, Locality, PincodeLookupResult } from "@/types/listing";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import type { City, PincodeLookupResult } from "@/types/listing";
 
-interface PincodeLocationPickerProps {
+export interface PincodeLocationPickerProps {
   initialPinCode?: string | null;
   initialCityId?: string | null;
   initialLocalityId?: string | null;
   initialLandmark?: string | null;
+  initialLookup?: PincodeLookupResult | null;
   cities: City[];
-  localities: Locality[];
+}
+
+interface InitialLocationState {
+  derivedLocationText: string | null;
+  resolvedState: string | null;
+  availableDistricts: Array<{ name: string; city_id: string | null }>;
+  selectedDistrict: string;
+  selectedCityId: string;
+  selectedLocalityId: string;
+  availableLocalities: Array<{ id: string; name: string; city_id: string; district?: string }>;
+  allPincodeLocalities: Array<{ id: string; name: string; city_id: string; district: string }>;
+  errorMsg: string | null;
+}
+
+export function computeInitialLocationState(
+  initialPinCode: string,
+  initialCityId: string,
+  initialLocalityId: string,
+  initialLookup: PincodeLookupResult | null | undefined,
+  cities: City[]
+): InitialLocationState {
+  if (!initialLookup) {
+    return {
+      derivedLocationText: null,
+      resolvedState: null,
+      availableDistricts: [],
+      selectedDistrict: "",
+      selectedCityId: initialCityId,
+      selectedLocalityId: initialLocalityId,
+      availableLocalities: [],
+      allPincodeLocalities: [],
+      errorMsg: null,
+    };
+  }
+
+  if (!initialLookup.success) {
+    const errorMsg =
+      initialLookup.error === "PINCODE_NOT_FOUND"
+        ? "PIN code not found in our database. Please double-check your 6-digit PIN code or retry."
+        : initialLookup.error === "CONFLICTING_POSTAL_STATES"
+        ? "This PIN code spans multiple states. Please check your PIN code or contact support."
+        : initialLookup.error === "PINCODE_ADMIN_DATA_UNAVAILABLE"
+        ? "We recognize this PIN code, but its location details are currently unavailable."
+        : initialLookup.message || "Failed to lookup PIN code";
+
+    return {
+      derivedLocationText: null,
+      resolvedState: null,
+      availableDistricts: [],
+      selectedDistrict: "",
+      selectedCityId: "",
+      selectedLocalityId: "",
+      availableLocalities: [],
+      allPincodeLocalities: [],
+      errorMsg,
+    };
+  }
+
+  const districts = initialLookup.districts || [];
+  const locList = (initialLookup.localities || []).map((l) => ({
+    id: l.id,
+    name: l.name,
+    city_id: l.city_id,
+    district: l.district || "",
+  }));
+
+  // 1. Single-district PIN
+  if (initialLookup.district || districts.length === 1) {
+    const singleDistrict = initialLookup.district || districts[0]?.name || "";
+    let cityId = initialLookup.city_id || districts[0]?.city_id || "";
+    if (!cityId) {
+      const match = cities.find(
+        (c) =>
+          c.name.toLowerCase() === singleDistrict.toLowerCase() &&
+          c.state.toLowerCase() === initialLookup.state.toLowerCase()
+      );
+      if (match) cityId = match.id;
+    }
+
+    // Retain initialLocalityId only if it is present in locList; otherwise clear it
+    const isLocalityValid = locList.some((l) => l.id === initialLocalityId);
+    let resolvedLocalityId = "";
+
+    if (initialLocalityId) {
+      if (isLocalityValid) {
+        // Existing valid locality -> preserve it
+        resolvedLocalityId = initialLocalityId;
+      } else {
+        // Existing stale/invalid locality -> clear locality, require explicit reselection,
+        // NEVER silently replace it, even if only one new candidate exists
+        resolvedLocalityId = "";
+      }
+    } else {
+      // No previous locality at all -> existing one-candidate auto-selection behavior may remain
+      if (locList.length === 1) {
+        resolvedLocalityId = locList[0].id;
+        if (locList[0].city_id) cityId = locList[0].city_id;
+      }
+    }
+
+    if (resolvedLocalityId) {
+      const matchedLoc = locList.find((l) => l.id === resolvedLocalityId);
+      if (matchedLoc?.city_id) cityId = matchedLoc.city_id;
+    }
+
+    return {
+      derivedLocationText: `${singleDistrict}, ${initialLookup.state}`,
+      resolvedState: initialLookup.state,
+      availableDistricts: districts,
+      selectedDistrict: singleDistrict,
+      selectedCityId: cityId || initialCityId,
+      selectedLocalityId: resolvedLocalityId,
+      availableLocalities: locList,
+      allPincodeLocalities: locList,
+      errorMsg: null,
+    };
+  }
+
+  // 2. Multi-district PIN
+  if (districts.length > 1) {
+    let matchedDistrict = "";
+    if (initialLocalityId) {
+      const locMatch = locList.find((l) => l.id === initialLocalityId);
+      if (locMatch?.district) {
+        matchedDistrict = locMatch.district;
+      }
+    }
+
+    if (!matchedDistrict && initialCityId) {
+      const distMatch = districts.find(
+        (d) =>
+          d.city_id === initialCityId ||
+          cities.find((c) => c.id === initialCityId)?.name.toLowerCase() === d.name.toLowerCase()
+      );
+      if (distMatch) {
+        matchedDistrict = distMatch.name;
+      }
+    }
+
+    if (matchedDistrict) {
+      const filtered = locList.filter(
+        (l) => l.district.toLowerCase() === matchedDistrict.toLowerCase()
+      );
+      const isLocValid = filtered.some((l) => l.id === initialLocalityId);
+      const resolvedLocId = isLocValid ? initialLocalityId : "";
+
+      let cityId = "";
+      const distInfo = districts.find((d) => d.name === matchedDistrict);
+      if (distInfo?.city_id) cityId = distInfo.city_id;
+      if (!cityId) {
+        const match = cities.find(
+          (c) =>
+            c.name.toLowerCase() === matchedDistrict.toLowerCase() &&
+            c.state.toLowerCase() === initialLookup.state.toLowerCase()
+        );
+        if (match) cityId = match.id;
+      }
+      if (resolvedLocId) {
+        const matchedLoc = filtered.find((l) => l.id === resolvedLocId);
+        if (matchedLoc?.city_id) cityId = matchedLoc.city_id;
+      }
+
+      return {
+        derivedLocationText: null,
+        resolvedState: initialLookup.state,
+        availableDistricts: districts,
+        selectedDistrict: matchedDistrict,
+        selectedCityId: cityId || initialCityId,
+        selectedLocalityId: resolvedLocId,
+        availableLocalities: filtered,
+        allPincodeLocalities: locList,
+        errorMsg: null,
+      };
+    }
+
+    // Multi-district without valid pre-existing selection
+    return {
+      derivedLocationText: null,
+      resolvedState: initialLookup.state,
+      availableDistricts: districts,
+      selectedDistrict: "",
+      selectedCityId: "",
+      selectedLocalityId: "",
+      availableLocalities: [],
+      allPincodeLocalities: locList,
+      errorMsg: null,
+    };
+  }
+
+  return {
+    derivedLocationText: null,
+    resolvedState: null,
+    availableDistricts: [],
+    selectedDistrict: "",
+    selectedCityId: "",
+    selectedLocalityId: "",
+    availableLocalities: [],
+    allPincodeLocalities: [],
+    errorMsg: null,
+  };
 }
 
 export default function PincodeLocationPicker({
@@ -17,33 +217,41 @@ export default function PincodeLocationPicker({
   initialCityId = "",
   initialLocalityId = "",
   initialLandmark = "",
+  initialLookup,
   cities,
-  localities,
 }: PincodeLocationPickerProps) {
+  const initial = useMemo(
+    () =>
+      computeInitialLocationState(
+        initialPinCode || "",
+        initialCityId || "",
+        initialLocalityId || "",
+        initialLookup,
+        cities
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
   const [pinCode, setPinCode] = useState<string>(initialPinCode || "");
-  const [selectedCityId, setSelectedCityId] = useState<string>(initialCityId || "");
-  const [selectedLocalityId, setSelectedLocalityId] = useState<string>(initialLocalityId || "");
+  const [selectedCityId, setSelectedCityId] = useState<string>(initial.selectedCityId);
+  const [selectedLocalityId, setSelectedLocalityId] = useState<string>(initial.selectedLocalityId);
   const [landmark, setLandmark] = useState<string>(initialLandmark || "");
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [derivedLocationText, setDerivedLocationText] = useState<string | null>(null);
-  const [resolvedState, setResolvedState] = useState<string | null>(null);
-  const [availableDistricts, setAvailableDistricts] = useState<Array<{ name: string; city_id: string | null }>>([]);
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("");
+  const [derivedLocationText, setDerivedLocationText] = useState<string | null>(initial.derivedLocationText);
+  const [resolvedState, setResolvedState] = useState<string | null>(initial.resolvedState);
+  const [availableDistricts, setAvailableDistricts] = useState<Array<{ name: string; city_id: string | null }>>(
+    initial.availableDistricts
+  );
+  const [selectedDistrict, setSelectedDistrict] = useState<string>(initial.selectedDistrict);
   const [allPincodeLocalities, setAllPincodeLocalities] = useState<
     Array<{ id: string; name: string; city_id: string; district: string }>
-  >([]);
+  >(initial.allPincodeLocalities);
   const [availableLocalities, setAvailableLocalities] = useState<
     Array<{ id: string; name: string; city_id: string; district?: string }>
-  >(() => {
-    if (initialCityId) {
-      return localities
-        .filter((loc) => loc.city_id === initialCityId)
-        .map((loc) => ({ id: loc.id, name: loc.name, city_id: loc.city_id }));
-    }
-    return [];
-  });
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  >(initial.availableLocalities);
+  const [errorMsg, setErrorMsg] = useState<string | null>(initial.errorMsg);
 
   const activeLookupSeq = useRef<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -103,7 +311,14 @@ export default function PincodeLocationPicker({
             setSelectedCityId(cityId);
 
             setAvailableLocalities(locList);
-            if (locList.length === 1) {
+            const hadStaleLocality = Boolean(
+              (initialLocalityId && !locList.some((l) => l.id === initialLocalityId)) ||
+              (selectedLocalityId && !locList.some((l) => l.id === selectedLocalityId))
+            );
+
+            if (hadStaleLocality) {
+              setSelectedLocalityId("");
+            } else if (locList.length === 1) {
               setSelectedLocalityId(locList[0].id);
               if (locList[0].city_id) {
                 setSelectedCityId(locList[0].city_id);
@@ -165,8 +380,24 @@ export default function PincodeLocationPicker({
         }
       }
     },
-    [cities, selectedLocalityId]
+    [cities, selectedLocalityId, initialLocalityId]
   );
+
+  // Client-side fallback lookup when PIN was provided without server hydration
+  useEffect(() => {
+    if (
+      initialPinCode &&
+      initialPinCode.length === 6 &&
+      !initialLookup &&
+      !derivedLocationText &&
+      !errorMsg
+    ) {
+      const timer = setTimeout(() => {
+        performLookup(initialPinCode);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [initialPinCode, initialLookup, derivedLocationText, errorMsg, performLookup]);
 
   const handleDistrictChange = (districtName: string) => {
     setSelectedDistrict(districtName);
@@ -250,9 +481,9 @@ export default function PincodeLocationPicker({
       <div className="rounded-lg border border-gray-200 bg-emerald-50/50 p-4 space-y-4">
         <h3 className="text-sm font-semibold text-emerald-900">Where is the item?</h3>
 
-        {/* PIN Code */}
+        {/* PIN Code Input */}
         <div>
-          <label htmlFor="pincode_picker_input" className="block text-xs font-medium text-gray-700">
+          <label htmlFor="pincode_picker_input" className="block text-xs font-semibold text-gray-700">
             PIN Code *
           </label>
           <div className="mt-1 flex items-center gap-2">

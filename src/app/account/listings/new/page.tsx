@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
-import { Category, CategoryAttribute, City, Locality } from "@/types/listing";
+import { Category, CategoryAttribute, City } from "@/types/listing";
 
 export default async function NewListingPage() {
   const supabase = await createClient();
@@ -32,12 +32,6 @@ export default async function NewListingPage() {
     .eq("is_active", true)
     .order("name", { ascending: true });
 
-  const { data: localities } = await supabase
-    .from("localities")
-    .select("*")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
-
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <div className="mb-6">
@@ -57,7 +51,6 @@ export default async function NewListingPage() {
         categories={(categories as Category[]) || []}
         allAttributes={(allAttributes as CategoryAttribute[]) || []}
         cities={(cities as City[]) || []}
-        localities={(localities as Locality[]) || []}
       />
     </div>
   );

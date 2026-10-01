@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import PincodeLocationPicker from "@/components/listings/PincodeLocationPicker";
-import type { City, Locality } from "@/types/listing";
+import type { City, PincodeLookupResult } from "@/types/listing";
 
 const mockCities: City[] = [
   {
@@ -9,17 +9,6 @@ const mockCities: City[] = [
     name: "Bengaluru",
     state: "Karnataka",
     slug: "bengaluru",
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-];
-
-const mockLocalities: Locality[] = [
-  {
-    id: "loc-1",
-    city_id: "city-1",
-    name: "Koramangala",
-    slug: "koramangala",
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -34,7 +23,6 @@ describe("PincodeLocationPicker component", () => {
     render(
       <PincodeLocationPicker
         cities={mockCities}
-        localities={mockLocalities}
         initialPinCode="560034"
       />
     );
@@ -73,7 +61,7 @@ describe("PincodeLocationPicker component", () => {
       json: async () => mockLookupResponse,
     } as Response);
 
-    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+    render(<PincodeLocationPicker cities={mockCities} />);
 
     const pinInput = screen.getByLabelText(/PIN Code/i);
     fireEvent.change(pinInput, { target: { value: "560034" } });
@@ -99,7 +87,7 @@ describe("PincodeLocationPicker component", () => {
       }),
     } as Response);
 
-    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+    render(<PincodeLocationPicker cities={mockCities} />);
 
     const pinInput = screen.getByLabelText(/PIN Code/i);
     fireEvent.change(pinInput, { target: { value: "999999" } });
@@ -132,7 +120,7 @@ describe("PincodeLocationPicker component", () => {
       }),
     } as Response);
 
-    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+    render(<PincodeLocationPicker cities={mockCities} />);
 
     const pinInput = screen.getByLabelText(/PIN Code/i);
     fireEvent.change(pinInput, { target: { value: "123456" } });
@@ -153,7 +141,7 @@ describe("PincodeLocationPicker component", () => {
       }),
     } as Response);
 
-    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+    render(<PincodeLocationPicker cities={mockCities} />);
 
     const pinInput = screen.getByLabelText(/PIN Code/i);
     fireEvent.change(pinInput, { target: { value: "990003" } });
@@ -210,7 +198,7 @@ describe("PincodeLocationPicker component", () => {
     } as Response);
 
     const { container } = render(
-      <PincodeLocationPicker cities={multiDistrictCities} localities={[]} />
+      <PincodeLocationPicker cities={multiDistrictCities} />
     );
 
     const pinInput = screen.getByLabelText(/PIN Code/i);
@@ -257,13 +245,35 @@ describe("PincodeLocationPicker component", () => {
   });
 
   it("changing one digit clears previous city + locality immediately", async () => {
+    const singleDistrictLookup: PincodeLookupResult = {
+      success: true,
+      pincode: "560034",
+      state: "Karnataka",
+      district: "Bengaluru",
+      city: "Bengaluru",
+      city_id: "city-1",
+      districts: [{ name: "Bengaluru", city_id: "city-1" }],
+      localities: [
+        {
+          id: "loc-1",
+          name: "Koramangala",
+          slug: "koramangala",
+          city_id: "city-1",
+          city_name: "Bengaluru",
+          state: "Karnataka",
+          district: "Bengaluru",
+        },
+      ],
+      postal_offices: [],
+    };
+
     const { container } = render(
       <PincodeLocationPicker
         cities={mockCities}
-        localities={mockLocalities}
         initialPinCode="560034"
         initialLocalityId="loc-1"
         initialCityId="city-1"
+        initialLookup={singleDistrictLookup}
       />
     );
 
@@ -317,13 +327,13 @@ describe("PincodeLocationPicker component", () => {
       state: "Rajasthan",
       district: "Jaipur",
       city: "Jaipur",
-      city_id: "city-jaipur",
+      city_id: "city-jpr",
       localities: [
         {
-          id: "loc-jaipur",
+          id: "loc-jpr",
           name: "Malviya Nagar",
           slug: "malviya-nagar",
-          city_id: "city-jaipur",
+          city_id: "city-jpr",
           city_name: "Jaipur",
           state: "Rajasthan",
           district: "Jaipur",
@@ -346,7 +356,7 @@ describe("PincodeLocationPicker component", () => {
       return Promise.reject(new Error("unexpected url"));
     });
 
-    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+    render(<PincodeLocationPicker cities={mockCities} />);
     const pinInput = screen.getByLabelText(/PIN Code/i);
 
     // 1. User types first PIN (302017) -> starts slow request A
@@ -377,7 +387,6 @@ describe("PincodeLocationPicker component", () => {
     render(
       <PincodeLocationPicker
         cities={mockCities}
-        localities={mockLocalities}
         initialLandmark="Near Metro"
       />
     );
@@ -422,7 +431,7 @@ describe("PincodeLocationPicker component", () => {
       json: async () => mockLookupWithTaluk,
     } as Response);
 
-    render(<PincodeLocationPicker cities={mockCities} localities={mockLocalities} />);
+    render(<PincodeLocationPicker cities={mockCities} />);
 
     const pinInput = screen.getByLabelText(/PIN Code/i);
     fireEvent.change(pinInput, { target: { value: "560034" } });
@@ -478,7 +487,7 @@ describe("PincodeLocationPicker component", () => {
     } as Response);
 
     const { container } = render(
-      <PincodeLocationPicker cities={unrelatedCities} localities={[]} />
+      <PincodeLocationPicker cities={unrelatedCities} />
     );
 
     const pinInput = screen.getByLabelText(/PIN Code/i);
@@ -496,5 +505,216 @@ describe("PincodeLocationPicker component", () => {
 
     // city_id must derive from locality's city_id ("city-1"), never unrelated first city ("city-99")
     expect(hiddenCityInput.value).toBe("city-1");
+  });
+
+  describe("Hydration & Locality Scoping (Part A)", () => {
+    const singleDistrictLookup: PincodeLookupResult = {
+      success: true,
+      pincode: "560034",
+      state: "Karnataka",
+      district: "Bengaluru",
+      city: "Bengaluru",
+      city_id: "city-1",
+      districts: [{ name: "Bengaluru", city_id: "city-1" }],
+      localities: [
+        {
+          id: "loc-1",
+          name: "Koramangala",
+          slug: "koramangala",
+          city_id: "city-1",
+          city_name: "Bengaluru",
+          state: "Karnataka",
+          district: "Bengaluru",
+        },
+        {
+          id: "loc-2",
+          name: "St. Johns Medical College",
+          slug: "st-johns",
+          city_id: "city-1",
+          city_name: "Bengaluru",
+          state: "Karnataka",
+          district: "Bengaluru",
+        },
+      ],
+      postal_offices: [],
+    };
+
+    const multiDistrictLookup: PincodeLookupResult = {
+      success: true,
+      pincode: "110003",
+      state: "Delhi",
+      district: null,
+      city: "Delhi",
+      city_id: null,
+      districts: [
+        { name: "New Delhi", city_id: "city-nd" },
+        { name: "South Delhi", city_id: "city-sd" },
+      ],
+      localities: [
+        {
+          id: "loc-nd-1",
+          name: "Aliganj",
+          slug: "aliganj",
+          city_id: "city-nd",
+          city_name: "New Delhi",
+          state: "Delhi",
+          district: "New Delhi",
+        },
+        {
+          id: "loc-sd-1",
+          name: "Lodi Road",
+          slug: "lodi-road",
+          city_id: "city-sd",
+          city_name: "South Delhi",
+          state: "Delhi",
+          district: "South Delhi",
+        },
+      ],
+      postal_offices: [],
+    };
+
+    it("edit single-district listing retains valid locality", () => {
+      const { container } = render(
+        <PincodeLocationPicker
+          cities={mockCities}
+          initialPinCode="560034"
+          initialLocalityId="loc-1"
+          initialCityId="city-1"
+          initialLookup={singleDistrictLookup}
+        />
+      );
+
+      expect(screen.getByText("Bengaluru, Karnataka")).toBeInTheDocument();
+      const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
+      expect(localitySelect).toHaveValue("loc-1");
+      const hiddenLocality = container.querySelector('input[name="locality_id"]') as HTMLInputElement;
+      expect(hiddenLocality.value).toBe("loc-1");
+      const hiddenCity = container.querySelector('input[name="city_id"]') as HTMLInputElement;
+      expect(hiddenCity.value).toBe("city-1");
+    });
+
+    it("edit multi-district listing retains valid district and locality", () => {
+      const { container } = render(
+        <PincodeLocationPicker
+          cities={mockCities}
+          initialPinCode="110003"
+          initialLocalityId="loc-nd-1"
+          initialCityId="city-nd"
+          initialLookup={multiDistrictLookup}
+        />
+      );
+
+      // District dropdown must show New Delhi
+      const districtSelect = screen.getByLabelText(/District/i);
+      expect(districtSelect).toHaveValue("New Delhi");
+
+      // Locality dropdown must retain loc-nd-1 (Aliganj)
+      const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
+      expect(localitySelect).toHaveValue("loc-nd-1");
+      expect(screen.getByRole("option", { name: "Aliganj" })).toBeInTheDocument();
+      expect(screen.queryByRole("option", { name: "Lodi Road" })).not.toBeInTheDocument();
+
+      const hiddenCity = container.querySelector('input[name="city_id"]') as HTMLInputElement;
+      expect(hiddenCity.value).toBe("city-nd");
+    });
+
+    it("stale locality mapping is cleared and requires reselection without silently picking another", () => {
+      const { container } = render(
+        <PincodeLocationPicker
+          cities={mockCities}
+          initialPinCode="560034"
+          initialLocalityId="loc-obsolete-999" // obsolete or unmapped locality
+          initialCityId="city-1"
+          initialLookup={singleDistrictLookup}
+        />
+      );
+
+      // Derived location is still recognized
+      expect(screen.getByText("Bengaluru, Karnataka")).toBeInTheDocument();
+
+      // Locality must be cleared to empty, NOT defaulted to loc-1 or loc-2
+      const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
+      expect(localitySelect).toHaveValue("");
+      const hiddenLocality = container.querySelector('input[name="locality_id"]') as HTMLInputElement;
+      expect(hiddenLocality.value).toBe("");
+
+      // User must explicitly pick
+      expect(screen.getByRole("option", { name: "Koramangala" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "St. Johns Medical College" })).toBeInTheDocument();
+    });
+
+    it("clears obsolete locality and does not auto-select even when lookup returns exactly one candidate", () => {
+      const singleCandidateLookup: PincodeLookupResult = {
+        success: true,
+        pincode: "560034",
+        state: "Karnataka",
+        district: "Bengaluru Urban",
+        city: "Bengaluru",
+        city_id: "city-1",
+        districts: [{ name: "Bengaluru Urban", city_id: "city-1" }],
+        localities: [
+          {
+            id: "loc-only-one",
+            name: "Only Locality Candidate",
+            slug: "only-locality-candidate",
+            city_id: "city-1",
+            city_name: "Bengaluru",
+            state: "Karnataka",
+            district: "Bengaluru Urban",
+          },
+        ],
+        postal_offices: [],
+      };
+
+      const { container } = render(
+        <PincodeLocationPicker
+          cities={mockCities}
+          initialPinCode="560034"
+          initialLocalityId="loc-obsolete-999"
+          initialCityId="city-1"
+          initialLookup={singleCandidateLookup}
+        />
+      );
+
+      // Derived location is recognized
+      expect(screen.getByText("Bengaluru Urban, Karnataka")).toBeInTheDocument();
+
+      // Locality must remain UNSELECTED (""), never silently auto-selected
+      const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
+      expect(localitySelect).toHaveValue("");
+      const hiddenLocality = container.querySelector('input[name="locality_id"]') as HTMLInputElement;
+      expect(hiddenLocality.value).toBe("");
+
+      // The single candidate is visible for explicit selection
+      expect(screen.getByRole("option", { name: "Only Locality Candidate" })).toBeInTheDocument();
+    });
+
+    it("Create Listing does not depend on global locality data", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        json: async () => singleDistrictLookup,
+      } as Response);
+
+      render(
+        <PincodeLocationPicker
+          cities={mockCities}
+        />
+      );
+
+      const pinInput = screen.getByLabelText(/PIN Code/i);
+      expect(pinInput).toHaveValue("");
+
+      const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
+      expect(localitySelect).toBeDisabled();
+      expect(screen.getByText(/Enter 6-digit PIN code first/i)).toBeInTheDocument();
+
+      // Typing PIN fetches candidates dynamically
+      fireEvent.change(pinInput, { target: { value: "560034" } });
+      await waitFor(() => {
+        expect(screen.getByText("Bengaluru, Karnataka")).toBeInTheDocument();
+        expect(localitySelect).toBeEnabled();
+      });
+
+      expect(screen.getByRole("option", { name: "Koramangala" })).toBeInTheDocument();
+    });
   });
 });
