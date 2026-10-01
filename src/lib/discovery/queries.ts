@@ -21,7 +21,6 @@ export interface PublicListingDetail {
   condition: ListingCondition | null;
   price_type: ListingPriceType | null;
   price_paise: number | null;
-  pin_code: string | null;
   category_attributes: Record<string, unknown>;
   status: ListingStatus;
   created_at: string;
@@ -70,7 +69,6 @@ interface RawListingItem {
   condition: ListingCondition | null;
   price_type: ListingPriceType | null;
   price_paise: number | null;
-  pin_code: string | null;
   category_attributes: Record<string, unknown>;
   status: ListingStatus;
   created_at: string;
@@ -217,7 +215,6 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
       condition,
       price_type,
       price_paise,
-      pin_code,
       category_attributes,
       status,
       created_at,
@@ -399,7 +396,6 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
     condition: listing.condition,
     price_type: listing.price_type,
     price_paise: listing.price_paise,
-    pin_code: listing.pin_code,
     category_attributes: listing.category_attributes as Record<string, unknown>,
     status: listing.status,
     created_at: listing.created_at,
@@ -439,7 +435,6 @@ export async function getSellerPublicListings(
       condition,
       price_type,
       price_paise,
-      pin_code,
       category_attributes,
       status,
       created_at,
@@ -470,7 +465,6 @@ export async function getSellerPublicListings(
     condition: item.condition,
     price_type: item.price_type,
     price_paise: item.price_paise,
-    pin_code: item.pin_code,
     category_attributes: item.category_attributes,
     status: item.status,
     created_at: item.created_at,
@@ -514,7 +508,6 @@ export async function getUserFavourites(userId: string): Promise<{
       condition,
       price_type,
       price_paise,
-      pin_code,
       category_attributes,
       status,
       created_at,
@@ -557,7 +550,6 @@ export async function getUserFavourites(userId: string): Promise<{
         condition: l.condition,
         price_type: l.price_type,
         price_paise: l.price_paise,
-        pin_code: l.pin_code,
         category_attributes: l.category_attributes,
         status: l.status,
         created_at: l.created_at,
