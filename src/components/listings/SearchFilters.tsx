@@ -133,21 +133,21 @@ export function SearchFilters({
         </select>
       </div>
 
-      {/* City Selection */}
+      {/* District Selection */}
       <div>
         <label htmlFor="filter-city" className="block text-xs font-semibold uppercase tracking-wider text-muted">
-          City
+          District
         </label>
         <select
           id="filter-city"
           value={city}
           onChange={(e) => {
             setCity(e.target.value);
-            setLocality(""); // reset locality when city changes
+            setLocality(""); // reset locality when district changes
           }}
           className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
         >
-          <option value="">All Cities</option>
+          <option value="">All Districts</option>
           {cities.map((ci) => (
             <option key={ci.id} value={ci.id}>
               {ci.name}, {ci.state}
@@ -155,11 +155,11 @@ export function SearchFilters({
           ))}
         </select>
         <p className="mt-1 text-[11px] text-muted">
-          City filters by municipal region. No distance radii are inferred.
+          Filters by administrative district. No distance radii are inferred.
         </p>
       </div>
 
-      {/* Locality Selection (Only if city selected) */}
+      {/* Locality Selection (Only if district selected) */}
       {city && filteredLocalities.length > 0 && (
         <div>
           <label htmlFor="filter-locality" className="block text-xs font-semibold uppercase tracking-wider text-muted">
@@ -171,7 +171,7 @@ export function SearchFilters({
             onChange={(e) => setLocality(e.target.value)}
             className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           >
-            <option value="">All Areas in City</option>
+            <option value="">All Areas in District</option>
             {filteredLocalities.map((loc) => (
               <option key={loc.id} value={loc.id}>
                 {loc.name}

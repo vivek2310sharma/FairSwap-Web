@@ -66,6 +66,7 @@ export async function createDraftListingAction(
     price_type: (formData.get("price_type") as ListingPriceType) || null,
     price_paise: formData.get("price_paise") ? parseInt(formData.get("price_paise") as string, 10) : null,
     pin_code: (formData.get("pin_code") as string) || null,
+    landmark: (formData.get("landmark") as string) || null,
     category_attributes: categoryAttributes,
   };
 
@@ -91,6 +92,7 @@ export async function createDraftListingAction(
       price_type: validation.data.price_type,
       price_paise: validation.data.price_paise,
       pin_code: validation.data.pin_code,
+      landmark: validation.data.landmark,
       category_attributes: validation.data.category_attributes as unknown as Json,
     })
     .select("id")
@@ -154,6 +156,7 @@ export async function updateListingAction(
     price_type: (formData.get("price_type") as ListingPriceType) || null,
     price_paise: formData.get("price_paise") ? parseInt(formData.get("price_paise") as string, 10) : null,
     pin_code: (formData.get("pin_code") as string) || null,
+    landmark: (formData.get("landmark") as string) || null,
     category_attributes: categoryAttributes,
   };
 
@@ -179,6 +182,7 @@ export async function updateListingAction(
       price_type: validation.data.price_type,
       price_paise: validation.data.price_paise,
       pin_code: validation.data.pin_code,
+      landmark: validation.data.landmark,
       category_attributes: validation.data.category_attributes as unknown as Json,
     })
     .eq("id", listingId);
@@ -211,6 +215,30 @@ export async function submitListingAction(listingId: string): Promise<ListingAct
     };
   }
 
+  // Server-side location integrity check
+  const { data: listingData } = await supabase
+    .from("listings")
+    .select("pin_code, locality_id")
+    .eq("id", listingId)
+    .single();
+
+  if (!listingData?.pin_code || !/^\d{6}$/.test(listingData.pin_code)) {
+    return { error: "A valid 6-digit Indian PIN code is required to submit a listing." };
+  }
+
+  if (listingData.locality_id) {
+    const { data: mapping } = await supabase
+      .from("postal_pincode_localities")
+      .select("id")
+      .eq("pincode", listingData.pin_code)
+      .eq("locality_id", listingData.locality_id)
+      .maybeSingle();
+
+    if (!mapping) {
+      return { error: `The selected locality is not valid for PIN code ${listingData.pin_code}.` };
+    }
+  }
+
   logger.info("listing.submit_initiated", {
     operation: "submit_listing",
     extra: { listing_id: listingId },
@@ -225,6 +253,9 @@ export async function submitListingAction(listingId: string): Promise<ListingAct
       operation: "submit_listing",
       error_code: error.code || "RPC_ERROR",
     });
+    if (error.message.includes("INVALID_PIN_LOCALITY_MAPPING")) {
+      return { error: "The selected locality is not valid for this PIN code." };
+    }
     return { error: error.message };
   }
 

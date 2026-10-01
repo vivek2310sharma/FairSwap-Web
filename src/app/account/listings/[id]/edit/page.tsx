@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
-import { Category, CategoryAttribute, City, Locality, Listing, ListingMedia } from "@/types/listing";
+import { Category, CategoryAttribute, City, Listing, ListingMedia, PincodeLookupResult } from "@/types/listing";
+import { lookupPincodeServer } from "@/lib/location/pincode";
 import {
   isSellerWriteMaintenanceEnabled,
   SELLER_WRITE_MAINTENANCE_MESSAGE,
@@ -47,7 +48,7 @@ export default async function EditListingPage({
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  // Fetch reference data
+  // Fetch reference data (excluding nationwide localities)
   const { data: categories } = await supabase
     .from("categories")
     .select("*")
@@ -65,11 +66,11 @@ export default async function EditListingPage({
     .eq("is_active", true)
     .order("name", { ascending: true });
 
-  const { data: localities } = await supabase
-    .from("localities")
-    .select("*")
-    .eq("is_active", true)
-    .order("name", { ascending: true });
+  // Server-hydrate location lookup for this listing's specific PIN code
+  let initialLocationLookup: PincodeLookupResult | null = null;
+  if (listing.pin_code) {
+    initialLocationLookup = await lookupPincodeServer(listing.pin_code, supabase);
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -90,9 +91,9 @@ export default async function EditListingPage({
         categories={(categories as Category[]) || []}
         allAttributes={(allAttributes as CategoryAttribute[]) || []}
         cities={(cities as City[]) || []}
-        localities={(localities as Locality[]) || []}
         initialListing={listing}
         initialMedia={(media as ListingMedia[]) || []}
+        initialLocationLookup={initialLocationLookup}
         isMaintenanceActive={isMaintenanceActive}
         maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}
       />

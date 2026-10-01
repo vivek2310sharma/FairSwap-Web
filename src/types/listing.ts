@@ -65,6 +65,58 @@ export interface Locality {
   created_at: string;
 }
 
+export interface PostalOfficeInfo {
+  office_name: string;
+  office_type: string | null;
+  delivery_status: string | null;
+  division: string | null;
+  region: string | null;
+  circle: string | null;
+  taluk: string | null;
+  district: string;
+  state: string;
+}
+
+export interface PincodeDistrictInfo {
+  name: string;
+  city_id: string | null;
+}
+
+export interface PincodeLocalityInfo {
+  id: string;
+  name: string;
+  slug: string;
+  city_id: string;
+  city_name: string;
+  district: string;
+  state: string;
+}
+
+export interface PincodeLookupSuccess {
+  success: true;
+  pincode: string;
+  state: string;
+  district: string | null;
+  city: string | null;
+  city_id: string | null;
+  districts: PincodeDistrictInfo[];
+  localities: PincodeLocalityInfo[];
+  postal_offices: PostalOfficeInfo[];
+}
+
+export interface PincodeLookupFailure {
+  success: false;
+  error:
+    | "INVALID_PINCODE"
+    | "PINCODE_NOT_FOUND"
+    | "CONFLICTING_POSTAL_STATES"
+    | "PINCODE_ADMIN_DATA_UNAVAILABLE"
+    | "FETCH_ERROR";
+  message: string;
+}
+
+export type PincodeLookupResult = PincodeLookupSuccess | PincodeLookupFailure;
+
 export interface Listing {
   id: string;
   seller_id: string;
@@ -78,6 +130,7 @@ export interface Listing {
   price_type: ListingPriceType | null;
   price_paise: number | null;
   pin_code: string | null;
+  landmark: string | null;
   category_attributes: Record<string, unknown>;
   status: ListingStatus;
   revision: number;
@@ -135,6 +188,7 @@ export interface PublicListingCard {
   price_type: ListingPriceType | null;
   price_paise: number | null;
   pin_code: string | null;
+  landmark?: string | null;
   category_attributes: Record<string, unknown>;
   status: ListingStatus;
   created_at: string;
@@ -189,6 +243,7 @@ export const draftListingSchema = z.object({
   price_type: z.enum(["fixed", "negotiable", "free"]).optional().nullable(),
   price_paise: z.number().int().min(0).max(100000000).optional().nullable(),
   pin_code: z.string().regex(/^\d{6}$/, "PIN code must be exactly 6 digits").optional().nullable(),
+  landmark: z.string().max(200, "Landmark must be at most 200 characters").optional().nullable(),
   category_attributes: z.record(z.unknown()).default({}),
 });
 
@@ -197,6 +252,10 @@ export const submitListingSchema = draftListingSchema.extend({
     .string({ required_error: "Description must be at least 10 characters", invalid_type_error: "Description must be at least 10 characters" })
     .min(10, "Description must be at least 10 characters")
     .max(5000),
+  pin_code: z
+    .string({ required_error: "PIN code is required", invalid_type_error: "PIN code is required" })
+    .regex(/^\d{6}$/, "PIN code must be exactly 6 numeric digits"),
+  locality_id: z.string().uuid("Invalid locality ID").optional().nullable(),
   city_id: z
     .string({ required_error: "City is required", invalid_type_error: "City is required" })
     .uuid("City is required"),
