@@ -91,11 +91,26 @@ export function computeInitialLocationState(
 
     // Retain initialLocalityId only if it is present in locList; otherwise clear it
     const isLocalityValid = locList.some((l) => l.id === initialLocalityId);
-    let resolvedLocalityId = isLocalityValid ? initialLocalityId : "";
-    if (locList.length === 1) {
-      resolvedLocalityId = locList[0].id;
-      if (locList[0].city_id) cityId = locList[0].city_id;
-    } else if (resolvedLocalityId) {
+    let resolvedLocalityId = "";
+
+    if (initialLocalityId) {
+      if (isLocalityValid) {
+        // Existing valid locality -> preserve it
+        resolvedLocalityId = initialLocalityId;
+      } else {
+        // Existing stale/invalid locality -> clear locality, require explicit reselection,
+        // NEVER silently replace it, even if only one new candidate exists
+        resolvedLocalityId = "";
+      }
+    } else {
+      // No previous locality at all -> existing one-candidate auto-selection behavior may remain
+      if (locList.length === 1) {
+        resolvedLocalityId = locList[0].id;
+        if (locList[0].city_id) cityId = locList[0].city_id;
+      }
+    }
+
+    if (resolvedLocalityId) {
       const matchedLoc = locList.find((l) => l.id === resolvedLocalityId);
       if (matchedLoc?.city_id) cityId = matchedLoc.city_id;
     }
@@ -296,7 +311,14 @@ export default function PincodeLocationPicker({
             setSelectedCityId(cityId);
 
             setAvailableLocalities(locList);
-            if (locList.length === 1) {
+            const hadStaleLocality = Boolean(
+              (initialLocalityId && !locList.some((l) => l.id === initialLocalityId)) ||
+              (selectedLocalityId && !locList.some((l) => l.id === selectedLocalityId))
+            );
+
+            if (hadStaleLocality) {
+              setSelectedLocalityId("");
+            } else if (locList.length === 1) {
               setSelectedLocalityId(locList[0].id);
               if (locList[0].city_id) {
                 setSelectedCityId(locList[0].city_id);
@@ -358,7 +380,7 @@ export default function PincodeLocationPicker({
         }
       }
     },
-    [cities, selectedLocalityId]
+    [cities, selectedLocalityId, initialLocalityId]
   );
 
   // Client-side fallback lookup when PIN was provided without server hydration

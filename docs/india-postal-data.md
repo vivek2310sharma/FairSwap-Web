@@ -266,19 +266,26 @@ The smallest, production-safe mechanism blocks seller draft mutations while keep
    - Buyer-seller messaging and real-time chat.
    - User authentication, profile settings, favourites.
    - Staff administration, listing moderation, reports, and audit logging (`/admin/*`).
-3. **Server Action Protection**:
-   - The guard is checked directly inside Next.js server actions (`createListing`, `updateListing`, `submitListingForReview`), returning a friendly, actionable error:
-     > *"Listing creation and editing are temporarily paused while we upgrade location reference data. Active listings and buyer messages remain accessible. Please try again shortly."*
-   - This ensures stale browser tabs opened before maintenance cannot bypass the UI block.
+3. **Server Action & Server Component Protection**:
+   - Maintenance enforcement belongs strictly at the server boundary; it does not need to be exposed or inlined into the client browser bundle via `NEXT_PUBLIC_*`.
+   - **Eventual Implementation Pattern**:
+     - Next.js server actions (`createListing`, `updateListing`, `submitListingForReview`) read `process.env.MAINTENANCE_SELLER_WRITES`.
+     - Server-rendered Create and Edit pages (`/account/listings/new`, `/account/listings/[id]/edit`) read the same flag server-side and pass the maintenance state/message down to the client UI as a prop.
+     - When active, server actions reject mutations with an actionable error:
+       > *"Listing creation and editing are temporarily paused while we upgrade location reference data. Active listings and buyer messages remain accessible. Please try again shortly."*
+     - This ensures stale browser tabs opened before maintenance cannot bypass the UI block.
 4. **Configuration & Decoupled Toggle Procedure**:
-   - The guard is controlled via a decoupled configuration toggle (e.g. `NEXT_PUBLIC_MAINTENANCE_SELLER_WRITES="true"` in Vercel environment variables, or an application-level Edge Config / KV flag) that **does not depend on Migrations 25–30**.
+   - The guard is controlled via a server environment variable (`MAINTENANCE_SELLER_WRITES="true"`) that **does not depend on Migrations 25–30**.
+   - > [!IMPORTANT]
+   - > **Vercel Activation Semantics**:
+   - > Changing an environment variable in Vercel project settings **does not dynamically update an already-running deployment**. Activating the flag requires triggering or promoting a deployment containing that updated environment variable value.
    - **Enable Procedure**:
-     1. Set `NEXT_PUBLIC_MAINTENANCE_SELLER_WRITES="true"` in Vercel project environment settings.
-     2. Redeploy / promote to activate maintenance message on listing authoring routes.
+     1. Set `MAINTENANCE_SELLER_WRITES="true"` in Vercel project environment settings.
+     2. Trigger/promote a deployment to activate maintenance enforcement on the live environment.
      3. Verify Create Listing displays maintenance banner and server action rejects mutation.
      4. Proceed with `supabase db push` (Migrations 25–30) and nationwide CSV import.
    - **Disable Procedure**:
      1. Verify migrations, CSV import, and sanity checks (110001, 110003, 560034) pass.
-     2. Set `NEXT_PUBLIC_MAINTENANCE_SELLER_WRITES="false"`.
-     3. Redeploy / promote to restore full seller authoring capabilities.
+     2. Set `MAINTENANCE_SELLER_WRITES="false"` (or remove the variable).
+     3. Trigger/promote a deployment to restore live seller authoring capabilities.
 *(Note: This mechanism is proposed for production rollout planning and is not deployed to production in this task).*

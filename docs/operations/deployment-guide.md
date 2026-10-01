@@ -403,7 +403,11 @@ corepack pnpm build
 
 ### C. Seller-Write Maintenance Window Protocol
 * **Unconditional Table Triggers Prohibited**: An unconditional `BEFORE INSERT OR UPDATE ON public.listings` trigger must **not** be used, as it blocks administrative moderation reviews, staff audit logs, and system operations.
-* **Scoped Seller-Write Guard**: Use an application-level toggle (`NEXT_PUBLIC_MAINTENANCE_SELLER_WRITES`) to intercept listing creation (`/account/listings/new`), draft edits (`/account/listings/[id]/edit`), and review submissions (`submitListingForReview`), while leaving buyer-seller messaging, discovery/search, authentication, and staff/admin tools operational. (See [`docs/india-postal-data.md`](../india-postal-data.md) Section 11 for complete procedure).
+* **Scoped Seller-Write Guard**: Use a server-side environment variable toggle (`MAINTENANCE_SELLER_WRITES="true"`) rather than a client-inlined `NEXT_PUBLIC_*` variable.
+  * Server actions (`createListing`, `updateListing`, `submitListingForReview`) read `process.env.MAINTENANCE_SELLER_WRITES` and reject write operations with a clear maintenance explanation.
+  * Server-rendered Create (`/account/listings/new`) and Edit (`/account/listings/[id]/edit`) pages read the same flag and pass maintenance state/banner messages to the client UI.
+  * Buyer-seller messaging, discovery/search, user authentication, and staff/admin tools remain 100% operational.
+  * **Vercel Activation Semantics**: Changing an environment variable in Vercel project settings does not dynamically update an already-running deployment. Toggling the maintenance state requires activating/promoting a deployment containing the updated variable value. (See [`docs/india-postal-data.md`](../india-postal-data.md) Section 11 for complete procedure).
 
 ### D. Storage Media Recovery
 * If specific image assets are accidentally deleted or corrupted, restore missing image bytes by querying the backup manifest and uploading to the affected bucket via `scripts/backup-storage.ts` tooling without overwriting unrelated active objects.

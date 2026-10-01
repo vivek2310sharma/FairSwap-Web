@@ -643,6 +643,52 @@ describe("PincodeLocationPicker component", () => {
       expect(screen.getByRole("option", { name: "St. Johns Medical College" })).toBeInTheDocument();
     });
 
+    it("clears obsolete locality and does not auto-select even when lookup returns exactly one candidate", () => {
+      const singleCandidateLookup: PincodeLookupResult = {
+        success: true,
+        pincode: "560034",
+        state: "Karnataka",
+        district: "Bengaluru Urban",
+        city: "Bengaluru",
+        city_id: "city-1",
+        districts: [{ name: "Bengaluru Urban", city_id: "city-1" }],
+        localities: [
+          {
+            id: "loc-only-one",
+            name: "Only Locality Candidate",
+            slug: "only-locality-candidate",
+            city_id: "city-1",
+            city_name: "Bengaluru",
+            state: "Karnataka",
+            district: "Bengaluru Urban",
+          },
+        ],
+        postal_offices: [],
+      };
+
+      const { container } = render(
+        <PincodeLocationPicker
+          cities={mockCities}
+          initialPinCode="560034"
+          initialLocalityId="loc-obsolete-999"
+          initialCityId="city-1"
+          initialLookup={singleCandidateLookup}
+        />
+      );
+
+      // Derived location is recognized
+      expect(screen.getByText("Bengaluru Urban, Karnataka")).toBeInTheDocument();
+
+      // Locality must remain UNSELECTED (""), never silently auto-selected
+      const localitySelect = screen.getByLabelText(/Area \/ Locality/i);
+      expect(localitySelect).toHaveValue("");
+      const hiddenLocality = container.querySelector('input[name="locality_id"]') as HTMLInputElement;
+      expect(hiddenLocality.value).toBe("");
+
+      // The single candidate is visible for explicit selection
+      expect(screen.getByRole("option", { name: "Only Locality Candidate" })).toBeInTheDocument();
+    });
+
     it("Create Listing does not depend on global locality data", async () => {
       global.fetch = vi.fn().mockResolvedValue({
         json: async () => singleDistrictLookup,
