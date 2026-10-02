@@ -1,12 +1,26 @@
 import { test, expect } from "@playwright/test";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import {
+  validateLocalTestEnvironment,
+  testUserRegistry,
+  type TargetConfig,
+} from "../tests/helpers/local-test-guard";
+import { LEGAL_POLICY } from "../src/lib/compliance/legal-policy";
 
+const PLAYWRIGHT_BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:3001";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+const MAILPIT_URL = process.env.MAILPIT_URL || "http://127.0.0.1:54324";
 const SERVICE_KEY =
   process.env.SUPABASE_SECRET_KEY ||
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
+
+const TARGET_CONFIG: TargetConfig = {
+  appUrl: PLAYWRIGHT_BASE_URL,
+  supabaseUrl: SUPABASE_URL,
+  mailboxUrl: MAILPIT_URL,
+};
 
 // RFC 6238 TOTP generator
 function generateTOTP(base32Secret: string): string {
@@ -43,14 +57,53 @@ function generateTOTP(base32Secret: string): string {
 test.describe("Milestone 1.6 User Management Route Protection", () => {
   test("unauthenticated user accessing /admin/users is redirected to sign-in", async ({ page }) => {
     await page.goto("/admin/users");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fadmin/);
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)admin/);
   });
 });
 
 test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
+  const trackedListingIds = new Set<string>();
+
+  test.afterEach(async () => {
+    if (process.env.ALLOW_LOCAL_TEST_MUTATIONS === "true") {
+      validateLocalTestEnvironment(TARGET_CONFIG);
+      const serviceClient = createClient(SUPABASE_URL, SERVICE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      // 1. Delete tracked listings
+      for (const listingId of Array.from(trackedListingIds)) {
+        const { error: listErr } = await serviceClient.from("listings").delete().eq("id", listingId);
+        if (listErr) throw new Error(`Failed to delete tracked listing ${listingId}: ${listErr.message}`);
+        trackedListingIds.delete(listingId);
+      }
+
+      // Also clean up any listings owned by tracked users
+      for (const userId of testUserRegistry.getRegisteredIds()) {
+        const { error: delOwnerListErr } = await serviceClient
+          .from("listings")
+          .delete()
+          .eq("seller_id", userId);
+        if (delOwnerListErr) {
+          throw new Error(`Failed to delete listings for seller ${userId}: ${delOwnerListErr.message}`);
+        }
+      }
+
+      // 2. Delete tracked auth users (cascades to user_accounts, profiles, staff_roles)
+      const cleanupResult = await testUserRegistry.cleanupTrackedUsers(serviceClient, TARGET_CONFIG);
+      if (cleanupResult.failed.length > 0) {
+        throw new Error(
+          `Scoped test user cleanup failed for user IDs: ${cleanupResult.failed.join(", ")}`
+        );
+      }
+    }
+  });
+
   test("moderator searches, inspects, suspends, and reinstates user with immediate visibility propagation", async ({
     browser,
   }, testInfo) => {
+    validateLocalTestEnvironment(TARGET_CONFIG);
+
     const timestamp = Date.now();
     const runId = `${testInfo.project.name.replace(/[^a-zA-Z0-9]/g, "_")}_${timestamp}`;
     const staffEmail = `e2e_staff_${runId}@fairswap.local`;
@@ -69,30 +122,16 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
       user_metadata: {
         display_name: `Target User ${runId}`,
         terms_accepted: "true",
-        terms_version: "2026-09-18",
-        privacy_policy_version: "2026-09-18",
-        acceptable_use_version: "2026-09-18",
+        terms_version: LEGAL_POLICY.termsVersion,
+        privacy_policy_version: LEGAL_POLICY.privacyVersion,
+        acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
         age_confirmed: "true",
-        minimum_age_confirmed: 18,
+        minimum_age_confirmed: LEGAL_POLICY.minimumAge,
       },
     });
     if (targetErr || !createdTarget.user) throw targetErr || new Error("Failed to create target user");
 
-    await serviceClient.from("user_accounts").upsert({
-      user_id: createdTarget.user.id,
-      account_status: "active",
-      terms_version: "2026-09-18",
-      privacy_policy_version: "2026-09-18",
-      acceptable_use_version: "2026-09-18",
-      age_confirmed_at: new Date().toISOString(),
-      minimum_age_confirmed: 18,
-      terms_accepted_at: new Date().toISOString(),
-    });
-
-    await serviceClient.from("profiles").upsert({
-      id: createdTarget.user.id,
-      display_name: `Target User ${runId}`,
-    });
+    testUserRegistry.register(createdTarget.user.id);
 
     // 2. Create listing for target user
     const { data: cat } = await serviceClient.from("categories").select("id").limit(1).single();
@@ -116,7 +155,10 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
 
     if (lErr || !listing) throw lErr || new Error("Failed to create test listing");
 
-    await serviceClient.from("listings").update({ status: "active" }).eq("id", listing.id);
+    trackedListingIds.add(listing.id);
+
+    const { error: updErr } = await serviceClient.from("listings").update({ status: "active" }).eq("id", listing.id);
+    if (updErr) throw updErr;
 
     // 3. Create administrator staff account
     const { data: createdStaff, error: staffErr } = await serviceClient.auth.admin.createUser({
@@ -126,35 +168,22 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
       user_metadata: {
         display_name: `Staff ${runId}`,
         terms_accepted: "true",
-        terms_version: "2026-09-18",
-        privacy_policy_version: "2026-09-18",
-        acceptable_use_version: "2026-09-18",
+        terms_version: LEGAL_POLICY.termsVersion,
+        privacy_policy_version: LEGAL_POLICY.privacyVersion,
+        acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
         age_confirmed: "true",
-        minimum_age_confirmed: 18,
+        minimum_age_confirmed: LEGAL_POLICY.minimumAge,
       },
     });
     if (staffErr || !createdStaff.user) throw staffErr || new Error("Failed to create staff user");
 
-    await serviceClient.from("user_accounts").upsert({
-      user_id: createdStaff.user.id,
-      account_status: "active",
-      terms_version: "2026-09-18",
-      privacy_policy_version: "2026-09-18",
-      acceptable_use_version: "2026-09-18",
-      age_confirmed_at: new Date().toISOString(),
-      minimum_age_confirmed: 18,
-      terms_accepted_at: new Date().toISOString(),
-    });
+    testUserRegistry.register(createdStaff.user.id);
 
-    await serviceClient.from("profiles").upsert({
-      id: createdStaff.user.id,
-      display_name: `Staff ${runId}`,
-    });
-
-    await serviceClient.from("staff_roles").upsert({
+    const { error: roleErr } = await serviceClient.from("staff_roles").upsert({
       user_id: createdStaff.user.id,
       role: "administrator",
     });
+    if (roleErr) throw roleErr;
 
     // 4. Staff logs in and completes MFA
     const staffContext = await browser.newContext();
@@ -162,6 +191,7 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
 
     await staffPage.goto("/auth/sign-in");
     await staffPage.locator("input[name='email']").fill(staffEmail);
+    await staffPage.getByRole("button", { name: "Continue" }).click();
     await staffPage.locator("input[name='password']").fill(password);
     await staffPage.getByRole("button", { name: /sign in/i }).click();
 
@@ -170,7 +200,7 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
 
     // Navigate to /admin -> redirects to /auth/mfa
     await staffPage.goto("/admin");
-    await expect(staffPage).toHaveURL(/\/auth\/mfa\?next=%2Fadmin/);
+    await expect(staffPage).toHaveURL(/\/auth\/mfa\?next=(%2F|\/)admin/);
 
     // Extract TOTP secret and submit
     const secretElement = staffPage.locator("span.select-all");
@@ -181,7 +211,8 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
     await staffPage.locator("#totpCode").fill(totpCode);
     await staffPage.getByRole("button", { name: /verify & continue/i }).click();
 
-    await expect(staffPage).toHaveURL(/\/admin/);
+    await expect(staffPage).toHaveURL(/\/admin$/, { timeout: 10000 });
+    await expect(staffPage.getByRole("heading", { name: /admin operations/i })).toBeVisible({ timeout: 10000 });
 
     // 5. Staff navigates to /admin/users
     await staffPage.goto("/admin/users");
@@ -214,6 +245,7 @@ test.describe("Milestone 1.6 Staff User Moderation Journey", () => {
 
     await targetPage.goto("/auth/sign-in");
     await targetPage.locator("input[name='email']").fill(targetEmail);
+    await targetPage.getByRole("button", { name: "Continue" }).click();
     await targetPage.locator("input[name='password']").fill(password);
     await targetPage.getByRole("button", { name: /sign in/i }).click();
 
