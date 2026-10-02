@@ -73,8 +73,9 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
     const migDir = path.resolve(process.cwd(), "supabase", "migrations");
     const migrationFiles = fs.readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
 
+    const migration20File = migrationFiles.find((f) => f.includes("000020_"))!;
     // 2. Apply migrations 1 through 19
-    const priorMigrations = migrationFiles.filter((f) => !f.includes("000020_") && !f.includes("000021_"));
+    const priorMigrations = migrationFiles.filter((f) => f < migration20File);
     for (const file of priorMigrations) {
       const sql = fs.readFileSync(path.join(migDir, file), "utf8");
       await db.exec(sql);
@@ -91,7 +92,6 @@ describe("Issue #46 Pilot Policy Re-acceptance & Security Guardrails (Migration 
     `);
 
     // 4. Apply Migration 20
-    const migration20File = migrationFiles.find((f) => f.includes("000020_"));
     if (!migration20File) throw new Error("Migration 20 not found");
     await db.exec(fs.readFileSync(path.join(migDir, migration20File), "utf8"));
 

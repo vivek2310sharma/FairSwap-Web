@@ -90,12 +90,12 @@ export default function MediaUploader({
                     ...item,
                     id: data.id || tempId,
                     processing_status: "failed",
-                    processing_error: data.error || "Upload failed",
+                    processing_error: data.message || data.error || "Upload failed",
                   }
                 : item
             )
           );
-          setErrorMessage(data.error || "Failed to upload photo.");
+          setErrorMessage(data.message || data.error || "Failed to upload photo.");
         } else {
           setMediaList((prev) =>
             prev.map((item) =>
@@ -148,7 +148,7 @@ export default function MediaUploader({
         }
       } else {
         const data = await res.json();
-        setErrorMessage(data.error || "Failed to delete photo");
+        setErrorMessage(data.message || data.error || "Failed to delete photo");
       }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Error deleting photo");

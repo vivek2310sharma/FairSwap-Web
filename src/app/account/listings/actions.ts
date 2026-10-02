@@ -311,6 +311,10 @@ export async function reorderMediaAction(
   listingId: string,
   items: { id: string; display_order: number }[]
 ): Promise<ListingActionResult> {
+  if (isSellerWriteMaintenanceEnabled()) {
+    return { error: SELLER_WRITE_MAINTENANCE_MESSAGE };
+  }
+
   const supabase = await createClient();
 
   const guard = await requireCurrentPolicyAcceptance(supabase, `/account/listings/${listingId}/edit`);
@@ -322,16 +326,16 @@ export async function reorderMediaAction(
     };
   }
 
-  for (const item of items) {
-    const { error } = await supabase
-      .from("listing_media")
-      .update({ display_order: item.display_order })
-      .eq("id", item.id)
-      .eq("listing_id", listingId);
+  const sortedItems = [...items].sort((a, b) => a.display_order - b.display_order);
+  const mediaIds = sortedItems.map((item) => item.id);
 
-    if (error) {
-      return { error: error.message };
-    }
+  const { error } = await supabase.rpc("seller_reorder_listing_media", {
+    listing_id: listingId,
+    media_ids: mediaIds,
+  });
+
+  if (error) {
+    return { error: "Failed to reorder photos. Please try again." };
   }
 
   revalidatePath(`/account/listings/${listingId}/edit`);
@@ -342,6 +346,10 @@ export async function setCoverPhotoAction(
   listingId: string,
   mediaId: string
 ): Promise<ListingActionResult> {
+  if (isSellerWriteMaintenanceEnabled()) {
+    return { error: SELLER_WRITE_MAINTENANCE_MESSAGE };
+  }
+
   const supabase = await createClient();
 
   const guard = await requireCurrentPolicyAcceptance(supabase, `/account/listings/${listingId}/edit`);
@@ -353,13 +361,13 @@ export async function setCoverPhotoAction(
     };
   }
 
-  const { error } = await supabase
-    .from("listings")
-    .update({ cover_photo_id: mediaId })
-    .eq("id", listingId);
+  const { error } = await supabase.rpc("seller_set_listing_cover_photo", {
+    listing_id: listingId,
+    media_id: mediaId,
+  });
 
   if (error) {
-    return { error: error.message };
+    return { error: "Failed to update cover photo. Please try again." };
   }
 
   revalidatePath(`/account/listings/${listingId}/edit`);

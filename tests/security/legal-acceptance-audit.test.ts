@@ -70,7 +70,7 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
     const migrationFiles = fs.readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
 
     // 2. Apply migrations 1 through 19 (prior to Migration 20)
-    const priorMigrations = migrationFiles.filter((f) => !f.includes("000020_"));
+    const priorMigrations = migrationFiles.filter((f) => !f.includes("000020_") && !f.includes("email_outbox") && !f.includes("listing_email_notifications"));
     for (const file of priorMigrations) {
       const sql = fs.readFileSync(path.join(migDir, file), "utf8");
       await db.exec(sql);

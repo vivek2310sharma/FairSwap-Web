@@ -131,7 +131,23 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
             error: null,
           }),
         },
+        rpc: vi.fn().mockImplementation(async (name) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          return { data: null, error: null };
+        }),
         from: vi.fn((table: string) => {
+          if (table === "user_accounts") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { account_status: "active" },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
           if (table === "listings") {
             return {
               select: vi.fn().mockReturnValue({
@@ -244,7 +260,23 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
             error: null,
           }),
         },
+        rpc: vi.fn().mockImplementation(async (name) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          return { data: null, error: null };
+        }),
         from: vi.fn((table: string) => {
+          if (table === "user_accounts") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { account_status: "active" },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
           if (table === "listings") {
             return {
               select: vi.fn().mockReturnValue({
@@ -342,7 +374,23 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
             error: null,
           }),
         },
+        rpc: vi.fn().mockImplementation(async (name) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          return { data: null, error: null };
+        }),
         from: vi.fn((table: string) => {
+          if (table === "user_accounts") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { account_status: "active" },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
           if (table === "listings") {
             return {
               select: vi.fn().mockReturnValue({
@@ -432,23 +480,71 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
             error: null,
           }),
         },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: {
-                    id: mediaId,
-                    listing_id: listingId,
-                    original_storage_path: "path/to/orig.jpg",
-                    thumbnail_storage_path: "path/to/thumb.webp",
-                    listings: { seller_id: "seller-user-id", status: "draft" },
-                  },
-                  error: null,
+        rpc: vi.fn().mockImplementation(async (name) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          return { data: null, error: null };
+        }),
+        from: vi.fn((table: string) => {
+          if (table === "user_accounts") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { account_status: "active" },
+                    error: null,
+                  }),
                 }),
               }),
-            }),
-          }),
+            };
+          }
+          if (table === "listings") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({
+                    data: { id: listingId, seller_id: "seller-user-id", status: "draft", revision: 1, cover_photo_id: null },
+                    error: null,
+                  }),
+                  single: vi.fn().mockResolvedValue({
+                    data: { id: listingId, seller_id: "seller-user-id", status: "draft", revision: 1, cover_photo_id: null },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === "listing_media") {
+            return {
+              select: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  eq: vi.fn().mockReturnValue({
+                    single: vi.fn().mockResolvedValue({
+                      data: {
+                        id: mediaId,
+                        listing_id: listingId,
+                        original_storage_path: "path/to/orig.jpg",
+                        thumbnail_storage_path: "path/to/thumb.webp",
+                        processing_status: "ready",
+                      },
+                      error: null,
+                    }),
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: {
+                        id: mediaId,
+                        listing_id: listingId,
+                        original_storage_path: "path/to/orig.jpg",
+                        thumbnail_storage_path: "path/to/thumb.webp",
+                        processing_status: "ready",
+                      },
+                      error: null,
+                    }),
+                  }),
+                }),
+                order: vi.fn().mockReturnThis(),
+              }),
+            };
+          }
+          return {};
         }),
       };
 

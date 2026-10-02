@@ -1431,6 +1431,20 @@ export type Database = {
         }
         Returns: Json
       }
+      seller_reorder_listing_media: {
+        Args: {
+          listing_id: string
+          media_ids: string[]
+        }
+        Returns: Json
+      }
+      seller_set_listing_cover_photo: {
+        Args: {
+          listing_id: string
+          media_id: string
+        }
+        Returns: Json
+      }
       seller_submit_listing: { Args: { listing_id: string }; Returns: Json }
       seller_transition_listing: {
         Args: { action: string; listing_id: string }
