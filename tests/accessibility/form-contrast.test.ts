@@ -7,7 +7,7 @@ describe("Light Form Controls Dark-Mode Contrast Invariant", () => {
     "src/app/auth/sign-in/page.tsx",
     "src/app/auth/sign-up/page.tsx",
     "src/app/auth/forgot-password/page.tsx",
-    "src/app/auth/reset-password/page.tsx",
+    "src/components/auth/PasswordInput.tsx",
     "src/app/auth/mfa/page.tsx",
     "src/app/account/profile/profile-form.tsx",
   ];
