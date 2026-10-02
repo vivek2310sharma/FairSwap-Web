@@ -69,8 +69,11 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
     const migDir = path.resolve(process.cwd(), "supabase", "migrations");
     const migrationFiles = fs.readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
 
-    // 2. Apply migrations 1 through 19 (prior to Migration 20)
-    const priorMigrations = migrationFiles.filter((f) => !f.includes("000020_") && !f.includes("email_outbox") && !f.includes("listing_email_notifications"));
+    const migration20File = migrationFiles.find((f) => f.includes("000020_"));
+    if (!migration20File) throw new Error("Migration 20 not found");
+
+    // 2. Apply migrations 1 through 19 (strictly before Migration 20)
+    const priorMigrations = migrationFiles.filter((f) => f < migration20File);
     for (const file of priorMigrations) {
       const sql = fs.readFileSync(path.join(migDir, file), "utf8");
       await db.exec(sql);
@@ -88,7 +91,6 @@ describe("Legal Acceptance & 18+ Age Audit Security Safeguards (Migration 20)", 
     `);
 
     // 4. Apply Migration 20 forward
-    const migration20File = migrationFiles.find((f) => f.includes("000020_"));
     if (!migration20File) {
       throw new Error("Migration 20 file not found");
     }

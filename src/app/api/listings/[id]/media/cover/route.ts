@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-auth";
 import {
   mediaApiError,
+  mapRpcErrorToMediaError,
   verifySellerMediaMutationGuard,
   buildSafeMediaSnapshot,
   SetCoverPhotoRequestSchema,
@@ -41,8 +42,7 @@ export async function PUT(
   if (!authResult.success) {
     return mediaApiError(
       authResult.failure.error,
-      authResult.failure.message,
-      authResult.failure.status
+      authResult.failure.message
     );
   }
 
@@ -62,20 +62,7 @@ export async function PUT(
   });
 
   if (rpcError) {
-    const msg = rpcError.message || "";
-    if (msg.includes("MEDIA_NOT_FOUND")) {
-      return mediaApiError("MEDIA_NOT_FOUND");
-    }
-    if (msg.includes("LISTING_MEDIA_NOT_EDITABLE")) {
-      return mediaApiError("LISTING_MEDIA_NOT_EDITABLE");
-    }
-    if (msg.includes("COVER_UPDATE_FAILED") || msg.includes("not ready")) {
-      return mediaApiError(
-        "COVER_UPDATE_FAILED",
-        "Selected photo is not ready to be set as cover."
-      );
-    }
-    return mediaApiError("COVER_UPDATE_FAILED");
+    return mapRpcErrorToMediaError(rpcError, "COVER_UPDATE_FAILED");
   }
 
   // 5. Build and return updated safe snapshot

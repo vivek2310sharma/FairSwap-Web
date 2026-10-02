@@ -1431,6 +1431,13 @@ export type Database = {
         }
         Returns: Json
       }
+      seller_delete_listing_media: {
+        Args: {
+          listing_id: string
+          media_id: string
+        }
+        Returns: Json
+      }
       seller_reorder_listing_media: {
         Args: {
           listing_id: string

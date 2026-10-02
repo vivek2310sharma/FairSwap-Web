@@ -90,12 +90,12 @@ export default function MediaUploader({
                     ...item,
                     id: data.id || tempId,
                     processing_status: "failed",
-                    processing_error: data.message || data.error || "Upload failed",
+                    processing_error: data.message || "Upload failed",
                   }
                 : item
             )
           );
-          setErrorMessage(data.message || data.error || "Failed to upload photo.");
+          setErrorMessage(data.message || "Failed to upload photo.");
         } else {
           setMediaList((prev) =>
             prev.map((item) =>
@@ -148,7 +148,7 @@ export default function MediaUploader({
         }
       } else {
         const data = await res.json();
-        setErrorMessage(data.message || data.error || "Failed to delete photo");
+        setErrorMessage(data.message || "Failed to delete photo");
       }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Error deleting photo");
@@ -166,6 +166,14 @@ export default function MediaUploader({
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= mediaList.length) return;
 
+    const hasUnready = mediaList.some(
+      (m) => m.id.startsWith("temp-") || m.processing_status !== "ready"
+    );
+    if (hasUnready) {
+      setErrorMessage("Please wait for all uploads to complete or remove failed photos before reordering.");
+      return;
+    }
+
     const updated = [...mediaList];
     const [moved] = updated.splice(index, 1);
     updated.splice(targetIndex, 0, moved);
@@ -176,10 +184,14 @@ export default function MediaUploader({
     }));
 
     setMediaList(reordered);
-    await reorderMediaAction(
+    const res = await reorderMediaAction(
       listingId,
       reordered.map((item) => ({ id: item.id, display_order: item.display_order }))
     );
+    if (res?.error) {
+      setErrorMessage(res.error);
+      setMediaList(mediaList);
+    }
   };
 
   return (
@@ -273,7 +285,7 @@ export default function MediaUploader({
                         <div className="flex gap-1">
                           <button
                             type="button"
-                            disabled={index === 0}
+                            disabled={index === 0 || mediaList.some((m) => m.id.startsWith("temp-") || m.processing_status !== "ready")}
                             onClick={() => handleMove(index, "up")}
                             className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
                             title="Move left/up"
@@ -282,7 +294,7 @@ export default function MediaUploader({
                           </button>
                           <button
                             type="button"
-                            disabled={index === mediaList.length - 1}
+                            disabled={index === mediaList.length - 1 || mediaList.some((m) => m.id.startsWith("temp-") || m.processing_status !== "ready")}
                             onClick={() => handleMove(index, "down")}
                             className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
                             title="Move right/down"

@@ -146,20 +146,12 @@ export async function POST(
   try {
     serviceClient = createServiceRoleClient();
   } catch {
-    return mediaApiError(
-      "MEDIA_UPLOAD_FAILED",
-      "Storage service is temporarily unavailable.",
-      503
-    );
+    return mediaApiError("MEDIA_SERVICE_UNAVAILABLE", "Storage service is temporarily unavailable.");
   }
 
   const { error: probeError } = await serviceClient.storage.getBucket("listing-originals");
   if (probeError) {
-    return mediaApiError(
-      "MEDIA_UPLOAD_FAILED",
-      "Media storage is temporarily unavailable. Please try again later.",
-      503
-    );
+    return mediaApiError("MEDIA_SERVICE_UNAVAILABLE", "Media storage is temporarily unavailable. Please try again later.");
   }
 
   // 9. Authenticated client INSERT into public.listing_media
@@ -176,6 +168,9 @@ export async function POST(
     .single();
 
   if (insertError || !mediaRecord) {
+    if (insertError?.message?.includes("PHOTO_LIMIT_REACHED")) {
+      return mediaApiError("PHOTO_LIMIT_REACHED");
+    }
     return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to create media record.");
   }
 
@@ -232,8 +227,7 @@ export async function POST(
       return mediaApiError(
         "MEDIA_PROCESSING_FAILED",
         "Image processing failed. Please try a different image.",
-        422,
-        { id: mediaId, processing_status: "failed" }
+        { media: { id: mediaId, processingStatus: "failed" } }
       );
     }
 
@@ -271,7 +265,7 @@ export async function POST(
         error: "Failed to store image derivatives",
       });
 
-      return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to store image derivatives.", 500, { id: mediaId, processing_status: "failed" });
+      return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to store image derivatives.", { media: { id: mediaId, processingStatus: "failed" } });
     }
 
     // 13. Complete processing via service-role RPC

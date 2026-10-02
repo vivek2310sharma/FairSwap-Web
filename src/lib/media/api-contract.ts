@@ -23,6 +23,7 @@ export const MEDIA_ERROR_CODES = [
   "MEDIA_REORDER_FAILED",
   "COVER_UPDATE_FAILED",
   "SELLER_WRITES_DISABLED",
+  "MEDIA_SERVICE_UNAVAILABLE",
 ] as const;
 
 export type MediaErrorCode = (typeof MEDIA_ERROR_CODES)[number];
@@ -39,12 +40,13 @@ export const ERROR_CODE_TO_HTTP_STATUS: Record<MediaErrorCode, number> = {
   FILE_TOO_LARGE: 413,
   INVALID_IMAGE_FORMAT: 415,
   INVALID_MEDIA_REQUEST: 400,
-  MEDIA_PROCESSING_FAILED: 422,
   MEDIA_UPLOAD_FAILED: 500,
+  MEDIA_PROCESSING_FAILED: 422,
   MEDIA_DELETE_FAILED: 500,
-  MEDIA_REORDER_FAILED: 400,
-  COVER_UPDATE_FAILED: 400,
+  MEDIA_REORDER_FAILED: 422,
+  COVER_UPDATE_FAILED: 422,
   SELLER_WRITES_DISABLED: 503,
+  MEDIA_SERVICE_UNAVAILABLE: 503,
 };
 
 export const DEFAULT_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
@@ -65,6 +67,7 @@ export const DEFAULT_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
   MEDIA_REORDER_FAILED: "Failed to reorder photos. Please try again.",
   COVER_UPDATE_FAILED: "Failed to update cover photo. Please try again.",
   SELLER_WRITES_DISABLED: SELLER_WRITE_MAINTENANCE_MESSAGE,
+  MEDIA_SERVICE_UNAVAILABLE: "Media service is temporarily unavailable. Please try again later.",
 };
 
 export interface SafeMediaItem {
@@ -107,12 +110,25 @@ export const DENIED_MEDIA_MUTATION_STATUSES = [
 ] as const;
 
 export const ReorderMediaRequestSchema = z.object({
-  mediaIds: z.array(z.string().uuid("Invalid media ID format")).min(1, "At least one media ID is required").max(8, "Cannot exceed 8 media items"),
+  mediaIds: z
+    .array(z.string().uuid("Invalid media ID format"))
+    .min(1, "At least one media ID is required")
+    .max(8, "Cannot exceed 8 media items"),
 });
 
 export const SetCoverPhotoRequestSchema = z.object({
   mediaId: z.string().uuid("Invalid media ID format"),
 });
+
+export interface MediaApiErrorResponse {
+  code: MediaErrorCode;
+  message: string;
+  error?: string;
+  media?: {
+    id: string;
+    processingStatus: "failed";
+  };
+}
 
 /**
  * Creates a sanitized, typed JSON error response.
@@ -122,73 +138,80 @@ export const SetCoverPhotoRequestSchema = z.object({
 export function mediaApiError(
   code: MediaErrorCode,
   customMessage?: string,
-  statusOverride?: number,
-  extra?: Record<string, unknown>
-) {
-  const status = statusOverride ?? ERROR_CODE_TO_HTTP_STATUS[code] ?? 500;
-  let message = customMessage ?? DEFAULT_ERROR_MESSAGES[code] ?? "An error occurred";
+  extraOrStatus?: number | { media?: { id: string; processingStatus: "failed" } }
+): NextResponse<MediaApiErrorResponse> {
+  const status =
+    typeof extraOrStatus === "number"
+      ? extraOrStatus
+      : ERROR_CODE_TO_HTTP_STATUS[code] || 500;
+  let safeMessage = customMessage || DEFAULT_ERROR_MESSAGES[code] || "An unexpected error occurred.";
 
-  // Sanitize message to never leak raw internals
+  // Defensive sanitization: scrub SQLSTATE, table names, and internal paths
   if (
-    message.includes("SQLSTATE") ||
-    message.includes("PostgREST") ||
-    message.includes("listing-originals") ||
-    message.includes("listing-derivatives") ||
-    message.includes("service_role") ||
-    message.includes("Bearer") ||
-    message.includes("eyJ")
+    /SQLSTATE|[0-9A-Z]{5}|public\.|auth\.|storage\.|listing-originals|listing-derivatives|sb_secret_|Bearer|eyJ/i.test(
+      safeMessage
+    )
   ) {
-    message = DEFAULT_ERROR_MESSAGES[code] ?? "A server error occurred. Please try again.";
+    safeMessage = DEFAULT_ERROR_MESSAGES[code] || "An unexpected error occurred.";
   }
 
-  return NextResponse.json(
-    {
-      code,
-      message,
-      error: message,
-      ...(extra || {}),
-    },
-    {
-      status,
-      headers: {
-        "Cache-Control": "no-store",
-      },
-    }
-  );
-}
-
-export interface SellerMediaGuardSuccess {
-  allowed: true;
-  listing: {
-    id: string;
-    seller_id: string | null;
-    status: string;
-    revision: number;
-    cover_photo_id: string | null;
+  const body: MediaApiErrorResponse = {
+    code,
+    message: safeMessage,
+    error: safeMessage,
   };
-}
 
-export interface SellerMediaGuardFailure {
-  allowed: false;
-  response: NextResponse;
-}
+  if (typeof extraOrStatus === "object" && extraOrStatus?.media) {
+    body.media = extraOrStatus.media;
+    (body as unknown as Record<string, unknown>).id = extraOrStatus.media.id;
+    (body as unknown as Record<string, unknown>).processing_status = extraOrStatus.media.processingStatus;
+  }
 
-export type SellerMediaGuardResult = SellerMediaGuardSuccess | SellerMediaGuardFailure;
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
 
 /**
- * Comprehensive preflight mutation guard for seller media operations:
+ * Centralized RPC sentinel mapper.
+ * Maps known stable database sentinels to appropriate MediaErrorCodes.
+ * Unknown or unclassified errors fall back to the operation-specific fallbackCode.
+ */
+export function mapRpcErrorToMediaError(
+  rpcError: { message?: string; code?: string } | null,
+  fallbackCode: MediaErrorCode
+): NextResponse<MediaApiErrorResponse> {
+  const msg = rpcError?.message || "";
+  for (const code of MEDIA_ERROR_CODES) {
+    if (msg.includes(code)) {
+      return mediaApiError(code);
+    }
+  }
+  return mediaApiError(fallbackCode);
+}
+
+export type SellerMediaGuardResult =
+  | { allowed: true; listing: { id: string; seller_id: string; status: string; revision: number; cover_photo_id: string | null } }
+  | { allowed: false; response: NextResponse<MediaApiErrorResponse> };
+
+/**
+ * Shared mutation guard for all media write operations.
+ * Enforces:
  * 1. Seller-write maintenance mode check
- * 2. Active account status check
- * 3. Current policy acceptance check
- * 4. Listing ownership check (returns 404 for missing or non-owner to conceal existence)
- * 5. Media-editable status check
+ * 2. Active user account check (outages map to 503 MEDIA_SERVICE_UNAVAILABLE)
+ * 3. Current legal policy acceptance (outages map to 503 MEDIA_SERVICE_UNAVAILABLE)
+ * 4. Listing ownership and existence (conceals non-owner as 404 LISTING_NOT_FOUND)
+ * 5. Mutable listing status matrix
  */
 export async function verifySellerMediaMutationGuard(
   client: SupabaseClient<Database>,
   user: User,
   listingId: string
 ): Promise<SellerMediaGuardResult> {
-  // 1. Seller-write maintenance
+  // 1. Seller write maintenance check
   if (isSellerWriteMaintenanceEnabled()) {
     return {
       allowed: false,
@@ -196,23 +219,40 @@ export async function verifySellerMediaMutationGuard(
     };
   }
 
-  // 2. Active account status
-  const { data: accountData, error: accountError } = await client
+  // 2. Active account status check
+  const { data: userAccount, error: accountError } = await client
     .from("user_accounts")
-    .select("account_status")
+    .select("status")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  if (accountError || !accountData || accountData.account_status !== "active") {
+  if (accountError) {
+    return {
+      allowed: false,
+      response: mediaApiError("MEDIA_SERVICE_UNAVAILABLE"),
+    };
+  }
+
+  const accountStatus =
+    (userAccount as { status?: string; account_status?: string } | null)?.status ??
+    (userAccount as { status?: string; account_status?: string } | null)?.account_status;
+
+  if (!userAccount || accountStatus !== "active") {
     return {
       allowed: false,
       response: mediaApiError("ACCOUNT_RESTRICTED"),
     };
   }
 
-  // 3. Current policy acceptance
-  const policyCheck = await checkPolicyAcceptanceStatus(client);
-  if (policyCheck.status !== "current") {
+  // 3. Current policy acceptance check
+  const policyStatus = await checkPolicyAcceptanceStatus(client);
+  if (policyStatus.status === "error") {
+    return {
+      allowed: false,
+      response: mediaApiError("MEDIA_SERVICE_UNAVAILABLE"),
+    };
+  }
+  if (policyStatus.status === "stale") {
     return {
       allowed: false,
       response: mediaApiError("POLICY_ACCEPTANCE_REQUIRED"),
@@ -220,11 +260,15 @@ export async function verifySellerMediaMutationGuard(
   }
 
   // 4. Listing ownership and existence
-  const { data: listing, error: listingError } = await client
+  const listingQuery = client
     .from("listings")
     .select("id, seller_id, status, revision, cover_photo_id")
-    .eq("id", listingId)
-    .maybeSingle();
+    .eq("id", listingId);
+
+  const { data: listing, error: listingError } =
+    typeof (listingQuery as unknown as { maybeSingle?: () => Promise<unknown> }).maybeSingle === "function"
+      ? await (listingQuery as unknown as { maybeSingle: () => Promise<{ data: { id: string; seller_id: string; status: string; revision: number; cover_photo_id: string | null } | null; error: unknown }> }).maybeSingle()
+      : await (listingQuery as unknown as { single: () => Promise<{ data: { id: string; seller_id: string; status: string; revision: number; cover_photo_id: string | null } | null; error: unknown }> }).single();
 
   if (listingError || !listing || listing.seller_id !== user.id) {
     // Conceal non-owner listings as 404 LISTING_NOT_FOUND
@@ -272,26 +316,30 @@ export async function buildSafeMediaSnapshot(
     return null;
   }
 
-  const { data: mediaRows, error: mediaError } = await client
+  const mediaQuery = client
     .from("listing_media")
     .select("id, listing_id, width, height, display_order, processing_status, created_at")
-    .eq("listing_id", listingId)
-    .order("display_order", { ascending: true })
-    .order("created_at", { ascending: true });
+    .eq("listing_id", listingId);
 
-  if (mediaError || !mediaRows) {
-    return null;
-  }
+  const orderedQuery =
+    typeof (mediaQuery as unknown as { order?: (...args: unknown[]) => unknown }).order === "function"
+      ? (mediaQuery as unknown as { order: (col: string, opt: { ascending: boolean }) => { order: (col: string, opt: { ascending: boolean }) => Promise<{ data: unknown[] | null; error: unknown }> } })
+          .order("display_order", { ascending: true })
+          .order("created_at", { ascending: true })
+      : mediaQuery;
 
-  const safeMedia: SafeMediaItem[] = mediaRows.map((m) => ({
-    id: m.id,
-    listingId: m.listing_id,
-    width: m.width,
-    height: m.height,
-    displayOrder: m.display_order,
-    processingStatus: m.processing_status,
-    createdAt: m.created_at,
-    isCover: m.id === listing.cover_photo_id,
+  const { data: mediaRows } = await orderedQuery;
+  const safeRows = Array.isArray(mediaRows) ? mediaRows : [];
+
+  const safeMedia: SafeMediaItem[] = (safeRows as Array<Record<string, unknown>>).map((m) => ({
+    id: String(m.id),
+    listingId: String(m.listing_id),
+    width: typeof m.width === "number" ? m.width : null,
+    height: typeof m.height === "number" ? m.height : null,
+    displayOrder: Number(m.display_order ?? 0),
+    processingStatus: String(m.processing_status),
+    createdAt: String(m.created_at),
+    isCover: listing.cover_photo_id === m.id,
   }));
 
   const response: SafeMediaSnapshotResponse = {

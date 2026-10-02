@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-auth";
 import {
   mediaApiError,
+  mapRpcErrorToMediaError,
   verifySellerMediaMutationGuard,
   buildSafeMediaSnapshot,
   ReorderMediaRequestSchema,
@@ -12,7 +13,7 @@ import {
  *
  * Transactional seller media reorder route.
  * Calls `public.seller_reorder_listing_media` using the user-scoped authenticated client.
- * Enforces atomic reorder, complete membership of non-failed media, and re-review semantics.
+ * Enforces atomic reorder, complete membership of ready media, and re-review semantics.
  */
 export async function POST(
   request: NextRequest,
@@ -41,8 +42,7 @@ export async function POST(
   if (!authResult.success) {
     return mediaApiError(
       authResult.failure.error,
-      authResult.failure.message,
-      authResult.failure.status
+      authResult.failure.message
     );
   }
 
@@ -62,24 +62,7 @@ export async function POST(
   });
 
   if (rpcError) {
-    const msg = rpcError.message || "";
-    if (msg.includes("PHOTO_LIMIT_REACHED")) {
-      return mediaApiError("PHOTO_LIMIT_REACHED");
-    }
-    if (msg.includes("LISTING_MEDIA_NOT_EDITABLE")) {
-      return mediaApiError("LISTING_MEDIA_NOT_EDITABLE");
-    }
-    if (
-      msg.includes("INVALID_MEDIA_REQUEST") ||
-      msg.includes("membership") ||
-      msg.includes("Duplicate")
-    ) {
-      return mediaApiError(
-        "INVALID_MEDIA_REQUEST",
-        "Reorder list must contain all existing photos for the listing without duplicates."
-      );
-    }
-    return mediaApiError("MEDIA_REORDER_FAILED");
+    return mapRpcErrorToMediaError(rpcError, "MEDIA_REORDER_FAILED");
   }
 
   // 5. Build and return updated safe snapshot

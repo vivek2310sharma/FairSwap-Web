@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { mediaApiError } from "@/lib/media/api-contract";
+import { mediaApiError, mapRpcErrorToMediaError } from "@/lib/media/api-contract";
 
 const mockAuthUser = vi.fn();
 const mockRpc = vi.fn();
@@ -46,11 +46,7 @@ vi.mock("@/lib/supabase/service", () => ({
   createServiceRoleClient: vi.fn(() => ({
     storage: mockServiceStorage,
     rpc: mockServiceRpc,
-    from: vi.fn().mockReturnValue({
-      delete: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      }),
-    }),
+    from: (...args: unknown[]) => mockDbFrom(...args),
   })),
 }));
 
@@ -292,6 +288,53 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
       expect(json.code).toBe("POLICY_ACCEPTANCE_REQUIRED");
     });
 
+    it("rejects mutations with 503 MEDIA_SERVICE_UNAVAILABLE when account lookup suffers database outage", async () => {
+      mockDbFrom.mockImplementation((table: string) => {
+        if (table === "user_accounts") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: "connection timeout" },
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/cover`, {
+        method: "PUT",
+        body: JSON.stringify({ mediaId: mediaId1 }),
+      });
+      const res = await putCoverPhoto(req, { params: Promise.resolve({ id: listingId }) });
+
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.code).toBe("MEDIA_SERVICE_UNAVAILABLE");
+    });
+
+    it("rejects mutations with 503 MEDIA_SERVICE_UNAVAILABLE when policy status lookup suffers infrastructure outage", async () => {
+      mockRpc.mockImplementation(async (name: string) => {
+        if (name === "has_current_policy_acceptance") {
+          return { data: null, error: { message: "RPC timeout" } };
+        }
+        return { data: null, error: null };
+      });
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/cover`, {
+        method: "PUT",
+        body: JSON.stringify({ mediaId: mediaId1 }),
+      });
+      const res = await putCoverPhoto(req, { params: Promise.resolve({ id: listingId }) });
+
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.code).toBe("MEDIA_SERVICE_UNAVAILABLE");
+    });
+
     it("rejects mutations with 409 LISTING_MEDIA_NOT_EDITABLE on terminal status (expired, sold, removed)", async () => {
       mockDbFrom.mockImplementation((table: string) => {
         if (table === "user_accounts") {
@@ -470,4 +513,30 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
       expect(json.message).toBe("Failed to upload image. Please try again.");
     });
   });
+
+  describe("G. Explicit RPC Sentinel Mapping & Error Contract Alignment", () => {
+    it("maps known sentinels to canonical codes and never exposes raw SQL prose", () => {
+      // using top-level import
+
+      const photoLimitRes = mapRpcErrorToMediaError({ message: "PHOTO_LIMIT_REACHED: max 8 reached" }, "MEDIA_UPLOAD_FAILED");
+      expect(photoLimitRes.status).toBe(409);
+
+      const unauthRes = mapRpcErrorToMediaError({ message: "UNAUTHENTICATED: no token" }, "MEDIA_REORDER_FAILED");
+      expect(unauthRes.status).toBe(401);
+
+      const unknownRes = mapRpcErrorToMediaError({ message: "ERROR: 23505: duplicate key value violates unique constraint" }, "MEDIA_REORDER_FAILED");
+      expect(unknownRes.status).toBe(422);
+    });
+
+    it("emits canonical error shape { code, message } with deprecated error alias", async () => {
+      // using top-level import
+      const res = mediaApiError("MEDIA_DELETE_FAILED");
+      const json = await res.json();
+      expect(json).toHaveProperty("code", "MEDIA_DELETE_FAILED");
+      expect(json).toHaveProperty("message");
+      expect(json).toHaveProperty("error"); // Deprecated backward-compatible alias
+      expect(json.error).toBe(json.message);
+    });
+  });
+
 });

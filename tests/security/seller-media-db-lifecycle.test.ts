@@ -144,8 +144,7 @@ describe("Seller Media Database RLS, RPCs & Lifecycle Regression Tests (#103 / I
     `);
   });
 
-  describe("A. Migration 33 listing_media RLS Policy Status Enforcement", () => {
-    async function createListingWithStatus(status: string): Promise<string> {
+  async function createListingWithStatus(status: string): Promise<string> {
       await db.exec(`SET ROLE postgres;`);
       const res = await db.query<any>(`
         INSERT INTO public.listings (
@@ -169,6 +168,9 @@ describe("Seller Media Database RLS, RPCs & Lifecycle Regression Tests (#103 / I
 
       return id;
     }
+
+  describe("A. Migration 33 listing_media RLS Policy Status Enforcement", () => {
+
 
     it("ALLOWS authenticated owner to insert media on draft listing", async () => {
       const listingId = await createListingWithStatus("draft");
@@ -535,4 +537,448 @@ describe("Seller Media Database RLS, RPCs & Lifecycle Regression Tests (#103 / I
       expect(errorThrown).toBe(true);
     });
   });
+
+  describe("D. Upload Lifecycle & Issue #83 Regression Boundary", () => {
+    it("active listing + media INSERT in uploading state: status remains active, revision unchanged, no transition", async () => {
+      const listingId = await createListingWithStatus("active");
+      const initialListing = (await db.query<any>(`SELECT status, revision FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(initialListing.status).toBe("active");
+      const initialRevision = initialListing.revision;
+
+      const initialTransitions = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      // Insert photo in default "uploading" state
+      const insertRes = await db.query<any>(`
+        INSERT INTO public.listing_media (
+          listing_id, original_filename, content_type, file_size_bytes
+        ) VALUES (
+          '${listingId}', 'test.jpg', 'image/jpeg', 102400
+        ) RETURNING id, processing_status;
+      `);
+      expect(insertRes.rows[0].processing_status).toBe("uploading");
+
+      const listingAfter = (await db.query<any>(`SELECT status, revision FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listingAfter.status).toBe("active");
+      expect(listingAfter.revision).toBe(initialRevision);
+
+      const transitionsAfter = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+      expect(transitionsAfter).toBe(initialTransitions);
+    });
+
+    it("uploading -> processing: status remains active, revision unchanged, no transition", async () => {
+      const listingId = await createListingWithStatus("active");
+      await db.exec(`SET ROLE postgres;`);
+      const mediaRes = await db.query<any>(`
+        INSERT INTO public.listing_media (
+          listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status
+        ) VALUES (
+          '${listingId}', '${sellerUserId}', 'proc.jpg', 'image/jpeg', 102400, 'uploading'
+        ) RETURNING id;
+      `);
+      const mediaId = mediaRes.rows[0].id;
+
+      const initialListing = (await db.query<any>(`SELECT status, revision FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      const initialTransitions = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+
+      // Transition uploading -> processing
+      await db.exec(`
+        UPDATE public.listing_media
+        SET processing_status = 'processing'
+        WHERE id = '${mediaId}';
+      `);
+
+      const listingAfter = (await db.query<any>(`SELECT status, revision FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listingAfter.status).toBe("active");
+      expect(listingAfter.revision).toBe(initialListing.revision);
+
+      const transitionsAfter = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+      expect(transitionsAfter).toBe(initialTransitions);
+    });
+
+    it("processing -> failed: status remains active, revision unchanged, no transition", async () => {
+      const listingId = await createListingWithStatus("active");
+      await db.exec(`SET ROLE postgres;`);
+      const mediaRes = await db.query<any>(`
+        INSERT INTO public.listing_media (
+          listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status
+        ) VALUES (
+          '${listingId}', '${sellerUserId}', 'fail.jpg', 'image/jpeg', 102400, 'processing'
+        ) RETURNING id;
+      `);
+      const mediaId = mediaRes.rows[0].id;
+
+      const initialListing = (await db.query<any>(`SELECT status, revision FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      const initialTransitions = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+
+      // Transition processing -> failed
+      await db.exec(`
+        UPDATE public.listing_media
+        SET processing_status = 'failed', processing_error = 'Processing failed'
+        WHERE id = '${mediaId}';
+      `);
+
+      const listingAfter = (await db.query<any>(`SELECT status, revision FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listingAfter.status).toBe("active");
+      expect(listingAfter.revision).toBe(initialListing.revision);
+
+      const transitionsAfter = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+      expect(transitionsAfter).toBe(initialTransitions);
+    });
+
+    it("failed row deletion: status remains active, no transition", async () => {
+      const listingId = await createListingWithStatus("active");
+      await db.exec(`SET ROLE postgres;`);
+      const mediaRes = await db.query<any>(`
+        INSERT INTO public.listing_media (
+          listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status
+        ) VALUES (
+          '${listingId}', '${sellerUserId}', 'fail_cleanup.jpg', 'image/jpeg', 102400, 'failed'
+        ) RETURNING id;
+      `);
+      const mediaId = mediaRes.rows[0].id;
+
+      const initialTransitions = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+
+      // Delete the failed media row
+      await db.exec(`
+        DELETE FROM public.listing_media WHERE id = '${mediaId}';
+      `);
+
+      const listingAfter = (await db.query<any>(`SELECT status FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listingAfter.status).toBe("active");
+
+      const transitionsAfter = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+      expect(transitionsAfter).toBe(initialTransitions);
+    });
+
+    it("processing -> ready: active -> pending_review, revision increments once, exactly one transition", async () => {
+      const listingId = await createListingWithStatus("active");
+      await db.exec(`SET ROLE postgres;`);
+      const mediaRes = await db.query<any>(`
+        INSERT INTO public.listing_media (
+          listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status
+        ) VALUES (
+          '${listingId}', '${sellerUserId}', 'ready.jpg', 'image/jpeg', 102400, 'processing'
+        ) RETURNING id;
+      `);
+      const mediaId = mediaRes.rows[0].id;
+
+      const initialListing = (await db.query<any>(`SELECT status, revision FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      const initialTransitions = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+
+      // Transition processing -> ready
+      await db.exec(`
+        UPDATE public.listing_media
+        SET processing_status = 'ready'
+        WHERE id = '${mediaId}';
+      `);
+
+      const listingAfter = (await db.query<any>(`SELECT status, revision FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listingAfter.status).toBe("pending_review");
+      expect(listingAfter.revision).toBe(initialListing.revision + 1);
+
+      const transitionsAfter = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+      expect(Number(transitionsAfter)).toBe(Number(initialTransitions) + 1);
+    });
+
+    it("subsequent processing/media operation while already pending_review creates no duplicate transition", async () => {
+      const listingId = await createListingWithStatus("pending_review");
+      await db.exec(`SET ROLE postgres;`);
+      const mediaRes = await db.query<any>(`
+        INSERT INTO public.listing_media (
+          listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status
+        ) VALUES (
+          '${listingId}', '${sellerUserId}', 'photo2.jpg', 'image/jpeg', 102400, 'processing'
+        ) RETURNING id;
+      `);
+      const mediaId = mediaRes.rows[0].id;
+
+      const initialTransitions = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+
+      await db.exec(`
+        UPDATE public.listing_media
+        SET processing_status = 'ready'
+        WHERE id = '${mediaId}';
+      `);
+
+      const listingAfter = (await db.query<any>(`SELECT status FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listingAfter.status).toBe("pending_review");
+
+      const transitionsAfter = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+      expect(transitionsAfter).toBe(initialTransitions);
+    });
+  });
+
+  describe("E. Concurrency-Safe 8-Photo Limit Enforcement", () => {
+    it("enforces database-enforced maximum of 8 photos with PHOTO_LIMIT_REACHED", async () => {
+      const listingId = await createListingWithStatus("draft");
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      // Insert 8 photos
+      for (let i = 0; i < 8; i++) {
+        await db.query(`
+          INSERT INTO public.listing_media (
+            listing_id, original_filename, content_type, file_size_bytes
+          ) VALUES (
+            '${listingId}', 'photo_${i}.jpg', 'image/jpeg', 102400
+          );
+        `);
+      }
+
+      // 9th photo must fail with PHOTO_LIMIT_REACHED
+      let errorThrown = false;
+      let errorMessage = "";
+      try {
+        await db.query(`
+          INSERT INTO public.listing_media (
+            listing_id, original_filename, content_type, file_size_bytes
+          ) VALUES (
+            '${listingId}', 'photo_9.jpg', 'image/jpeg', 102400
+          );
+        `);
+      } catch (err: unknown) {
+        errorThrown = true;
+        errorMessage = (err as Error)?.message || "";
+      }
+
+      expect(errorThrown).toBe(true);
+      expect(errorMessage).toContain("PHOTO_LIMIT_REACHED");
+    });
+
+    it("verifies parent-row serialization (FOR UPDATE) is in handle_listing_media_before_insert trigger", async () => {
+      await db.exec(`SET ROLE postgres;`);
+      const procRes = await db.query<any>(`
+        SELECT prosrc FROM pg_proc WHERE proname = 'handle_listing_media_before_insert';
+      `);
+      expect(procRes.rows.length).toBeGreaterThan(0);
+      const src = procRes.rows[0].prosrc;
+      expect(src).toContain("FOR UPDATE");
+      expect(src).toContain("listings");
+    });
+  });
+
+  describe("F. Transactional Seller Media Delete RPC (seller_delete_listing_media)", () => {
+    it("ready media delete on active listing: triggers re-review and falls back cover photo", async () => {
+      const listingId = await createListingWithStatus("active");
+      await db.exec(`SET ROLE postgres;`);
+
+      const m1Res = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status, display_order)
+        VALUES ('${listingId}', '${sellerUserId}', 'm1.jpg', 'image/jpeg', 1000, 'ready', 0) RETURNING id;
+      `);
+      const m1 = m1Res.rows[0].id;
+
+      const m2Res = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status, display_order)
+        VALUES ('${listingId}', '${sellerUserId}', 'm2.jpg', 'image/jpeg', 1000, 'ready', 1) RETURNING id;
+      `);
+      const m2 = m2Res.rows[0].id;
+
+      await db.exec(`
+        UPDATE public.listing_media SET processing_status = 'ready' WHERE id IN ('${m1}', '${m2}');
+        UPDATE public.listings SET cover_photo_id = '${m1}', status = 'active' WHERE id = '${listingId}';
+      `);
+
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      const deleteRes = await db.query<any>(`
+        SELECT public.seller_delete_listing_media('${listingId}', '${m1}') as result;
+      `);
+
+      const result = deleteRes.rows[0].result;
+      expect(result.success).toBe(true);
+      expect(result.deleted).toBe(true);
+      expect(result.new_cover_id).toBe(m2);
+
+      const listing = (await db.query<any>(`SELECT status, cover_photo_id FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listing.status).toBe("pending_review");
+      expect(listing.cover_photo_id).toBe(m2);
+    });
+
+    it("failed media delete on active listing: status remains active, zero transitions", async () => {
+      const listingId = await createListingWithStatus("active");
+      await db.exec(`SET ROLE postgres;`);
+
+      const failRes = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status, display_order)
+        VALUES ('${listingId}', '${sellerUserId}', 'fail.jpg', 'image/jpeg', 1000, 'failed', 0) RETURNING id;
+      `);
+      const failId = failRes.rows[0].id;
+
+      const initialTransitions = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      const deleteRes = await db.query<any>(`
+        SELECT public.seller_delete_listing_media('${listingId}', '${failId}') as result;
+      `);
+
+      const result = deleteRes.rows[0].result;
+      expect(result.success).toBe(true);
+      expect(result.deleted).toBe(true);
+
+      const listing = (await db.query<any>(`SELECT status FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listing.status).toBe("active");
+
+      const transitionsAfter = (await db.query<any>(`SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';`)).rows[0].count;
+      expect(transitionsAfter).toBe(initialTransitions);
+    });
+
+    it("already-absent media delete: returns success with deleted = false (idempotent)", async () => {
+      const listingId = await createListingWithStatus("draft");
+      const nonexistentMediaId = "00000000-0000-0000-0000-000000000099";
+
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      const deleteRes = await db.query<any>(`
+        SELECT public.seller_delete_listing_media('${listingId}', '${nonexistentMediaId}') as result;
+      `);
+
+      const result = deleteRes.rows[0].result;
+      expect(result.success).toBe(true);
+      expect(result.deleted).toBe(false);
+    });
+
+    it("clears cover_photo_id when last ready photo is deleted", async () => {
+      const listingId = await createListingWithStatus("draft");
+      await db.exec(`SET ROLE postgres;`);
+
+      const mRes = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status, display_order)
+        VALUES ('${listingId}', '${sellerUserId}', 'only.jpg', 'image/jpeg', 1000, 'ready', 0) RETURNING id;
+      `);
+      const mId = mRes.rows[0].id;
+      await db.exec(`
+        UPDATE public.listing_media SET processing_status = 'ready' WHERE id = '${mId}';
+        UPDATE public.listings SET cover_photo_id = '${mId}' WHERE id = '${listingId}';
+      `);
+
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      const deleteRes = await db.query<any>(`
+        SELECT public.seller_delete_listing_media('${listingId}', '${mId}') as result;
+      `);
+      expect(deleteRes.rows[0].result.new_cover_id).toBeNull();
+
+      const listing = (await db.query<any>(`SELECT cover_photo_id FROM public.listings WHERE id = '${listingId}';`)).rows[0];
+      expect(listing.cover_photo_id).toBeNull();
+    });
+  });
+
+  describe("G. Direct Mutation Grant Revocation (Bypasses Closed)", () => {
+    it("DENIES direct authenticated UPDATE on listing_media(display_order)", async () => {
+      const listingId = await createListingWithStatus("draft");
+      await db.exec(`SET ROLE postgres;`);
+
+      const mRes = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, processing_status, display_order)
+        VALUES ('${listingId}', '${sellerUserId}', 'order.jpg', 'image/jpeg', 1000, 'ready', 0) RETURNING id;
+      `);
+      const mId = mRes.rows[0].id;
+
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      let errorThrown = false;
+      try {
+        await db.query(`UPDATE public.listing_media SET display_order = 10 WHERE id = '${mId}';`);
+      } catch {
+        errorThrown = true;
+      }
+
+      expect(errorThrown).toBe(true);
+    });
+
+    it("DENIES direct authenticated UPDATE on listings(cover_photo_id)", async () => {
+      const listingId = await createListingWithStatus("draft");
+      const fakeCoverId = "00000000-0000-0000-0000-000000000001";
+
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      let errorThrown = false;
+      try {
+        await db.query(`UPDATE public.listings SET cover_photo_id = '${fakeCoverId}' WHERE id = '${listingId}';`);
+      } catch {
+        errorThrown = true;
+      }
+
+      expect(errorThrown).toBe(true);
+    });
+  });
+
+  describe("H. SECURITY DEFINER Privileges & Search Path", () => {
+    it("verifies security definer and empty search_path on internal functions", async () => {
+      await db.exec(`SET ROLE postgres;`);
+      const res = await db.query<any>(`
+        SELECT proname, prosecdef, proconfig
+        FROM pg_proc
+        WHERE proname IN (
+          'impl_seller_reorder_listing_media',
+          'impl_seller_set_listing_cover_photo',
+          'impl_seller_delete_listing_media'
+        );
+      `);
+
+      expect(res.rows.length).toBe(3);
+      for (const row of res.rows) {
+        expect(row.prosecdef).toBe(true);
+        expect(row.proconfig.some((c: string) => c.startsWith("search_path="))).toBe(true);
+      }
+    });
+
+    it("DENIES anon execution of seller RPCs", async () => {
+      await db.exec(`SET ROLE anon;`);
+      const dummyUuid = "00000000-0000-0000-0000-000000000001";
+
+      let reorderBlocked = false;
+      try {
+        await db.query(`SELECT public.seller_reorder_listing_media('${dummyUuid}', ARRAY['${dummyUuid}'::uuid]);`);
+      } catch {
+        reorderBlocked = true;
+      }
+      expect(reorderBlocked).toBe(true);
+
+      let coverBlocked = false;
+      try {
+        await db.query(`SELECT public.seller_set_listing_cover_photo('${dummyUuid}', '${dummyUuid}');`);
+      } catch {
+        coverBlocked = true;
+      }
+      expect(coverBlocked).toBe(true);
+
+      let deleteBlocked = false;
+      try {
+        await db.query(`SELECT public.seller_delete_listing_media('${dummyUuid}', '${dummyUuid}');`);
+      } catch {
+        deleteBlocked = true;
+      }
+      expect(deleteBlocked).toBe(true);
+    });
+  });
+
 });

@@ -326,6 +326,11 @@ export async function reorderMediaAction(
     };
   }
 
+  const hasInvalidId = items.some((item) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id));
+  if (hasInvalidId) {
+    return { error: "Cannot reorder pending or temporary photos." };
+  }
+
   const sortedItems = [...items].sort((a, b) => a.display_order - b.display_order);
   const mediaIds = sortedItems.map((item) => item.id);
 

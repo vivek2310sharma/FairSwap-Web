@@ -133,6 +133,9 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
         },
         rpc: vi.fn().mockImplementation(async (name) => {
           if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_delete_listing_media") {
+            return { data: { success: true, deleted: true, deleted_media_id: mediaId, new_cover_id: null }, error: null };
+          }
           return { data: null, error: null };
         }),
         from: vi.fn((table: string) => {
@@ -262,6 +265,9 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
         },
         rpc: vi.fn().mockImplementation(async (name) => {
           if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_delete_listing_media") {
+            return { data: { success: true, deleted: true }, error: null };
+          }
           return { data: null, error: null };
         }),
         from: vi.fn((table: string) => {
@@ -376,6 +382,9 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
         },
         rpc: vi.fn().mockImplementation(async (name) => {
           if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_delete_listing_media") {
+            return { data: { success: true, deleted: true }, error: null };
+          }
           return { data: null, error: null };
         }),
         from: vi.fn((table: string) => {
@@ -453,7 +462,7 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
   });
 
   describe("Delete Path Safety", () => {
-    it("fails and preserves DB row if storage removal fails", async () => {
+    it("commits DB deletion first via user-scoped RPC and safely tolerates subsequent storage cleanup failure", async () => {
       const listingId = "11111111-1111-1111-1111-111111111111";
       const mediaId = "55555555-5555-5555-5555-555555555555";
       let dbDeleteRpcCalled = false;
@@ -468,7 +477,6 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
           }),
         },
         rpc: vi.fn().mockImplementation(async () => {
-          dbDeleteRpcCalled = true;
           return { data: null, error: null };
         }),
       };
@@ -482,6 +490,10 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
         },
         rpc: vi.fn().mockImplementation(async (name) => {
           if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_delete_listing_media") {
+            dbDeleteRpcCalled = true;
+            return { data: { success: true, deleted: true }, error: null };
+          }
           return { data: null, error: null };
         }),
         from: vi.fn((table: string) => {
@@ -569,8 +581,8 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
         params: Promise.resolve({ id: listingId, mediaId }),
       });
 
-      expect(res.status).toBe(500);
-      expect(dbDeleteRpcCalled).toBe(false);
+      expect(res.status).toBe(200);
+      expect(dbDeleteRpcCalled).toBe(true);
     });
   });
 });
