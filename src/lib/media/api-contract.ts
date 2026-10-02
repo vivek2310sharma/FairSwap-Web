@@ -165,8 +165,6 @@ export function mediaApiError(
 
   if (typeof extraOrStatus === "object" && extraOrStatus?.media) {
     body.media = extraOrStatus.media;
-    (body as unknown as Record<string, unknown>).id = extraOrStatus.media.id;
-    (body as unknown as Record<string, unknown>).processing_status = extraOrStatus.media.processingStatus;
   }
 
   return NextResponse.json(body, {
@@ -235,7 +233,7 @@ export async function verifySellerMediaMutationGuard(
     };
   }
 
-  if (!userAccount || (userAccount as { account_status?: string }).account_status !== "active") {
+  if (!userAccount || userAccount.account_status !== "active") {
     return {
       allowed: false,
       response: mediaApiError("ACCOUNT_RESTRICTED"),
@@ -307,8 +305,20 @@ export async function verifySellerMediaMutationGuard(
   };
 }
 
+export type SafeMediaSnapshotResult =
+  | {
+      ok: true;
+      snapshot: SafeMediaSnapshotResponse;
+    }
+  | {
+      ok: false;
+      code: "LISTING_NOT_FOUND" | "MEDIA_SERVICE_UNAVAILABLE";
+    };
+
 /**
  * Builds an authoritative, safe seller media snapshot.
+ * Fails closed on database / infrastructure errors (MEDIA_SERVICE_UNAVAILABLE).
+ * Returns LISTING_NOT_FOUND if the listing does not exist under caller RLS.
  * Never includes storage paths, uploader_id, processing_error, bucket names,
  * pin_code, landmark, or service metadata.
  */
@@ -316,24 +326,27 @@ export async function buildSafeMediaSnapshot(
   client: SupabaseClient<Database>,
   listingId: string,
   uploadedMediaId?: string
-): Promise<SafeMediaSnapshotResponse | null> {
-  const { data: listing, error: listingError } = await client
+): Promise<SafeMediaSnapshotResult> {
+  const listingQuery = client
     .from("listings")
     .select("id, status, revision, cover_photo_id")
-    .eq("id", listingId)
-    .single();
+    .eq("id", listingId);
+
+  const { data: listing, error: listingError } =
+    typeof (listingQuery as unknown as { maybeSingle?: () => Promise<unknown> }).maybeSingle === "function"
+      ? await (listingQuery as unknown as { maybeSingle: () => Promise<{ data: { id: string; status: string; revision: number; cover_photo_id: string | null } | null; error: unknown }> }).maybeSingle()
+      : await (listingQuery as unknown as { single: () => Promise<{ data: { id: string; status: string; revision: number; cover_photo_id: string | null } | null; error: unknown }> }).single();
 
   if (listingError) {
-    // Infrastructure failure during snapshot - log for observability
     logger.warn("media.snapshot_listing_lookup_failed", {
       operation: "buildSafeMediaSnapshot",
       error_code: typeof listingError === "object" && listingError !== null && "code" in listingError ? String((listingError as { code: string }).code) : "UNKNOWN",
     });
-    return null;
+    return { ok: false, code: "MEDIA_SERVICE_UNAVAILABLE" };
   }
 
   if (!listing) {
-    return null;
+    return { ok: false, code: "LISTING_NOT_FOUND" };
   }
 
   const mediaQuery = client
@@ -348,7 +361,16 @@ export async function buildSafeMediaSnapshot(
           .order("created_at", { ascending: true })
       : mediaQuery;
 
-  const { data: mediaRows } = await orderedQuery;
+  const { data: mediaRows, error: mediaError } = await (orderedQuery as unknown as Promise<{ data: unknown[] | null; error: unknown }>);
+
+  if (mediaError) {
+    logger.warn("media.snapshot_media_lookup_failed", {
+      operation: "buildSafeMediaSnapshot",
+      error_code: typeof mediaError === "object" && mediaError !== null && "code" in mediaError ? String((mediaError as { code: string }).code) : "UNKNOWN",
+    });
+    return { ok: false, code: "MEDIA_SERVICE_UNAVAILABLE" };
+  }
+
   const safeRows = Array.isArray(mediaRows) ? mediaRows : [];
 
   const safeMedia: SafeMediaItem[] = (safeRows as Array<Record<string, unknown>>).map((m) => ({
@@ -376,5 +398,5 @@ export async function buildSafeMediaSnapshot(
     response.uploadedMediaId = uploadedMediaId;
   }
 
-  return response;
+  return { ok: true, snapshot: response };
 }

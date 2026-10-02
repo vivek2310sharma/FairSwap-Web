@@ -126,10 +126,15 @@ Every media mutation (`POST` upload, `DELETE` media, `POST` reorder, `PUT` cover
 
 ## 4. Endpoints & Operations
 
-### A. Safe Owner Media Snapshot
+### A. Safe Owner Media Snapshot & Fail-Closed Semantics
 `GET /api/listings/[id]/media`
 - Read-only route (not blocked by seller-write maintenance).
 - Supports both cookie and Bearer authentication.
+- **Fail-Closed Error Classification**:
+  - Listing lookup database error returns `503 MEDIA_SERVICE_UNAVAILABLE` (never 404).
+  - Media query database error returns `503 MEDIA_SERVICE_UNAVAILABLE` (never coerced to empty `media: []`).
+  - Genuinely empty media list on visible listing returns `200 OK` with `media: []`.
+  - Non-owner or genuinely missing listings return `404 LISTING_NOT_FOUND`.
 - Returns safe metadata only:
   ```json
   {
@@ -190,6 +195,44 @@ Every media mutation (`POST` upload, `DELETE` media, `POST` reorder, `PUT` cover
      - If Storage cleanup fails, the committed DB deletion is preserved and safe success is returned.
      - Prevents active listings from pointing to destroyed Storage objects while DB deletion fails.
   6. Returns safe snapshot of remaining media.
+
+Response format when deletion occurred:
+```json
+{
+  "success": true,
+  "deleted": true,
+  "deleted_media_id": "22222222-2222-2222-2222-222222222221",
+  "new_cover_id": "22222222-2222-2222-2222-222222222222",
+  "snapshot": {
+    "listing": {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "status": "draft",
+      "revision": 1,
+      "coverPhotoId": "22222222-2222-2222-2222-222222222222"
+    },
+    "media": []
+  }
+}
+```
+
+Response format when item was already absent (idempotent 200):
+```json
+{
+  "success": true,
+  "deleted": false,
+  "deleted_media_id": null,
+  "new_cover_id": "22222222-2222-2222-2222-222222222222",
+  "snapshot": {
+    "listing": {
+      "id": "11111111-1111-1111-1111-111111111111",
+      "status": "draft",
+      "revision": 1,
+      "coverPhotoId": "22222222-2222-2222-2222-222222222222"
+    },
+    "media": []
+  }
+}
+```
 
 ### D. Transactional Reorder Contract (Ready-Only Membership)
 `POST /api/listings/[id]/media/reorder`

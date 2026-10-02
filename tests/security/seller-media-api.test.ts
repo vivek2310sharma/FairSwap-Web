@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -203,8 +204,159 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
       expect(json.landmark).toBeUndefined();
     });
 
-    it("conceals non-owner or missing listings with 404 LISTING_NOT_FOUND", async () => {
-      mockAuthUser.mockResolvedValue({ id: "intruder-id" }); // not owner
+    it("owner + valid empty media -> 200, media=[]", async () => {
+      mockDbFrom.mockImplementation((table: string) => {
+        if (table === "listings") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: listingId, seller_id: ownerId, status: "draft", revision: 1, cover_photo_id: null },
+                  error: null,
+                }),
+                single: vi.fn().mockResolvedValue({
+                  data: { id: listingId, seller_id: ownerId, status: "draft", revision: 1, cover_photo_id: null },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "listing_media") {
+          const queryChain: any = {
+            eq: vi.fn(() => queryChain),
+            order: vi.fn(() => queryChain),
+            then: (resolve: any) => resolve({ data: [], error: null }),
+          };
+          return { select: vi.fn(() => queryChain) };
+        }
+        return {};
+      });
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`);
+      const res = await getMediaSnapshot(req, { params: Promise.resolve({ id: listingId }) });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.listing.id).toBe(listingId);
+      expect(json.media).toEqual([]);
+    });
+
+    it("owner + media query DB failure -> 503 MEDIA_SERVICE_UNAVAILABLE", async () => {
+      mockDbFrom.mockImplementation((table: string) => {
+        if (table === "listings") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: listingId, seller_id: ownerId, status: "draft", revision: 1, cover_photo_id: null },
+                  error: null,
+                }),
+                single: vi.fn().mockResolvedValue({
+                  data: { id: listingId, seller_id: ownerId, status: "draft", revision: 1, cover_photo_id: null },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === "listing_media") {
+          const queryChain: any = {
+            eq: vi.fn(() => queryChain),
+            order: vi.fn(() => queryChain),
+            then: (resolve: any) => resolve({ data: null, error: { message: "query timeout", code: "57P01" } }),
+          };
+          return { select: vi.fn(() => queryChain) };
+        }
+        return {};
+      });
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`);
+      const res = await getMediaSnapshot(req, { params: Promise.resolve({ id: listingId }) });
+
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.code).toBe("MEDIA_SERVICE_UNAVAILABLE");
+    });
+
+    it("listing lookup DB failure -> 503 MEDIA_SERVICE_UNAVAILABLE", async () => {
+      mockDbFrom.mockImplementation((table: string) => {
+        if (table === "listings") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: "connection refused", code: "08006" },
+                }),
+                single: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: "connection refused", code: "08006" },
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`);
+      const res = await getMediaSnapshot(req, { params: Promise.resolve({ id: listingId }) });
+
+      expect(res.status).toBe(503);
+      const json = await res.json();
+      expect(json.code).toBe("MEDIA_SERVICE_UNAVAILABLE");
+    });
+
+    it("missing listing -> 404 LISTING_NOT_FOUND", async () => {
+      mockDbFrom.mockImplementation((table: string) => {
+        if (table === "listings") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: null,
+                }),
+                single: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`);
+      const res = await getMediaSnapshot(req, { params: Promise.resolve({ id: listingId }) });
+
+      expect(res.status).toBe(404);
+      const json = await res.json();
+      expect(json.code).toBe("LISTING_NOT_FOUND");
+    });
+
+    it("non-owner -> 404 LISTING_NOT_FOUND", async () => {
+      mockDbFrom.mockImplementation((table: string) => {
+        if (table === "listings") {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { id: listingId, seller_id: "other-user-uuid", status: "draft" },
+                  error: null,
+                }),
+                single: vi.fn().mockResolvedValue({
+                  data: { id: listingId, seller_id: "other-user-uuid", status: "draft" },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
 
       const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`);
       const res = await getMediaSnapshot(req, { params: Promise.resolve({ id: listingId }) });
@@ -445,46 +597,22 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
     });
   });
 
-  describe("E. Delete Idempotency", () => {
-    it("returns 200 OK with snapshot when deleting already absent media row (retry-safe)", async () => {
-      mockDbFrom.mockImplementation((table: string) => {
-        if (table === "user_accounts") {
+  describe("E. Delete Operations & Idempotent RPC Response (Sections 5 & 7)", () => {
+    it("deleted=true: returns exact successful deletion shape with deleted_media_id", async () => {
+      mockRpc.mockImplementation(async (name: string) => {
+        if (name === "has_current_policy_acceptance") return { data: true, error: null };
+        if (name === "seller_delete_listing_media") {
           return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: { account_status: "active" }, error: null }),
-              }),
-            }),
+            data: {
+              success: true,
+              deleted: true,
+              deleted_media_id: mediaId1,
+              new_cover_id: mediaId2,
+            },
+            error: null,
           };
         }
-        if (table === "listings") {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({
-                  data: { id: listingId, seller_id: ownerId, status: "draft" },
-                  error: null,
-                }),
-                single: vi.fn().mockResolvedValue({
-                  data: { id: listingId, seller_id: ownerId, status: "draft" },
-                  error: null,
-                }),
-              }),
-            }),
-          };
-        }
-        if (table === "listing_media") {
-          const queryChain: any = {
-            eq: vi.fn(() => queryChain),
-            order: vi.fn(() => queryChain),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }), // Already absent
-            then: (resolve: any) => resolve({ data: [], error: null }),
-          };
-          return {
-            select: vi.fn(() => queryChain),
-          };
-        }
-        return {};
+        return { data: { success: true }, error: null };
       });
 
       const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId1}`, {
@@ -495,7 +623,142 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json.success).toBe(true);
+      expect(json.deleted).toBe(true);
+      expect(json.deleted_media_id).toBe(mediaId1);
+      expect(json.new_cover_id).toBe(mediaId2);
       expect(json.snapshot).toBeDefined();
+      expect(json.snapshot.listing.id).toBe(listingId);
+    });
+
+    it("deleted=false: returns exact idempotent response with deleted_media_id=null", async () => {
+      mockRpc.mockImplementation(async (name: string) => {
+        if (name === "has_current_policy_acceptance") return { data: true, error: null };
+        if (name === "seller_delete_listing_media") {
+          return {
+            data: {
+              success: true,
+              deleted: false,
+              deleted_media_id: null,
+              new_cover_id: mediaId2,
+            },
+            error: null,
+          };
+        }
+        return { data: { success: true }, error: null };
+      });
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId1}`, {
+        method: "DELETE",
+      });
+      const res = await deleteMedia(req, { params: Promise.resolve({ id: listingId, mediaId: mediaId1 }) });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.deleted).toBe(false);
+      expect(json.deleted_media_id).toBeNull();
+      expect(json.new_cover_id).toBe(mediaId2);
+      expect(json.snapshot).toBeDefined();
+    });
+
+    it("Storage cleanup returned error: preserves DB deletion, returns 200, logs sanitized warning", async () => {
+      const warnSpy = vi.spyOn(logger, "warn");
+
+      mockRpc.mockImplementation(async (name: string) => {
+        if (name === "has_current_policy_acceptance") return { data: true, error: null };
+        if (name === "seller_delete_listing_media") {
+          return {
+            data: {
+              success: true,
+              deleted: true,
+              deleted_media_id: mediaId1,
+              new_cover_id: null,
+            },
+            error: null,
+          };
+        }
+        return { data: { success: true }, error: null };
+      });
+
+      mockServiceStorage.from.mockReturnValueOnce({
+        remove: vi.fn().mockResolvedValue({ data: null, error: { message: "Storage remove failure" } }),
+      } as any);
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId1}`, {
+        method: "DELETE",
+      });
+      const res = await deleteMedia(req, { params: Promise.resolve({ id: listingId, mediaId: mediaId1 }) });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.deleted).toBe(true);
+      expect(json.deleted_media_id).toBe(mediaId1);
+
+      // Verify sanitized logger call
+      expect(warnSpy).toHaveBeenCalledWith(
+        "media.storage_cleanup_failed",
+        expect.objectContaining({
+          operation: "delete_media_storage_cleanup",
+          listing_id: listingId,
+          media_id: mediaId1,
+          stage: "storage_remove_error",
+        })
+      );
+
+      // Ensure no private storage paths leaked to client response
+      const responseStr = JSON.stringify(json);
+      expect(responseStr).not.toContain("listing-originals");
+      expect(responseStr).not.toContain("listing-derivatives");
+      expect(responseStr).not.toContain(".webp");
+      expect(responseStr).not.toContain(".jpg");
+
+      warnSpy.mockRestore();
+    });
+
+    it("Storage cleanup thrown exception: preserves DB deletion, returns 200, logs sanitized warning", async () => {
+      const warnSpy = vi.spyOn(logger, "warn");
+
+      mockRpc.mockImplementation(async (name: string) => {
+        if (name === "has_current_policy_acceptance") return { data: true, error: null };
+        if (name === "seller_delete_listing_media") {
+          return {
+            data: {
+              success: true,
+              deleted: true,
+              deleted_media_id: mediaId1,
+              new_cover_id: null,
+            },
+            error: null,
+          };
+        }
+        return { data: { success: true }, error: null };
+      });
+
+      mockServiceStorage.from.mockReturnValueOnce({
+        remove: vi.fn().mockRejectedValue(new Error("Network timeout")),
+      } as any);
+
+      const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId1}`, {
+        method: "DELETE",
+      });
+      const res = await deleteMedia(req, { params: Promise.resolve({ id: listingId, mediaId: mediaId1 }) });
+
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      expect(json.deleted).toBe(true);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        "media.storage_cleanup_failed",
+        expect.objectContaining({
+          operation: "delete_media_storage_cleanup",
+          listing_id: listingId,
+          media_id: mediaId1,
+        })
+      );
+
+      warnSpy.mockRestore();
     });
   });
 

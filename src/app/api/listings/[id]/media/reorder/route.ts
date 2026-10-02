@@ -66,12 +66,12 @@ export async function POST(
   }
 
   // 5. Build and return updated safe snapshot
-  const snapshot = await buildSafeMediaSnapshot(client, listingId);
-  if (!snapshot) {
-    return mediaApiError("LISTING_NOT_FOUND");
+  const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
+  if (!snapshotResult.ok) {
+    return mediaApiError(snapshotResult.code);
   }
 
-  return NextResponse.json(snapshot, {
+  return NextResponse.json(snapshotResult.snapshot, {
     status: 200,
     headers: {
       "Cache-Control": "no-store",

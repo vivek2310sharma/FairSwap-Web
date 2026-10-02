@@ -88,8 +88,8 @@ export default function MediaUploader({
               item.id === tempId
                 ? {
                     ...item,
-                    id: data.id || tempId,
-                    processing_status: "failed",
+                    id: data.media?.id || data.id || tempId,
+                    processing_status: data.media?.processingStatus || "failed",
                     processing_error: data.message || "Upload failed",
                   }
                 : item
@@ -140,15 +140,32 @@ export default function MediaUploader({
       const res = await fetch(`/api/listings/${listingId}/media/${mediaId}`, {
         method: "DELETE",
       });
-      if (res.ok || res.status === 404) {
-        setMediaList((prev) => prev.filter((m) => m.id !== mediaId));
-        if (activeCoverId === mediaId) {
-          const remaining = mediaList.filter((m) => m.id !== mediaId);
-          setActiveCoverId(remaining.length > 0 ? remaining[0].id : null);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.snapshot?.media && Array.isArray(data.snapshot.media)) {
+          const snapshotMedia = data.snapshot.media as Array<{ id: string }>;
+          setMediaList((prev) =>
+            prev.filter(
+              (m) =>
+                m.id.startsWith("temp-") ||
+                (m.id !== mediaId && snapshotMedia.some((sm) => sm.id === m.id))
+            )
+          );
+          if (data.snapshot.listing?.coverPhotoId !== undefined) {
+            setActiveCoverId(data.snapshot.listing.coverPhotoId);
+          } else if (data.new_cover_id !== undefined) {
+            setActiveCoverId(data.new_cover_id);
+          }
+        } else {
+          setMediaList((prev) => prev.filter((m) => m.id !== mediaId));
+          if (activeCoverId === mediaId) {
+            const remaining = mediaList.filter((m) => m.id !== mediaId);
+            setActiveCoverId(remaining.length > 0 ? remaining[0].id : null);
+          }
         }
       } else {
-        const data = await res.json();
-        setErrorMessage(data.message || "Failed to delete photo");
+        const data = await res.json().catch(() => ({}));
+        setErrorMessage(data?.message || "Failed to delete photo");
       }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Error deleting photo");

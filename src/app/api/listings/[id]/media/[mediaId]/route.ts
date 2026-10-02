@@ -88,50 +88,82 @@ export async function DELETE(
   }
 
   // 5. Best-effort private Storage cleanup after committed DB mutation
-  const wasDeleted =
+  const isDeleted =
     typeof deleteResult === "object" &&
     deleteResult !== null &&
     (deleteResult as { deleted?: boolean }).deleted === true;
 
-  if (wasDeleted) {
+  if (isDeleted) {
     try {
+      let cleanupErrorOccurred = false;
+
       if (originalPath) {
-        await serviceClient.storage.from("listing-originals").remove([originalPath]);
+        const { error: origErr } = await serviceClient.storage
+          .from("listing-originals")
+          .remove([originalPath]);
+        if (origErr) {
+          cleanupErrorOccurred = true;
+        }
       }
+
       if (derivativePaths.length > 0) {
-        await serviceClient.storage.from("listing-derivatives").remove(derivativePaths);
+        const { error: derivErr } = await serviceClient.storage
+          .from("listing-derivatives")
+          .remove(derivativePaths);
+        if (derivErr) {
+          cleanupErrorOccurred = true;
+        }
+      }
+
+      if (cleanupErrorOccurred) {
+        logger.warn("media.storage_cleanup_failed", {
+          operation: "delete_media_storage_cleanup",
+          listing_id: listingId,
+          media_id: mediaId,
+          stage: "storage_remove_error",
+        });
       }
     } catch (cleanupErr) {
       // Best-effort cleanup: log sanitized warning, never expose storage details to client
       logger.warn("media.storage_cleanup_failed", {
         operation: "delete_media_storage_cleanup",
-        details: {
-          media_id: mediaId,
-          listing_id: listingId,
-          error_type: cleanupErr instanceof Error ? cleanupErr.name : "UnknownError",
-        },
+        listing_id: listingId,
+        media_id: mediaId,
+        stage: cleanupErr instanceof Error ? cleanupErr.name : "exception",
       });
     }
   }
 
-  // 6. Return safe snapshot of remaining media
-  const snapshot = await buildSafeMediaSnapshot(client, listingId);
-  if (!snapshot) {
-    return mediaApiError("MEDIA_DELETE_FAILED");
+  // 6. Return safe snapshot of remaining media (fails closed on infrastructure error)
+  const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
+  if (!snapshotResult.ok) {
+    return mediaApiError(snapshotResult.code);
   }
+
+  const deletedMediaId = isDeleted
+    ? ((deleteResult as { deleted_media_id?: string | null }).deleted_media_id ?? mediaId)
+    : null;
+
+  const newCoverId =
+    typeof deleteResult === "object" &&
+    deleteResult !== null &&
+    "new_cover_id" in deleteResult
+      ? ((deleteResult as { new_cover_id?: string | null }).new_cover_id ?? null)
+      : null;
 
   return NextResponse.json(
     {
       success: true,
-      deleted: typeof deleteResult === "object" && deleteResult !== null && "deleted" in deleteResult ? Boolean((deleteResult as { deleted?: boolean }).deleted) : false,
-      deleted_media_id: mediaId,
-      new_cover_id: typeof deleteResult === "object" && deleteResult !== null && "new_cover_id" in deleteResult ? ((deleteResult as { new_cover_id?: string | null }).new_cover_id ?? null) : null,
-      snapshot,
+      deleted: isDeleted,
+      deleted_media_id: deletedMediaId,
+      new_cover_id: newCoverId,
+      snapshot: snapshotResult.snapshot,
     },
     {
-    status: 200,
-    headers: {
-      "Cache-Control": "no-store",
-    },
-  });
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    }
+  );
 }

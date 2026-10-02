@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-auth";
 import { createServiceRoleClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 import { detectImageMimeFromMagicBytes, processImageBuffer } from "@/lib/media/processor";
 import {
   mediaApiError,
@@ -35,23 +36,36 @@ export async function GET(
   const { client, user } = authResult.context;
 
   // 2. Listing ownership check
-  const { data: listing, error: listingError } = await client
+  // Separate error semantics: DB error -> 503, missing/non-owner -> 404
+  const listingQuery = client
     .from("listings")
     .select("id, seller_id")
-    .eq("id", listingId)
-    .maybeSingle();
+    .eq("id", listingId);
 
-  if (listingError || !listing || listing.seller_id !== user.id) {
+  const { data: listing, error: listingError } =
+    typeof (listingQuery as unknown as { maybeSingle?: () => Promise<unknown> }).maybeSingle === "function"
+      ? await (listingQuery as unknown as { maybeSingle: () => Promise<{ data: { id: string; seller_id: string } | null; error: unknown }> }).maybeSingle()
+      : await (listingQuery as unknown as { single: () => Promise<{ data: { id: string; seller_id: string } | null; error: unknown }> }).single();
+
+  if (listingError) {
+    logger.warn("media.get_listing_lookup_failed", {
+      operation: "GET_seller_media_snapshot",
+      error_code: typeof listingError === "object" && listingError !== null && "code" in listingError ? String((listingError as { code: string }).code) : "UNKNOWN",
+    });
+    return mediaApiError("MEDIA_SERVICE_UNAVAILABLE");
+  }
+
+  if (!listing || listing.seller_id !== user.id) {
     return mediaApiError("LISTING_NOT_FOUND");
   }
 
   // 3. Build safe snapshot
-  const snapshot = await buildSafeMediaSnapshot(client, listingId);
-  if (!snapshot) {
-    return mediaApiError("LISTING_NOT_FOUND");
+  const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
+  if (!snapshotResult.ok) {
+    return mediaApiError(snapshotResult.code);
   }
 
-  return NextResponse.json(snapshot, {
+  return NextResponse.json(snapshotResult.snapshot, {
     status: 200,
     headers: {
       "Cache-Control": "private, no-cache, no-store",
@@ -293,10 +307,13 @@ export async function POST(
     }
 
     // 14. Return authoritative safe snapshot
-    const snapshot = await buildSafeMediaSnapshot(client, listingId, mediaId);
+    const snapshotResult = await buildSafeMediaSnapshot(client, listingId, mediaId);
+    if (!snapshotResult.ok) {
+      return mediaApiError(snapshotResult.code);
+    }
     return NextResponse.json(
       {
-        ...snapshot,
+        ...snapshotResult.snapshot,
         // Backward-compatibility properties for existing Web MediaUploader
         id: mediaId,
         display_order: mediaRecord.display_order,

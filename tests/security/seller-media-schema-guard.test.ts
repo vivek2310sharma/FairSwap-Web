@@ -6,6 +6,7 @@
  * This is a regression guard for the iOS-4.1 compatibility fix.
  */
 import { describe, it, expect } from "vitest";
+import { mediaApiError } from "@/lib/media/api-contract";
 import fs from "fs";
 import path from "path";
 
@@ -83,5 +84,45 @@ describe("Media Contract Schema Guards (#103 blocker)", () => {
 
     // Missing/non-owner -> LISTING_NOT_FOUND (404)
     expect(guardBody).toContain('if (!listing || listing.seller_id !== user.id)');
+  });
+});
+
+describe("Runtime Sanitizer Behavior Invariants (Section 11)", () => {
+  it("SAFE CUSTOM MESSAGE: 'Failed to parse form data.' remains unchanged", async () => {
+    const res = mediaApiError("INVALID_MEDIA_REQUEST", "Failed to parse form data.");
+    const json = await res.json();
+    expect(json.message).toBe("Failed to parse form data.");
+    expect(json.code).toBe("INVALID_MEDIA_REQUEST");
+  });
+
+  it("SAFE CUSTOM MESSAGE: 'Cannot reorder pending photos.' remains unchanged", async () => {
+    const res = mediaApiError("MEDIA_REORDER_FAILED", "Cannot reorder pending photos.");
+    const json = await res.json();
+    expect(json.message).toBe("Cannot reorder pending photos.");
+    expect(json.code).toBe("MEDIA_REORDER_FAILED");
+  });
+
+  it("INTERNAL: 'SQLSTATE 42501 public.listing_media' is replaced by canonical safe message", async () => {
+    const res = mediaApiError("MEDIA_DELETE_FAILED", "SQLSTATE 42501 public.listing_media permission denied");
+    const json = await res.json();
+    expect(json.message).not.toContain("SQLSTATE");
+    expect(json.message).not.toContain("public.listing_media");
+    expect(json.message).toBe("Failed to delete media asset. Please try again.");
+  });
+
+  it("INTERNAL: 'Bearer secret-marker' is replaced by canonical safe message", async () => {
+    const res = mediaApiError("MEDIA_SERVICE_UNAVAILABLE", "Upstream returned Bearer secret-marker-token-123");
+    const json = await res.json();
+    expect(json.message).not.toContain("Bearer");
+    expect(json.message).not.toContain("secret-marker");
+    expect(json.message).toBe("Media service is temporarily unavailable. Please try again later.");
+  });
+
+  it("INTERNAL: 'listing-originals/private/object.jpg' is replaced by canonical safe message", async () => {
+    const res = mediaApiError("MEDIA_UPLOAD_FAILED", "Upload failed at listing-originals/private/object.jpg");
+    const json = await res.json();
+    expect(json.message).not.toContain("listing-originals");
+    expect(json.message).not.toContain("private/object.jpg");
+    expect(json.message).toBe("Failed to upload image. Please try again.");
   });
 });

@@ -2,7 +2,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import MediaUploader from "@/components/listings/MediaUploader";
-import { reorderMediaAction } from "@/app/account/listings/actions";
+import { reorderMediaAction, setCoverPhotoAction } from "@/app/account/listings/actions";
 
 vi.mock("@/app/account/listings/actions", () => ({
   reorderMediaAction: vi.fn(),
@@ -217,4 +217,378 @@ describe("Web MediaUploader Reorder Parity Unit Tests (Section 9)", () => {
       expect(screen.getByText("Failed to reorder photos. Please try again.")).toBeInTheDocument();
     });
   });
+
+  describe("Web MediaUploader Cover Photo Rollback Unit Tests (Section 10)", () => {
+    it("keeps new cover photo when setCoverPhotoAction succeeds", async () => {
+      vi.mocked(setCoverPhotoAction).mockResolvedValue({ success: true, message: "Cover photo updated." });
+
+      const readyMedia = [
+        {
+          id: readyId1,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo1.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 0,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+        {
+          id: readyId2,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo2.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 1,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+      ];
+
+      render(
+        <MediaUploader
+          listingId={listingId}
+          initialMedia={readyMedia}
+          coverPhotoId={readyId1}
+        />
+      );
+
+      // Initially photo1 is cover, photo2 has a Cover button
+      const coverButtons = screen.getAllByRole("button", { name: "Cover" });
+      expect(coverButtons.length).toBe(1);
+
+      fireEvent.click(coverButtons[0]);
+
+      await waitFor(() => {
+        expect(setCoverPhotoAction).toHaveBeenCalledWith(listingId, readyId2);
+      });
+
+      // Photo2 remains cover: photo1 should now have the Cover button
+      await waitFor(() => {
+        const newCoverButtons = screen.getAllByRole("button", { name: "Cover" });
+        expect(newCoverButtons.length).toBe(1);
+      });
+    });
+
+    it("rolls back to previous cover photo and displays error when setCoverPhotoAction fails", async () => {
+      vi.mocked(setCoverPhotoAction).mockResolvedValue({ error: "Failed to update cover photo." });
+
+      const readyMedia = [
+        {
+          id: readyId1,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo1.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 0,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+        {
+          id: readyId2,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo2.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 1,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+      ];
+
+      render(
+        <MediaUploader
+          listingId={listingId}
+          initialMedia={readyMedia}
+          coverPhotoId={readyId1}
+        />
+      );
+
+      const coverButtons = screen.getAllByRole("button", { name: "Cover" });
+      fireEvent.click(coverButtons[0]);
+
+      await waitFor(() => {
+        expect(screen.getByText("Failed to update cover photo.")).toBeInTheDocument();
+      });
+
+      // Cover rolled back to photo1: photo2 still has the Cover button
+      const restoredCoverButtons = screen.getAllByRole("button", { name: "Cover" });
+      expect(restoredCoverButtons.length).toBe(1);
+    });
+  });
+
+  describe("Web MediaUploader Delete Parity & 404 Invariant Unit Tests (Section 6)", () => {
+    it("HTTP 200 deleted=true removes the media card", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          success: true,
+          deleted: true,
+          deleted_media_id: readyId2,
+          snapshot: {
+            listing: { id: listingId, status: "draft", revision: 1, coverPhotoId: readyId1 },
+            media: [{ id: readyId1, displayOrder: 0, processingStatus: "ready", isCover: true }],
+          },
+        }),
+      });
+
+      const readyMedia = [
+        {
+          id: readyId1,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo1.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 0,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+        {
+          id: readyId2,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo2.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 1,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+      ];
+
+      render(
+        <MediaUploader
+          listingId={listingId}
+          initialMedia={readyMedia}
+          coverPhotoId={readyId1}
+        />
+      );
+
+      const deleteButtons = screen.getAllByRole("button", { name: "Delete" });
+      fireEvent.click(deleteButtons[1]); // Delete photo2
+
+      await waitFor(() => {
+        expect(screen.queryByTitle("photo2.jpg")).not.toBeInTheDocument();
+      });
+      expect(screen.getByTitle("photo1.jpg")).toBeInTheDocument();
+    });
+
+    it("HTTP 200 deleted=false applies authoritative snapshot", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          success: true,
+          deleted: false,
+          deleted_media_id: null,
+          snapshot: {
+            listing: { id: listingId, status: "draft", revision: 1, coverPhotoId: readyId1 },
+            media: [{ id: readyId1, displayOrder: 0, processingStatus: "ready", isCover: true }],
+          },
+        }),
+      });
+
+      const readyMedia = [
+        {
+          id: readyId1,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo1.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 0,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+        {
+          id: readyId2,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo2.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 1,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+      ];
+
+      render(
+        <MediaUploader
+          listingId={listingId}
+          initialMedia={readyMedia}
+          coverPhotoId={readyId1}
+        />
+      );
+
+      const deleteButtons = screen.getAllByRole("button", { name: "Delete" });
+      fireEvent.click(deleteButtons[1]); // Delete photo2
+
+      await waitFor(() => {
+        expect(screen.queryByTitle("photo2.jpg")).not.toBeInTheDocument();
+      });
+      expect(screen.getByTitle("photo1.jpg")).toBeInTheDocument();
+    });
+
+    it("HTTP 404 LISTING_NOT_FOUND preserves media card and displays safe error", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: async () => ({
+          code: "LISTING_NOT_FOUND",
+          message: "Listing not found.",
+        }),
+      });
+
+      const readyMedia = [
+        {
+          id: readyId1,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo1.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 0,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+      ];
+
+      render(
+        <MediaUploader
+          listingId={listingId}
+          initialMedia={readyMedia}
+          coverPhotoId={readyId1}
+        />
+      );
+
+      const deleteButton = screen.getByRole("button", { name: "Delete" });
+      fireEvent.click(deleteButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Listing not found.")).toBeInTheDocument();
+      });
+      // The media card MUST NOT be removed
+      expect(screen.getByTitle("photo1.jpg")).toBeInTheDocument();
+    });
+
+    it("HTTP 503 MEDIA_SERVICE_UNAVAILABLE preserves media card and displays safe error", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        json: async () => ({
+          code: "MEDIA_SERVICE_UNAVAILABLE",
+          message: "Media service is temporarily unavailable. Please try again later.",
+        }),
+      });
+
+      const readyMedia = [
+        {
+          id: readyId1,
+          listing_id: listingId,
+          uploader_id: "user-1",
+          original_filename: "photo1.jpg",
+          content_type: "image/jpeg",
+          file_size_bytes: 1024,
+          width: 800,
+          height: 600,
+          display_order: 0,
+          processing_status: "ready" as const,
+          processing_error: null,
+          created_at: new Date().toISOString(),
+          original_storage_path: "orig.jpg",
+          thumbnail_storage_path: "thumb.webp",
+          medium_storage_path: "med.webp",
+          large_storage_path: "large.webp",
+        },
+      ];
+
+      render(
+        <MediaUploader
+          listingId={listingId}
+          initialMedia={readyMedia}
+          coverPhotoId={readyId1}
+        />
+      );
+
+      const deleteButton = screen.getByRole("button", { name: "Delete" });
+      fireEvent.click(deleteButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Media service is temporarily unavailable. Please try again later.")).toBeInTheDocument();
+      });
+      // The media card MUST NOT be removed
+      expect(screen.getByTitle("photo1.jpg")).toBeInTheDocument();
+    });
+  });
+
 });

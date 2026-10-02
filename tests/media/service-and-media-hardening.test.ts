@@ -335,8 +335,8 @@ describe("Service Role Client & Media Failure Hardening Tests", () => {
       const res = await mockedPOST(req, { params: Promise.resolve({ id: listingId }) });
       expect(res.status).toBe(500);
       const json = await res.json();
-      expect(json.processing_status).toBe("failed");
-      expect(json.id).toBe(mediaId);
+      expect(json.media?.processingStatus).toBe("failed");
+      expect(json.media?.id).toBe(mediaId);
 
       // Verify original was removed and any partial derivatives were cleaned
       expect(removedOriginals.length).toBeGreaterThan(0);
