@@ -76,7 +76,7 @@ describe("Listing Defect Remediation Unit Tests", () => {
       const categorySelect = screen.getByLabelText(/Category \*/i);
       expect(categorySelect).toHaveClass("bg-white", "text-gray-900");
 
-      const citySelect = screen.getByLabelText(/City \*/i);
+      const citySelect = screen.getByLabelText(/PIN Code \*/i);
       expect(citySelect).toHaveClass("bg-white", "text-gray-900");
 
       const conditionSelect = screen.getByLabelText(/Condition \*/i);

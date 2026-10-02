@@ -29,7 +29,7 @@ vi.mock("next/navigation", () => ({
 describe("authentication account-enumeration safeguards", () => {
   const authActions = fs
     .readFileSync(path.join(process.cwd(), "src/app/auth/actions.ts"), "utf8")
-    .replace(/\r\n/g, "\n");
+    .replace(/\\'/g, "'").replace(/\r\n/g, "\n");
 
   describe("Static contract checks", () => {
     it("keeps sign-in failures generic and non-enumerating", () => {

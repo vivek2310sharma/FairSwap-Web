@@ -88,30 +88,37 @@ export default function MediaUploader({
               item.id === tempId
                 ? {
                     ...item,
-                    id: data.id || tempId,
-                    processing_status: "failed",
-                    processing_error: data.error || "Upload failed",
+                    id: data.media?.id || data.id || tempId,
+                    processing_status: data.media?.processingStatus || "failed",
+                    processing_error: data.message || "Upload failed",
                   }
                 : item
             )
           );
-          setErrorMessage(data.error || "Failed to upload photo.");
+          setErrorMessage(data.message || "Failed to upload photo.");
         } else {
+          const uploadedId = data.uploadedMediaId || data.id;
+          const status = data.processingStatus || data.processing_status || "ready";
+
           setMediaList((prev) =>
             prev.map((item) =>
               item.id === tempId
                 ? {
                     ...item,
-                    id: data.id,
-                    processing_status: data.processing_status,
-                    display_order: data.display_order,
+                    id: uploadedId,
+                    processing_status: status,
+                    display_order: data.display_order ?? item.display_order,
                   }
                 : item
             )
           );
 
-          if (!activeCoverId) {
-            setActiveCoverId(data.id);
+          if (!activeCoverId && uploadedId) {
+            setActiveCoverId(uploadedId);
+          }
+
+          if (data.refreshRequired) {
+            setErrorMessage("Photo uploaded, but snapshot refresh timed out. You may continue or refresh later.");
           }
         }
       }
@@ -140,15 +147,32 @@ export default function MediaUploader({
       const res = await fetch(`/api/listings/${listingId}/media/${mediaId}`, {
         method: "DELETE",
       });
-      if (res.ok || res.status === 404) {
-        setMediaList((prev) => prev.filter((m) => m.id !== mediaId));
-        if (activeCoverId === mediaId) {
-          const remaining = mediaList.filter((m) => m.id !== mediaId);
-          setActiveCoverId(remaining.length > 0 ? remaining[0].id : null);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.snapshot?.media && Array.isArray(data.snapshot.media)) {
+          const snapshotMedia = data.snapshot.media as Array<{ id: string }>;
+          setMediaList((prev) =>
+            prev.filter(
+              (m) =>
+                m.id.startsWith("temp-") ||
+                (m.id !== mediaId && snapshotMedia.some((sm) => sm.id === m.id))
+            )
+          );
+          if (data.snapshot.listing?.coverPhotoId !== undefined) {
+            setActiveCoverId(data.snapshot.listing.coverPhotoId);
+          } else if (data.new_cover_id !== undefined) {
+            setActiveCoverId(data.new_cover_id);
+          }
+        } else {
+          setMediaList((prev) => prev.filter((m) => m.id !== mediaId));
+          if (activeCoverId === mediaId) {
+            const remaining = mediaList.filter((m) => m.id !== mediaId);
+            setActiveCoverId(remaining.length > 0 ? remaining[0].id : null);
+          }
         }
       } else {
-        const data = await res.json();
-        setErrorMessage(data.error || "Failed to delete photo");
+        const data = await res.json().catch(() => ({}));
+        setErrorMessage(data?.message || "Failed to delete photo");
       }
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Error deleting photo");
@@ -157,14 +181,28 @@ export default function MediaUploader({
 
   const handleSetCover = async (mediaId: string) => {
     if (isReadOnly) return;
+    const previousCoverId = activeCoverId;
     setActiveCoverId(mediaId);
-    await setCoverPhotoAction(listingId, mediaId);
+    const res = await setCoverPhotoAction(listingId, mediaId);
+    if (res?.error) {
+      // Rollback optimistic cover change on failure
+      setActiveCoverId(previousCoverId);
+      setErrorMessage(res.error);
+    }
   };
 
   const handleMove = async (index: number, direction: "up" | "down") => {
     if (isReadOnly) return;
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     if (targetIndex < 0 || targetIndex >= mediaList.length) return;
+
+    const hasUnready = mediaList.some(
+      (m) => m.id.startsWith("temp-") || m.processing_status !== "ready"
+    );
+    if (hasUnready) {
+      setErrorMessage("Please wait for all uploads to complete or remove failed photos before reordering.");
+      return;
+    }
 
     const updated = [...mediaList];
     const [moved] = updated.splice(index, 1);
@@ -176,10 +214,14 @@ export default function MediaUploader({
     }));
 
     setMediaList(reordered);
-    await reorderMediaAction(
+    const res = await reorderMediaAction(
       listingId,
       reordered.map((item) => ({ id: item.id, display_order: item.display_order }))
     );
+    if (res?.error) {
+      setErrorMessage(res.error);
+      setMediaList(mediaList);
+    }
   };
 
   return (
@@ -273,7 +315,7 @@ export default function MediaUploader({
                         <div className="flex gap-1">
                           <button
                             type="button"
-                            disabled={index === 0}
+                            disabled={index === 0 || mediaList.some((m) => m.id.startsWith("temp-") || m.processing_status !== "ready")}
                             onClick={() => handleMove(index, "up")}
                             className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
                             title="Move left/up"
@@ -282,7 +324,7 @@ export default function MediaUploader({
                           </button>
                           <button
                             type="button"
-                            disabled={index === mediaList.length - 1}
+                            disabled={index === mediaList.length - 1 || mediaList.some((m) => m.id.startsWith("temp-") || m.processing_status !== "ready")}
                             onClick={() => handleMove(index, "down")}
                             className="rounded p-1 text-gray-600 hover:bg-gray-200 disabled:opacity-30"
                             title="Move right/down"
