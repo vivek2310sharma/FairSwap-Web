@@ -122,9 +122,61 @@ Every media mutation (`POST` upload, `DELETE` media, `POST` reorder, `PUT` cover
   - Deleting an `uploading`, `processing`, or `failed` row is considered cleanup and does **NOT** transition the listing or enqueue emails.
 - **Pending Review Stability**: When a listing is already in `pending_review`, subsequent mutations do not generate redundant status transitions or spurious revision bumps.
 
+
 ---
 
-## 4. Endpoints & Operations
+## 4. Pre-Commit vs. Post-Commit Mutation Acknowledgement & Reconciliation
+
+A critical reliability invariant of this API is the distinction between pre-commit failure and post-commit snapshot reconciliation failure:
+
+### Pre-Commit Failures (Canonical Non-2xx Errors)
+Any error occurring before the database mutation commits results in a canonical non-2xx HTTP status and typed error response:
+- Authentication & authorization failures (`401 UNAUTHENTICATED`, `403 ACCOUNT_RESTRICTED`, `403 POLICY_ACCEPTANCE_REQUIRED`).
+- Preflight guards & non-editable states (`404 LISTING_NOT_FOUND`, `409 LISTING_MEDIA_NOT_EDITABLE`, `503 SELLER_WRITES_DISABLED`).
+- Validation & size limits (`400 INVALID_MEDIA_REQUEST`, `409 PHOTO_LIMIT_REACHED`, `413 PAYLOAD_TOO_LARGE`, `415 INVALID_IMAGE_FORMAT`).
+- Source processing or RPC failures before commit (`422 MEDIA_PROCESSING_FAILED`, `500 MEDIA_UPLOAD_FAILED`).
+
+### Post-Commit Acknowledgement (HTTP 2xx with Reconciliation Semantics)
+Once a database mutation has committed:
+1. **Upload**: `record_media_processing_result(..., status = 'ready')` succeeded.
+2. **Delete**: `seller_delete_listing_media(...)` RPC succeeded.
+3. **Reorder**: `seller_reorder_listing_media(...)` RPC succeeded.
+4. **Cover**: `seller_set_listing_cover_photo(...)` RPC succeeded.
+
+After that point, the mutation is authoritative and permanent. A subsequent failure in `buildSafeMediaSnapshot` (e.g. read timeout or transient database read hiccup) **MUST NOT** turn the committed mutation into an apparent failure (such as `503 MEDIA_SERVICE_UNAVAILABLE`). Doing so would mislead clients into retrying mutations that have already succeeded.
+
+All mutation routes return a shared acknowledgement shape:
+```json
+{
+  "success": true,
+  "committed": true,
+  "refreshRequired": boolean,
+  "snapshot": SafeMediaSnapshot | null,
+  ...
+}
+```
+
+- When authoritative snapshot succeeds:
+  - HTTP `200 OK` (or `201 Created` for upload)
+  - `"committed": true`
+  - `"refreshRequired": false`
+  - `"snapshot": { "listing": ..., "media": [...] }`
+
+- When mutation committed but snapshot lookup failed:
+  - HTTP `200 OK` (or `201 Created` for upload)
+  - `"committed": true`
+  - `"refreshRequired": true`
+  - `"snapshot": null`
+  - Response retains authoritative mutation identity (e.g., `uploadedMediaId`, `deleted`, `deleted_media_id`, `changed`, `coverPhotoId`).
+
+### Client Reconciliation Contract
+- **NO AUTOMATIC RETRIES**: A client receiving `committed: true, refreshRequired: true` **MUST NOT** automatically re-send or replay the mutation (e.g., never re-upload the same file).
+- The client retains the persisted media identity and marks the local state ready.
+- Authoritative reconciliation is performed via `GET /api/listings/[id]/media`.
+
+---
+
+## 5. Endpoints & Operations
 
 ### A. Safe Owner Media Snapshot & Fail-Closed Semantics
 `GET /api/listings/[id]/media`
@@ -234,7 +286,7 @@ Response format when item was already absent (idempotent 200):
 }
 ```
 
-### D. Transactional Reorder Contract (Ready-Only Membership)
+### D. Transactional Reorder Contract (Idempotent No-Op & Ready-Only Membership)
 `POST /api/listings/[id]/media/reorder`
 - Request body:
   ```json
@@ -244,12 +296,25 @@ Response format when item was already absent (idempotent 200):
   ```
 - Database RPC: `public.seller_reorder_listing_media(listing_id uuid, media_ids uuid[])`
   - Validates caller ownership, active account, policy acceptance, and editable status.
-  - **Ready-Only Membership**: Enforces that `mediaIds` constitutes the exact complete membership of all current **READY** (`processing_status = 'ready'`) media rows.
-  - Non-ready, uploading, processing, failed, or foreign IDs are rejected.
-  - Locks rows `FOR UPDATE` and updates `display_order = 0..(count-1)` collision-safely.
+  - **Reorder Must Fail While Non-Ready Media Exists**:
+    - Within the locked listing transaction, checks if any persisted listing media has `processing_status != 'ready'`.
+    - If unready (uploading, processing, failed) items exist, rejects with:
+      - Code: `INVALID_MEDIA_REQUEST` (HTTP 400)
+      - Message: `"Photos can only be reordered after all uploads are ready."`
+  - **Ready-Only Membership**: Enforces that `mediaIds` constitutes the exact complete membership and count of all current ready media rows.
+  - **Idempotent No-Op Reorder Semantics**:
+    - Compares current ready IDs in order against `mediaIds`.
+    - If current order matches requested order (`v_current_ids = p_media_ids`):
+      - Returns `{ "success": true, "changed": false, "count": N }`.
+      - Exits immediately BEFORE modifying rows, bumping listing revision, triggering `active -> pending_review` transition, or logging audit events.
+      - Guarantees no redundant moderation notifications (#83) on duplicate reorder calls.
+    - If genuine structural reorder:
+      - Collison-safely updates `display_order = 0..(count-1)`.
+      - Increments revision, triggers moderation transition if listing was `active`, logs audit event.
+      - Returns `{ "success": true, "changed": true, "count": N }`.
   - Direct authenticated `UPDATE (display_order)` on `listing_media` is revoked; mutations must use this atomic RPC.
 - Web `MediaUploader` Parity:
-  - Disables structural reorder controls while any item is unready or failed.
+  - Disables structural reorder move buttons while any item is in an unready or failed state.
   - Sends only the complete ready set.
   - Reverts optimistic order if the reorder Server Action fails.
 
@@ -289,7 +354,7 @@ Response format when item was already absent (idempotent 200):
 
 ---
 
-## 5. Security & Authorization Invariants
+## 6. Security & Authorization Invariants
 
 ### Direct Mutation Grants Revoked
 - Authenticated direct `UPDATE (display_order)` on `public.listing_media` is revoked.
@@ -315,7 +380,7 @@ Response format when item was already absent (idempotent 200):
 
 ---
 
-## 6. Scope & Next Steps
+## 7. Scope & Next Steps
 - **Completed**: FairSwap-Web Task A backend HTTP and database contract (Feature branch: `feature/103-native-seller-media-api`, PR #104 targeting `staging`).
 - **Target Environment**: FairSwapTest (`wpppxlnbzqynvhpeuavd`) / staging only.
 - **Hosted Verification**: NOT YET PERFORMED FOR THIS FEATURE CONTRACT (awaiting merge to staging and deployment).

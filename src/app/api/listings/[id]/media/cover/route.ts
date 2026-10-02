@@ -56,7 +56,7 @@ export async function PUT(
   }
 
   // 4. Call transactional user-scoped RPC
-  const { error: rpcError } = await client.rpc("seller_set_listing_cover_photo", {
+  const { data: rpcData, error: rpcError } = await client.rpc("seller_set_listing_cover_photo", {
     listing_id: listingId,
     media_id: parseResult.data.mediaId,
   });
@@ -65,16 +65,32 @@ export async function PUT(
     return mapRpcErrorToMediaError(rpcError, "COVER_UPDATE_FAILED");
   }
 
-  // 5. Build and return updated safe snapshot
-  const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
-  if (!snapshotResult.ok) {
-    return mediaApiError(snapshotResult.code);
-  }
+  const coverPhotoId =
+    typeof rpcData === "object" &&
+    rpcData !== null &&
+    "cover_photo_id" in rpcData
+      ? ((rpcData as { cover_photo_id?: string | null }).cover_photo_id ?? parseResult.data.mediaId)
+      : parseResult.data.mediaId;
 
-  return NextResponse.json(snapshotResult.snapshot, {
-    status: 200,
-    headers: {
-      "Cache-Control": "no-store",
+  // 5. Mutation is COMMITTED. Attempt authoritative safe snapshot reconciliation.
+  const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
+  const refreshRequired = !snapshotResult.ok;
+  const snapshot = snapshotResult.ok ? snapshotResult.snapshot : null;
+
+  return NextResponse.json(
+    {
+      success: true,
+      committed: true,
+      coverPhotoId,
+      refreshRequired,
+      snapshot,
+      ...(snapshot || {}),
     },
-  });
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    }
+  );
 }

@@ -345,6 +345,7 @@ describe("Seller Media Database RLS, RPCs & Lifecycle Regression Tests (#103 / I
         SELECT public.seller_reorder_listing_media('${listingId}', ARRAY['${m2}', '${m1}']::uuid[]) as result;
       `);
       expect(reorderRes.rows[0].result.success).toBe(true);
+      expect(reorderRes.rows[0].result.changed).toBe(true);
       expect(reorderRes.rows[0].result.count).toBe(2);
 
       // Check display_order
@@ -439,6 +440,145 @@ describe("Seller Media Database RLS, RPCs & Lifecycle Regression Tests (#103 / I
 
       // Exact same count: no extra transition created!
       expect(countAfter2).toBe(countAfter1);
+    });
+
+    it("enforces idempotent no-op reorder and non-ready rejection (A, B, C, D, E)", async () => {
+      await db.exec(`SET ROLE postgres;`);
+      const listingRes = await db.query<any>(`
+        INSERT INTO public.listings (
+          seller_id, category_id, city_id, locality_id, title, description,
+          condition, price_type, price_paise, pin_code, revision, status
+        ) VALUES (
+          '${sellerUserId}', '${testCategoryId}', '${testCityId}', '${testLocalityId}',
+          'Lifecycle Reorder Invariants', 'Description for reorder test',
+          'good', 'fixed', 25000, '560038', 1, 'active'
+        ) RETURNING id;
+      `);
+      const listingId = listingRes.rows[0].id;
+
+      const m1Res = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, display_order, processing_status)
+        VALUES ('${listingId}', '${sellerUserId}', 'p1.jpg', 'image/jpeg', 1000, 0, 'ready') RETURNING id;
+      `);
+      const m1 = m1Res.rows[0].id;
+
+      const m2Res = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, display_order, processing_status)
+        VALUES ('${listingId}', '${sellerUserId}', 'p2.jpg', 'image/jpeg', 1000, 1, 'ready') RETURNING id;
+      `);
+      const m2 = m2Res.rows[0].id;
+
+      // Migration 33 forces initial inserts to 'uploading'; explicitly advance them to 'ready'
+      await db.exec(`
+        UPDATE public.listing_media SET processing_status = 'ready' WHERE listing_id = '${listingId}';
+      `);
+
+      // Set listing to active state
+      await db.exec(`
+        UPDATE public.listings
+        SET status = 'active'::public.listing_status_enum,
+            published_at = now()
+        WHERE id = '${listingId}';
+      `);
+
+      await db.exec(`
+        CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid AS $$ SELECT '${sellerUserId}'::uuid $$ LANGUAGE sql STABLE;
+        SET ROLE authenticated;
+      `);
+
+      // A. ACTIVE listing + request with identical current order [m1, m2]
+      const transitionsBeforeA = (await db.query<any>(`
+        SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';
+      `)).rows[0].count;
+
+      const noOpRes = await db.query<any>(`
+        SELECT public.seller_reorder_listing_media('${listingId}', ARRAY['${m1}', '${m2}']::uuid[]) as result;
+      `);
+      expect(noOpRes.rows[0].result.success).toBe(true);
+      expect(noOpRes.rows[0].result.changed).toBe(false);
+
+      const listingA = (await db.query<any>(`
+        SELECT status, revision FROM public.listings WHERE id = '${listingId}';
+      `)).rows[0];
+      expect(listingA.status).toBe("active"); // Remains active
+      expect(listingA.revision).toBe(1);      // Revision unchanged
+
+      const transitionsAfterA = (await db.query<any>(`
+        SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';
+      `)).rows[0].count;
+      expect(parseInt(transitionsAfterA)).toBe(parseInt(transitionsBeforeA)); // Zero transitions!
+
+      // B. ACTIVE listing + genuinely changed order [m2, m1]
+      const changedRes = await db.query<any>(`
+        SELECT public.seller_reorder_listing_media('${listingId}', ARRAY['${m2}', '${m1}']::uuid[]) as result;
+      `);
+      expect(changedRes.rows[0].result.success).toBe(true);
+      expect(changedRes.rows[0].result.changed).toBe(true);
+
+      const listingB = (await db.query<any>(`
+        SELECT status, revision FROM public.listings WHERE id = '${listingId}';
+      `)).rows[0];
+      expect(listingB.status).toBe("pending_review"); // active -> pending_review
+      expect(listingB.revision).toBe(2);              // Revision incremented once
+
+      const transitionsAfterB = (await db.query<any>(`
+        SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';
+      `)).rows[0].count;
+      expect(parseInt(transitionsAfterB) - parseInt(transitionsAfterA)).toBe(1); // Exactly 1 transition
+
+      // C. Retry the same reordered order [m2, m1]
+      const retryRes = await db.query<any>(`
+        SELECT public.seller_reorder_listing_media('${listingId}', ARRAY['${m2}', '${m1}']::uuid[]) as result;
+      `);
+      expect(retryRes.rows[0].result.success).toBe(true);
+      expect(retryRes.rows[0].result.changed).toBe(false); // changed = false
+
+      const listingC = (await db.query<any>(`
+        SELECT status, revision FROM public.listings WHERE id = '${listingId}';
+      `)).rows[0];
+      expect(listingC.status).toBe("pending_review"); // Remains pending_review
+      expect(listingC.revision).toBe(2);              // Revision unchanged from previous request
+
+      const transitionsAfterC = (await db.query<any>(`
+        SELECT count(*) FROM public.listing_status_transitions WHERE listing_id = '${listingId}';
+      `)).rows[0].count;
+      expect(parseInt(transitionsAfterC)).toBe(parseInt(transitionsAfterB)); // Zero additional transitions
+
+      // D. Listing containing ready + processing: reorder request is rejected
+      await db.exec(`SET ROLE postgres;`);
+      const mProcessingRes = await db.query<any>(`
+        INSERT INTO public.listing_media (listing_id, uploader_id, original_filename, content_type, file_size_bytes, display_order, processing_status)
+        VALUES ('${listingId}', '${sellerUserId}', 'p3.jpg', 'image/jpeg', 1000, 2, 'processing') RETURNING id;
+      `);
+      const mProcessing = mProcessingRes.rows[0].id;
+
+      await db.exec(`SET ROLE authenticated;`);
+      let processingRejected = false;
+      try {
+        await db.query(`SELECT public.seller_reorder_listing_media('${listingId}', ARRAY['${m2}', '${m1}']::uuid[]);`);
+      } catch (err: any) {
+        processingRejected = true;
+        expect(err.message).toContain("INVALID_MEDIA_REQUEST");
+        expect(err.message).toContain("Photos can only be reordered after all uploads are ready.");
+      }
+      expect(processingRejected).toBe(true);
+
+      // E. Listing containing ready + failed: reorder request is rejected
+      await db.exec(`SET ROLE postgres;`);
+      await db.query(`
+        UPDATE public.listing_media SET processing_status = 'failed' WHERE id = '${mProcessing}';
+      `);
+
+      await db.exec(`SET ROLE authenticated;`);
+      let failedRejected = false;
+      try {
+        await db.query(`SELECT public.seller_reorder_listing_media('${listingId}', ARRAY['${m2}', '${m1}']::uuid[]);`);
+      } catch (err: any) {
+        failedRejected = true;
+        expect(err.message).toContain("INVALID_MEDIA_REQUEST");
+        expect(err.message).toContain("Photos can only be reordered after all uploads are ready.");
+      }
+      expect(failedRejected).toBe(true);
     });
   });
 

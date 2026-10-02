@@ -56,7 +56,7 @@ export async function POST(
   }
 
   // 4. Call transactional user-scoped RPC
-  const { error: rpcError } = await client.rpc("seller_reorder_listing_media", {
+  const { data: rpcData, error: rpcError } = await client.rpc("seller_reorder_listing_media", {
     listing_id: listingId,
     media_ids: parseResult.data.mediaIds,
   });
@@ -65,16 +65,32 @@ export async function POST(
     return mapRpcErrorToMediaError(rpcError, "MEDIA_REORDER_FAILED");
   }
 
-  // 5. Build and return updated safe snapshot
-  const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
-  if (!snapshotResult.ok) {
-    return mediaApiError(snapshotResult.code);
-  }
+  const isChanged =
+    typeof rpcData === "object" &&
+    rpcData !== null &&
+    "changed" in rpcData
+      ? Boolean((rpcData as { changed?: boolean }).changed)
+      : true;
 
-  return NextResponse.json(snapshotResult.snapshot, {
-    status: 200,
-    headers: {
-      "Cache-Control": "no-store",
+  // 5. Mutation is COMMITTED. Attempt authoritative safe snapshot reconciliation.
+  const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
+  const refreshRequired = !snapshotResult.ok;
+  const snapshot = snapshotResult.ok ? snapshotResult.snapshot : null;
+
+  return NextResponse.json(
+    {
+      success: true,
+      committed: true,
+      changed: isChanged,
+      refreshRequired,
+      snapshot,
+      ...(snapshot || {}),
     },
-  });
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    }
+  );
 }

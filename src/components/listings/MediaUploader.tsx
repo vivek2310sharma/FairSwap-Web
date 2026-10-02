@@ -97,21 +97,28 @@ export default function MediaUploader({
           );
           setErrorMessage(data.message || "Failed to upload photo.");
         } else {
+          const uploadedId = data.uploadedMediaId || data.id;
+          const status = data.processingStatus || data.processing_status || "ready";
+
           setMediaList((prev) =>
             prev.map((item) =>
               item.id === tempId
                 ? {
                     ...item,
-                    id: data.id,
-                    processing_status: data.processing_status,
-                    display_order: data.display_order,
+                    id: uploadedId,
+                    processing_status: status,
+                    display_order: data.display_order ?? item.display_order,
                   }
                 : item
             )
           );
 
-          if (!activeCoverId) {
-            setActiveCoverId(data.id);
+          if (!activeCoverId && uploadedId) {
+            setActiveCoverId(uploadedId);
+          }
+
+          if (data.refreshRequired) {
+            setErrorMessage("Photo uploaded, but snapshot refresh timed out. You may continue or refresh later.");
           }
         }
       }

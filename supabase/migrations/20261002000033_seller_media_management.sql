@@ -242,12 +242,20 @@ BEGIN
     RAISE EXCEPTION 'INVALID_MEDIA_REQUEST: Duplicate media IDs provided in reorder list';
   END IF;
 
-  -- 8. Lock all current READY media rows for this listing
+  -- 8. Lock all media rows for this listing and ensure NO unready media exists
   PERFORM 1
   FROM public.listing_media
   WHERE listing_id = p_listing_id
-    AND processing_status = 'ready'::public.media_processing_status_enum
   FOR UPDATE;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public.listing_media
+    WHERE listing_id = p_listing_id
+      AND processing_status != 'ready'::public.media_processing_status_enum
+  ) THEN
+    RAISE EXCEPTION 'INVALID_MEDIA_REQUEST: Photos can only be reordered after all uploads are ready.';
+  END IF;
 
   SELECT array_agg(id ORDER BY display_order ASC, created_at ASC)
   INTO v_current_ids
@@ -267,7 +275,17 @@ BEGIN
     RAISE EXCEPTION 'INVALID_MEDIA_REQUEST: Reorder list does not match persisted ready media set';
   END IF;
 
-  -- 10. Perform atomic reorder collision-safely
+  -- 10. Idempotent no-op check: if submitted order is identical to current order,
+  -- return early with changed=false BEFORE updating rows, triggering re-review, or writing audit log
+  IF v_current_ids = p_media_ids THEN
+    RETURN jsonb_build_object(
+      'success', true,
+      'changed', false,
+      'count', v_requested_count
+    );
+  END IF;
+
+  -- 11. Perform atomic reorder collision-safely
   UPDATE public.listing_media m
   SET display_order = pos.new_order
   FROM (
@@ -275,7 +293,7 @@ BEGIN
   ) pos
   WHERE m.id = pos.id AND m.listing_id = p_listing_id;
 
-  -- 11. Listing re-review lifecycle:
+  -- 12. Listing re-review lifecycle:
   -- If active, reserved, or paused, transition to pending_review and increment revision once.
   -- If already pending_review, do not fabricate another transition.
   IF v_listing.status IN ('active', 'reserved', 'paused') THEN
@@ -286,7 +304,7 @@ BEGIN
     WHERE id = p_listing_id;
   END IF;
 
-  -- 12. Audit log
+  -- 13. Audit log for actual structural changes
   PERFORM app_security.log_audit_event(
     'media.reordered',
     'listings',
@@ -296,6 +314,7 @@ BEGIN
 
   RETURN jsonb_build_object(
     'success', true,
+    'changed', true,
     'count', v_requested_count
   );
 END;

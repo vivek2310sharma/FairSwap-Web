@@ -1,6 +1,7 @@
 import { logger } from "@/lib/logger";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import sharp from "sharp";
 import { NextRequest } from "next/server";
 import { mediaApiError, mapRpcErrorToMediaError } from "@/lib/media/api-contract";
 
@@ -51,7 +52,7 @@ vi.mock("@/lib/supabase/service", () => ({
   })),
 }));
 
-import { GET as getMediaSnapshot } from "@/app/api/listings/[id]/media/route";
+import { GET as getMediaSnapshot, POST as postUploadMedia } from "@/app/api/listings/[id]/media/route";
 import { DELETE as deleteMedia } from "@/app/api/listings/[id]/media/[mediaId]/route";
 import { POST as postReorderMedia } from "@/app/api/listings/[id]/media/reorder/route";
 import { PUT as putCoverPhoto } from "@/app/api/listings/[id]/media/cover/route";
@@ -62,8 +63,13 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
   const mediaId1 = "22222222-2222-2222-2222-222222222221";
   const mediaId2 = "22222222-2222-2222-2222-222222222222";
   const ownerId = "owner-user-uuid";
+let failSnapshotDb = false;
+let orderCalled = false;
+
 
   beforeEach(() => {
+    failSnapshotDb = false;
+    orderCalled = false;
     vi.clearAllMocks();
     delete process.env.MAINTENANCE_SELLER_WRITES;
     mockAuthUser.mockResolvedValue({ id: ownerId, email: "owner@example.com" });
@@ -116,7 +122,10 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
       if (table === "listing_media") {
         const queryChain: any = {
           eq: vi.fn(() => queryChain),
-          order: vi.fn(() => queryChain),
+          order: vi.fn(() => {
+            orderCalled = true;
+            return queryChain;
+          }),
           maybeSingle: vi.fn().mockResolvedValue({
             data: {
               id: mediaId1,
@@ -129,8 +138,14 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
             },
             error: null,
           }),
-          then: (resolve: any) =>
-            resolve({
+          then: (resolve: any) => {
+            if (failSnapshotDb && orderCalled) {
+              return resolve({
+                data: null,
+                error: { code: "50000", message: "snapshot db error" },
+              });
+            }
+            return resolve({
               data: [
                 {
                   id: mediaId1,
@@ -153,7 +168,8 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
               ],
               count: 2,
               error: null,
-            }),
+            });
+          },
         };
         return {
           select: vi.fn(() => queryChain),
@@ -799,6 +815,242 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
       expect(json).toHaveProperty("message");
       expect(json).toHaveProperty("error"); // Deprecated backward-compatible alias
       expect(json.error).toBe(json.message);
+    });
+  });
+
+
+  describe("H. Post-Commit Mutation Acknowledgement & Reconciliation Contract (Section 11)", () => {
+    async function createTestImageFile(): Promise<File> {
+      const imageBuf = await sharp({
+        create: { width: 50, height: 50, channels: 3, background: { r: 200, g: 100, b: 50 } },
+      })
+        .jpeg()
+        .toBuffer();
+      const file = new File([new Uint8Array(imageBuf)], "test.jpg", { type: "image/jpeg" });
+      file.arrayBuffer = async () => Uint8Array.from(imageBuf).buffer;
+      return file;
+    }
+
+    describe("UPLOAD", () => {
+      it("ready commit + snapshot success -> 201 committed=true refreshRequired=false with snapshot", async () => {
+        failSnapshotDb = false;
+        orderCalled = false;
+        const file = await createTestImageFile();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`, {
+          method: "POST",
+          headers: { Authorization: "Bearer token" },
+        });
+        req.formData = async () => formData;
+
+        const res = await postUploadMedia(req, { params: Promise.resolve({ id: listingId }) });
+        expect(res.status).toBe(201);
+        const json = await res.json();
+        expect(json.success).toBe(true);
+        expect(json.committed).toBe(true);
+        expect(json.refreshRequired).toBe(false);
+        expect(json.uploadedMediaId).toBe(mediaId2);
+        expect(json.processingStatus).toBe("ready");
+        expect(json.snapshot).not.toBeNull();
+        expect(json.snapshot.listing.id).toBe(listingId);
+      });
+
+      it("ready commit + snapshot DB error -> 201 committed=true refreshRequired=true, uploadedMediaId retained, NOT 503", async () => {
+        failSnapshotDb = true;
+        orderCalled = false;
+        const file = await createTestImageFile();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`, {
+          method: "POST",
+          headers: { Authorization: "Bearer token" },
+        });
+        req.formData = async () => formData;
+
+        const res = await postUploadMedia(req, { params: Promise.resolve({ id: listingId }) });
+        expect(res.status).toBe(201);
+        const json = await res.json();
+        expect(json.success).toBe(true);
+        expect(json.committed).toBe(true);
+        expect(json.refreshRequired).toBe(true);
+        expect(json.uploadedMediaId).toBe(mediaId2);
+        expect(json.processingStatus).toBe("ready");
+        expect(json.snapshot).toBeNull();
+        expect(json.code).toBeUndefined(); // DOES NOT return MEDIA_SERVICE_UNAVAILABLE
+      });
+    });
+
+    describe("DELETE", () => {
+      it("RPC success + snapshot error -> 200 committed=true refreshRequired=true, deleted authoritative", async () => {
+        failSnapshotDb = true;
+        orderCalled = false;
+        mockRpc.mockImplementation(async (name: string) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_delete_listing_media") {
+            return {
+              data: {
+                success: true,
+                deleted: true,
+                deleted_media_id: mediaId1,
+                new_cover_id: mediaId2,
+              },
+              error: null,
+            };
+          }
+          return { data: { success: true }, error: null };
+        });
+
+        const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId1}`, {
+          method: "DELETE",
+          headers: { Authorization: "Bearer token" },
+        });
+        const res = await deleteMedia(req, { params: Promise.resolve({ id: listingId, mediaId: mediaId1 }) });
+
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.success).toBe(true);
+        expect(json.committed).toBe(true);
+        expect(json.deleted).toBe(true);
+        expect(json.deleted_media_id).toBe(mediaId1);
+        expect(json.new_cover_id).toBe(mediaId2);
+        expect(json.refreshRequired).toBe(true);
+        expect(json.snapshot).toBeNull();
+      });
+    });
+
+    describe("REORDER", () => {
+      it("RPC changed=true + snapshot error -> 200 committed=true refreshRequired=true", async () => {
+        failSnapshotDb = true;
+        orderCalled = false;
+        mockRpc.mockImplementation(async (name: string) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_reorder_listing_media") {
+            return {
+              data: {
+                success: true,
+                changed: true,
+                count: 2,
+              },
+              error: null,
+            };
+          }
+          return { data: { success: true }, error: null };
+        });
+
+        const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/reorder`, {
+          method: "POST",
+          headers: { Authorization: "Bearer token", "Content-Type": "application/json" },
+          body: JSON.stringify({ mediaIds: [mediaId2, mediaId1] }),
+        });
+        const res = await postReorderMedia(req, { params: Promise.resolve({ id: listingId }) });
+
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.success).toBe(true);
+        expect(json.committed).toBe(true);
+        expect(json.changed).toBe(true);
+        expect(json.refreshRequired).toBe(true);
+        expect(json.snapshot).toBeNull();
+      });
+
+      it("no-op changed=false + snapshot error -> 200 committed=true refreshRequired=true", async () => {
+        failSnapshotDb = true;
+        orderCalled = false;
+        mockRpc.mockImplementation(async (name: string) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_reorder_listing_media") {
+            return {
+              data: {
+                success: true,
+                changed: false,
+                count: 2,
+              },
+              error: null,
+            };
+          }
+          return { data: { success: true }, error: null };
+        });
+
+        const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/reorder`, {
+          method: "POST",
+          headers: { Authorization: "Bearer token", "Content-Type": "application/json" },
+          body: JSON.stringify({ mediaIds: [mediaId1, mediaId2] }),
+        });
+        const res = await postReorderMedia(req, { params: Promise.resolve({ id: listingId }) });
+
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.success).toBe(true);
+        expect(json.committed).toBe(true);
+        expect(json.changed).toBe(false);
+        expect(json.refreshRequired).toBe(true);
+        expect(json.snapshot).toBeNull();
+      });
+    });
+
+    describe("COVER", () => {
+      it("RPC success + snapshot error -> 200 committed=true refreshRequired=true", async () => {
+        failSnapshotDb = true;
+        orderCalled = false;
+        mockRpc.mockImplementation(async (name: string) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_set_listing_cover_photo") {
+            return {
+              data: {
+                success: true,
+                cover_photo_id: mediaId2,
+              },
+              error: null,
+            };
+          }
+          return { data: { success: true }, error: null };
+        });
+
+        const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/cover`, {
+          method: "PUT",
+          headers: { Authorization: "Bearer token", "Content-Type": "application/json" },
+          body: JSON.stringify({ mediaId: mediaId2 }),
+        });
+        const res = await putCoverPhoto(req, { params: Promise.resolve({ id: listingId }) });
+
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.success).toBe(true);
+        expect(json.committed).toBe(true);
+        expect(json.coverPhotoId).toBe(mediaId2);
+        expect(json.refreshRequired).toBe(true);
+        expect(json.snapshot).toBeNull();
+      });
+    });
+
+    describe("PRE-COMMIT", () => {
+      it("RPC failure continues returning canonical non-2xx error", async () => {
+        mockRpc.mockImplementation(async (name: string) => {
+          if (name === "has_current_policy_acceptance") return { data: true, error: null };
+          if (name === "seller_reorder_listing_media") {
+            return {
+              data: null,
+              error: { message: "INVALID_MEDIA_REQUEST: Photos can only be reordered after all uploads are ready." },
+            };
+          }
+          return { data: null, error: null };
+        });
+
+        const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/reorder`, {
+          method: "POST",
+          headers: { Authorization: "Bearer token", "Content-Type": "application/json" },
+          body: JSON.stringify({ mediaIds: [mediaId2, mediaId1] }),
+        });
+        const res = await postReorderMedia(req, { params: Promise.resolve({ id: listingId }) });
+
+        expect(res.status).toBe(400);
+        const json = await res.json();
+        expect(json.code).toBe("INVALID_MEDIA_REQUEST");
+        expect(json.message).toBe("Photos can only be reordered after all uploads are ready.");
+      });
     });
   });
 

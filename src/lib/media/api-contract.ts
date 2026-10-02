@@ -185,6 +185,12 @@ export function mapRpcErrorToMediaError(
   fallbackCode: MediaErrorCode
 ): NextResponse<MediaApiErrorResponse> {
   const msg = rpcError?.message || "";
+  if (msg.includes("Photos can only be reordered after all uploads are ready.")) {
+    return mediaApiError(
+      "INVALID_MEDIA_REQUEST",
+      "Photos can only be reordered after all uploads are ready."
+    );
+  }
   for (const code of MEDIA_ERROR_CODES) {
     if (msg.includes(code)) {
       return mediaApiError(code);

@@ -134,11 +134,10 @@ export async function DELETE(
     }
   }
 
-  // 6. Return safe snapshot of remaining media (fails closed on infrastructure error)
+  // 6. Mutation is COMMITTED. Attempt authoritative safe snapshot reconciliation.
   const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
-  if (!snapshotResult.ok) {
-    return mediaApiError(snapshotResult.code);
-  }
+  const refreshRequired = !snapshotResult.ok;
+  const snapshot = snapshotResult.ok ? snapshotResult.snapshot : null;
 
   const deletedMediaId = isDeleted
     ? ((deleteResult as { deleted_media_id?: string | null }).deleted_media_id ?? mediaId)
@@ -154,10 +153,12 @@ export async function DELETE(
   return NextResponse.json(
     {
       success: true,
+      committed: true,
       deleted: isDeleted,
       deleted_media_id: deletedMediaId,
       new_cover_id: newCoverId,
-      snapshot: snapshotResult.snapshot,
+      refreshRequired,
+      snapshot,
     },
     {
       status: 200,

@@ -349,6 +349,58 @@ describe("Web MediaUploader Reorder Parity Unit Tests (Section 9)", () => {
     });
   });
 
+  describe("Web MediaUploader Post-Commit Reconciliation Parity (Section 12)", () => {
+    it("handles committed upload with refreshRequired=true gracefully without failing or re-posting", async () => {
+      const persistedMediaId = "33333333-3333-3333-3333-333333333333";
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          success: true,
+          committed: true,
+          uploadedMediaId: persistedMediaId,
+          processingStatus: "ready",
+          refreshRequired: true,
+          snapshot: null,
+        }),
+      });
+      global.fetch = fetchMock;
+
+      const { container } = render(
+        <MediaUploader
+          listingId={listingId}
+          initialMedia={[]}
+          coverPhotoId={null}
+        />
+      );
+
+      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(fileInput).not.toBeNull();
+
+      const testFile = new File(["dummy content"], "camera_photo.jpg", { type: "image/jpeg" });
+      fireEvent.change(fileInput, { target: { files: [testFile] } });
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
+
+      await waitFor(() => {
+        // Safe reconciliation notice is shown
+        expect(
+          screen.getByText("Photo uploaded, but snapshot refresh timed out. You may continue or refresh later.")
+        ).toBeInTheDocument();
+      });
+
+      // Optimistic row transitioned to persisted UUID and is marked ready (not failed)
+      expect(screen.queryByText(/Failed:/i)).not.toBeInTheDocument();
+      const img = container.querySelector(`img[src="/api/listings/${listingId}/media/${persistedMediaId}/thumb"]`);
+      expect(img).toBeInTheDocument();
+
+      // No automatic second POST occurs
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("Web MediaUploader Delete Parity & 404 Invariant Unit Tests (Section 6)", () => {
     it("HTTP 200 deleted=true removes the media card", async () => {
       global.fetch = vi.fn().mockResolvedValue({

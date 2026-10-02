@@ -306,18 +306,24 @@ export async function POST(
       return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to finalize media processing.");
     }
 
-    // 14. Return authoritative safe snapshot
+    // 14. Mutation is COMMITTED. Attempt authoritative safe snapshot reconciliation.
     const snapshotResult = await buildSafeMediaSnapshot(client, listingId, mediaId);
-    if (!snapshotResult.ok) {
-      return mediaApiError(snapshotResult.code);
-    }
+    const refreshRequired = !snapshotResult.ok;
+    const snapshot = snapshotResult.ok ? snapshotResult.snapshot : null;
+
     return NextResponse.json(
       {
-        ...snapshotResult.snapshot,
+        success: true,
+        committed: true,
+        uploadedMediaId: mediaId,
+        processingStatus: "ready",
+        refreshRequired,
+        snapshot,
         // Backward-compatibility properties for existing Web MediaUploader
         id: mediaId,
         display_order: mediaRecord.display_order,
         processing_status: "ready",
+        ...(snapshot || {}),
       },
       {
         status: 201,
