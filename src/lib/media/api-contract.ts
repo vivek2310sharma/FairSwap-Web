@@ -3,6 +3,7 @@ import { z } from "zod";
 import { SupabaseClient, User } from "@supabase/supabase-js";
 import { isSellerWriteMaintenanceEnabled, SELLER_WRITE_MAINTENANCE_MESSAGE } from "@/lib/maintenance/seller-writes";
 import { checkPolicyAcceptanceStatus } from "@/lib/compliance/policy-acceptance";
+import { logger } from "@/lib/logger";
 import type { Database } from "@/types/database";
 
 export const MEDIA_ERROR_CODES = [
@@ -146,9 +147,10 @@ export function mediaApiError(
       : ERROR_CODE_TO_HTTP_STATUS[code] || 500;
   let safeMessage = customMessage || DEFAULT_ERROR_MESSAGES[code] || "An unexpected error occurred.";
 
-  // Defensive sanitization: scrub SQLSTATE, table names, and internal paths
+  // Defensive sanitization: scrub SQLSTATE codes, table names, and internal paths.
+  // Uses precise patterns to avoid false positives on normal error text.
   if (
-    /SQLSTATE|[0-9A-Z]{5}|public\.|auth\.|storage\.|listing-originals|listing-derivatives|sb_secret_|Bearer|eyJ/i.test(
+    /SQLSTATE\b|\b[0-9]{2}[A-Z0-9]{3}\b|public\.|auth\.|storage\.|listing-originals|listing-derivatives|sb_secret_|\bBearer\s|\beyJ[A-Za-z0-9]/i.test(
       safeMessage
     )
   ) {
@@ -219,10 +221,10 @@ export async function verifySellerMediaMutationGuard(
     };
   }
 
-  // 2. Active account status check
+  // 2. Active account status check (column is `account_status`, not `status`)
   const { data: userAccount, error: accountError } = await client
     .from("user_accounts")
-    .select("status")
+    .select("account_status")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -233,11 +235,7 @@ export async function verifySellerMediaMutationGuard(
     };
   }
 
-  const accountStatus =
-    (userAccount as { status?: string; account_status?: string } | null)?.status ??
-    (userAccount as { status?: string; account_status?: string } | null)?.account_status;
-
-  if (!userAccount || accountStatus !== "active") {
+  if (!userAccount || (userAccount as { account_status?: string }).account_status !== "active") {
     return {
       allowed: false,
       response: mediaApiError("ACCOUNT_RESTRICTED"),
@@ -260,6 +258,7 @@ export async function verifySellerMediaMutationGuard(
   }
 
   // 4. Listing ownership and existence
+  //    Separate error semantics: DB/infrastructure error -> 503, missing/RLS-miss -> 404
   const listingQuery = client
     .from("listings")
     .select("id, seller_id, status, revision, cover_photo_id")
@@ -270,8 +269,20 @@ export async function verifySellerMediaMutationGuard(
       ? await (listingQuery as unknown as { maybeSingle: () => Promise<{ data: { id: string; seller_id: string; status: string; revision: number; cover_photo_id: string | null } | null; error: unknown }> }).maybeSingle()
       : await (listingQuery as unknown as { single: () => Promise<{ data: { id: string; seller_id: string; status: string; revision: number; cover_photo_id: string | null } | null; error: unknown }> }).single();
 
-  if (listingError || !listing || listing.seller_id !== user.id) {
-    // Conceal non-owner listings as 404 LISTING_NOT_FOUND
+  if (listingError) {
+    // Infrastructure / DB query failure -> 503, not 404
+    logger.warn("media.listing_lookup_failed", {
+      operation: "verifySellerMediaMutationGuard",
+      error_code: typeof listingError === "object" && listingError !== null && "code" in listingError ? String((listingError as { code: string }).code) : "UNKNOWN",
+    });
+    return {
+      allowed: false,
+      response: mediaApiError("MEDIA_SERVICE_UNAVAILABLE"),
+    };
+  }
+
+  if (!listing || listing.seller_id !== user.id) {
+    // Genuinely absent or non-owner -> 404
     return {
       allowed: false,
       response: mediaApiError("LISTING_NOT_FOUND"),
@@ -312,7 +323,16 @@ export async function buildSafeMediaSnapshot(
     .eq("id", listingId)
     .single();
 
-  if (listingError || !listing) {
+  if (listingError) {
+    // Infrastructure failure during snapshot - log for observability
+    logger.warn("media.snapshot_listing_lookup_failed", {
+      operation: "buildSafeMediaSnapshot",
+      error_code: typeof listingError === "object" && listingError !== null && "code" in listingError ? String((listingError as { code: string }).code) : "UNKNOWN",
+    });
+    return null;
+  }
+
+  if (!listing) {
     return null;
   }
 

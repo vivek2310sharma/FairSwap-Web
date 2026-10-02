@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-auth";
 import { createServiceRoleClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
 import {
   mediaApiError,
   mapRpcErrorToMediaError,
@@ -100,8 +101,16 @@ export async function DELETE(
       if (derivativePaths.length > 0) {
         await serviceClient.storage.from("listing-derivatives").remove(derivativePaths);
       }
-    } catch {
-      // Best-effort cleanup: log warning internally, never expose storage details to client
+    } catch (cleanupErr) {
+      // Best-effort cleanup: log sanitized warning, never expose storage details to client
+      logger.warn("media.storage_cleanup_failed", {
+        operation: "delete_media_storage_cleanup",
+        details: {
+          media_id: mediaId,
+          listing_id: listingId,
+          error_type: cleanupErr instanceof Error ? cleanupErr.name : "UnknownError",
+        },
+      });
     }
   }
 

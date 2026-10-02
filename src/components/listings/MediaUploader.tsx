@@ -157,8 +157,14 @@ export default function MediaUploader({
 
   const handleSetCover = async (mediaId: string) => {
     if (isReadOnly) return;
+    const previousCoverId = activeCoverId;
     setActiveCoverId(mediaId);
-    await setCoverPhotoAction(listingId, mediaId);
+    const res = await setCoverPhotoAction(listingId, mediaId);
+    if (res?.error) {
+      // Rollback optimistic cover change on failure
+      setActiveCoverId(previousCoverId);
+      setErrorMessage(res.error);
+    }
   };
 
   const handleMove = async (index: number, direction: "up" | "down") => {
