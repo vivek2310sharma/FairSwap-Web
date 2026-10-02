@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { draftListingSchema, ListingCondition, ListingPriceType } from "@/types/listing";
-import type { Json } from "@/types/database";
+import type { Database, Json } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
 import {
   isSellerWriteMaintenanceEnabled,
@@ -222,11 +223,10 @@ export async function submitListingAction(listingId: string): Promise<ListingAct
     .eq("id", listingId)
     .single();
 
-  const { data: privLocData } = await supabase.rpc(
-    "get_seller_listing_location_private",
-    { p_listing_id: listingId }
-  );
-  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : privLocData;
+  const { data: privLocData } = await (
+    supabase as SupabaseClient<Database>
+  ).rpc("get_seller_listing_location_private", { p_listing_id: listingId });
+  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : null;
   const pinCode = privateLoc?.pin_code;
 
   if (!pinCode || !/^\d{6}$/.test(pinCode)) {

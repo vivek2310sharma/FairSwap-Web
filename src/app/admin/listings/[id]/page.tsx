@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logger";
+import type { Database } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import ModerationActions from "./ModerationActions";
 
 export default async function AdminListingDetailPage({
@@ -88,17 +90,10 @@ export default async function AdminListingDetailPage({
     notFound();
   }
 
-  type StaffLocationRpcResult = {
-    listing_id: string;
-    pin_code: string | null;
-    landmark: string | null;
-  };
-
   // Fetch private location fields through staff-authorized RPC
-  const { data: privLocData, error: privLocError } = await supabase.rpc(
-    "get_staff_listing_location_private" as unknown as never,
-    { p_listing_id: id } as unknown as void
-  );
+  const { data: privLocData, error: privLocError } = await (
+    supabase as SupabaseClient<Database>
+  ).rpc("get_staff_listing_location_private", { p_listing_id: id });
 
   if (privLocError) {
     logger.warn("admin.moderation_private_location_rpc_failed", {
@@ -108,8 +103,7 @@ export default async function AdminListingDetailPage({
     });
   }
 
-  const locRows = privLocData as unknown as StaffLocationRpcResult[] | null;
-  const privateLoc = Array.isArray(locRows) ? locRows[0] : (locRows as StaffLocationRpcResult | null);
+  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : null;
 
   const moderationListing = {
     ...listing,
