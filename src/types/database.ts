@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       audit_logs: {
@@ -152,98 +157,6 @@ export type Database = {
         }
         Relationships: []
       }
-      india_postal_data: {
-        Row: {
-          circle: string | null
-          created_at: string
-          delivery_status: string | null
-          district: string
-          division: string | null
-          id: string
-          office_name: string
-          office_type: string | null
-          pincode: string
-          region: string | null
-          source: string
-          source_record_key: string
-          source_updated_at: string | null
-          state: string
-          taluk: string | null
-          updated_at: string
-        }
-        Insert: {
-          circle?: string | null
-          created_at?: string
-          delivery_status?: string | null
-          district: string
-          division?: string | null
-          id?: string
-          office_name: string
-          office_type?: string | null
-          pincode: string
-          region?: string | null
-          source?: string
-          source_record_key?: string
-          source_updated_at?: string | null
-          state: string
-          taluk?: string | null
-          updated_at?: string
-        }
-        Update: {
-          circle?: string | null
-          created_at?: string
-          delivery_status?: string | null
-          district?: string
-          division?: string | null
-          id?: string
-          office_name?: string
-          office_type?: string | null
-          pincode?: string
-          region?: string | null
-          source?: string
-          source_record_key?: string
-          source_updated_at?: string | null
-          state?: string
-          taluk?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      postal_pincode_localities: {
-        Row: {
-          created_at: string
-          id: string
-          locality_id: string
-          office_name: string | null
-          pincode: string
-          source: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          locality_id: string
-          office_name?: string | null
-          pincode: string
-          source?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          locality_id?: string
-          office_name?: string | null
-          pincode?: string
-          source?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "postal_pincode_localities_locality_id_fkey"
-            columns: ["locality_id"]
-            isOneToOne: false
-            referencedRelation: "localities"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       conversation_read_states: {
         Row: {
           conversation_id: string
@@ -362,7 +275,7 @@ export type Database = {
         Update: {
           attempt_count?: number
           created_at?: string
-          event_type: Database["public"]["Enums"]["email_outbox_event_type"]
+          event_type?: Database["public"]["Enums"]["email_outbox_event_type"]
           id?: string
           last_error_code?: string | null
           last_error_message?: string | null
@@ -421,6 +334,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      india_postal_data: {
+        Row: {
+          circle: string | null
+          created_at: string
+          delivery_status: string | null
+          district: string
+          division: string | null
+          id: string
+          office_name: string
+          office_type: string | null
+          pincode: string
+          region: string | null
+          source: string
+          source_record_key: string
+          source_updated_at: string | null
+          state: string
+          taluk: string | null
+          updated_at: string
+        }
+        Insert: {
+          circle?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          district: string
+          division?: string | null
+          id?: string
+          office_name: string
+          office_type?: string | null
+          pincode: string
+          region?: string | null
+          source: string
+          source_record_key: string
+          source_updated_at?: string | null
+          state: string
+          taluk?: string | null
+          updated_at?: string
+        }
+        Update: {
+          circle?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          district?: string
+          division?: string | null
+          id?: string
+          office_name?: string
+          office_type?: string | null
+          pincode?: string
+          region?: string | null
+          source?: string
+          source_record_key?: string
+          source_updated_at?: string | null
+          state?: string
+          taluk?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       listing_media: {
         Row: {
@@ -669,13 +639,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_listings_cover_photo"
-            columns: ["cover_photo_id"]
-            isOneToOne: false
-            referencedRelation: "listing_media"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "listings_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -690,11 +653,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "listings_cover_photo_id_fkey"
+            columns: ["cover_photo_id"]
+            isOneToOne: false
+            referencedRelation: "listing_media"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "listings_locality_id_fkey"
             columns: ["locality_id"]
             isOneToOne: false
             referencedRelation: "localities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "user_accounts"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -800,6 +777,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      policy_acceptance_records: {
+        Row: {
+          acceptable_use_version: string
+          accepted_at: string
+          id: string
+          minimum_age_confirmed: number
+          privacy_policy_version: string
+          terms_version: string
+          user_id: string
+        }
+        Insert: {
+          acceptable_use_version: string
+          accepted_at?: string
+          id?: string
+          minimum_age_confirmed: number
+          privacy_policy_version: string
+          terms_version: string
+          user_id: string
+        }
+        Update: {
+          acceptable_use_version?: string
+          accepted_at?: string
+          id?: string
+          minimum_age_confirmed?: number
+          privacy_policy_version?: string
+          terms_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      postal_pincode_localities: {
+        Row: {
+          created_at: string
+          id: string
+          locality_id: string
+          office_name: string | null
+          pincode: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          locality_id: string
+          office_name?: string | null
+          pincode: string
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          locality_id?: string
+          office_name?: string | null
+          pincode?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "postal_pincode_localities_locality_id_fkey"
+            columns: ["locality_id"]
+            isOneToOne: false
+            referencedRelation: "localities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       privacy_requests: {
         Row: {
@@ -939,6 +981,7 @@ export type Database = {
           created_at: string
           id: string
           is_internal_note: boolean
+          is_staff_reply: boolean
           sender_id: string | null
           ticket_id: string
         }
@@ -947,6 +990,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_internal_note?: boolean
+          is_staff_reply?: boolean
           sender_id?: string | null
           ticket_id: string
         }
@@ -955,10 +999,18 @@ export type Database = {
           created_at?: string
           id?: string
           is_internal_note?: boolean
+          is_staff_reply?: boolean
           sender_id?: string | null
           ticket_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "support_messages_sender_id_profiles_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "support_messages_ticket_id_fkey"
             columns: ["ticket_id"]
@@ -977,6 +1029,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["support_ticket_priority_enum"]
           status: Database["public"]["Enums"]["support_ticket_status_enum"]
           subject: string
+          ticket_number: string | null
           updated_at: string
           user_id: string | null
         }
@@ -988,6 +1041,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["support_ticket_priority_enum"]
           status?: Database["public"]["Enums"]["support_ticket_status_enum"]
           subject: string
+          ticket_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -999,6 +1053,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["support_ticket_priority_enum"]
           status?: Database["public"]["Enums"]["support_ticket_status_enum"]
           subject?: string
+          ticket_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -1148,15 +1203,6 @@ export type Database = {
         Args: { p_target_user_id: string }
         Returns: undefined
       }
-      admin_update_ticket_status: {
-        Args: {
-          assigned_to?: string
-          priority: Database["public"]["Enums"]["support_ticket_priority_enum"]
-          status: Database["public"]["Enums"]["support_ticket_status_enum"]
-          ticket_id: string
-        }
-        Returns: undefined
-      }
       admin_search_users: {
         Args: {
           p_limit?: number
@@ -1167,12 +1213,21 @@ export type Database = {
         Returns: {
           account_status: Database["public"]["Enums"]["account_status_enum"]
           created_at: string
-          display_name: string | null
+          display_name: string
           email: string
           listings_count: number
-          role: Database["public"]["Enums"]["staff_role_enum"] | null
+          role: Database["public"]["Enums"]["staff_role_enum"]
           user_id: string
         }[]
+      }
+      admin_update_ticket_status: {
+        Args: {
+          assigned_to?: string
+          priority: Database["public"]["Enums"]["support_ticket_priority_enum"]
+          status: Database["public"]["Enums"]["support_ticket_status_enum"]
+          ticket_id: string
+        }
+        Returns: undefined
       }
       admin_update_user_account_status: {
         Args: {
@@ -1185,6 +1240,80 @@ export type Database = {
       block_user: {
         Args: { blocked_user_id: string; reason?: string }
         Returns: undefined
+      }
+      claim_email_outbox_batch: {
+        Args: {
+          p_batch_size: number
+          p_lock_token: string
+          p_stale_timeout_seconds?: number
+        }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          event_type: Database["public"]["Enums"]["email_outbox_event_type"]
+          id: string
+          last_error_code: string | null
+          last_error_message: string | null
+          last_error_status: number | null
+          listing_id: string
+          lock_token: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_user_id: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["email_outbox_status"]
+          transition_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "email_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_email_outbox_job_by_id: {
+        Args: {
+          p_job_id: string
+          p_lock_token: string
+          p_stale_timeout_seconds?: number
+        }
+        Returns: {
+          attempt_count: number
+          created_at: string
+          event_type: Database["public"]["Enums"]["email_outbox_event_type"]
+          id: string
+          last_error_code: string | null
+          last_error_message: string | null
+          last_error_status: number | null
+          listing_id: string
+          lock_token: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_user_id: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["email_outbox_status"]
+          transition_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "email_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complete_email_outbox_job: {
+        Args: {
+          p_job_id: string
+          p_lock_token: string
+          p_provider_message_id: string
+        }
+        Returns: boolean
       }
       create_report: {
         Args: {
@@ -1212,6 +1341,19 @@ export type Database = {
         Returns: Json
       }
       expire_listing: { Args: { listing_id: string }; Returns: Json }
+      fail_email_outbox_job: {
+        Args: {
+          p_backoff_seconds?: number
+          p_error_code: string
+          p_error_message: string
+          p_error_status: number
+          p_is_permanent: boolean
+          p_job_id: string
+          p_lock_token: string
+          p_max_attempts?: number
+        }
+        Returns: boolean
+      }
       get_my_reports: {
         Args: never
         Returns: {
@@ -1224,10 +1366,28 @@ export type Database = {
           target_type: Database["public"]["Enums"]["report_target_type_enum"]
         }[]
       }
+      get_seller_listing_location_private: {
+        Args: { p_listing_id: string }
+        Returns: {
+          landmark: string
+          listing_id: string
+          pin_code: string
+        }[]
+      }
+      get_staff_listing_location_private: {
+        Args: { p_listing_id: string }
+        Returns: {
+          landmark: string
+          listing_id: string
+          pin_code: string
+        }[]
+      }
+      has_current_policy_acceptance: { Args: never; Returns: boolean }
       is_listing_publicly_visible: {
         Args: { listing_id: string }
         Returns: boolean
       }
+      lookup_pincode: { Args: { p_pincode: string }; Returns: Json }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_conversation_read: {
         Args: { conversation_id: string; message_id: string }
@@ -1251,6 +1411,10 @@ export type Database = {
         }
         Returns: Json
       }
+      record_policy_reacceptance: {
+        Args: { age_confirmed: boolean; terms_and_privacy_accepted: boolean }
+        Returns: Json
+      }
       search_public_listings: {
         Args: {
           category_id?: string
@@ -1264,6 +1428,27 @@ export type Database = {
           price_min?: number
           query?: string
           sort?: string
+        }
+        Returns: Json
+      }
+      seller_delete_listing_media: {
+        Args: {
+          listing_id: string
+          media_id: string
+        }
+        Returns: Json
+      }
+      seller_reorder_listing_media: {
+        Args: {
+          listing_id: string
+          media_ids: string[]
+        }
+        Returns: Json
+      }
+      seller_set_listing_cover_photo: {
+        Args: {
+          listing_id: string
+          media_id: string
         }
         Returns: Json
       }
@@ -1283,43 +1468,6 @@ export type Database = {
       start_conversation: {
         Args: { client_request_id: string; content: string; listing_id: string }
         Returns: Json
-      }
-      claim_email_outbox_batch: {
-        Args: {
-          p_batch_size: number
-          p_lock_token: string
-          p_stale_timeout_seconds?: number
-        }
-        Returns: Database["public"]["Tables"]["email_outbox"]["Row"][]
-      }
-      claim_email_outbox_job_by_id: {
-        Args: {
-          p_job_id: string
-          p_lock_token: string
-          p_stale_timeout_seconds?: number
-        }
-        Returns: Database["public"]["Tables"]["email_outbox"]["Row"][]
-      }
-      complete_email_outbox_job: {
-        Args: {
-          p_job_id: string
-          p_lock_token: string
-          p_provider_message_id: string
-        }
-        Returns: boolean
-      }
-      fail_email_outbox_job: {
-        Args: {
-          p_backoff_seconds?: number
-          p_error_code: string
-          p_error_message: string
-          p_error_status: number
-          p_is_permanent: boolean
-          p_job_id: string
-          p_lock_token: string
-          p_max_attempts?: number
-        }
-        Returns: boolean
       }
       unblock_user: { Args: { blocked_user_id: string }; Returns: undefined }
     }
@@ -1595,4 +1743,4 @@ export const Constants = {
       transition_actor_kind_enum: ["seller", "moderator", "system"],
     },
   },
-} as const;
+} as const

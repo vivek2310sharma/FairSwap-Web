@@ -1,45 +1,100 @@
 import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import {
+  validateLocalTestEnvironment,
+  testUserRegistry,
+  type TargetConfig,
+} from "../tests/helpers/local-test-guard";
+import { LEGAL_POLICY } from "../src/lib/compliance/legal-policy";
 
+const PLAYWRIGHT_BASE_URL = process.env.PLAYWRIGHT_TEST_BASE_URL || "http://localhost:3001";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+const MAILPIT_URL = process.env.MAILPIT_URL || "http://127.0.0.1:54324";
 const SERVICE_KEY =
   process.env.SUPABASE_SECRET_KEY ||
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
+const TARGET_CONFIG: TargetConfig = {
+  appUrl: PLAYWRIGHT_BASE_URL,
+  supabaseUrl: SUPABASE_URL,
+  mailboxUrl: MAILPIT_URL,
+};
+
 test.describe("Milestone 1.5 Communication & Safety Route Protection", () => {
   test("unauthenticated user accessing /account/messages is redirected to sign-in", async ({ page }) => {
     await page.goto("/account/messages");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Faccount%2Fmessages/);
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)account(%2F|\/)messages/);
   });
 
   test("unauthenticated user accessing /account/notifications is redirected to sign-in", async ({ page }) => {
     await page.goto("/account/notifications");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Faccount%2Fnotifications/);
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)account(%2F|\/)notifications/);
   });
 
   test("unauthenticated user accessing /account/support is redirected to sign-in", async ({ page }) => {
     await page.goto("/account/support");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Faccount%2Fsupport/);
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)account(%2F|\/)support/);
   });
 
   test("unauthenticated user accessing /admin/reports is redirected to sign-in", async ({ page }) => {
     await page.goto("/admin/reports");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fadmin%2Freports/);
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)admin(%2F|\/)reports/);
   });
 
   test("unauthenticated user accessing /admin/support is redirected to sign-in", async ({ page }) => {
     await page.goto("/admin/support");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fadmin%2Fsupport/);
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)admin(%2F|\/)support/);
   });
 
   test("unauthenticated user accessing /admin/privacy is redirected to sign-in", async ({ page }) => {
     await page.goto("/admin/privacy");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fadmin%2Fprivacy/);
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)admin(%2F|\/)privacy/);
   });
 });
 
 test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () => {
+  const trackedListingIds = new Set<string>();
+  const trackedReportIds = new Set<string>();
+
+  test.afterEach(async () => {
+    if (process.env.ALLOW_LOCAL_TEST_MUTATIONS === "true") {
+      validateLocalTestEnvironment(TARGET_CONFIG);
+      const serviceClient = createClient(SUPABASE_URL, SERVICE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      // 1. Delete tracked reports
+      for (const reportId of Array.from(trackedReportIds)) {
+        const { error: repErr } = await serviceClient.from("reports").delete().eq("id", reportId);
+        if (repErr) throw new Error(`Failed to delete tracked report ${reportId}: ${repErr.message}`);
+        trackedReportIds.delete(reportId);
+      }
+      for (const userId of testUserRegistry.getRegisteredIds()) {
+        const { error: userRepErr } = await serviceClient.from("reports").delete().eq("reporter_id", userId);
+        if (userRepErr) throw new Error(`Failed to delete reports for user ${userId}: ${userRepErr.message}`);
+      }
+
+      // 2. Delete conversations and messages for tracked listings
+      for (const listingId of Array.from(trackedListingIds)) {
+        const { error: convErr } = await serviceClient.from("conversations").delete().eq("listing_id", listingId);
+        if (convErr) throw new Error(`Failed to delete conversations for listing ${listingId}: ${convErr.message}`);
+
+        const { error: listErr } = await serviceClient.from("listings").delete().eq("id", listingId);
+        if (listErr) throw new Error(`Failed to delete tracked listing ${listingId}: ${listErr.message}`);
+        trackedListingIds.delete(listingId);
+      }
+
+      // 3. Delete tracked auth users (cascades to user_accounts and profiles)
+      const cleanupResult = await testUserRegistry.cleanupTrackedUsers(serviceClient, TARGET_CONFIG);
+      if (cleanupResult.failed.length > 0) {
+        throw new Error(
+          `Scoped test user cleanup failed for user IDs: ${cleanupResult.failed.join(", ")}`
+        );
+      }
+    }
+  });
+
   test("two authenticated sessions exchange live messages via Realtime and submit report", async ({ browser }, testInfo) => {
     // 1. Seed buyer & seller accounts
     const timestamp = Date.now();
@@ -54,6 +109,8 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
 
     // Helper to create and activate user
     async function seedUser(email: string, displayName: string) {
+      validateLocalTestEnvironment(TARGET_CONFIG);
+
       const { data: created, error } = await serviceClient.auth.admin.createUser({
         email,
         password,
@@ -61,30 +118,17 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
         user_metadata: {
           display_name: displayName,
           terms_accepted: "true",
-          terms_version: "2026-09-18",
-          privacy_policy_version: "2026-09-18",
-          acceptable_use_version: "2026-09-18",
+          terms_version: LEGAL_POLICY.termsVersion,
+          privacy_policy_version: LEGAL_POLICY.privacyVersion,
+          acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
           age_confirmed: "true",
-          minimum_age_confirmed: 18,
+          minimum_age_confirmed: LEGAL_POLICY.minimumAge,
         },
       });
       if (error || !created.user) throw error || new Error(`Failed to create ${email}`);
 
-      await serviceClient.from("user_accounts").upsert({
-        user_id: created.user.id,
-        account_status: "active",
-        terms_version: "2026-09-18",
-        privacy_policy_version: "2026-09-18",
-        acceptable_use_version: "2026-09-18",
-        age_confirmed_at: new Date().toISOString(),
-        minimum_age_confirmed: 18,
-        terms_accepted_at: new Date().toISOString(),
-      });
-
-      await serviceClient.from("profiles").upsert({
-        id: created.user.id,
-        display_name: displayName,
-      });
+      // Register immediately before later fixture setup assertions can fail
+      testUserRegistry.register(created.user.id);
 
       return created.user;
     }
@@ -112,6 +156,8 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
 
     if (lErr || !listing) throw lErr || new Error("Failed to create test listing");
 
+    trackedListingIds.add(listing.id);
+
     // Explicitly transition status to active to satisfy trigger and visibility checks
     await serviceClient
       .from("listings")
@@ -125,6 +171,7 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
     // Buyer signs in
     await buyerPage.goto("/auth/sign-in");
     await buyerPage.fill('input[type="email"]', buyerEmail);
+    await buyerPage.click('button[type="submit"]');
     await buyerPage.fill('input[type="password"]', password);
     await buyerPage.click('button[type="submit"]');
     await expect(buyerPage).toHaveURL(/\/account/);
@@ -136,6 +183,7 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
     // Seller signs in
     await sellerPage.goto("/auth/sign-in");
     await sellerPage.fill('input[type="email"]', sellerEmail);
+    await sellerPage.click('button[type="submit"]');
     await sellerPage.fill('input[type="password"]', password);
     await sellerPage.click('button[type="submit"]');
     await expect(sellerPage).toHaveURL(/\/account/);
@@ -211,6 +259,9 @@ test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () 
     expect(dbReport).toBeDefined();
     expect(dbReport?.status).toBe("pending");
     expect(dbReport?.target_id).toBe(sellerUser.id);
+    if (dbReport?.id) {
+      trackedReportIds.add(dbReport.id);
+    }
 
     // Close contexts
     await buyerContext.close();

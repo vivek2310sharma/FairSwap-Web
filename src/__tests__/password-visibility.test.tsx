@@ -124,6 +124,10 @@ describe("Password Visibility Affordance (Issue #66)", () => {
     it("renders password input and allows toggling visibility", () => {
       render(<SignInPage />);
 
+      const emailInput = screen.getByLabelText(/enter your email address/i);
+      fireEvent.change(emailInput, { target: { value: "user@example.com" } });
+      fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
       const passwordInput = screen.getByLabelText(/^Password$/i);
       expect(passwordInput).toHaveAttribute("type", "password");
 

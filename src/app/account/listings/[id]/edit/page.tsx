@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
 import { Category, CategoryAttribute, City, Listing, ListingMedia, PincodeLookupResult } from "@/types/listing";
+import type { Database } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { lookupPincodeServer } from "@/lib/location/pincode";
 import {
   isSellerWriteMaintenanceEnabled,
@@ -67,11 +69,10 @@ export default async function EditListingPage({
   }
 
   // Fetch private location fields via owner-private path
-  const { data: privLocData } = await supabase.rpc(
-    "get_seller_listing_location_private",
-    { p_listing_id: id }
-  );
-  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : privLocData;
+  const { data: privLocData } = await (
+    supabase as SupabaseClient<Database>
+  ).rpc("get_seller_listing_location_private", { p_listing_id: id });
+  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : null;
 
   const listing: Listing = {
     ...(baseListing as Omit<Listing, "pin_code" | "landmark">),

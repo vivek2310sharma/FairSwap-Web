@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
 import type { PincodeLookupResult } from "@/types/listing";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -27,12 +28,12 @@ export async function lookupPincodeServer(
   }
 
   try {
-    const supabase = client || (await createClient());
+    const supabase = (client || (await createClient())) as SupabaseClient<Database>;
     
     // Call lookup_pincode RPC
-    const { data, error } = await supabase.rpc("lookup_pincode" as unknown as never, {
+    const { data, error } = await supabase.rpc("lookup_pincode", {
       p_pincode: cleanPin,
-    } as unknown as void);
+    });
 
     if (error) {
       console.error(`RPC lookup_pincode error for PIN ${cleanPin}:`, error.message);

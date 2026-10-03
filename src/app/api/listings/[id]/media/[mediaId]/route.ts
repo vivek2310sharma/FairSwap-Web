@@ -1,83 +1,170 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/supabase/request-auth";
 import { createServiceRoleClient } from "@/lib/supabase/service";
+import { logger } from "@/lib/logger";
+import {
+  mediaApiError,
+  mapRpcErrorToMediaError,
+  verifySellerMediaMutationGuard,
+  buildSafeMediaSnapshot,
+} from "@/lib/media/api-contract";
 
+/**
+ * DELETE /api/listings/[id]/media/[mediaId]
+ *
+ * Hardened seller media deletion route.
+ * Supports unified cookie and Bearer authentication.
+ *
+ * Architecture & Failure Ordering:
+ * 1. Authenticate (cookie or Bearer).
+ * 2. Preflight guards: maintenance, active account, current policy, listing owner, mutable status.
+ * 3. Lookup private storage paths before DB deletion using server-only service client.
+ *    - Database lookup error returns 422 MEDIA_DELETE_FAILED (never reported as success).
+ * 4. Execute authoritative transactional deletion via user-scoped RPC `seller_delete_listing_media`.
+ *    - Idempotent: If media row is already absent for the owner's listing, returns success with deleted=false.
+ *    - Automatically falls back cover_photo_id to the next ready media item.
+ *    - Re-review trigger fires ONLY if deleted media was 'ready'.
+ * 5. DB deletion commits first.
+ * 6. Best-effort private Storage cleanup runs after committed DB deletion.
+ *    - If Storage cleanup fails, the DB row remains deleted; an orphaned private object is
+ *      preferable to a visible DB row or active cover pointing at a destroyed object.
+ * 7. Returns safe media snapshot.
+ */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; mediaId: string }> }
 ) {
   const { id: listingId, mediaId } = await params;
 
-  // 1. Authenticate the caller
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // 1. Authenticate caller (Bearer authoritative; falls back to cookie)
+  const authResult = await authenticateRequest(request);
+  if (!authResult.success) {
+    return mediaApiError(
+      authResult.failure.error,
+      authResult.failure.message
+    );
   }
 
-  // 2. Verify listing ownership and fetch media record
-  const { data: media, error: mediaError } = await supabase
+  const { client, user } = authResult.context;
+
+  // 2. Comprehensive preflight mutation guard
+  // (maintenance, account status, policy acceptance, owner, editable status)
+  const guard = await verifySellerMediaMutationGuard(client, user, listingId);
+  if (!guard.allowed) {
+    return guard.response;
+  }
+
+  // 3. Server-only lookup of storage paths before DB deletion
+  const serviceClient = createServiceRoleClient();
+  const lookupClient = typeof serviceClient?.from === "function" ? serviceClient : client;
+  const { data: mediaRow, error: mediaLookupError } = await lookupClient
     .from("listing_media")
-    .select("id, listing_id, original_storage_path, thumbnail_storage_path, medium_storage_path, large_storage_path, listings!inner(seller_id, status)")
+    .select("id, original_storage_path, thumbnail_storage_path, medium_storage_path, large_storage_path, processing_status")
     .eq("id", mediaId)
     .eq("listing_id", listingId)
-    .single();
+    .maybeSingle();
 
-  if (mediaError || !media) {
-    return NextResponse.json({ error: "Media not found" }, { status: 404 });
+  if (mediaLookupError) {
+    // Database query error during lookup is NOT success
+    return mediaApiError("MEDIA_DELETE_FAILED");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const listingSellerId = (media as any).listings?.seller_id;
-  if (listingSellerId !== user.id) {
-    return NextResponse.json({ error: "Forbidden: Not listing owner" }, { status: 403 });
-  }
+  // Capture paths for subsequent Storage cleanup if media exists
+  const originalPath = mediaRow?.original_storage_path;
+  const derivativePaths = [
+    mediaRow?.thumbnail_storage_path,
+    mediaRow?.medium_storage_path,
+    mediaRow?.large_storage_path,
+  ].filter((p): p is string => Boolean(p));
 
-  const serviceClient = createServiceRoleClient();
-
-  // 3. Delete original + derivative objects from Supabase Storage API
-  const objectsToDeleteFromDerivatives: string[] = [];
-  if (media.thumbnail_storage_path) objectsToDeleteFromDerivatives.push(media.thumbnail_storage_path);
-  if (media.medium_storage_path) objectsToDeleteFromDerivatives.push(media.medium_storage_path);
-  if (media.large_storage_path) objectsToDeleteFromDerivatives.push(media.large_storage_path);
-
-  if (media.original_storage_path) {
-    const { error: removeOrigError } = await serviceClient.storage
-      .from("listing-originals")
-      .remove([media.original_storage_path]);
-    if (removeOrigError) {
-      return NextResponse.json(
-        { error: "Failed to delete media asset from storage" },
-        { status: 500 }
-      );
-    }
-  }
-
-  if (objectsToDeleteFromDerivatives.length > 0) {
-    const { error: removeDerivError } = await serviceClient.storage
-      .from("listing-derivatives")
-      .remove(objectsToDeleteFromDerivatives);
-    if (removeDerivError) {
-      return NextResponse.json(
-        { error: "Failed to delete derivative assets from storage" },
-        { status: 500 }
-      );
-    }
-  }
-
-  // 4. Server-controlled DB deletion via service-role RPC (triggers material re-review and cover reset)
-  const { data: rpcResult, error: rpcError } = await serviceClient.rpc("delete_listing_media_internal", {
+  // 4. Authenticated user-scoped RPC deletion (DB-first)
+  const { data: deleteResult, error: rpcError } = await client.rpc("seller_delete_listing_media", {
     listing_id: listingId,
     media_id: mediaId,
   });
 
   if (rpcError) {
-    return NextResponse.json({ error: rpcError.message }, { status: 500 });
+    return mapRpcErrorToMediaError(rpcError, "MEDIA_DELETE_FAILED");
   }
 
-  return NextResponse.json({ success: true, result: rpcResult }, { status: 200 });
+  // 5. Best-effort private Storage cleanup after committed DB mutation
+  const isDeleted =
+    typeof deleteResult === "object" &&
+    deleteResult !== null &&
+    (deleteResult as { deleted?: boolean }).deleted === true;
+
+  if (isDeleted) {
+    try {
+      let cleanupErrorOccurred = false;
+
+      if (originalPath) {
+        const { error: origErr } = await serviceClient.storage
+          .from("listing-originals")
+          .remove([originalPath]);
+        if (origErr) {
+          cleanupErrorOccurred = true;
+        }
+      }
+
+      if (derivativePaths.length > 0) {
+        const { error: derivErr } = await serviceClient.storage
+          .from("listing-derivatives")
+          .remove(derivativePaths);
+        if (derivErr) {
+          cleanupErrorOccurred = true;
+        }
+      }
+
+      if (cleanupErrorOccurred) {
+        logger.warn("media.storage_cleanup_failed", {
+          operation: "delete_media_storage_cleanup",
+          listing_id: listingId,
+          media_id: mediaId,
+          stage: "storage_remove_error",
+        });
+      }
+    } catch (cleanupErr) {
+      // Best-effort cleanup: log sanitized warning, never expose storage details to client
+      logger.warn("media.storage_cleanup_failed", {
+        operation: "delete_media_storage_cleanup",
+        listing_id: listingId,
+        media_id: mediaId,
+        stage: cleanupErr instanceof Error ? cleanupErr.name : "exception",
+      });
+    }
+  }
+
+  // 6. Mutation is COMMITTED. Attempt authoritative safe snapshot reconciliation.
+  const snapshotResult = await buildSafeMediaSnapshot(client, listingId);
+  const refreshRequired = !snapshotResult.ok;
+  const snapshot = snapshotResult.ok ? snapshotResult.snapshot : null;
+
+  const deletedMediaId = isDeleted
+    ? ((deleteResult as { deleted_media_id?: string | null }).deleted_media_id ?? mediaId)
+    : null;
+
+  const newCoverId =
+    typeof deleteResult === "object" &&
+    deleteResult !== null &&
+    "new_cover_id" in deleteResult
+      ? ((deleteResult as { new_cover_id?: string | null }).new_cover_id ?? null)
+      : null;
+
+  return NextResponse.json(
+    {
+      success: true,
+      committed: true,
+      deleted: isDeleted,
+      deleted_media_id: deletedMediaId,
+      new_cover_id: newCoverId,
+      refreshRequired,
+      snapshot,
+    },
+    {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    }
+  );
 }

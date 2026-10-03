@@ -1,95 +1,119 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/supabase/request-auth";
 import { createServiceRoleClient } from "@/lib/supabase/service";
+import { mediaApiError } from "@/lib/media/api-contract";
 
+/**
+ * GET /api/listings/[id]/media/[mediaId]/[size]
+ *
+ * Media derivative delivery route.
+ *
+ * Modes:
+ * 1. Public active derivative:
+ *    - Browser/public callers receive 302 redirect with public cache-control.
+ * 2. Private seller derivative:
+ *    - Authorizes caller via cookie or Bearer (owner or active staff at AAL2).
+ *    - Non-owners or unauthenticated callers receive 404 LISTING_NOT_FOUND.
+ * 3. Native JSON mode (Accept: application/json):
+ *    - Prevents Bearer tokens from being forwarded across redirects to storage origins.
+ *    - Returns short-lived (60s) signed URL with Cache-Control: no-store.
+ *    - Rejects 'original' requests in JSON mode (only thumb, medium, large permitted).
+ */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; mediaId: string; size: string }> }
 ) {
   const { id: listingId, mediaId, size } = await params;
 
-  if (!["thumb", "medium", "large", "original"].includes(size)) {
-    return NextResponse.json({ error: `Invalid size parameter: ${size}` }, { status: 400 });
+  const validSizes = ["thumb", "medium", "large", "original"];
+  if (!validSizes.includes(size)) {
+    return mediaApiError("INVALID_MEDIA_REQUEST", `Invalid size parameter: ${size}`, 400);
   }
 
-  const supabase = await createClient();
+  const acceptHeader = request.headers.get("accept") || "";
+  const isJsonMode = acceptHeader.includes("application/json");
+
+  // Native mobile JSON contract explicitly forbids access to "original"
+  if (isJsonMode && size === "original") {
+    return mediaApiError(
+      "INVALID_MEDIA_REQUEST",
+      "Original media is not accessible via native API.",
+      400
+    );
+  }
+
   const serviceClient = createServiceRoleClient();
 
   // Check if listing is publicly visible
-  const { data: isPublicVisible, error: visibilityError } = await serviceClient.rpc("is_listing_publicly_visible", {
-    listing_id: listingId,
-  });
+  const { data: isPublicVisible, error: visibilityError } = await serviceClient.rpc(
+    "is_listing_publicly_visible",
+    { listing_id: listingId }
+  );
 
   if (visibilityError) {
-    console.error("[mediaRoute] RPC is_listing_publicly_visible error:", {
-      listingId,
-      mediaId,
-      size,
-      code: visibilityError.code,
-      message: visibilityError.message,
-    });
+    // If error checking visibility, treat as private
   }
 
-  // Original files are NEVER accessible publicly; strictly owner or staff
-  if (size === "original" || !isPublicVisible) {
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      // Do not leak existence of private/draft listing to unauthenticated callers
-      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+  // Original files are NEVER accessible publicly; strictly owner or staff.
+  // Private/draft listings require authentication.
+  // JSON mode always goes through authorized flow to prevent leaking unauthenticated redirects.
+  if (size === "original" || !isPublicVisible || isJsonMode) {
+    // Authenticate caller (Bearer authoritative; falls back to cookie)
+    const authResult = await authenticateRequest(request);
+    if (!authResult.success) {
+      // Conceal private listing existence from unauthenticated callers
+      return mediaApiError("LISTING_NOT_FOUND");
     }
 
+    const { user, client } = authResult.context;
+
+    // Check listing ownership
     const { data: listing, error: listingError } = await serviceClient
       .from("listings")
-      .select("id, seller_id")
+      .select("id, seller_id, status")
       .eq("id", listingId)
-      .single();
+      .maybeSingle();
 
     if (listingError || !listing) {
-      if (listingError) {
-        console.error("[mediaRoute] Authenticated check: listing query error:", {
-          listingId,
-          code: listingError.code,
-          message: listingError.message,
-        });
-      }
-      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+      return mediaApiError("LISTING_NOT_FOUND");
     }
 
     const isOwner = listing.seller_id === user.id;
     let isAuthorizedStaff = false;
 
     if (!isOwner) {
-      const { data: staffData } = await supabase
+      const { data: staffData } = await client
         .from("staff_roles")
         .select("role")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const { data: aalData } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
       isAuthorizedStaff =
         !!staffData &&
         ["administrator", "moderator"].includes(staffData.role) &&
         aalData?.currentLevel === "aal2";
     }
 
-    if (!isOwner && !isAuthorizedStaff) {
-      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+    // If caller is neither the owner nor authorized staff, deny with 404
+    // Note: if listing is public and caller is just a normal user requesting JSON mode,
+    // they can view ready derivatives (thumb/medium/large), but not original.
+    if (!isOwner && !isAuthorizedStaff && !isPublicVisible) {
+      return mediaApiError("LISTING_NOT_FOUND");
     }
 
-    // Caller is authorized owner or staff
+    // Look up media row
     const { data: media, error: mediaError } = await serviceClient
       .from("listing_media")
-      .select("id, listing_id, original_storage_path, thumbnail_storage_path, medium_storage_path, large_storage_path, processing_status")
+      .select(
+        "id, listing_id, original_storage_path, thumbnail_storage_path, medium_storage_path, large_storage_path, processing_status"
+      )
       .eq("id", mediaId)
       .eq("listing_id", listingId)
-      .single();
+      .maybeSingle();
 
     if (mediaError || !media) {
-      return NextResponse.json({ error: "Media not found" }, { status: 404 });
+      return mediaApiError("MEDIA_NOT_FOUND");
     }
 
     let bucket: string;
@@ -114,11 +138,11 @@ export async function GET(
         path = media.original_storage_path;
         break;
       default:
-        return NextResponse.json({ error: "Invalid size" }, { status: 400 });
+        return mediaApiError("INVALID_MEDIA_REQUEST");
     }
 
     if (!path) {
-      return NextResponse.json({ error: "Media path not ready or available" }, { status: 404 });
+      return mediaApiError("MEDIA_NOT_FOUND", "Media derivative not available.");
     }
 
     const { data: signedData, error: signError } = await serviceClient.storage
@@ -126,9 +150,26 @@ export async function GET(
       .createSignedUrl(path, expirySeconds);
 
     if (signError || !signedData?.signedUrl) {
-      return NextResponse.json({ error: "Failed to generate signed URL" }, { status: 500 });
+      return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to generate media URL.", 500);
     }
 
+    // Native JSON mode response
+    if (isJsonMode) {
+      return NextResponse.json(
+        {
+          url: signedData.signedUrl,
+          expiresIn: expirySeconds,
+        },
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        }
+      );
+    }
+
+    // Browser redirect for private/owner access
     return NextResponse.redirect(signedData.signedUrl, {
       status: 302,
       headers: {
@@ -137,26 +178,19 @@ export async function GET(
     });
   }
 
-  // Publicly visible derivative access (thumb, medium, large)
+  // Publicly visible derivative access (thumb, medium, large) for browser callers
   const { data: media, error: mediaError } = await serviceClient
     .from("listing_media")
-    .select("id, listing_id, thumbnail_storage_path, medium_storage_path, large_storage_path, processing_status")
+    .select(
+      "id, listing_id, thumbnail_storage_path, medium_storage_path, large_storage_path, processing_status"
+    )
     .eq("id", mediaId)
     .eq("listing_id", listingId)
     .eq("processing_status", "ready")
-    .single();
+    .maybeSingle();
 
   if (mediaError || !media) {
-    if (mediaError) {
-      console.error("[mediaRoute] listing_media query error:", {
-        listingId,
-        mediaId,
-        size,
-        code: mediaError.code,
-        message: mediaError.message,
-      });
-    }
-    return NextResponse.json({ error: "Media not found" }, { status: 404 });
+    return mediaApiError("MEDIA_NOT_FOUND");
   }
 
   let derivativePath: string | null = null;
@@ -173,7 +207,7 @@ export async function GET(
   }
 
   if (!derivativePath) {
-    return NextResponse.json({ error: "Media derivative not available" }, { status: 404 });
+    return mediaApiError("MEDIA_NOT_FOUND", "Media derivative not available.");
   }
 
   // Generate 1-hour signed URL for public derivative
@@ -182,15 +216,7 @@ export async function GET(
     .createSignedUrl(derivativePath, 3600);
 
   if (signError || !signedData?.signedUrl) {
-    if (signError) {
-      console.error("[mediaRoute] Storage signed URL generation error:", {
-        listingId,
-        mediaId,
-        size,
-        message: signError.message,
-      });
-    }
-    return NextResponse.json({ error: "Failed to generate media URL" }, { status: 500 });
+    return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to generate media URL.", 500);
   }
 
   return NextResponse.redirect(signedData.signedUrl, {

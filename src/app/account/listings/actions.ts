@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { draftListingSchema, ListingCondition, ListingPriceType } from "@/types/listing";
-import type { Json } from "@/types/database";
+import type { Database, Json } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
 import {
   isSellerWriteMaintenanceEnabled,
@@ -222,11 +223,10 @@ export async function submitListingAction(listingId: string): Promise<ListingAct
     .eq("id", listingId)
     .single();
 
-  const { data: privLocData } = await supabase.rpc(
-    "get_seller_listing_location_private",
-    { p_listing_id: listingId }
-  );
-  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : privLocData;
+  const { data: privLocData } = await (
+    supabase as SupabaseClient<Database>
+  ).rpc("get_seller_listing_location_private", { p_listing_id: listingId });
+  const privateLoc = Array.isArray(privLocData) ? privLocData[0] : null;
   const pinCode = privateLoc?.pin_code;
 
   if (!pinCode || !/^\d{6}$/.test(pinCode)) {
@@ -311,6 +311,10 @@ export async function reorderMediaAction(
   listingId: string,
   items: { id: string; display_order: number }[]
 ): Promise<ListingActionResult> {
+  if (isSellerWriteMaintenanceEnabled()) {
+    return { error: SELLER_WRITE_MAINTENANCE_MESSAGE };
+  }
+
   const supabase = await createClient();
 
   const guard = await requireCurrentPolicyAcceptance(supabase, `/account/listings/${listingId}/edit`);
@@ -322,16 +326,21 @@ export async function reorderMediaAction(
     };
   }
 
-  for (const item of items) {
-    const { error } = await supabase
-      .from("listing_media")
-      .update({ display_order: item.display_order })
-      .eq("id", item.id)
-      .eq("listing_id", listingId);
+  const hasInvalidId = items.some((item) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id));
+  if (hasInvalidId) {
+    return { error: "Cannot reorder pending or temporary photos." };
+  }
 
-    if (error) {
-      return { error: error.message };
-    }
+  const sortedItems = [...items].sort((a, b) => a.display_order - b.display_order);
+  const mediaIds = sortedItems.map((item) => item.id);
+
+  const { error } = await supabase.rpc("seller_reorder_listing_media", {
+    listing_id: listingId,
+    media_ids: mediaIds,
+  });
+
+  if (error) {
+    return { error: "Failed to reorder photos. Please try again." };
   }
 
   revalidatePath(`/account/listings/${listingId}/edit`);
@@ -342,6 +351,10 @@ export async function setCoverPhotoAction(
   listingId: string,
   mediaId: string
 ): Promise<ListingActionResult> {
+  if (isSellerWriteMaintenanceEnabled()) {
+    return { error: SELLER_WRITE_MAINTENANCE_MESSAGE };
+  }
+
   const supabase = await createClient();
 
   const guard = await requireCurrentPolicyAcceptance(supabase, `/account/listings/${listingId}/edit`);
@@ -353,13 +366,13 @@ export async function setCoverPhotoAction(
     };
   }
 
-  const { error } = await supabase
-    .from("listings")
-    .update({ cover_photo_id: mediaId })
-    .eq("id", listingId);
+  const { error } = await supabase.rpc("seller_set_listing_cover_photo", {
+    listing_id: listingId,
+    media_id: mediaId,
+  });
 
   if (error) {
-    return { error: error.message };
+    return { error: "Failed to update cover photo. Please try again." };
   }
 
   revalidatePath(`/account/listings/${listingId}/edit`);
