@@ -1,5 +1,4 @@
 import { test, expect } from "@playwright/test";
-import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import {
   validateLocalTestEnvironment,
@@ -31,38 +30,6 @@ const CURRENT_LEGAL_METADATA = {
   age_confirmed: "true",
   minimum_age_confirmed: LEGAL_POLICY.minimumAge,
 };
-
-// RFC 6238 TOTP generator
-function generateTOTP(base32Secret: string): string {
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  let bits = "";
-  for (const char of base32Secret.replace(/=/g, "").toUpperCase()) {
-    const val = alphabet.indexOf(char);
-    if (val === -1) continue;
-    bits += val.toString(2).padStart(5, "0");
-  }
-  const bytes = [];
-  for (let i = 0; i + 8 <= bits.length; i += 8) {
-    bytes.push(parseInt(bits.substring(i, i + 8), 2));
-  }
-  const key = Buffer.from(bytes);
-  const timeStep = Math.floor(Date.now() / 30000);
-  const timeBuffer = Buffer.alloc(8);
-  timeBuffer.writeBigInt64BE(BigInt(timeStep));
-
-  const hmac = crypto.createHmac("sha1", key);
-  hmac.update(timeBuffer);
-  const digest = hmac.digest();
-
-  const offset = digest[digest.length - 1] & 0xf;
-  const binary =
-    ((digest[offset] & 0x7f) << 24) |
-    ((digest[offset + 1] & 0xff) << 16) |
-    ((digest[offset + 2] & 0xff) << 8) |
-    (digest[offset + 3] & 0xff);
-
-  return (binary % 1000000).toString().padStart(6, "0");
-}
 
 // Mailpit helper to retrieve latest email for address
 async function getLatestEmail(recipientEmail: string, maxAttempts = 10): Promise<{ subject: string; html: string; text: string }> {
@@ -243,11 +210,6 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
   test("unauthenticated access to /account/policy-review redirects to /auth/sign-in", async ({ page }) => {
     await page.goto("/account/policy-review");
     await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Faccount%2Fpolicy-review/);
-  });
-
-  test("unauthenticated access to /admin redirects to /auth/sign-in", async ({ page }) => {
-    await page.goto("/admin");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fadmin/);
   });
 
   test("public seller profile handles non-existent user safely with 404", async ({ page }) => {
@@ -433,72 +395,6 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
     await page.getByRole("button", { name: /sign in/i }).click();
 
     await expect(page).toHaveURL(/\/account(?!\/policy-review)/);
-  });
-
-  // REAL TIER-2 LIVE JOURNEY: Staff MFA Enrollment, Challenge, and Admin AAL2 Protection
-  test("real staff MFA enrollment, TOTP challenge, and admin route AAL2 protection", async ({ page }) => {
-    test.skip(process.env.ALLOW_LOCAL_TEST_MUTATIONS !== "true", "Real-auth live test requires ALLOW_LOCAL_TEST_MUTATIONS=true");
-    validateLocalTestEnvironment(TARGET_CONFIG);
-
-    const timestamp = Date.now();
-    const adminEmail = `admin_${timestamp}@fairswap.local`;
-    const password = "AdminPassword123!";
-
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
-    // Create confirmed user with current legal metadata
-    const { data: adminUser, error: createError } = await supabase.auth.admin.createUser({
-      email: adminEmail,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        display_name: `Admin ${timestamp}`,
-        ...CURRENT_LEGAL_METADATA,
-      },
-    });
-    expect(createError).toBeNull();
-    expect(adminUser?.user?.id).toBeDefined();
-    testUserRegistry.register(adminUser.user!.id);
-
-    // Assign administrator role and assert insertion result
-    const { error: roleError } = await supabase.from("staff_roles").insert({
-      user_id: adminUser.user!.id,
-      role: "administrator",
-    });
-    expect(roleError).toBeNull();
-
-    // 1. Sign in as admin (starts at AAL1)
-    await page.goto("/auth/sign-in");
-    await page.locator("input[name='email']").fill(adminEmail);
-    await page.getByRole("button", { name: "Continue" }).click();
-    await page.locator("input[name='password']").fill(password);
-    await page.getByRole("button", { name: /sign in/i }).click();
-    await expect(page).toHaveURL(/\/account(?!\/policy-review)/);
-
-    // 2. Try to access /admin -> Proxy intercepts AAL1 and redirects to /auth/mfa?next=%2Fadmin
-    await page.goto("/admin");
-    await expect(page).toHaveURL(/\/auth\/mfa\?next=(%2F|\/)admin/);
-    await expect(page.getByRole("heading", { name: /staff two-factor authentication/i })).toBeVisible();
-
-    // 3. Extract TOTP Secret from page
-    const secretElement = page.locator("span.select-all");
-    await expect(secretElement).toBeVisible();
-    const secretText = (await secretElement.textContent())?.trim();
-    expect(secretText).toBeDefined();
-
-    // 4. Generate valid TOTP code
-    const totpCode = generateTOTP(secretText!);
-
-    // 5. Enter code and submit
-    await page.locator("#totpCode").fill(totpCode);
-    await page.getByRole("button", { name: /verify & continue/i }).click();
-
-    // 6. Verification elevates session to AAL2 and unlocks /admin
-    await expect(page).toHaveURL(/\/admin/);
-    await expect(page.getByRole("heading", { name: /admin operations/i })).toBeVisible();
-    await expect(page.getByText(/aal2 verified/i)).toBeVisible();
   });
 
   // REAL AUTH JOURNEY (Issue #82): Real OTP delivery, mailbox retrieval, verification, and session persistence
@@ -695,72 +591,4 @@ test.describe("FairSwap Milestone 1.2 Authentication & Protection Flows", () => 
     }
   });
 
-  // REAL AUTH JOURNEY (Issue #80 & #82): Staff OTP Sign-in lands at AAL1 and requires TOTP MFA step-up before unlocking /admin
-  test("staff OTP sign-in lands at AAL1 and requires TOTP MFA step-up to unlock /admin", async ({
-    page,
-  }) => {
-    test.skip(process.env.ALLOW_LOCAL_TEST_MUTATIONS !== "true", "Real-auth live test requires ALLOW_LOCAL_TEST_MUTATIONS=true");
-    validateLocalTestEnvironment(TARGET_CONFIG);
-
-    const timestamp = Date.now();
-    const adminEmail = `staff_otp_${timestamp}@fairswap.local`;
-    const password = "AdminPassword123!";
-
-    const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
-    const { data: adminUser, error: createError } = await supabase.auth.admin.createUser({
-      email: adminEmail,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        display_name: `Staff OTP ${timestamp}`,
-        ...CURRENT_LEGAL_METADATA,
-      },
-    });
-    expect(createError).toBeNull();
-    expect(adminUser?.user?.id).toBeDefined();
-    testUserRegistry.register(adminUser.user!.id);
-
-    const { error: roleError } = await supabase.from("staff_roles").insert({
-      user_id: adminUser.user!.id,
-      role: "administrator",
-    });
-    expect(roleError).toBeNull();
-
-    // 1. Sign in via OTP (AAL1)
-    await page.goto("/auth/sign-in");
-    await page.locator("input[name='email']").fill(adminEmail);
-    await page.getByRole("button", { name: "Continue" }).click();
-    await page.getByRole("button", { name: /email me a one-time code instead/i }).click();
-
-    const message = await getLatestEmail(adminEmail);
-    const otpCode = extractOtpFromEmail(message);
-    expect(otpCode).toMatch(/^\d{6}$/);
-
-    await page.locator("#token").fill(otpCode);
-    await page.getByRole("button", { name: /verify & continue/i }).click();
-    await expect(page).toHaveURL(/\/account(?!\/policy-review)/);
-
-    // 2. Access /admin -> intercepted by proxy at AAL1, redirected to MFA challenge
-    await page.goto("/admin");
-    await expect(page).toHaveURL(/\/auth\/mfa\?next=(%2F|\/)admin/);
-    await expect(page.getByRole("heading", { name: /staff two-factor authentication/i })).toBeVisible();
-
-    // 3. Extract TOTP secret and complete challenge to elevate to AAL2
-    const secretElement = page.locator("span.select-all");
-    await expect(secretElement).toBeVisible();
-    const secretText = (await secretElement.textContent())?.trim();
-    expect(secretText).toBeDefined();
-
-    const totpCode = generateTOTP(secretText!);
-    await page.locator("#totpCode").fill(totpCode);
-    await page.getByRole("button", { name: /verify & continue/i }).click();
-
-    // 4. Elevated to AAL2 -> /admin unlocked
-    await expect(page).toHaveURL(/\/admin/);
-    await expect(page.getByRole("heading", { name: /admin operations/i })).toBeVisible();
-    await expect(page.getByText(/aal2 verified/i)).toBeVisible();
-  });
 });

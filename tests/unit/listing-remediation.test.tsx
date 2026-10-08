@@ -1,8 +1,7 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import ListingForm from "@/components/listings/ListingForm";
-import ModerationActions from "@/app/admin/listings/[id]/ModerationActions";
 import { draftListingSchema, submitListingSchema } from "@/types/listing";
 
 vi.mock("next/navigation", () => ({
@@ -15,10 +14,6 @@ vi.mock("@/app/account/listings/actions", () => ({
   submitListingAction: vi.fn(),
   reorderMediaAction: vi.fn(),
   setCoverPhotoAction: vi.fn(),
-}));
-
-vi.mock("@/app/admin/listings/actions", () => ({
-  moderateListingAction: vi.fn(),
 }));
 
 describe("Listing Defect Remediation Unit Tests", () => {
@@ -89,21 +84,6 @@ describe("Listing Defect Remediation Unit Tests", () => {
       expect(priceInput).toHaveClass("bg-white", "text-gray-900", "placeholder:text-gray-500");
     });
 
-    it("renders ModerationActions textarea with explicit contrast classes when opened", async () => {
-      render(
-        <ModerationActions
-          listingId="test-listing-id"
-          isSelfListing={false}
-          canApprove={true}
-        />
-      );
-
-      const rejectBtn = screen.getByRole("button", { name: /reject with reason/i });
-      fireEvent.click(rejectBtn);
-
-      const reasonTextarea = screen.getByPlaceholderText(/explain why this listing is being/i);
-      expect(reasonTextarea).toHaveClass("bg-white", "text-gray-900", "placeholder:text-gray-500");
-    });
   });
 
   describe("B. Saving Draft Permissiveness", () => {

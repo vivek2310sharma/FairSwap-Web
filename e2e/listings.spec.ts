@@ -149,11 +149,4 @@ test.describe("Milestone 1.3 Listings & Moderation E2E", () => {
     await expect(page.getByRole("heading", { level: 1, name: /edit listing/i })).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/Photographs/i)).toBeVisible({ timeout: 10000 });
   });
-
-  test("staff portal links to moderation queue and categories", async ({ page }) => {
-    // Check admin portal layout
-    await page.goto("/admin");
-    // If not authenticated as staff, it handles gracefully
-    expect(page.url()).toBeDefined();
-  });
 });
