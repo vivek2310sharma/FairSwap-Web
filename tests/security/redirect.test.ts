@@ -4,11 +4,19 @@ import { sanitizeRedirectPath } from "@/lib/security/redirect";
 describe("sanitizeRedirectPath", () => {
   it("allows safe internal paths", () => {
     expect(sanitizeRedirectPath("/account")).toBe("/account");
-    expect(sanitizeRedirectPath("/admin/moderation")).toBe("/admin/moderation");
+    expect(sanitizeRedirectPath("/admin/moderation")).toBe("/account");
     expect(sanitizeRedirectPath("/listings/bike-123")).toBe("/listings/bike-123");
     expect(sanitizeRedirectPath("/account/support?status=open#thread")).toBe(
       "/account/support?status=open#thread"
     );
+  });
+
+  it("does not navigate authentication or compliance actions into the retired Web Admin", () => {
+    expect(sanitizeRedirectPath("/admin")).toBe("/account");
+    expect(sanitizeRedirectPath("/admin/users?status=active", "/fallback")).toBe(
+      "/fallback"
+    );
+    expect(sanitizeRedirectPath("/administrator")).toBe("/administrator");
   });
 
   it("uses custom fallback when provided", () => {

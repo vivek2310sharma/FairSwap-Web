@@ -19,42 +19,38 @@ vi.mock("next/navigation", () => ({
   redirect: (path: string) => mockRedirect(path),
 }));
 
-// Note: This test verifies action-level behavior and redirect parameter passing in verifyEmailOtpAction.
-// It is action-level contract coverage, not proof of downstream AAL2 enforcement (which is enforced
-// by middleware/proxy route guards tested in their respective security suites).
-describe("Staff OTP Sign-in Action-Level Verification & Redirect Contract (Issue #80 & #82)", () => {
+describe("Email OTP Sign-in Action-Level Verification & Redirect Contract (Issue #80 & #82)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("authenticates via OTP at action level and passes next target path to redirect", async () => {
-    const staffUserId = "00000000-0000-0000-0000-000000000099";
+    const userId = "00000000-0000-0000-0000-000000000099";
     mockVerifyOtp.mockResolvedValueOnce({
       data: {
-        user: { id: staffUserId, email: "admin@fairswap.local" },
-        session: { access_token: "jwt_aal1", user: { id: staffUserId } },
+        user: { id: userId, email: "user@fairswap.local" },
+        session: { access_token: "jwt_aal1", user: { id: userId } },
       },
       error: null,
     });
     mockGetUser.mockResolvedValueOnce({
-      data: { user: { id: staffUserId, email: "admin@fairswap.local" } },
+      data: { user: { id: userId, email: "user@fairswap.local" } },
       error: null,
     });
 
     const fd = new FormData();
-    fd.append("email", "admin@fairswap.local");
+    fd.append("email", "user@fairswap.local");
     fd.append("token", "654321");
-    fd.append("next", "/admin");
+    fd.append("next", "/account/messages");
 
     await verifyEmailOtpAction(null, fd);
 
     expect(mockVerifyOtp).toHaveBeenCalledWith({
-      email: "admin@fairswap.local",
+      email: "user@fairswap.local",
       token: "654321",
       type: "email",
     });
-    // Redirects to next path; proxy will enforce AAL2 on /admin route
-    expect(mockRedirect).toHaveBeenCalledWith("/admin");
+    expect(mockRedirect).toHaveBeenCalledWith("/account/messages");
   });
 
   it("rejects invalid, expired, and reused OTPs with generic message without exposing internal state", async () => {

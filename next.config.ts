@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Admin URLs must reach the standard 404 without a slash redirect.
+  skipTrailingSlashRedirect: true,
+  async redirects() {
+    // Restore Next.js's default slash removal for every other URL, including
+    // assets and API routes that bypass Proxy. Query parameters are preserved.
+    return [{
+      source: "/:path((?!admin(?:/|$)).+)/",
+      destination: "/:path",
+      permanent: true,
+    }];
+  },
   images: {
     remotePatterns: [
       {
@@ -41,7 +52,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/(account|admin)/:path*",
+        source: "/account/:path*",
         headers: [
           {
             key: "Cache-Control",
