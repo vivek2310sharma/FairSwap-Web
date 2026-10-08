@@ -61,16 +61,6 @@ test.describe("Approved Viewports Responsive & Usability Verification", () => {
         await expect(emailInput).toHaveValue("responsive-test@fairswap.local");
       });
 
-      test("admin and user-management route layout remains usable without horizontal page overflow", async ({ page }) => {
-        // Unauthenticated access redirects safely to sign-in preserving next param
-        await page.goto("/admin/users");
-        await expect(page).toHaveURL(/\/auth\/sign-in\?next=%2Fadmin/);
-
-        const hasOverflow = await page.evaluate(() => {
-          return document.documentElement.scrollWidth > window.innerWidth;
-        });
-        expect(hasOverflow, `Unintended horizontal overflow on admin redirect at ${vp.width}px`).toBe(false);
-      });
     });
   }
 });

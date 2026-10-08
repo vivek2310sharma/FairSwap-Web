@@ -1,3 +1,7 @@
+export function isRetiredAdminPath(pathname: string): boolean {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
 /**
  * Centralized open redirect defense.
  * Validates and sanitizes untrusted redirect targets (e.g., `next` parameters).
@@ -63,6 +67,10 @@ export function sanitizeRedirectPath(
 
     // Must be a relative path
     if (!parsed.pathname.startsWith("/") || parsed.pathname.startsWith("//")) {
+      return fallback;
+    }
+
+    if (isRetiredAdminPath(parsed.pathname)) {
       return fallback;
     }
 

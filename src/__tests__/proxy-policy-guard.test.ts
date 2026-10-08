@@ -50,23 +50,28 @@ describe("Proxy Policy Re-acceptance Route Guard", () => {
     expect(location).toContain("next=%2Faccount%2Flistings");
   });
 
-  it("redirects authenticated stale pilot user accessing /admin to /account/policy-review with next parameter", async () => {
-    mockGetClaims.mockResolvedValue({
-      data: { claims: { sub: "pilot-admin-id" } },
-      error: null,
-    });
-    mockRpc.mockResolvedValue({
-      data: false, // Stale policy acceptance
-      error: null,
-    });
+  it.each(["/admin", "/admin/users", "/admin/users/123?sort=created_at"])(
+    "returns 404 for retired Web Admin path %s before authentication",
+    async (path) => {
+      const req = new NextRequest(`http://localhost:3000${path}`);
+      const res = await proxy(req);
 
-    const req = new NextRequest("http://localhost:3000/admin/users?sort=created_at");
+      expect(res.status).toBe(404);
+      expect(res.headers.get("location")).toBeNull();
+      expect(await res.text()).toContain("404 - Page not found");
+      expect(mockGetClaims).not.toHaveBeenCalled();
+      expect(mockRpc).not.toHaveBeenCalled();
+    }
+  );
+
+  it("does not treat similarly prefixed public paths as the retired Admin", async () => {
+    mockGetClaims.mockResolvedValue({ data: { claims: null }, error: null });
+
+    const req = new NextRequest("http://localhost:3000/administrator");
     const res = await proxy(req);
 
-    expect(res.status).toBe(307);
-    const location = res.headers.get("location");
-    expect(location).toContain("/account/policy-review");
-    expect(location).toContain("next=%2Fadmin%2Fusers%3Fsort%3Dcreated_at");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
   });
 
   it("allows authenticated current user accessing /account through without redirect", async () => {

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { resolveCorrelationId, sanitizeUpstreamRequestId } from "@/lib/logger/correlation";
 import { logger } from "@/lib/logger";
+import { isRetiredAdminPath } from "@/lib/security/redirect";
 
 export async function proxy(request: NextRequest) {
   const startTime = Date.now();
@@ -9,6 +10,24 @@ export async function proxy(request: NextRequest) {
   const upstreamRequestId = sanitizeUpstreamRequestId(incomingId);
   // Authoritative correlation ID is ALWAYS server-generated for external requests
   const correlationId = resolveCorrelationId();
+  const { pathname } = request.nextUrl;
+
+  // The legacy Web Admin is retired. Respond before session refresh or any
+  // authentication redirect so every former Admin URL has a stable 404 contract.
+  if (isRetiredAdminPath(pathname)) {
+    return new NextResponse(
+      "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"robots\" content=\"noindex\"><title>404 - Page not found</title></head><body><main><h1>404 - Page not found</h1><p>The page you requested does not exist.</p></main></body></html>",
+      {
+        status: 404,
+        headers: {
+          "Cache-Control": "private, no-store, must-revalidate",
+          "Content-Type": "text/html; charset=utf-8",
+          "X-Robots-Tag": "noindex",
+          "x-request-id": correlationId,
+        },
+      }
+    );
+  }
 
   // Set server-owned correlation ID on downstream request headers
   const requestHeaders = new Headers(request.headers);
@@ -71,8 +90,6 @@ export async function proxy(request: NextRequest) {
     response.headers.set("Cache-Control", "private, no-store, must-revalidate");
   }
 
-  const { pathname } = request.nextUrl;
-
   // 3. Route Guard: Protected Account Paths (/account/*)
   if (pathname.startsWith("/account")) {
     if (!isAuthenticated) {
@@ -122,47 +139,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 4. Route Guard: Protected Staff Paths (/admin/*)
-  if (pathname.startsWith("/admin")) {
-    if (!isAuthenticated) {
-      logger.info("auth.redirect_unauthenticated", {
-        request_id: correlationId,
-        route: pathname,
-      });
-      const signInUrl = new URL("/auth/sign-in", request.url);
-      signInUrl.searchParams.set("next", pathname);
-      const redirectRes = NextResponse.redirect(signInUrl);
-      redirectRes.headers.set("x-request-id", correlationId);
-      return redirectRes;
-    }
-
-    const { data: hasCurrentPolicy, error: policyError } = await supabase.rpc(
-      "has_current_policy_acceptance"
-    );
-
-    if (policyError) {
-      logger.error("compliance.proxy_policy_check_error", {
-        request_id: correlationId,
-        route: pathname,
-        error_code: policyError.code || "RPC_ERROR",
-      });
-    } else if (hasCurrentPolicy === false) {
-      logger.info("compliance.proxy_redirect_policy_review", {
-        request_id: correlationId,
-        route: pathname,
-      });
-      const reviewUrl = new URL("/account/policy-review", request.url);
-      const targetPath = request.nextUrl.search
-        ? `${pathname}${request.nextUrl.search}`
-        : pathname;
-      reviewUrl.searchParams.set("next", targetPath);
-      const redirectRes = NextResponse.redirect(reviewUrl);
-      redirectRes.headers.set("x-request-id", correlationId);
-      return redirectRes;
-    }
-  }
-
-  // 5. Auth Pages (/auth/sign-in, /auth/sign-up): Redirect already-authenticated users
+  // 4. Auth Pages (/auth/sign-in, /auth/sign-up): Redirect already-authenticated users
   if (pathname === "/auth/sign-in" || pathname === "/auth/sign-up") {
     if (isAuthenticated) {
       const redirectRes = NextResponse.redirect(new URL("/account", request.url));

@@ -139,16 +139,16 @@ describe("Policy Review UI and Server Action", () => {
       expect(redirect).toHaveBeenCalledWith("/account");
     });
 
-    it("preserves internal protected routes such as /admin/reports", async () => {
+    it("falls back to the account when a stale flow targets the retired Web Admin", async () => {
       const formData = new FormData();
       formData.set("termsAccepted", "on");
       formData.set("ageConfirmed", "on");
       formData.set("next", "/admin/reports");
 
       await expect(recordPolicyReacceptanceAction(null, formData)).rejects.toThrow(
-        "REDIRECT:/admin/reports"
+        "REDIRECT:/account"
       );
-      expect(redirect).toHaveBeenCalledWith("/admin/reports");
+      expect(redirect).toHaveBeenCalledWith("/account");
     });
 
     it("handles RPC error safely without crashing", async () => {

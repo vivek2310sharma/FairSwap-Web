@@ -37,20 +37,6 @@ test.describe("Milestone 1.5 Communication & Safety Route Protection", () => {
     await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)account(%2F|\/)support/);
   });
 
-  test("unauthenticated user accessing /admin/reports is redirected to sign-in", async ({ page }) => {
-    await page.goto("/admin/reports");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)admin(%2F|\/)reports/);
-  });
-
-  test("unauthenticated user accessing /admin/support is redirected to sign-in", async ({ page }) => {
-    await page.goto("/admin/support");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)admin(%2F|\/)support/);
-  });
-
-  test("unauthenticated user accessing /admin/privacy is redirected to sign-in", async ({ page }) => {
-    await page.goto("/admin/privacy");
-    await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)admin(%2F|\/)privacy/);
-  });
 });
 
 test.describe("Milestone 1.5 Authenticated Realtime Messaging & Safety E2E", () => {

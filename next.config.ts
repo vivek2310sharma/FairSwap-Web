@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Let Proxy enforce the retired /admin/ boundary before Next.js can emit a
+  // trailing-slash normalization redirect.
+  skipTrailingSlashRedirect: true,
   images: {
     remotePatterns: [
       {
@@ -41,7 +44,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/(account|admin)/:path*",
+        source: "/account/:path*",
         headers: [
           {
             key: "Cache-Control",
