@@ -12,21 +12,13 @@ export async function proxy(request: NextRequest) {
   const correlationId = resolveCorrelationId();
   const { pathname } = request.nextUrl;
 
-  // The legacy Web Admin is retired. Respond before session refresh or any
-  // authentication redirect so every former Admin URL has a stable 404 contract.
+  // Retired Admin paths are unmatched routes. Let Next.js render the shared
+  // not-found page without session refresh or authentication redirects.
   if (isRetiredAdminPath(pathname)) {
-    return new NextResponse(
-      "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"robots\" content=\"noindex\"><title>404 - Page not found</title></head><body><main><h1>404 - Page not found</h1><p>The page you requested does not exist.</p></main></body></html>",
-      {
-        status: 404,
-        headers: {
-          "Cache-Control": "private, no-store, must-revalidate",
-          "Content-Type": "text/html; charset=utf-8",
-          "X-Robots-Tag": "noindex",
-          "x-request-id": correlationId,
-        },
-      }
-    );
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "private, no-store, must-revalidate");
+    response.headers.set("x-request-id", correlationId);
+    return response;
   }
 
   // Set server-owned correlation ID on downstream request headers

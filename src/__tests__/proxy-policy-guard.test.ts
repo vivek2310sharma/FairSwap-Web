@@ -50,19 +50,24 @@ describe("Proxy Policy Re-acceptance Route Guard", () => {
     expect(location).toContain("next=%2Faccount%2Flistings");
   });
 
-  it.each(["/admin", "/admin/users", "/admin/users/123?sort=created_at"])(
-    "returns 404 for retired Web Admin path %s before authentication",
-    async (path) => {
-      const req = new NextRequest(`http://localhost:3000${path}`);
-      const res = await proxy(req);
+  describe.each([false, true])("retired Admin with authenticated=%s", (authenticated) => {
+    it.each(["/admin", "/admin/", "/admin/users", "/admin/users/123/?sort=created_at", "/admin/logo.png"])(
+      "passes %s to the standard unmatched-route 404 before authentication",
+      async (path) => {
+        mockGetClaims.mockResolvedValue({
+          data: { claims: authenticated ? { sub: "current-user-id" } : null },
+        });
+        const req = new NextRequest(`http://localhost:3000${path}`);
+        const res = await proxy(req);
 
-      expect(res.status).toBe(404);
-      expect(res.headers.get("location")).toBeNull();
-      expect(await res.text()).toContain("404 - Page not found");
-      expect(mockGetClaims).not.toHaveBeenCalled();
-      expect(mockRpc).not.toHaveBeenCalled();
-    }
-  );
+        expect(res.headers.get("x-middleware-next")).toBe("1");
+        expect(res.headers.get("location")).toBeNull();
+        expect(await res.text()).toBe("");
+        expect(mockGetClaims).not.toHaveBeenCalled();
+        expect(mockRpc).not.toHaveBeenCalled();
+      }
+    );
+  });
 
   it("does not treat similarly prefixed public paths as the retired Admin", async () => {
     mockGetClaims.mockResolvedValue({ data: { claims: null }, error: null });
