@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import crypto from "crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -11,17 +12,85 @@ const SERVICE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
+/**
+ * Synthetic Local AAL2 Authorization Fixture
+ *
+ * SCOPE & RESTRICTIONS:
+ * - This fixture manually creates and signs a synthetic JWT with an `aal: "aal2"` claim
+ *   using the standard, hardcoded local development JWT secret ("super-secret-jwt-token-with-at-least-32-characters-long").
+ * - It is strictly permitted ONLY on disposable local Supabase test environments (e.g. 127.0.0.1 / localhost).
+ * - It strictly verifies database authorization and RLS policies expecting an AAL2 claim.
+ * - IMPORTANT: This fixture does NOT represent actual MFA / TOTP verification. Real MFA/TOTP
+ *   end-to-end enrollment, challenge, and verification is a separate authentication acceptance
+ *   test and must not be claimed as completed by this fixture.
+ * - This helper will fail-fast and throw an error immediately if invoked against a hosted
+ *   or non-allowlisted Supabase URL.
+ * - Under no circumstances should hosted secrets or real signing keys be used or logged.
+ */
+function createSyntheticLocalAal2Client(
+  userId: string,
+  email: string,
+  aal: "aal1" | "aal2" = "aal2"
+): SupabaseClient<Database> {
+  const allowedHosts = ["127.0.0.1", "localhost"];
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(SUPABASE_URL);
+  } catch {
+    throw new Error(`[SECURITY FATAL] Invalid SUPABASE_URL: ${SUPABASE_URL}`);
+  }
+
+  if (!allowedHosts.includes(parsedUrl.hostname)) {
+    throw new Error(
+      `[SECURITY FATAL] Synthetic AAL2 test client generation is strictly restricted to local disposable environments (${allowedHosts.join(
+        ", "
+      )}). Target host "${parsedUrl.hostname}" is NOT allowlisted. Aborting.`
+    );
+  }
+
+  // Local development JWT secret for disposable Supabase CLI instance
+  const localDevSecret = "super-secret-jwt-token-with-at-least-32-characters-long";
+  const header = { alg: "HS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    iss: "supabase-demo",
+    sub: userId,
+    aud: "authenticated",
+    role: "authenticated",
+    email,
+    aal,
+    exp: now + 3600,
+    iat: now,
+  };
+  const b64Header = Buffer.from(JSON.stringify(header)).toString("base64url");
+  const b64Payload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", localDevSecret)
+    .update(`${b64Header}.${b64Payload}`)
+    .digest("base64url");
+  const token = `${b64Header}.${b64Payload}.${signature}`;
+
+  return createClient<Database>(SUPABASE_URL, ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
   let isSupabaseOnline = false;
   let serviceClient: SupabaseClient<Database>;
   let sellerClient: SupabaseClient<Database>;
   let otherSellerClient: SupabaseClient<Database>;
   let moderatorClient: SupabaseClient<Database>;
+  let modAal2Client: SupabaseClient<Database>;
+  let moderatorUser: { id: string; email: string };
 
   let sellerUser: { id: string; email: string };
 
   let testCategoryId: string;
   let testCityId: string;
+
+  const REQUIRE_DB_TESTS = process.env.CI === "true" || process.env.REQUIRE_DB_TESTS === "true";
 
   beforeAll(async () => {
     try {
@@ -33,7 +102,14 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       isSupabaseOnline = false;
     }
 
-    if (!isSupabaseOnline) return;
+    if (!isSupabaseOnline) {
+      if (REQUIRE_DB_TESTS) {
+        throw new Error(
+          `[FAIL-FAST] Supabase is not reachable at ${SUPABASE_URL}, but database security tests are strictly required (CI=true or REQUIRE_DB_TESTS=true). Failing suite to eliminate false-green tests.`
+        );
+      }
+      return;
+    }
 
     serviceClient = createClient<Database>(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -122,10 +198,17 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
     otherSellerClient = s2.client;
 
     const m1 = await setupTestUser("moderator_rls_1@fairswap.local", "moderator");
+    moderatorUser = m1.user;
     moderatorClient = m1.client;
+    modAal2Client = createSyntheticLocalAal2Client(moderatorUser.id, moderatorUser.email, "aal2");
   });
 
   function checkPrerequisite() {
+    if (!isSupabaseOnline && REQUIRE_DB_TESTS) {
+      throw new Error(
+        `[FAIL-FAST] Supabase is offline at ${SUPABASE_URL}. Test assertion aborted because REQUIRE_DB_TESTS=true.`
+      );
+    }
     return isSupabaseOnline;
   }
 
@@ -133,10 +216,74 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
   it("test_anonymous_listing_select_denied", async () => {
     if (!checkPrerequisite()) return;
     const anonClient = createClient(SUPABASE_URL, ANON_KEY);
-    const { data, error } = await anonClient.from("listings").select("id, title");
-    // Anonymous access is revoked at table level in 1.3
-    expect(error).not.toBeNull();
-    expect(data).toBeNull();
+
+    // 1. Anonymous select on private/revoked column (pin_code, landmark) must fail with permission denied (42501)
+    const { data: privData, error: privError } = await anonClient
+      .from("listings")
+      .select("id, pin_code");
+    expect(privError).not.toBeNull();
+    expect(privError?.code).toBe("42501");
+    expect(privData).toBeNull();
+
+    // 2. Create a known unapproved draft listing under sellerClient
+    const { data: draftListing, error: draftCreateError } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Anonymous Hidden Draft Listing",
+        category_id: testCategoryId,
+        city_id: testCityId,
+        condition: "good",
+      })
+      .select("id, status")
+      .single();
+
+    expect(draftCreateError).toBeNull();
+    expect(draftListing?.status).toBe("draft");
+    const privateDraftListingId = draftListing!.id;
+
+    // 3. Create a legitimately published active listing under sellerClient
+    const { data: pubListing, error: pubCreateError } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Anonymous Visible Published Listing",
+        category_id: testCategoryId,
+        city_id: testCityId,
+        condition: "good",
+      })
+      .select("id")
+      .single();
+
+    expect(pubCreateError).toBeNull();
+    const publicListingId = pubListing!.id;
+
+    // Elevate the public listing to active with valid future expiration
+    const { error: activateError } = await serviceClient
+      .from("listings")
+      .update({
+        status: "active",
+        published_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+      })
+      .eq("id", publicListingId);
+
+    expect(activateError).toBeNull();
+
+    // 4. Query public columns as an anonymous user
+    const { data: anonData, error: anonError } = await anonClient
+      .from("listings")
+      .select("id, title");
+
+    expect(anonError).toBeNull();
+    expect(Array.isArray(anonData)).toBe(true);
+
+    // Assert: Unapproved draft listing ID MUST NOT be present in anonymous data
+    const leakedDraft = anonData?.find((item) => item.id === privateDraftListingId);
+    expect(leakedDraft).toBeUndefined();
+
+    // Assert: Legitimately published active listing MUST appear in anonymous data
+    const publishedFound = anonData?.find((item) => item.id === publicListingId);
+    expect(publishedFound).toBeDefined();
+    expect(publishedFound?.title).toBe("Anonymous Visible Published Listing");
   });
 
   // 2. Binding Amendment 6: Storage Fully Server-Mediated
@@ -451,14 +598,22 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .select("id")
       .single();
 
-    await sellerClient
+    const { data: m2 } = await sellerClient
       .from("listing_media")
       .insert({
         listing_id: listingId,
         original_filename: "m2.jpg",
         content_type: "image/jpeg",
         file_size_bytes: 1000,
-      });
+      })
+      .select("id")
+      .single();
+
+    // Mark both media rows ready (required for reorder RPC)
+    await serviceClient
+      .from("listing_media")
+      .update({ processing_status: "ready" })
+      .in("id", [m1!.id, m2!.id]);
 
     // Make listing active
     await serviceClient
@@ -477,11 +632,20 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .single();
     const preReorderRev = activeRow!.revision;
 
-    // Update display_order of m1
-    const { error: reorderError } = await sellerClient
+    // Direct UPDATE on display_order is revoked from authenticated in 1.3/Migration 33
+    // Sellers must use public.seller_reorder_listing_media
+    const { error: directUpdateError } = await sellerClient
       .from("listing_media")
       .update({ display_order: 5 })
       .eq("id", m1!.id);
+    expect(directUpdateError).not.toBeNull();
+    expect(directUpdateError?.code).toBe("42501");
+
+    // Perform legitimate reorder via authoritative RPC
+    const { error: reorderError } = await sellerClient.rpc("seller_reorder_listing_media", {
+      listing_id: listingId,
+      media_ids: [m2!.id, m1!.id],
+    });
 
     expect(reorderError).toBeNull();
 
@@ -553,8 +717,9 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .update({ status: "pending_review" })
       .eq("id", listingId);
 
-    // Moderator tries to approve own listing
-    const { error: approveError } = await moderatorClient.rpc("moderate_listing", {
+    // Moderator tries to approve own listing with verified AAL2 credentials
+    // The self-approval guard must specifically deny this action
+    const { error: approveError } = await modAal2Client.rpc("moderate_listing", {
       listing_id: listingId,
       action: "approve",
     });
@@ -562,6 +727,42 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
     expect(approveError).not.toBeNull();
     expect(approveError?.message).toMatch(/cannot review their own listing/i);
   });
+
+  // 10b. Moderator with AAL1 session denied from moderating listings
+  it("test_aal1_moderator_denied_from_moderating_listings", async () => {
+    if (!checkPrerequisite()) return;
+
+    // Seller creates a listing in pending_review
+    const { data: sellerListing } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Seller Listing for AAL1 Mod Check",
+        category_id: testCategoryId,
+        city_id: testCityId,
+      })
+      .select("id")
+      .single();
+
+    const listingId = sellerListing!.id;
+
+    await serviceClient
+      .from("listings")
+      .update({ status: "pending_review" })
+      .eq("id", listingId);
+
+    // Moderator with standard AAL1 password login (moderatorClient) attempts moderation
+    const { error: aal1Error } = await moderatorClient.rpc("moderate_listing", {
+      listing_id: listingId,
+      action: "approve",
+    });
+
+    expect(aal1Error).not.toBeNull();
+    expect(aal1Error?.message).toMatch(/caller is not an active moderator with AAL2 MFA/i);
+  });
+
+  // NOTE: test_legacy_moderate_listing_rpc_revoked and
+  // test_moderate_listing_reviewed_rejects_stale_revision require MOD-02B
+  // migrations (PR #113). They are tested there with the correct schema.
 
   // 11. Cross-owner edit denied
   it("test_cross_owner_listing_edit_denied", async () => {
