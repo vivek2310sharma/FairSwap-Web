@@ -1000,4 +1000,318 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
     expect(modError).not.toBeNull();
     expect(modError?.message).toMatch(/must be active administrator with AAL2 MFA/i);
   });
+
+  // 15. MOD-02B Review-Generation Collision Remediation: Unchanged Resubmission
+  // Verifies that when a listing is rejected and subsequently resubmitted unchanged by the seller:
+  // - Direct resubmission without edits increments revision from 1 to 2
+  // - Prior review tokens (rev 1) are rejected with PT409 (MODERATION_REVIEW_CONFLICT)
+  // - Current review tokens (rev 2) are accepted
+  // - Rejection reason is cleared upon resubmission
+  it("test_rejected_listing_resubmission_invalidates_prior_review_token", async () => {
+    if (!checkPrerequisite()) return;
+
+    // 1. Ensure test locality has postal mapping
+    const testPincode = "302017";
+    const { data: localityData } = await serviceClient
+      .from("localities")
+      .select("id, city_id")
+      .eq("city_id", testCityId)
+      .limit(1)
+      .single();
+
+    const targetLocalityId = localityData?.id;
+
+    await serviceClient.from("india_postal_data").upsert(
+      {
+        pincode: testPincode,
+        office_name: "Test Office SO",
+        office_type: "Sub Post Office",
+        delivery_status: "Delivery",
+        district: "Jaipur",
+        state: "Rajasthan",
+        source: "official_department_of_posts",
+        source_record_key: "TEST-SO-302017",
+      },
+      { onConflict: "pincode,office_name" }
+    );
+
+    if (targetLocalityId) {
+      await serviceClient.from("postal_pincode_localities").upsert(
+        {
+          pincode: testPincode,
+          locality_id: targetLocalityId,
+          office_name: "Test Office SO",
+          source: "official_department_of_posts",
+        },
+        { onConflict: "pincode,locality_id" }
+      );
+    }
+
+    // 2. Create listing as seller with ready media
+    const { data: listing, error: createError } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Review Token Invalidation Item",
+        description: "Valid detailed item description meeting minimum length requirements.",
+        category_id: testCategoryId,
+        city_id: testCityId,
+        locality_id: targetLocalityId,
+        pin_code: testPincode,
+        condition: "good",
+        price_type: "fixed",
+        price_paise: 50000,
+        category_attributes: { brand: "Samsung" },
+      })
+      .select("id, status, revision")
+      .single();
+
+    expect(createError).toBeNull();
+    const listingId = listing!.id;
+    expect(listing!.status).toBe("draft");
+    expect(listing!.revision).toBe(1);
+
+    // Attach media via granted columns (display_order is auto-assigned by BEFORE INSERT trigger)
+    const { data: media, error: mediaError } = await sellerClient
+      .from("listing_media")
+      .insert({
+        listing_id: listingId,
+        original_filename: "photo1.jpg",
+        content_type: "image/jpeg",
+        file_size_bytes: 2048,
+      })
+      .select("id")
+      .single();
+
+    expect(mediaError).toBeNull();
+
+    // Mark media ready
+    await serviceClient
+      .from("listing_media")
+      .update({ processing_status: "ready", original_storage_path: `media/${media!.id}.jpg` })
+      .eq("id", media!.id);
+
+    // 3. Submit for review as seller
+    const { data: submitRes, error: submitError } = await sellerClient.rpc("seller_submit_listing", {
+      listing_id: listingId,
+    });
+
+    expect(submitError).toBeNull();
+    const submitData = submitRes as { status?: string; revision?: number };
+    expect(submitData?.status).toBe("pending_review");
+
+    const { data: submittedListing } = await sellerClient
+      .from("listings")
+      .select("status, revision")
+      .eq("id", listingId)
+      .single();
+
+    const firstRev = submittedListing!.revision;
+    const firstStatus = submittedListing!.status;
+    expect(firstRev).toBe(1);
+    expect(firstStatus).toBe("pending_review");
+
+    // 4. Moderator rejects listing with valid expected revision 1
+    const { error: rejectError } = await modAal2Client.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "reject",
+      reason: "Initial rejection for photo clarity",
+      expected_revision: firstRev,
+      expected_status: firstStatus,
+    });
+
+    expect(rejectError).toBeNull();
+
+    const { data: rejectedListing } = await sellerClient
+      .from("listings")
+      .select("status, revision, rejection_reason")
+      .eq("id", listingId)
+      .single();
+
+    expect(rejectedListing!.status).toBe("rejected");
+    expect(rejectedListing!.revision).toBe(1);
+    expect(rejectedListing!.rejection_reason).toBe("Initial rejection for photo clarity");
+
+    // 5. Seller resubmits UNCHANGED listing
+    const { data: resubmitRes, error: resubmitError } = await sellerClient.rpc("seller_submit_listing", {
+      listing_id: listingId,
+    });
+
+    expect(resubmitError).toBeNull();
+    const resubmitData = resubmitRes as { status?: string; revision?: number };
+    expect(resubmitData?.status).toBe("pending_review");
+    expect(resubmitData?.revision).toBe(2);
+
+    const { data: resubmittedListing } = await sellerClient
+      .from("listings")
+      .select("status, revision, rejection_reason")
+      .eq("id", listingId)
+      .single();
+
+    expect(resubmittedListing!.status).toBe("pending_review");
+    expect(resubmittedListing!.revision).toBe(2);
+    expect(resubmittedListing!.rejection_reason).toBeNull();
+
+    // 6. Old moderation token (rev 1, pending_review) MUST BE REJECTED with PT409
+    const { error: staleTokenError } = await modAal2Client.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "approve",
+      reason: null,
+      expected_revision: firstRev,
+      expected_status: "pending_review",
+    });
+
+    expect(staleTokenError).not.toBeNull();
+    expect(staleTokenError?.message).toMatch(/MODERATION_REVIEW_CONFLICT|PT409/i);
+
+    // 7. Fresh moderation token (rev 2, pending_review) MUST SUCCEED
+    const { error: validTokenError } = await modAal2Client.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "approve",
+      reason: null,
+      expected_revision: 2,
+      expected_status: "pending_review",
+    });
+
+    expect(validTokenError).toBeNull();
+
+    const { data: activeListing } = await sellerClient
+      .from("listings")
+      .select("status, revision")
+      .eq("id", listingId)
+      .single();
+
+    expect(activeListing!.status).toBe("active");
+    expect(activeListing!.revision).toBe(2);
+  });
+
+  // 16. MOD-02B Edited Rejected Listing Resubmission: No Duplicate Revision Increment
+  // Verifies that when a rejected listing is edited before resubmission:
+  // - Amendment 2 transitions rejected -> draft (rev 2)
+  // - Resubmission transitions draft -> pending_review while maintaining rev 2 (no double bump)
+  // - Prior review tokens (rev 1) fail with PT409
+  // - Current review tokens (rev 2) succeed
+  it("test_edited_rejected_listing_resubmission_has_no_duplicate_revision_increment", async () => {
+    if (!checkPrerequisite()) return;
+
+    const testPincode = "302017";
+    const { data: localityData } = await serviceClient
+      .from("localities")
+      .select("id, city_id")
+      .eq("city_id", testCityId)
+      .limit(1)
+      .single();
+
+    const targetLocalityId = localityData?.id;
+
+    // Create listing as seller with ready media
+    const { data: listing, error: createError } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Edited Resubmission Item",
+        description: "Valid detailed item description meeting minimum length requirements.",
+        category_id: testCategoryId,
+        city_id: testCityId,
+        locality_id: targetLocalityId,
+        pin_code: testPincode,
+        condition: "good",
+        price_type: "fixed",
+        price_paise: 60000,
+        category_attributes: { brand: "Samsung" },
+      })
+      .select("id, status, revision")
+      .single();
+
+    expect(createError).toBeNull();
+    const listingId = listing!.id;
+    expect(listing!.revision).toBe(1);
+
+    const { data: media } = await sellerClient
+      .from("listing_media")
+      .insert({
+        listing_id: listingId,
+        original_filename: "photo_edit.jpg",
+        content_type: "image/jpeg",
+        file_size_bytes: 2048,
+      })
+      .select("id")
+      .single();
+
+    await serviceClient
+      .from("listing_media")
+      .update({ processing_status: "ready", original_storage_path: `media/${media!.id}.jpg` })
+      .eq("id", media!.id);
+
+    // Initial submission -> status pending_review, rev 1
+    const { error: submitError } = await sellerClient.rpc("seller_submit_listing", {
+      listing_id: listingId,
+    });
+    expect(submitError).toBeNull();
+
+    // Moderator rejects listing
+    const { error: rejectError } = await modAal2Client.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "reject",
+      reason: "Item description needs more detail",
+      expected_revision: 1,
+      expected_status: "pending_review",
+    });
+    expect(rejectError).toBeNull();
+
+    // Seller edits listing description while rejected -> Amendment 2 transitions to draft and rev 2
+    const { error: editError } = await sellerClient
+      .from("listings")
+      .update({ description: "Updated description with significantly more detail for approval." })
+      .eq("id", listingId);
+    expect(editError).toBeNull();
+
+    const { data: editedListing } = await sellerClient
+      .from("listings")
+      .select("status, revision, rejection_reason")
+      .eq("id", listingId)
+      .single();
+
+    expect(editedListing!.status).toBe("draft");
+    expect(editedListing!.revision).toBe(2);
+    expect(editedListing!.rejection_reason).toBeNull();
+
+    // Seller resubmits edited draft -> must transition to pending_review with NO DUPLICATE increment (rev remains 2)
+    const { data: resubmitRes, error: resubmitError } = await sellerClient.rpc("seller_submit_listing", {
+      listing_id: listingId,
+    });
+    expect(resubmitError).toBeNull();
+    const resubmitData = resubmitRes as { status?: string; revision?: number };
+    expect(resubmitData?.status).toBe("pending_review");
+    expect(resubmitData?.revision).toBe(2);
+
+    const { data: finalListing } = await sellerClient
+      .from("listings")
+      .select("status, revision")
+      .eq("id", listingId)
+      .single();
+
+    expect(finalListing!.status).toBe("pending_review");
+    expect(finalListing!.revision).toBe(2);
+
+    // Stale token from initial review (rev 1) fails with PT409
+    const { error: staleError } = await modAal2Client.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "approve",
+      reason: null,
+      expected_revision: 1,
+      expected_status: "pending_review",
+    });
+    expect(staleError).not.toBeNull();
+    expect(staleError?.message).toMatch(/MODERATION_REVIEW_CONFLICT|PT409/i);
+
+    // Valid current token (rev 2) succeeds
+    const { error: validError } = await modAal2Client.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "approve",
+      reason: null,
+      expected_revision: 2,
+      expected_status: "pending_review",
+    });
+    expect(validError).toBeNull();
+  });
+
 });
