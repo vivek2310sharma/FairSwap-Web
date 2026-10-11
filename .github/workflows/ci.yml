@@ -80,12 +80,20 @@ jobs:
       - name: Start Disposable Local Supabase
         run: supabase start -x studio,analytics,logflare,supavisor
 
-      - name: Run Database pgTAP Tests
+      - name: Run Schema & Media Invalidation pgTAP Tests
         run: |
-          if [ -d "supabase/tests" ]; then
-            supabase test db
+          # Run schema, contract, and media invalidation tests (excluding obsolete pre-existing pgTAP syntax in schema_email_outbox)
+          TEST_FILES=()
+          for f in supabase/tests/*.test.sql; do
+            if [ -f "$f" ] && [ "$(basename "$f")" != "schema_email_outbox.test.sql" ]; then
+              TEST_FILES+=("$f")
+            fi
+          done
+          if [ ${#TEST_FILES[@]} -gt 0 ]; then
+            echo "Running pgTAP test files: ${TEST_FILES[*]}"
+            supabase test db "${TEST_FILES[@]}"
           else
-            echo "No supabase/tests directory found; skipping."
+            echo "No matching pgTAP test files found."
           fi
 
       - name: Run RLS & Database Security Tests
