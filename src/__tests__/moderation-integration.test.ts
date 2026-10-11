@@ -1,3 +1,4 @@
+import { validateTestTargetConfig } from '../../src/lib/moderation/target-guard';
 import { describe, it, expect, beforeAll } from "vitest";
 import { Client } from "pg";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -737,14 +738,39 @@ describe.skipIf(!isIntegrationOptedIn)("MOD-03A End-to-End Automatic Moderation 
   it("Case K [Real PostgREST RPC Smoke Test]: Service-role authenticated PostgREST HTTP transport executes batch claim and rejects anonymous callers", async () => {
     if (!isIntegrationOptedIn) return;
 
-    const restUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    // 1. Negative security test: Prove that hosted, non-allowlisted, or malformed URLs abort before making any network request
+    const hostedTargets = [
+      "https://fairswap.supabase.co",
+      "https://api.fairswap.com",
+      "http://192.168.1.100:54321",
+      "http://user:pass@127.0.0.1:54321",
+      "not-a-valid-url",
+    ];
+    for (const badTarget of hostedTargets) {
+      expect(() =>
+        validateTestTargetConfig({
+          ...process.env,
+          MOD03A_RUN_LOCAL_DB_TESTS: "true",
+          NEXT_PUBLIC_SUPABASE_URL: badTarget,
+        })
+      ).toThrow();
+    }
+
+    // 2. Validate current environment target config strictly
+    const validTarget = validateTestTargetConfig(process.env);
+    expect(validTarget.isOptedIn).toBe(true);
+
+    const serviceKey = validTarget.serviceRoleKey;
     if (!serviceKey) {
       throw new Error("ABORT: SUPABASE_SERVICE_ROLE_KEY must be provided for PostgREST RPC smoke test.");
     }
 
-    // 1. Verify service_role client connects via real HTTP PostgREST endpoint
-    const postgrestServiceClient = createSupabaseClient(restUrl, serviceKey, {
+    // 3. Record baseline database state before RPC calls
+    const preCountRes = await query("SELECT count(*) FROM public.listing_moderation_requests WHERE status = 'claimed'");
+    const preClaimedCount = parseInt(preCountRes.rows[0].count, 10);
+
+    // 4. Verify service_role client connects via real HTTP PostgREST endpoint on validated loopback URL
+    const postgrestServiceClient = createSupabaseClient(validTarget.restUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
@@ -754,11 +780,12 @@ describe.skipIf(!isIntegrationOptedIn)("MOD-03A End-to-End Automatic Moderation 
     });
 
     expect(serviceRpcRes.error).toBeNull();
+    expect(serviceRpcRes.status).toBe(200);
     expect(Array.isArray(serviceRpcRes.data)).toBe(true);
 
-    // 2. Verify anonymous client attempting the same PostgREST HTTP RPC is rejected with 401 / permission denied
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
-    const anonClient = createSupabaseClient(restUrl, anonKey, {
+    // 5. Verify anonymous client attempting the same PostgREST HTTP RPC is rejected
+    const anonKey = validTarget.anonKey || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+    const anonClient = createSupabaseClient(validTarget.restUrl, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
@@ -768,7 +795,14 @@ describe.skipIf(!isIntegrationOptedIn)("MOD-03A End-to-End Automatic Moderation 
     });
 
     expect(anonRpcRes.error).not.toBeNull();
+    expect(anonRpcRes.status).toBe(401);
+    expect(anonRpcRes.error?.code).toBe("42501");
     expect(anonRpcRes.error?.message).toContain("permission denied");
-  });
 
+    // 6. Verify no unauthorized mutation occurred as a result of anonymous attempt
+    const postCountRes = await query("SELECT count(*) FROM public.listing_moderation_requests WHERE status = 'claimed'");
+    const postClaimedCount = parseInt(postCountRes.rows[0].count, 10);
+    // Any change in claimed count must only be attributable to the authorized service_role call
+    expect(postClaimedCount - preClaimedCount).toBeLessThanOrEqual(1);
+  });
 });

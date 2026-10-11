@@ -160,7 +160,8 @@ jobs:
             supabase db query 'CREATE TABLE IF NOT EXISTS test_validation_meta.run_identity (run_id text PRIMARY KEY, task text NOT NULL);'
             supabase db query "INSERT INTO test_validation_meta.run_identity (run_id, task) VALUES ('$TASK_RUN_ID', 'MOD-03A') ON CONFLICT (run_id) DO UPDATE SET task = EXCLUDED.task;"
 
-            # Execute all MOD-03A integration tests with opt-in enabled
+            # Execute all MOD-03A integration tests with opt-in enabled and capture machine-readable JSON results
+            REPORT_FILE="mod03a-integration-report.json"
             MOD03A_RUN_LOCAL_DB_TESTS=true \
             MOD03A_TASK_RUN_ID="$TASK_RUN_ID" \
             MOD03A_DB_HOST="$DB_HOST" \
@@ -169,7 +170,45 @@ jobs:
             NEXT_PUBLIC_SUPABASE_URL="$REST_URL" \
             NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY" \
             SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
-            pnpm vitest run "$INTEGRATION_TEST" --pool=threads
+            pnpm vitest run "$INTEGRATION_TEST" --pool=threads --reporter=default --reporter=json --outputFile="$REPORT_FILE"
+
+            # Machine-readable Zero-Skip Enforcement
+            if [ ! -f "$REPORT_FILE" ]; then
+              echo "::error::Integration test report '$REPORT_FILE' was not generated. Aborting."
+              exit 1
+            fi
+
+            TOTAL=$(jq -r '.numTotalTests // empty' "$REPORT_FILE")
+            PASSED=$(jq -r '.numPassedTests // empty' "$REPORT_FILE")
+            FAILED=$(jq -r '.numFailedTests // empty' "$REPORT_FILE")
+            PENDING=$(jq -r '.numPendingTests // empty' "$REPORT_FILE")
+            TODO=$(jq -r '.numTodoTests // empty' "$REPORT_FILE")
+            SUCCESS=$(jq -r '.success // empty' "$REPORT_FILE")
+
+            echo "=== MOD-03A Integration Test Result Audit ==="
+            echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED | Skipped/Pending: $PENDING | Todo: $TODO | Success: $SUCCESS"
+
+            if [ "$SUCCESS" != "true" ]; then
+              echo "::error::Vitest reported suite failure (success: $SUCCESS)."
+              exit 1
+            fi
+
+            if [ "$TOTAL" -lt 12 ]; then
+              echo "::error::Expected at least 12 integration tests to execute (Safety + Cases A through K), but found only $TOTAL."
+              exit 1
+            fi
+
+            if [ "$FAILED" -ne 0 ]; then
+              echo "::error::One or more integration tests failed ($FAILED failed)."
+              exit 1
+            fi
+
+            if [ "$PENDING" -ne 0 ] || [ "$TODO" -ne 0 ]; then
+              echo "::error::Zero-skip policy violated! Detected skipped/pending: $PENDING, todo: $TODO. All required integration scenarios must execute."
+              exit 1
+            fi
+
+            echo "✓ Zero-skip verification PASSED: All $PASSED required MOD-03A scenarios executed and passed with 0 skips."
           else
             echo "MOD-03A migrations not detected on this branch; skipping MOD-03A integration suite."
           fi

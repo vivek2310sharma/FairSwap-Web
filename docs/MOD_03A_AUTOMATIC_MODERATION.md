@@ -2,11 +2,25 @@
 
 ## 1. System Overview & Product Policy
 FairSwap MOD-03A implements server-authoritative, submission-triggered automatic moderation for classified listings.
-The system executes non-AI pattern checks using the canonical MOD-01A 3-rule text evaluator (`prototype_v0.1.1`) upon seller submission.
+The system executes a limited heuristic text evaluator (`prototype_v0.1.1`) upon seller submission.
+
+### Verified Heuristic Scope (MOD-01A Text Checker):
+The current text checker evaluates exactly three rules:
+1. **`rule_prohibited_item_wording`**: Detects specific restricted keywords and prohibited goods/services.
+2. **`rule_shortened_link`**: Identifies known URL shorteners (e.g. bit.ly, tinyurl) in titles and descriptions.
+3. **`rule_payment_before_viewing`**: Flags explicit phrasing soliciting advance payments prior to item viewing.
+
+> [!IMPORTANT]
+> **Limitations & Out-of-Scope Capabilities**:
+> - The checker is a **limited prototype**, not comprehensive fraud or scam detection.
+> - Arbitrary contact-information extraction and price anomaly heuristics are **not implemented** in this ruleset.
+> - **Image-content moderation is completely unimplemented** (no vision models, OCR, or NSFW image scanning).
+> - Therefore, `moderation_automation_enabled` **defaults to `false`** and must remain disabled across all hosted environments.
 
 ### Confirmed Policy:
 1. **Clean Eligible Content (`no_review_flags`)**:
-   - When all mandatory checks complete with zero flags and zero errors, and all publication prerequisites are met (listing is in `pending_review`, seller account is active with accepted policies, photo readiness rules are satisfied, required core fields are valid), the system **automatically approves and transitions the listing to `active`** immediately, without requiring an Admin visit or human intervention.
+   - If `moderation_automation_enabled` is explicitly `true` in system settings AND all mandatory checks complete with zero flags and zero errors, and all publication prerequisites are met (listing in `pending_review`, seller account active with current policies accepted, photo readiness rules satisfied, core fields valid), the system transitions the listing to `active`.
+   - If `moderation_automation_enabled` is `false` (the default setting), clean listings **remain unpublished (`pending_review`)** and are routed to manual admin review (`decision: 'routed_to_admin'`).
 2. **Flagged Content (`needs_review`)**:
    - When one or more flags are detected, the listing **remains unpublished** (`pending_review`).
    - The findings are recorded in `listing_moderation_results` and securely surfaced to human staff via the authenticated AAL2 `app_security.get_listing_moderation_findings` contract.
@@ -21,7 +35,7 @@ The system executes non-AI pattern checks using the canonical MOD-01A 3-rule tex
 
 ---
 
-## 2. Architecture & Components (Hardened under R2)
+## 2. Architecture & Components
 
 ### 2.1 Database Layer (PostgreSQL / Supabase Migrations)
 1. **Queue & Evidence Storage** (`20261011000038_create_moderation_queue_and_results.sql`):
@@ -42,7 +56,7 @@ The system executes non-AI pattern checks using the canonical MOD-01A 3-rule tex
 
 2. **Dispatch & Recovery** (`20261011000039_moderation_dispatch_and_killswitch.sql`):
    - `public.app_system_settings`: System settings table including `moderation_automation_enabled` (boolean, defaults to `false` for fail-safe initialization).
-   - `trg_fn_notify_moderation_worker`: Optional `pg_net` fail-safe HTTP trigger dispatching to Edge worker upon queue insert.
+   - `trg_fn_notify_moderation_worker`: Optional `pg_net` fail-safe HTTP trigger dispatching to Edge worker upon queue insert when vault secrets are configured.
    - `invoke_moderation_retry_batch`: Scheduled / on-demand RPC to reclaim abandoned leases bounded by `max_attempts`. Generates `LEASE_EXPIRED_ABANDONED` evidence and applies exponential backoff on retry.
    - Scheduled Recovery Job: Registered `pg_cron` schedule `process-moderation-queue-retries` running every 2 minutes.
 
@@ -67,17 +81,19 @@ The system executes non-AI pattern checks using the canonical MOD-01A 3-rule tex
 
 ---
 
-## 3. Verification & Layer-by-Layer Test Execution Results
+## 3. Verification Scope & Transport Categorization
 
-| Layer | Execution Method | Verdict | Details |
+To maintain strict auditability, test execution is differentiated into distinct verification layers:
+
+| Layer | Execution Scope | Enforcement Status | Notes |
 |---|---|---|---|
-| **Source & Unit: Text Checker** | `vitest run src/__tests__/moderation-text-checker.test.ts` | **PASSED** | 39/39 tests passed (100% rule coverage: prohibited items, shortened links, payment before viewing, combinatorics). |
-| **Source & Unit: Worker & Edge Handler** | `vitest run src/__tests__/moderation-worker.test.ts` | **PASSED** | 10/10 tests passed (payload schemas, outcome translation, interrupted bit.ly, business rejection propagation, missing/wrong/valid secret header checks on `handleModerationWorkerRequest`). |
-| **Worker + SQL Component Integration** | `vitest run src/__tests__/moderation-integration.test.ts` (opted-in) | **PASSED** | 11/11 tests passed against clean container `mod03a_1791713159697_db`. Cases A & B execute canonical `processClaimedJob`. |
-| **Decision Safety: Post-Lock Clock & Expiry** | Vitest Case F in integration suite | **PASSED** | Fresh clock check `clock_timestamp()` verified. Simulated lock-wait expiry returns `LEASE_EXPIRED` without publishing or recording approval evidence. |
-| **Controlled Concurrency & PID Blocking** | Vitest Case I in integration suite | **PASSED** | Captures `modPid` and `workerPid` via `pg_backend_pid()`. Asserts `pg_blocking_pids(workerPid)` contains `modPid`, verified serialization under competing moderator update. |
-| **Denial Controls (Anon & Seller)** | Vitest Case D in integration suite | **PASSED** | Both `authenticated` sellers and `anon` visitors are rejected with `permission denied` or `Staff authorization required` when invoking service RPCs or staff findings. |
-| **Clean Baseline Installation** | `scratch/bootstrap_mod03a.js` | **PASSED** | Applied GoTrue (70 migrations), Storage API tenant migrations, and all 39 repository SQL migrations cleanly from zero with 0 errors. |
-| **Standalone PostgREST / Deno Edge Listener** | Full HTTP Daemon Transport | **BLOCKED** | Standalone PostgREST daemon and Deno Edge Runtime daemon listeners were not provisioned in the local single-container PostgreSQL scope (preventing unapproved external package installs/downloads). Layer tested via exported HTTP handler unit contract. |
-| **Workspace Typecheck** | `tsc.cmd --noEmit` | **PASSED** | Clean compilation, 0 type errors across all TypeScript files. |
-| **Protected File Integrity** | SHA256 checksum comparison | **PASSED** | Both `20261010071050_invalidate_pending_review_on_media_mutation.sql` and `pending_review_media_invalidation.test.sql` match expected byte-for-byte hashes. |
+| **Text Checker Unit Tests** | `src/__tests__/moderation-text-checker.test.ts` | **CI Enforced** | 39 unit tests passing in Job 1. Verifies 3-rule regex heuristics and edge cases. |
+| **Worker Unit Tests** | `src/__tests__/moderation-worker.test.ts` | **CI Enforced** | 10 unit tests passing in Job 1. Validates Zod schemas, claim shapes, and HTTP header auth. |
+| **Target Guard Unit Tests** | `src/__tests__/moderation-target-guard.test.ts` | **CI Enforced** | 7 unit tests passing in Job 1. Verifies loopback restrictions, hosted URL rejection, and run-identity validation. |
+| **Worker + SQL Component Integration** | `src/__tests__/moderation-integration.test.ts` (Cases A–J) | **CI Enforced** | 10 scenarios passing in Job 2 against disposable PostgreSQL. Validates row-locking triggers, lease expiration, and concurrency. |
+| **Real PostgREST HTTP Smoke Test** | `src/__tests__/moderation-integration.test.ts` (Case K) | **CI Enforced** | Real HTTP transport via `@supabase/supabase-js` against local PostgREST daemon. Validates `service_role` 200 OK and `anon` 401 Unauthorized / 42501 permission denied. Pre-flight URL validator strictly blocks non-loopback calls. |
+| **Database Migrations & pgTAP** | `supabase/tests/*.test.sql` | **CI Enforced** | 97 pgTAP assertions passing across 5 test suites on disposable Supabase. |
+| **RLS Security Suite** | `tests/security/listings-rls.test.ts` | **CI Enforced** | 19 security assertions passing on disposable Supabase. |
+| **Deno Edge Runtime Daemon Serving** | Live `supabase functions serve` | **NOT EXECUTED** | Deno runtime daemon is not spun up in CI. Edge handler logic is verified via Web standard `Request`/`Response` unit contracts. |
+| **Hosted Migration & Automatic Activation** | Production / Staging Supabase | **NOT EXECUTED** | Migrations remain unapplied to hosted environments. `moderation_automation_enabled` remains `false`. |
+| **Authentic Hardware/TOTP MFA** | WebAuthn / TOTP Auth | **NOT EXECUTED** | Local CI uses synthetic AAL2 claims. Live MFA enforcement requires hosted deployment. |
