@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     "blob-report/**",
     // Vendor libraries
     "scripts/vendor/**",
+    // Disposable local scratch & acceptance tooling
+    "scratch/**",
   ]),
 ]);
 

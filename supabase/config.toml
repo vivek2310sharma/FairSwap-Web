@@ -76,3 +76,6 @@ pop3_port = 54326
 [functions.process-email-outbox]
 verify_jwt = false
 
+[functions.process-listing-moderation]
+verify_jwt = false
+
