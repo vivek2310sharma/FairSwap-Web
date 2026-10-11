@@ -765,9 +765,15 @@ describe.skipIf(!isIntegrationOptedIn)("MOD-03A End-to-End Automatic Moderation 
       throw new Error("ABORT: SUPABASE_SERVICE_ROLE_KEY must be provided for PostgREST RPC smoke test.");
     }
 
-    // 3. Record baseline database state before RPC calls
-    const preCountRes = await query("SELECT count(*) FROM public.listing_moderation_requests WHERE status = 'claimed'");
-    const preClaimedCount = parseInt(preCountRes.rows[0].count, 10);
+    // 3. Helper to capture complete immutable state snapshot of the moderation queue
+    const getQueueSnapshot = async () => {
+      const res = await query(
+        `SELECT id, listing_id, status, claim_token, attempt_count, updated_at
+         FROM public.listing_moderation_requests
+         ORDER BY id ASC`
+      );
+      return res.rows;
+    };
 
     // 4. Verify service_role client connects via real HTTP PostgREST endpoint on validated loopback URL
     const postgrestServiceClient = createSupabaseClient(validTarget.restUrl, serviceKey, {
@@ -783,7 +789,10 @@ describe.skipIf(!isIntegrationOptedIn)("MOD-03A End-to-End Automatic Moderation 
     expect(serviceRpcRes.status).toBe(200);
     expect(Array.isArray(serviceRpcRes.data)).toBe(true);
 
-    // 5. Verify anonymous client attempting the same PostgREST HTTP RPC is rejected
+    // 5. Capture authoritative database queue snapshot immediately following authorized service call
+    const snapshotAfterService = await getQueueSnapshot();
+
+    // 6. Verify anonymous client attempting the same PostgREST HTTP RPC is rejected with 401 / 42501
     const anonKey = validTarget.anonKey || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
     const anonClient = createSupabaseClient(validTarget.restUrl, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -799,10 +808,77 @@ describe.skipIf(!isIntegrationOptedIn)("MOD-03A End-to-End Automatic Moderation 
     expect(anonRpcRes.error?.code).toBe("42501");
     expect(anonRpcRes.error?.message).toContain("permission denied");
 
-    // 6. Verify no unauthorized mutation occurred as a result of anonymous attempt
-    const postCountRes = await query("SELECT count(*) FROM public.listing_moderation_requests WHERE status = 'claimed'");
-    const postClaimedCount = parseInt(postCountRes.rows[0].count, 10);
-    // Any change in claimed count must only be attributable to the authorized service_role call
-    expect(postClaimedCount - preClaimedCount).toBeLessThanOrEqual(1);
+    // 7. Capture database queue snapshot again and assert byte-for-byte exact equality: zero mutations occurred
+    const snapshotAfterAnon = await getQueueSnapshot();
+    expect(snapshotAfterAnon).toEqual(snapshotAfterService);
   });
+
+  it("Case L [Kill Switch Precedence Matrix]: DB false overrides Vault true; DB false with Vault absent prevents publication; DB true with Vault false vetoes; DB true with Vault absent allows publication", async () => {
+    if (!isIntegrationOptedIn) return;
+
+    // Helper to evaluate clean listing finalization under varying killswitch states
+    const testKillswitchState = async (dbSetting: string | null, vaultSecret: string | null): Promise<string> => {
+      // 1. Configure DB setting
+      if (dbSetting === null) {
+        await query("DELETE FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled'");
+      } else {
+        await query(
+          "INSERT INTO public.app_system_settings (setting_key, setting_value, description) VALUES ('moderation_automation_enabled', $1, 'test') ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value",
+          [dbSetting]
+        );
+      }
+
+      // 2. Configure Vault secret
+      await query("DELETE FROM vault.secrets WHERE name = 'moderation_automation_enabled'");
+      if (vaultSecret !== null) {
+        await query("SELECT vault.create_secret($1, 'moderation_automation_enabled', 'test')", [vaultSecret]);
+      }
+
+      // 3. Create fresh clean listing and submit
+      const listing = await createListing("Killswitch Test Item " + Math.random(), "Solid clean listing with valid description.");
+      await addMedia(listing.id, "ready", true);
+      await submitListingViaRpc(listing.id);
+
+      const qReq = await query("SELECT * FROM public.listing_moderation_requests WHERE listing_id = $1", [listing.id]);
+      const claim = await query("SELECT * FROM public.claim_moderation_batch(1, 30, $1::uuid)", [qReq.rows[0].id]);
+      const job = claim.rows[0];
+
+      // 4. Finalize with clean outcome
+      const fin = await query(
+        `SELECT public.impl_finalize_moderation_result(
+          $1::uuid, $2::uuid, 'no_review_flags', 'prototype_v0.1.1', 'title_description',
+          ARRAY['rule_prohibited_item_wording', 'rule_shortened_link', 'rule_payment_before_viewing'],
+          ARRAY[]::text[], '[]'::jsonb, '[]'::jsonb
+        )`,
+        [job.request_id, job.claim_token]
+      );
+
+      return fin.rows[0].impl_finalize_moderation_result.decision;
+    };
+
+    // Scenario 1: DB false, Vault true -> Must NOT publish (decision: routed_to_admin)
+    const dec1 = await testKillswitchState("false", "true");
+    expect(dec1).toBe("routed_to_admin");
+
+    // Scenario 2: DB false, Vault absent -> Must NOT publish (decision: routed_to_admin)
+    const dec2 = await testKillswitchState("false", null);
+    expect(dec2).toBe("routed_to_admin");
+
+    // Scenario 3: DB missing/null, Vault true -> Must NOT publish (fail-closed, routed_to_admin)
+    const dec3 = await testKillswitchState(null, "true");
+    expect(dec3).toBe("routed_to_admin");
+
+    // Scenario 4: DB true, Vault false -> Must NOT publish (Vault veto, routed_to_admin)
+    const dec4 = await testKillswitchState("true", "false");
+    expect(dec4).toBe("routed_to_admin");
+
+    // Scenario 5: DB true, Vault absent -> May auto-publish in isolated test (decision: auto_approved)
+    const dec5 = await testKillswitchState("true", null);
+    expect(dec5).toBe("auto_approved");
+
+    // Reset back to secure default: DB false, Vault absent
+    await query("UPDATE public.app_system_settings SET setting_value = 'false' WHERE setting_key = 'moderation_automation_enabled'");
+    await query("DELETE FROM vault.secrets WHERE name = 'moderation_automation_enabled'");
+  });
+
 });

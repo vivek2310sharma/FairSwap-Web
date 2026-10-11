@@ -6,25 +6,33 @@ import { createClient } from "@/lib/supabase/client";
 interface ModerationStatusBadgeProps {
   listingId: string;
   initialStatus: string;
+  enhancedModerationEnabled?: boolean;
 }
 
 export function ModerationStatusBadge({
   listingId,
   initialStatus,
+  enhancedModerationEnabled = false,
 }: ModerationStatusBadgeProps) {
+  // If enhanced moderation status is not enabled for the UI, render standard manual review status
+  // without calling or polling unpromoted/unsupported RPCs.
+  const isEnhancedActive =
+    enhancedModerationEnabled ||
+    process.env.NEXT_PUBLIC_ENABLE_ENHANCED_MODERATION_STATUS === "true";
+
   const [workflowState, setWorkflowState] = useState<string>(
-    initialStatus === "pending_review" ? "running" : initialStatus
+    initialStatus === "pending_review" && isEnhancedActive ? "running" : initialStatus
   );
   const [message, setMessage] = useState<string | null>(
-    initialStatus === "pending_review"
-      ? "Your ad is being checked automatically."
+    initialStatus === "pending_review" && isEnhancedActive
+      ? "Checking listing status..."
       : null
   );
   const [provenance, setProvenance] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only poll while in non-terminal pending_review states
-    if (initialStatus !== "pending_review") return;
+    // Only poll when listing is in pending_review AND enhanced moderation status is actively enabled
+    if (initialStatus !== "pending_review" || !isEnhancedActive) return;
 
     let active = true;
     let pollCount = 0;
@@ -50,6 +58,20 @@ export function ModerationStatusBadge({
         if (!active) return;
 
         if (error) {
+          // If RPC is missing (PGRST202 or 404/42883), gracefully fall back to standard Under Review status
+          // without displaying confusing error messages or polling repeatedly.
+          if (
+            error.code === "PGRST202" ||
+            error.code === "42883" ||
+            error.message?.includes("not found") ||
+            error.message?.includes("function")
+          ) {
+            setWorkflowState("pending_review");
+            setMessage(null);
+            active = false;
+            return;
+          }
+
           setWorkflowState("unavailable");
           setMessage("Status temporarily unavailable. Please refresh.");
           return;
@@ -90,7 +112,7 @@ export function ModerationStatusBadge({
       active = false;
       clearInterval(interval);
     };
-  }, [listingId, initialStatus]);
+  }, [listingId, initialStatus, isEnhancedActive]);
 
   if (initialStatus !== "pending_review" && workflowState !== "running") {
     return null;

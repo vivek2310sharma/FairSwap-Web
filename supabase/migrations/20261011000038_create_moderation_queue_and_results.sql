@@ -338,15 +338,25 @@ DECLARE
   v_account_status text;
   v_has_policy boolean;
   v_automation_enabled boolean := false;
+  v_db_enabled boolean := false;
+  v_vault_secret text;
   v_next_attempt timestamptz;
   v_mandatory_rules text[] := ARRAY['rule_prohibited_item_wording', 'rule_shortened_link', 'rule_payment_before_viewing']::text[];
 BEGIN
-  -- 1. Check automation kill switch
+  -- 1. Check automation kill switch (Authoritative Database Setting + Optional Secondary Vault Veto)
+  -- The database setting is primary and authoritative: if false or missing, automation is strictly disabled.
   SELECT COALESCE(
-    (SELECT decrypted_secret::boolean FROM vault.decrypted_secrets WHERE name = 'moderation_automation_enabled' LIMIT 1),
-    (SELECT setting_value::boolean FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled' LIMIT 1),
+    (SELECT (setting_value = 'true') FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled' LIMIT 1),
     false
-  ) INTO v_automation_enabled;
+  ) INTO v_db_enabled;
+
+  -- Optional secondary vault veto: if vault secret is explicitly present, it may veto (must be 'true' to allow)
+  SELECT decrypted_secret INTO v_vault_secret
+  FROM vault.decrypted_secrets
+  WHERE name = 'moderation_automation_enabled'
+  LIMIT 1;
+
+  v_automation_enabled := v_db_enabled AND (v_vault_secret IS NULL OR v_vault_secret = 'true');
 
   -- 2. Validate input parameters contract
   IF p_ruleset_version IS DISTINCT FROM 'prototype_v0.1.1' THEN
@@ -426,10 +436,16 @@ BEGIN
 
   -- Re-read automation kill switch under post-lock state to ensure fresh decision
   SELECT COALESCE(
-    (SELECT decrypted_secret::boolean FROM vault.decrypted_secrets WHERE name = 'moderation_automation_enabled' LIMIT 1),
-    (SELECT setting_value::boolean FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled' LIMIT 1),
+    (SELECT (setting_value = 'true') FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled' LIMIT 1),
     false
-  ) INTO v_automation_enabled;
+  ) INTO v_db_enabled;
+
+  SELECT decrypted_secret INTO v_vault_secret
+  FROM vault.decrypted_secrets
+  WHERE name = 'moderation_automation_enabled'
+  LIMIT 1;
+
+  v_automation_enabled := v_db_enabled AND (v_vault_secret IS NULL OR v_vault_secret = 'true');
 
   -- 7. Validate contract consistency
   IF p_outcome = 'no_review_flags' THEN

@@ -193,8 +193,8 @@ jobs:
               exit 1
             fi
 
-            if [ "$TOTAL" -lt 12 ]; then
-              echo "::error::Expected at least 12 integration tests to execute (Safety + Cases A through K), but found only $TOTAL."
+            if [ "$TOTAL" -lt 13 ]; then
+              echo "::error::Expected at least 13 integration tests to execute (Safety + Cases A through L), but found only $TOTAL."
               exit 1
             fi
 
