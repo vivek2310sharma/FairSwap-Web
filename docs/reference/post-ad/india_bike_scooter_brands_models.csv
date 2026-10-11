@@ -1,0 +1,831 @@
+﻿brand,model,vehicle_type,category,engine_cc,fuel_type,status
+Ampere,Magnus EX,Electric Scooter,Electric Scooter,,Electric,Current
+Ampere,Magnus Neo,Electric Scooter,Electric Scooter,,Electric,Current
+Ampere,Nexus,Electric Scooter,Electric Scooter,,Electric,Current
+Ampere,Primus,Electric Scooter,Electric Scooter,,Electric,Current
+Ampere,Reo,Electric Scooter,Electric Scooter,,Electric,Current
+Ampere,Reo Elite,Electric Scooter,Electric Scooter,,Electric,Current
+Ampere,Reo Plus,Electric Scooter,Electric Scooter,,Electric,Current
+Ampere,Rio,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Ampere,Rio Plus,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Ampere,V48,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Ampere,Zeal,Electric Scooter,Electric Scooter,,Electric,Current
+Ampere,Zeal EX,Electric Scooter,Electric Scooter,,Electric,Current
+Aprilia,Caponord 1200,Motorcycle,Adventure,1197,Petrol,Discontinued
+Aprilia,Dorsoduro 900,Motorcycle,Naked,896,Petrol,Discontinued
+Aprilia,RS 457,Motorcycle,Fully Faired,457,Petrol,Current
+Aprilia,RS 660,Motorcycle,Fully Faired,659,Petrol,Current
+Aprilia,RSV4,Motorcycle,Superbike,1077,Petrol,Current
+Aprilia,RSV4 Factory,Motorcycle,Superbike,1077,Petrol,Current
+Aprilia,Shiver 900,Motorcycle,Naked,896,Petrol,Discontinued
+Aprilia,SR 125,Scooter,Scooter,125,Petrol,Current
+Aprilia,SR 160,Scooter,Scooter,160,Petrol,Current
+Aprilia,SR 175,Scooter,Scooter,175,Petrol,Current
+Aprilia,SR GT 200,Scooter,Maxi Scooter,200,Petrol,Current
+Aprilia,SR Storm 125,Scooter,Scooter,125,Petrol,Current
+Aprilia,SXR 125,Scooter,Maxi Scooter,125,Petrol,Current
+Aprilia,SXR 160,Scooter,Maxi Scooter,160,Petrol,Current
+Aprilia,Tuareg 660,Motorcycle,Adventure,659,Petrol,Current
+Aprilia,Tuono 457,Motorcycle,Naked,457,Petrol,Current
+Aprilia,Tuono 660,Motorcycle,Naked,659,Petrol,Current
+Aprilia,Tuono V4,Motorcycle,Naked,1077,Petrol,Current
+Aprilia,Tuono V4 Factory,Motorcycle,Naked,1077,Petrol,Current
+Ather Energy,450,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Ather Energy,450 Apex,Electric Scooter,Electric Scooter,,Electric,Current
+Ather Energy,450 Plus,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Ather Energy,450S,Electric Scooter,Electric Scooter,,Electric,Current
+Ather Energy,450X,Electric Scooter,Electric Scooter,,Electric,Current
+Ather Energy,Rizta S,Electric Scooter,Electric Scooter,,Electric,Current
+Ather Energy,Rizta Z,Electric Scooter,Electric Scooter,,Electric,Current
+Avon,E Lite,Electric Scooter,Electric Scooter,,Electric,Current
+Avon,E Mate,Electric Scooter,Electric Scooter,,Electric,Current
+Avon,E Scoot,Electric Scooter,Electric Scooter,,Electric,Current
+Bajaj,Avenger Cruise 220,Motorcycle,Cruiser,220,Petrol,Current
+Bajaj,Avenger Street 160,Motorcycle,Cruiser,160,Petrol,Current
+Bajaj,Avenger Street 180,Motorcycle,Cruiser,178,Petrol,Discontinued
+Bajaj,Boxer,Motorcycle,Commuter,100,Petrol,Discontinued
+Bajaj,Bravo,Scooter,Scooter,150,Petrol,Discontinued
+Bajaj,Caliber,Motorcycle,Commuter,115,Petrol,Discontinued
+Bajaj,Chetak (legacy),Scooter,Scooter,150,Petrol,Discontinued
+Bajaj,Chetak 2901,Electric Scooter,Electric Scooter,,Electric,Current
+Bajaj,Chetak 2903,Electric Scooter,Electric Scooter,,Electric,Current
+Bajaj,Chetak 3201,Electric Scooter,Electric Scooter,,Electric,Current
+Bajaj,Chetak 3501,Electric Scooter,Electric Scooter,,Electric,Current
+Bajaj,Chetak 3502,Electric Scooter,Electric Scooter,,Electric,Current
+Bajaj,Chetak 3503,Electric Scooter,Electric Scooter,,Electric,Current
+Bajaj,Chetak Premium,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Bajaj,Chetak Urbane,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Bajaj,CT100,Motorcycle,Commuter,102,Petrol,Current
+Bajaj,CT110X,Motorcycle,Commuter,115,Petrol,Current
+Bajaj,CT125X,Motorcycle,Commuter,125,Petrol,Current
+Bajaj,Cub,Scooter,Scooter,150,Petrol,Discontinued
+Bajaj,Discover 100,Motorcycle,Commuter,100,Petrol,Discontinued
+Bajaj,Discover 110,Motorcycle,Commuter,110,Petrol,Discontinued
+Bajaj,Discover 125,Motorcycle,Commuter,125,Petrol,Discontinued
+Bajaj,Discover 135,Motorcycle,Commuter,135,Petrol,Discontinued
+Bajaj,Discover 150,Motorcycle,Commuter,150,Petrol,Discontinued
+Bajaj,Dominar 250,Motorcycle,Touring,248,Petrol,Current
+Bajaj,Dominar 400,Motorcycle,Touring,373,Petrol,Current
+Bajaj,Freedom 125,Motorcycle,Commuter,125,CNG,Current
+Bajaj,Kawasaki Bajaj Eliminator,Motorcycle,Cruiser,175,Petrol,Discontinued
+Bajaj,Kristal,Moped,Moped,90,Petrol,Discontinued
+Bajaj,Legend,Scooter,Scooter,150,Petrol,Discontinued
+Bajaj,M80,Moped,Moped,80,Petrol,Discontinued
+Bajaj,Platina 100,Motorcycle,Commuter,102,Petrol,Current
+Bajaj,Platina 110,Motorcycle,Commuter,115,Petrol,Current
+Bajaj,Platina 110 ABS,Motorcycle,Commuter,115,Petrol,Current
+Bajaj,Pulsar 125,Motorcycle,Sports Commuter,125,Petrol,Current
+Bajaj,Pulsar 135 LS,Motorcycle,Sports Commuter,135,Petrol,Discontinued
+Bajaj,Pulsar 150,Motorcycle,Sports Commuter,149,Petrol,Current
+Bajaj,Pulsar 180,Motorcycle,Sports,178,Petrol,Current
+Bajaj,Pulsar 180F,Motorcycle,Sports,178,Petrol,Discontinued
+Bajaj,Pulsar 200 (classic),Motorcycle,Sports,200,Petrol,Discontinued
+Bajaj,Pulsar 220F,Motorcycle,Sports,220,Petrol,Current
+Bajaj,Pulsar AS150,Motorcycle,Adventure,150,Petrol,Discontinued
+Bajaj,Pulsar AS200,Motorcycle,Adventure,200,Petrol,Discontinued
+Bajaj,Pulsar F250,Motorcycle,Sports,250,Petrol,Current
+Bajaj,Pulsar N125,Motorcycle,Sports Commuter,125,Petrol,Current
+Bajaj,Pulsar N150,Motorcycle,Sports Commuter,149,Petrol,Current
+Bajaj,Pulsar N160,Motorcycle,Sports Commuter,165,Petrol,Current
+Bajaj,Pulsar N250,Motorcycle,Naked,250,Petrol,Current
+Bajaj,Pulsar NS125,Motorcycle,Naked,125,Petrol,Current
+Bajaj,Pulsar NS160,Motorcycle,Naked,160,Petrol,Current
+Bajaj,Pulsar NS200,Motorcycle,Naked,200,Petrol,Current
+Bajaj,Pulsar NS400Z,Motorcycle,Naked,373,Petrol,Current
+Bajaj,Pulsar P150,Motorcycle,Sports Commuter,149,Petrol,Current
+Bajaj,Pulsar RS200,Motorcycle,Fully Faired,200,Petrol,Current
+Bajaj,Saffire,Moped,Moped,80,Petrol,Discontinued
+Bajaj,Spirit,Moped,Moped,60,Petrol,Discontinued
+Bajaj,Sunny,Moped,Moped,60,Petrol,Discontinued
+Bajaj,Super,Scooter,Scooter,150,Petrol,Discontinued
+Bajaj,V12,Motorcycle,Commuter,125,Petrol,Discontinued
+Bajaj,V15,Motorcycle,Commuter,150,Petrol,Discontinued
+Bajaj,Wave,Scooter,Scooter,150,Petrol,Discontinued
+Bajaj,Wind 125,Motorcycle,Commuter,125,Petrol,Discontinued
+Benelli,502C,Motorcycle,Cruiser,499,Petrol,Current
+Benelli,752S,Motorcycle,Naked,754,Petrol,Current
+Benelli,BN 302R,Motorcycle,Fully Faired,300,Petrol,Discontinued
+Benelli,Imperiale 400,Motorcycle,Retro,374,Petrol,Current
+Benelli,Leoncino 250,Motorcycle,Scrambler,249,Petrol,Current
+Benelli,Leoncino 500,Motorcycle,Scrambler,500,Petrol,Current
+Benelli,Leoncino 800,Motorcycle,Scrambler,754,Petrol,Current
+Benelli,TNT 135,Motorcycle,Naked,135,Petrol,Discontinued
+Benelli,TNT 25,Motorcycle,Naked,250,Petrol,Discontinued
+Benelli,TNT 300,Motorcycle,Naked,300,Petrol,Current
+Benelli,TNT 302S,Motorcycle,Naked,300,Petrol,Current
+Benelli,TNT 600GT,Motorcycle,Fully Faired,600,Petrol,Discontinued
+Benelli,TNT 600i,Motorcycle,Naked,600,Petrol,Discontinued
+Benelli,TNT 899,Motorcycle,Naked,899,Petrol,Discontinued
+Benelli,TRK 251,Motorcycle,Adventure,249,Petrol,Current
+Benelli,TRK 502,Motorcycle,Adventure,500,Petrol,Current
+Benelli,TRK 502X,Motorcycle,Adventure,500,Petrol,Current
+Benelli,TRK 702,Motorcycle,Adventure,702,Petrol,Current
+Benelli,TRK 702X,Motorcycle,Adventure,702,Petrol,Current
+Benelli,TRK 800,Motorcycle,Adventure,754,Petrol,Current
+Benelli,Zafferano 250,Scooter,Scooter,250,Petrol,Discontinued
+Benling India,Aura,Electric Scooter,Electric Scooter,,Electric,Current
+Benling India,Falcon,Electric Scooter,Electric Scooter,,Electric,Current
+Benling India,Icon,Electric Scooter,Electric Scooter,,Electric,Current
+Benling India,Kriti,Electric Scooter,Electric Scooter,,Electric,Current
+BGauss,A2,Electric Scooter,Electric Scooter,,Electric,Current
+BGauss,B8,Electric Scooter,Electric Scooter,,Electric,Current
+BGauss,C12,Electric Scooter,Electric Scooter,,Electric,Current
+BGauss,C12i,Electric Scooter,Electric Scooter,,Electric,Current
+BGauss,C12i EX,Electric Scooter,Electric Scooter,,Electric,Current
+BGauss,D15,Electric Scooter,Electric Scooter,,Electric,Current
+BGauss,D15i,Electric Scooter,Electric Scooter,,Electric,Current
+BGauss,RUV350,Electric Scooter,Electric Scooter,,Electric,Current
+BMW Motorrad,C 400 GT,Scooter,Maxi Scooter,350,Petrol,Current
+BMW Motorrad,C 400 X,Scooter,Maxi Scooter,350,Petrol,Current
+BMW Motorrad,C 650 GT,Scooter,Maxi Scooter,649,Petrol,Discontinued
+BMW Motorrad,C 650 Sport,Scooter,Maxi Scooter,649,Petrol,Discontinued
+BMW Motorrad,CE 04,Electric Scooter,Electric Scooter,,Electric,Current
+BMW Motorrad,F 750 GS,Motorcycle,Adventure,853,Petrol,Current
+BMW Motorrad,F 850 GS,Motorcycle,Adventure,853,Petrol,Current
+BMW Motorrad,F 850 GS Adventure,Motorcycle,Adventure,853,Petrol,Current
+BMW Motorrad,F 900 GS,Motorcycle,Adventure,895,Petrol,Current
+BMW Motorrad,F 900 GS Adventure,Motorcycle,Adventure,895,Petrol,Current
+BMW Motorrad,F 900 R,Motorcycle,Naked,895,Petrol,Current
+BMW Motorrad,F 900 XR,Motorcycle,Touring,895,Petrol,Current
+BMW Motorrad,G 310 GS,Motorcycle,Adventure,313,Petrol,Current
+BMW Motorrad,G 310 R,Motorcycle,Naked,313,Petrol,Current
+BMW Motorrad,G 310 RR,Motorcycle,Fully Faired,312,Petrol,Current
+BMW Motorrad,K 1600 B,Motorcycle,Touring,1649,Petrol,Current
+BMW Motorrad,K 1600 Grand America,Motorcycle,Touring,1649,Petrol,Current
+BMW Motorrad,K 1600 GT,Motorcycle,Touring,1649,Petrol,Current
+BMW Motorrad,K 1600 GTL,Motorcycle,Touring,1649,Petrol,Current
+BMW Motorrad,M 1000 R,Motorcycle,Naked,999,Petrol,Current
+BMW Motorrad,M 1000 RR,Motorcycle,Superbike,999,Petrol,Current
+BMW Motorrad,M 1000 XR,Motorcycle,Touring,999,Petrol,Current
+BMW Motorrad,R 12,Motorcycle,Retro,1170,Petrol,Current
+BMW Motorrad,R 12 nineT,Motorcycle,Retro,1170,Petrol,Current
+BMW Motorrad,R 1250 GS,Motorcycle,Adventure,1254,Petrol,Discontinued
+BMW Motorrad,R 1250 GS Adventure,Motorcycle,Adventure,1254,Petrol,Discontinued
+BMW Motorrad,R 1250 R,Motorcycle,Naked,1254,Petrol,Discontinued
+BMW Motorrad,R 1250 RS,Motorcycle,Touring,1254,Petrol,Discontinued
+BMW Motorrad,R 1250 RT,Motorcycle,Touring,1254,Petrol,Discontinued
+BMW Motorrad,R 1300 GS,Motorcycle,Adventure,1300,Petrol,Current
+BMW Motorrad,R 1300 GS Adventure,Motorcycle,Adventure,1300,Petrol,Current
+BMW Motorrad,R 18,Motorcycle,Cruiser,1802,Petrol,Current
+BMW Motorrad,R 18 B,Motorcycle,Cruiser,1802,Petrol,Current
+BMW Motorrad,R 18 Classic,Motorcycle,Cruiser,1802,Petrol,Current
+BMW Motorrad,R 18 Transcontinental,Motorcycle,Touring,1802,Petrol,Current
+BMW Motorrad,R nineT,Motorcycle,Retro,1170,Petrol,Current
+BMW Motorrad,R nineT Pure,Motorcycle,Retro,1170,Petrol,Current
+BMW Motorrad,R nineT Scrambler,Motorcycle,Scrambler,1170,Petrol,Current
+BMW Motorrad,R nineT Urban G/S,Motorcycle,Scrambler,1170,Petrol,Current
+BMW Motorrad,S 1000 R,Motorcycle,Naked,999,Petrol,Current
+BMW Motorrad,S 1000 RR,Motorcycle,Superbike,999,Petrol,Current
+BMW Motorrad,S 1000 XR,Motorcycle,Touring,999,Petrol,Current
+Bounce,Infinity E1,Electric Scooter,Electric Scooter,,Electric,Current
+Bounce,Infinity E1+,Electric Scooter,Electric Scooter,,Electric,Current
+Bounce,Infinity E1X,Electric Scooter,Electric Scooter,,Electric,Current
+BSA,Gold Star 650,Motorcycle,Retro,652,Petrol,Current
+CFMoto,250NK,Motorcycle,Naked,249,Petrol,Current
+CFMoto,250SR,Motorcycle,Fully Faired,249,Petrol,Current
+CFMoto,300NK,Motorcycle,Naked,292,Petrol,Current
+CFMoto,300SR,Motorcycle,Fully Faired,292,Petrol,Current
+CFMoto,450MT,Motorcycle,Adventure,449,Petrol,Current
+CFMoto,450SR,Motorcycle,Fully Faired,449,Petrol,Current
+CFMoto,650GT,Motorcycle,Touring,649,Petrol,Current
+CFMoto,650MT,Motorcycle,Adventure,649,Petrol,Current
+CFMoto,650NK,Motorcycle,Naked,649,Petrol,Current
+CFMoto,700CL-X,Motorcycle,Retro,693,Petrol,Current
+CFMoto,800MT,Motorcycle,Adventure,799,Petrol,Current
+CFMoto,800NK,Motorcycle,Naked,799,Petrol,Current
+Ducati,DesertX,Motorcycle,Adventure,937,Petrol,Current
+Ducati,DesertX Rally,Motorcycle,Adventure,937,Petrol,Current
+Ducati,Diavel 1260,Motorcycle,Cruiser,1262,Petrol,Discontinued
+Ducati,Diavel V4,Motorcycle,Cruiser,1158,Petrol,Current
+Ducati,Hypermotard 698 Mono,Motorcycle,Naked,659,Petrol,Current
+Ducati,Hypermotard 950,Motorcycle,Naked,937,Petrol,Current
+Ducati,Monster,Motorcycle,Naked,937,Petrol,Current
+Ducati,Monster 1200,Motorcycle,Naked,1198,Petrol,Discontinued
+Ducati,Monster 821,Motorcycle,Naked,821,Petrol,Discontinued
+Ducati,Monster SP,Motorcycle,Naked,937,Petrol,Current
+Ducati,Multistrada 1260,Motorcycle,Adventure,1262,Petrol,Discontinued
+Ducati,Multistrada 1260 Enduro,Motorcycle,Adventure,1262,Petrol,Discontinued
+Ducati,Multistrada 950,Motorcycle,Adventure,937,Petrol,Discontinued
+Ducati,Multistrada V2,Motorcycle,Adventure,937,Petrol,Current
+Ducati,Multistrada V4,Motorcycle,Adventure,1158,Petrol,Current
+Ducati,Multistrada V4 Rally,Motorcycle,Adventure,1158,Petrol,Current
+Ducati,Multistrada V4 S,Motorcycle,Adventure,1158,Petrol,Current
+Ducati,Panigale 1299,Motorcycle,Superbike,1285,Petrol,Discontinued
+Ducati,Panigale 959,Motorcycle,Superbike,955,Petrol,Discontinued
+Ducati,Panigale V2,Motorcycle,Superbike,955,Petrol,Current
+Ducati,Panigale V2 Bayliss,Motorcycle,Superbike,955,Petrol,Current
+Ducati,Panigale V4,Motorcycle,Superbike,1103,Petrol,Current
+Ducati,Panigale V4 R,Motorcycle,Superbike,998,Petrol,Current
+Ducati,Panigale V4 S,Motorcycle,Superbike,1103,Petrol,Current
+Ducati,Panigale V4 SP2,Motorcycle,Superbike,1103,Petrol,Current
+Ducati,Scrambler 1100 Pro,Motorcycle,Scrambler,1079,Petrol,Current
+Ducati,Scrambler 1100 Sport Pro,Motorcycle,Scrambler,1079,Petrol,Current
+Ducati,Scrambler Desert Sled,Motorcycle,Scrambler,803,Petrol,Current
+Ducati,Scrambler Full Throttle,Motorcycle,Scrambler,803,Petrol,Current
+Ducati,Scrambler Icon,Motorcycle,Scrambler,803,Petrol,Current
+Ducati,Scrambler Nightshift,Motorcycle,Scrambler,803,Petrol,Current
+Ducati,Streetfighter V2,Motorcycle,Naked,955,Petrol,Current
+Ducati,Streetfighter V4,Motorcycle,Naked,1103,Petrol,Current
+Ducati,Streetfighter V4 S,Motorcycle,Naked,1103,Petrol,Current
+Ducati,Streetfighter V4 SP2,Motorcycle,Naked,1103,Petrol,Current
+Ducati,SuperSport 950,Motorcycle,Sports,937,Petrol,Current
+Ducati,SuperSport 950 S,Motorcycle,Sports,937,Petrol,Current
+Ducati,XDiavel,Motorcycle,Cruiser,1262,Petrol,Current
+Evolet,Derby,Electric Scooter,Electric Scooter,,Electric,Current
+Evolet,Polo,Electric Scooter,Electric Scooter,,Electric,Current
+Evolet,Pony,Electric Scooter,Electric Scooter,,Electric,Current
+Evolet,Warrior,Electric Scooter,Electric Scooter,,Electric,Current
+Gemopai,Astrid Lite,Electric Scooter,Electric Scooter,,Electric,Current
+Gemopai,Miso,Electric Scooter,Electric Scooter,,Electric,Current
+Gemopai,Ryder SuperMax,Electric Scooter,Electric Scooter,,Electric,Current
+Harley-Davidson,Breakout 114,Motorcycle,Cruiser,1868,Petrol,Current
+Harley-Davidson,CVO Road Glide,Motorcycle,Touring,1923,Petrol,Current
+Harley-Davidson,CVO Street Glide,Motorcycle,Touring,1923,Petrol,Current
+Harley-Davidson,Deluxe,Motorcycle,Cruiser,1745,Petrol,Discontinued
+Harley-Davidson,Electra Glide Standard,Motorcycle,Touring,1746,Petrol,Discontinued
+Harley-Davidson,Fat Bob 114,Motorcycle,Cruiser,1868,Petrol,Current
+Harley-Davidson,Fat Boy 114,Motorcycle,Cruiser,1868,Petrol,Current
+Harley-Davidson,Forty-Eight,Motorcycle,Cruiser,1202,Petrol,Discontinued
+Harley-Davidson,Heritage Classic 114,Motorcycle,Cruiser,1868,Petrol,Current
+Harley-Davidson,Iron 1200,Motorcycle,Cruiser,1202,Petrol,Discontinued
+Harley-Davidson,Iron 883,Motorcycle,Cruiser,883,Petrol,Discontinued
+Harley-Davidson,Low Rider S,Motorcycle,Cruiser,1868,Petrol,Discontinued
+Harley-Davidson,Low Rider ST,Motorcycle,Cruiser,1923,Petrol,Current
+Harley-Davidson,Nightster,Motorcycle,Cruiser,975,Petrol,Current
+Harley-Davidson,Nightster Special,Motorcycle,Cruiser,975,Petrol,Current
+Harley-Davidson,Pan America 1250,Motorcycle,Adventure,1252,Petrol,Current
+Harley-Davidson,Pan America 1250 Special,Motorcycle,Adventure,1252,Petrol,Current
+Harley-Davidson,Road Glide,Motorcycle,Touring,1923,Petrol,Current
+Harley-Davidson,Road Glide Special,Motorcycle,Touring,1868,Petrol,Discontinued
+Harley-Davidson,Road King,Motorcycle,Touring,1746,Petrol,Discontinued
+Harley-Davidson,Road King Special,Motorcycle,Touring,1923,Petrol,Current
+Harley-Davidson,Roadster,Motorcycle,Cruiser,1202,Petrol,Discontinued
+Harley-Davidson,Softail Standard,Motorcycle,Cruiser,1745,Petrol,Current
+Harley-Davidson,Sport Glide,Motorcycle,Cruiser,1868,Petrol,Discontinued
+Harley-Davidson,Sportster S,Motorcycle,Cruiser,1252,Petrol,Current
+Harley-Davidson,Street 750,Motorcycle,Cruiser,749,Petrol,Discontinued
+Harley-Davidson,Street Bob 114,Motorcycle,Cruiser,1868,Petrol,Current
+Harley-Davidson,Street Glide,Motorcycle,Touring,1923,Petrol,Current
+Harley-Davidson,Street Glide Special,Motorcycle,Touring,1868,Petrol,Discontinued
+Harley-Davidson,Street Rod,Motorcycle,Cruiser,749,Petrol,Discontinued
+Harley-Davidson,SuperLow,Motorcycle,Cruiser,883,Petrol,Discontinued
+Harley-Davidson,Ultra Limited,Motorcycle,Touring,1868,Petrol,Discontinued
+Harley-Davidson,X440,Motorcycle,Roadster,440,Petrol,Current
+Hero Electric,Atria,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,Dash,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,Eddy,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,Flash,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,NYX,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,Optima,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,Optima CX,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,Optima LX,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,Optima Plus,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero Electric,Photon,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Hero MotoCorp,Achiever 150,Motorcycle,Commuter,150,Petrol,Discontinued
+Hero MotoCorp,Ambition 135,Motorcycle,Commuter,135,Petrol,Discontinued
+Hero MotoCorp,CBZ Xtreme,Motorcycle,Sports,150,Petrol,Discontinued
+Hero MotoCorp,CD 100,Motorcycle,Commuter,97,Petrol,Discontinued
+Hero MotoCorp,CD Dawn,Motorcycle,Commuter,97,Petrol,Discontinued
+Hero MotoCorp,Dash,Scooter,Scooter,110,Petrol,Discontinued
+Hero MotoCorp,Destini 125,Scooter,Scooter,125,Petrol,Current
+Hero MotoCorp,Duet,Scooter,Scooter,110,Petrol,Discontinued
+Hero MotoCorp,Glamour,Motorcycle,Commuter,125,Petrol,Current
+Hero MotoCorp,Glamour Xtec,Motorcycle,Commuter,125,Petrol,Current
+Hero MotoCorp,HF 100,Motorcycle,Commuter,97,Petrol,Current
+Hero MotoCorp,HF Deluxe,Motorcycle,Commuter,97,Petrol,Current
+Hero MotoCorp,Hunk,Motorcycle,Sports,150,Petrol,Discontinued
+Hero MotoCorp,Ignitor,Motorcycle,Commuter,125,Petrol,Discontinued
+Hero MotoCorp,Impulse,Motorcycle,Dual-Sport,150,Petrol,Discontinued
+Hero MotoCorp,Karizma (Hero Honda),Motorcycle,Fully Faired,223,Petrol,Discontinued
+Hero MotoCorp,Karizma XMR,Motorcycle,Fully Faired,210,Petrol,Current
+Hero MotoCorp,Karizma ZMR,Motorcycle,Fully Faired,223,Petrol,Discontinued
+Hero MotoCorp,Maestro Edge 110,Scooter,Scooter,110,Petrol,Current
+Hero MotoCorp,Maestro Edge 125,Scooter,Scooter,125,Petrol,Current
+Hero MotoCorp,Majestic,Moped,Moped,,Petrol,Discontinued
+Hero MotoCorp,Mavrick 440,Motorcycle,Roadster,440,Petrol,Current
+Hero MotoCorp,Passion Plus,Motorcycle,Commuter,97,Petrol,Current
+Hero MotoCorp,Passion Pro,Motorcycle,Commuter,113,Petrol,Discontinued
+Hero MotoCorp,Passion XTEC,Motorcycle,Commuter,110,Petrol,Discontinued
+Hero MotoCorp,Pleasure+,Scooter,Scooter,110,Petrol,Current
+Hero MotoCorp,Pleasure+ Xtec,Scooter,Scooter,110,Petrol,Current
+Hero MotoCorp,Puch,Moped,Moped,,Petrol,Discontinued
+Hero MotoCorp,Splendor iSmart,Motorcycle,Commuter,110,Petrol,Discontinued
+Hero MotoCorp,Splendor NXG,Motorcycle,Commuter,97,Petrol,Discontinued
+Hero MotoCorp,Splendor Plus,Motorcycle,Commuter,97,Petrol,Current
+Hero MotoCorp,Splendor Plus Xtec,Motorcycle,Commuter,97,Petrol,Current
+Hero MotoCorp,Super Splendor,Motorcycle,Commuter,125,Petrol,Current
+Hero MotoCorp,Super Splendor Xtec,Motorcycle,Commuter,125,Petrol,Current
+Hero MotoCorp,Xoom 110,Scooter,Scooter,110,Petrol,Current
+Hero MotoCorp,Xoom 125,Scooter,Scooter,125,Petrol,Current
+Hero MotoCorp,Xoom 160,Scooter,Scooter,156,Petrol,Current
+Hero MotoCorp,Xpulse 200,Motorcycle,Adventure,200,Petrol,Discontinued
+Hero MotoCorp,Xpulse 200 4V,Motorcycle,Adventure,200,Petrol,Current
+Hero MotoCorp,Xpulse 200T,Motorcycle,Adventure,200,Petrol,Discontinued
+Hero MotoCorp,Xpulse 210,Motorcycle,Adventure,210,Petrol,Current
+Hero MotoCorp,Xtreme 125R,Motorcycle,Sports Commuter,125,Petrol,Current
+Hero MotoCorp,Xtreme 160R,Motorcycle,Sports,163,Petrol,Current
+Hero MotoCorp,Xtreme 160R 4V,Motorcycle,Sports,163,Petrol,Current
+Hero MotoCorp,Xtreme 200R,Motorcycle,Naked,200,Petrol,Discontinued
+Hero MotoCorp,Xtreme 200S,Motorcycle,Fully Faired,200,Petrol,Discontinued
+Hero MotoCorp,Xtreme 200S 4V,Motorcycle,Fully Faired,200,Petrol,Current
+Hero MotoCorp,Xtreme 250R,Motorcycle,Sports,249,Petrol,Current
+Honda,Activa 110,Scooter,Scooter,110,Petrol,Current
+Honda,Activa 125,Scooter,Scooter,125,Petrol,Current
+Honda,Activa 3G,Scooter,Scooter,110,Petrol,Discontinued
+Honda,Activa 4G,Scooter,Scooter,110,Petrol,Discontinued
+Honda,Activa 5G,Scooter,Scooter,110,Petrol,Discontinued
+Honda,Activa 6G,Scooter,Scooter,110,Petrol,Current
+Honda,Activa e:,Electric Scooter,Electric Scooter,,Electric,Current
+Honda,Activa i,Scooter,Scooter,110,Petrol,Discontinued
+Honda,Africa Twin,Motorcycle,Adventure,1084,Petrol,Current
+Honda,Aviator,Scooter,Scooter,110,Petrol,Discontinued
+Honda,CB Hornet 160R,Motorcycle,Naked,162,Petrol,Discontinued
+Honda,CB Trigger,Motorcycle,Commuter,150,Petrol,Discontinued
+Honda,CB Twister,Motorcycle,Commuter,110,Petrol,Discontinued
+Honda,CB125 Hornet,Motorcycle,Naked,124,Petrol,Current
+Honda,CB200X,Motorcycle,Adventure,184,Petrol,Current
+Honda,CB300F,Motorcycle,Naked,293,Petrol,Current
+Honda,CB300R,Motorcycle,Naked,286,Petrol,Discontinued
+Honda,CB350,Motorcycle,Retro,348,Petrol,Current
+Honda,CB350RS,Motorcycle,Retro,348,Petrol,Current
+Honda,CB650R,Motorcycle,Naked,649,Petrol,Current
+Honda,CB750 Hornet,Motorcycle,Naked,755,Petrol,Current
+Honda,CBF Stunner,Motorcycle,Commuter,125,Petrol,Discontinued
+Honda,CBR 150R,Motorcycle,Fully Faired,149,Petrol,Discontinued
+Honda,CBR 250R,Motorcycle,Fully Faired,249,Petrol,Discontinued
+Honda,CBR1000RR-R Fireblade SP,Motorcycle,Superbike,1000,Petrol,Current
+Honda,CBR650R,Motorcycle,Fully Faired,649,Petrol,Current
+Honda,CD 110 Dream,Motorcycle,Commuter,110,Petrol,Current
+Honda,Cliq,Scooter,Scooter,110,Petrol,Discontinued
+Honda,Dio,Scooter,Scooter,110,Petrol,Current
+Honda,Dio 125,Scooter,Scooter,125,Petrol,Current
+Honda,Dream Neo,Motorcycle,Commuter,110,Petrol,Discontinued
+Honda,Dream Yuga,Motorcycle,Commuter,110,Petrol,Discontinued
+Honda,Gold Wing,Motorcycle,Touring,1833,Petrol,Current
+Honda,Grazia,Scooter,Scooter,125,Petrol,Discontinued
+Honda,H'ness CB350,Motorcycle,Retro,348,Petrol,Current
+Honda,Hornet 2.0,Motorcycle,Naked,184,Petrol,Current
+Honda,Livo,Motorcycle,Commuter,110,Petrol,Discontinued
+Honda,Navi,Scooter,Scooter,110,Petrol,Current
+Honda,NX200,Motorcycle,Adventure,184,Petrol,Current
+Honda,QC1,Electric Scooter,Electric Scooter,,Electric,Current
+Honda,Rebel 500,Motorcycle,Cruiser,471,Petrol,Current
+Honda,Shine,Motorcycle,Commuter,124,Petrol,Current
+Honda,Shine 100,Motorcycle,Commuter,98,Petrol,Current
+Honda,Shine 100 DX,Motorcycle,Commuter,98,Petrol,Current
+Honda,SP 125,Motorcycle,Commuter,124,Petrol,Current
+Honda,SP 160,Motorcycle,Sports Commuter,162,Petrol,Current
+Honda,Transalp XL750,Motorcycle,Adventure,755,Petrol,Current
+Honda,Unicorn,Motorcycle,Commuter,162,Petrol,Current
+Honda,Unicorn 150,Motorcycle,Commuter,150,Petrol,Discontinued
+Honda,Unicorn Dazzler,Motorcycle,Commuter,150,Petrol,Discontinued
+Hop Electric,Leo,Electric Scooter,Electric Scooter,,Electric,Current
+Hop Electric,Lyf,Electric Scooter,Electric Scooter,,Electric,Current
+Hop Electric,Oxo,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Hop Electric,Oxo X,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Husqvarna,Svartpilen 250,Motorcycle,Neo-Retro,249,Petrol,Current
+Husqvarna,Svartpilen 401,Motorcycle,Neo-Retro,399,Petrol,Current
+Husqvarna,Vitpilen 250,Motorcycle,Neo-Retro,249,Petrol,Current
+Husqvarna,Vitpilen 401,Motorcycle,Neo-Retro,399,Petrol,Current
+Hyosung,Aquila 250,Motorcycle,Cruiser,249,Petrol,Discontinued
+Hyosung,GT250R,Motorcycle,Fully Faired,249,Petrol,Discontinued
+Hyosung,GT650R,Motorcycle,Fully Faired,647,Petrol,Discontinued
+Hyosung,GV250,Motorcycle,Cruiser,249,Petrol,Discontinued
+Indian Motorcycle,Challenger,Motorcycle,Touring,1768,Petrol,Current
+Indian Motorcycle,Chief,Motorcycle,Cruiser,1890,Petrol,Current
+Indian Motorcycle,Chief Bobber,Motorcycle,Cruiser,1890,Petrol,Current
+Indian Motorcycle,Chief Dark Horse,Motorcycle,Cruiser,1890,Petrol,Current
+Indian Motorcycle,Chieftain,Motorcycle,Touring,1811,Petrol,Current
+Indian Motorcycle,FTR,Motorcycle,Roadster,1203,Petrol,Current
+Indian Motorcycle,FTR R Carbon,Motorcycle,Roadster,1203,Petrol,Current
+Indian Motorcycle,Pursuit,Motorcycle,Touring,1768,Petrol,Current
+Indian Motorcycle,Roadmaster,Motorcycle,Touring,1890,Petrol,Current
+Indian Motorcycle,Scout,Motorcycle,Cruiser,1133,Petrol,Current
+Indian Motorcycle,Scout Bobber,Motorcycle,Cruiser,1133,Petrol,Current
+Indian Motorcycle,Scout Rogue,Motorcycle,Cruiser,1133,Petrol,Current
+Indian Motorcycle,Scout Sixty,Motorcycle,Cruiser,999,Petrol,Current
+Indian Motorcycle,Springfield,Motorcycle,Touring,1890,Petrol,Current
+Indian Motorcycle,Super Chief,Motorcycle,Cruiser,1811,Petrol,Discontinued
+Jawa,Jawa 250 (Ideal Jawa),Motorcycle,Commuter,250,Petrol,Discontinued
+Jawa,Jawa 350,Motorcycle,Retro,334,Petrol,Current
+Jawa,Jawa 350 Twin (Ideal Jawa),Motorcycle,Commuter,350,Petrol,Discontinued
+Jawa,Jawa 42,Motorcycle,Retro,293,Petrol,Current
+Jawa,Jawa 42 Bobber,Motorcycle,Cruiser,334,Petrol,Current
+Jawa,Jawa 42 FJ,Motorcycle,Retro,334,Petrol,Current
+Jawa,Jawa Classic,Motorcycle,Retro,293,Petrol,Discontinued
+Jawa,Jawa Perak,Motorcycle,Cruiser,334,Petrol,Current
+Joy e-bike (Wardwizard),Beast,Electric Scooter,Electric Scooter,,Electric,Current
+Joy e-bike (Wardwizard),Gen Next Nanu,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Joy e-bike (Wardwizard),Gen Next Nanu+,Electric Scooter,Electric Scooter,,Electric,Current
+Joy e-bike (Wardwizard),Glob,Electric Scooter,Electric Scooter,,Electric,Current
+Joy e-bike (Wardwizard),Mihos,Electric Scooter,Electric Scooter,,Electric,Current
+Joy e-bike (Wardwizard),Wolf+,Electric Scooter,Electric Scooter,,Electric,Current
+Kawasaki,Eliminator,Motorcycle,Cruiser,451,Petrol,Current
+Kawasaki,ER-6n,Motorcycle,Naked,649,Petrol,Discontinued
+Kawasaki,KLX 110,Motorcycle,Dual-Sport,112,Petrol,Discontinued
+Kawasaki,KLX230,Motorcycle,Dual-Sport,233,Petrol,Current
+Kawasaki,KLX230R,Motorcycle,Dual-Sport,233,Petrol,Current
+Kawasaki,Ninja 1000SX,Motorcycle,Touring,1043,Petrol,Current
+Kawasaki,Ninja 250,Motorcycle,Fully Faired,249,Petrol,Discontinued
+Kawasaki,Ninja 250R,Motorcycle,Fully Faired,249,Petrol,Discontinued
+Kawasaki,Ninja 300,Motorcycle,Fully Faired,296,Petrol,Discontinued
+Kawasaki,Ninja 400,Motorcycle,Fully Faired,399,Petrol,Current
+Kawasaki,Ninja 500,Motorcycle,Fully Faired,451,Petrol,Current
+Kawasaki,Ninja 650,Motorcycle,Fully Faired,649,Petrol,Current
+Kawasaki,Ninja H2,Motorcycle,Superbike,998,Petrol,Current
+Kawasaki,Ninja H2 SX,Motorcycle,Touring,998,Petrol,Current
+Kawasaki,Ninja H2R,Motorcycle,Superbike,998,Petrol,Current
+Kawasaki,Ninja ZX-10R,Motorcycle,Superbike,998,Petrol,Current
+Kawasaki,Ninja ZX-10RR,Motorcycle,Superbike,998,Petrol,Current
+Kawasaki,Ninja ZX-14R,Motorcycle,Superbike,1441,Petrol,Discontinued
+Kawasaki,Ninja ZX-4RR,Motorcycle,Fully Faired,399,Petrol,Current
+Kawasaki,Ninja ZX-6R,Motorcycle,Superbike,636,Petrol,Current
+Kawasaki,Versys 1000,Motorcycle,Adventure,1043,Petrol,Discontinued
+Kawasaki,Versys 650,Motorcycle,Adventure,649,Petrol,Current
+Kawasaki,Versys-X 300,Motorcycle,Adventure,296,Petrol,Discontinued
+Kawasaki,Vulcan S,Motorcycle,Cruiser,649,Petrol,Current
+Kawasaki,W175,Motorcycle,Retro,177,Petrol,Current
+Kawasaki,W800,Motorcycle,Retro,773,Petrol,Current
+Kawasaki,Z H2,Motorcycle,Naked,998,Petrol,Current
+Kawasaki,Z1000,Motorcycle,Naked,1043,Petrol,Discontinued
+Kawasaki,Z250,Motorcycle,Naked,249,Petrol,Discontinued
+Kawasaki,Z400,Motorcycle,Naked,399,Petrol,Discontinued
+Kawasaki,Z650,Motorcycle,Naked,649,Petrol,Current
+Kawasaki,Z650RS,Motorcycle,Retro,649,Petrol,Current
+Kawasaki,Z800,Motorcycle,Naked,806,Petrol,Discontinued
+Kawasaki,Z900,Motorcycle,Naked,948,Petrol,Current
+Kawasaki,Z900RS,Motorcycle,Retro,948,Petrol,Current
+Keeway,K-Light 250V,Motorcycle,Cruiser,249,Petrol,Current
+Keeway,K300 N,Motorcycle,Naked,292,Petrol,Current
+Keeway,K300 R,Motorcycle,Fully Faired,292,Petrol,Current
+Keeway,K300 SF,Motorcycle,Fully Faired,292,Petrol,Current
+Keeway,SR125,Motorcycle,Retro,125,Petrol,Current
+Keeway,SR250,Motorcycle,Retro,250,Petrol,Current
+Keeway,V302C,Motorcycle,Cruiser,298,Petrol,Current
+Keeway,Vieste 300,Scooter,Maxi Scooter,278,Petrol,Current
+Kinetic,DX,Scooter,Scooter,135,Petrol,Discontinued
+Kinetic,E-Luna,Electric Scooter,Electric Scooter,,Electric,Current
+Kinetic,Honda (Kinetic Honda),Scooter,Scooter,98,Petrol,Discontinued
+Kinetic,Kinetic DX EV,Electric Scooter,Electric Scooter,,Electric,Current
+Kinetic,Kinetic Green Zing,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Kinetic,Luna,Moped,Moped,50,Petrol,Discontinued
+Kinetic,Luna Magnum,Moped,Moped,50,Petrol,Discontinued
+Kinetic,Nova,Scooter,Scooter,98,Petrol,Discontinued
+Kinetic,Pride,Scooter,Scooter,100,Petrol,Discontinued
+Kinetic,Safari,Moped,Moped,50,Petrol,Discontinued
+Kinetic,Zing,Scooter,Scooter,125,Petrol,Discontinued
+Kinetic,Zoom,Scooter,Scooter,135,Petrol,Discontinued
+Kinetic,Zulu,Electric Scooter,Electric Scooter,,Electric,Current
+Komaki,DT 3000,Electric Scooter,Electric Scooter,,Electric,Current
+Komaki,Flora,Electric Scooter,Electric Scooter,,Electric,Current
+Komaki,MX3,Electric Scooter,Electric Scooter,,Electric,Current
+Komaki,Ranger,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Komaki,SE,Electric Scooter,Electric Scooter,,Electric,Current
+Komaki,TN95,Electric Scooter,Electric Scooter,,Electric,Current
+Komaki,Venice,Electric Scooter,Electric Scooter,,Electric,Current
+Komaki,X-One,Electric Scooter,Electric Scooter,,Electric,Current
+Komaki,XGT KM,Electric Scooter,Electric Scooter,,Electric,Current
+KTM,1190 Adventure,Motorcycle,Adventure,1195,Petrol,Discontinued
+KTM,1290 Super Adventure R,Motorcycle,Adventure,1301,Petrol,Current
+KTM,1290 Super Adventure S,Motorcycle,Adventure,1301,Petrol,Current
+KTM,1290 Super Duke R,Motorcycle,Naked,1301,Petrol,Current
+KTM,250 Adventure,Motorcycle,Adventure,249,Petrol,Current
+KTM,390 Adventure,Motorcycle,Adventure,399,Petrol,Current
+KTM,390 Adventure X,Motorcycle,Adventure,399,Petrol,Current
+KTM,790 Adventure,Motorcycle,Adventure,799,Petrol,Discontinued
+KTM,890 Adventure,Motorcycle,Adventure,889,Petrol,Current
+KTM,890 Adventure R,Motorcycle,Adventure,889,Petrol,Current
+KTM,Duke 125,Motorcycle,Naked,125,Petrol,Current
+KTM,Duke 200,Motorcycle,Naked,200,Petrol,Discontinued
+KTM,Duke 250,Motorcycle,Naked,249,Petrol,Current
+KTM,Duke 390,Motorcycle,Naked,399,Petrol,Current
+KTM,Duke 690,Motorcycle,Naked,690,Petrol,Discontinued
+KTM,Duke 790,Motorcycle,Naked,799,Petrol,Discontinued
+KTM,Duke 890 R,Motorcycle,Naked,889,Petrol,Current
+KTM,RC 125,Motorcycle,Fully Faired,125,Petrol,Current
+KTM,RC 200,Motorcycle,Fully Faired,200,Petrol,Current
+KTM,RC 390,Motorcycle,Fully Faired,399,Petrol,Current
+Lectrix EV,LXS 2.0,Electric Scooter,Electric Scooter,,Electric,Current
+Lectrix EV,LXS G 2.0,Electric Scooter,Electric Scooter,,Electric,Current
+Lectrix EV,Nduro,Electric Scooter,Electric Scooter,,Electric,Current
+LML,Freedom,Moped,Moped,100,Petrol,Discontinued
+LML,NV,Scooter,Scooter,150,Petrol,Discontinued
+LML,Select,Scooter,Scooter,150,Petrol,Discontinued
+LML,Select II,Scooter,Scooter,150,Petrol,Discontinued
+LML,Star,Scooter,Scooter,150,Petrol,Discontinued
+LML,Star Euro,Scooter,Scooter,150,Petrol,Discontinued
+LML,Trendy,Scooter,Scooter,150,Petrol,Discontinued
+LML,Vespa PX 150,Scooter,Scooter,150,Petrol,Discontinued
+Mahindra,Centuro,Motorcycle,Commuter,106,Petrol,Discontinued
+Mahindra,Duro DZ,Scooter,Scooter,125,Petrol,Discontinued
+Mahindra,Flyte,Scooter,Scooter,125,Petrol,Discontinued
+Mahindra,Gusto 110,Scooter,Scooter,110,Petrol,Discontinued
+Mahindra,Gusto 125,Scooter,Scooter,125,Petrol,Discontinued
+Mahindra,Kine,Scooter,Scooter,106,Petrol,Discontinued
+Mahindra,Mojo 300,Motorcycle,Sports,295,Petrol,Discontinued
+Mahindra,Mojo UT300,Motorcycle,Sports,295,Petrol,Discontinued
+Mahindra,Mojo XT300,Motorcycle,Sports,295,Petrol,Discontinued
+Mahindra,Pantero,Motorcycle,Commuter,106,Petrol,Discontinued
+Mahindra,Rodeo RZ,Scooter,Scooter,125,Petrol,Discontinued
+Mahindra,Stallio,Motorcycle,Commuter,106,Petrol,Discontinued
+Matter,Aera 5000,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Matter,Aera 5000+,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Matter,Aera 6000,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Matter,Aera 6000+,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Moto Guzzi,Audace,Motorcycle,Cruiser,1380,Petrol,Discontinued
+Moto Guzzi,California 1400 Touring,Motorcycle,Touring,1380,Petrol,Discontinued
+Moto Guzzi,Eldorado,Motorcycle,Cruiser,1380,Petrol,Discontinued
+Moto Guzzi,MGX-21,Motorcycle,Cruiser,1380,Petrol,Discontinued
+Moto Guzzi,V100 Mandello,Motorcycle,Touring,1042,Petrol,Current
+Moto Guzzi,V100 Mandello S,Motorcycle,Touring,1042,Petrol,Current
+Moto Guzzi,V7 Special,Motorcycle,Retro,853,Petrol,Current
+Moto Guzzi,V7 Stone,Motorcycle,Retro,853,Petrol,Current
+Moto Guzzi,V85 TT,Motorcycle,Adventure,853,Petrol,Current
+Moto Guzzi,V85 TT Travel,Motorcycle,Adventure,853,Petrol,Current
+Moto Guzzi,V9 Bobber,Motorcycle,Cruiser,853,Petrol,Discontinued
+Moto Guzzi,V9 Roamer,Motorcycle,Cruiser,853,Petrol,Discontinued
+Moto Morini,Seiemmezzo SCR,Motorcycle,Scrambler,649,Petrol,Current
+Moto Morini,Seiemmezzo STR,Motorcycle,Naked,649,Petrol,Current
+Moto Morini,X-Cape,Motorcycle,Adventure,649,Petrol,Current
+MV Agusta,Brutale 1000 RR,Motorcycle,Naked,998,Petrol,Current
+MV Agusta,Brutale 800 RR,Motorcycle,Naked,798,Petrol,Current
+MV Agusta,Dragster 800,Motorcycle,Naked,798,Petrol,Current
+MV Agusta,Enduro Veloce,Motorcycle,Adventure,931,Petrol,Current
+MV Agusta,F3 800,Motorcycle,Superbike,798,Petrol,Discontinued
+MV Agusta,Rush 1000,Motorcycle,Naked,998,Petrol,Current
+MV Agusta,Superveloce 800,Motorcycle,Superbike,798,Petrol,Current
+MV Agusta,Turismo Veloce 800,Motorcycle,Touring,798,Petrol,Discontinued
+Oben Electric,Rorr,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Oben Electric,Rorr EZ,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Oben Electric,Rorr EZ Sigma,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Odysse,Evoqis,Electric Scooter,Electric Scooter,,Electric,Current
+Odysse,Evoqis Lite,Electric Scooter,Electric Scooter,,Electric,Current
+Odysse,Hawk,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Odysse,Racer,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Odysse,Vader,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Okaya EV,ClassIQ,Electric Scooter,Electric Scooter,,Electric,Current
+Okaya EV,Faast F2B,Electric Scooter,Electric Scooter,,Electric,Current
+Okaya EV,Faast F2F,Electric Scooter,Electric Scooter,,Electric,Current
+Okaya EV,Faast F3,Electric Scooter,Electric Scooter,,Electric,Current
+Okaya EV,Faast F4,Electric Scooter,Electric Scooter,,Electric,Current
+Okaya EV,Freedum,Electric Scooter,Electric Scooter,,Electric,Current
+Okinawa,Dual,Electric Scooter,Electric Scooter,,Electric,Current
+Okinawa,i-Praise+,Electric Scooter,Electric Scooter,,Electric,Current
+Okinawa,Lite,Electric Scooter,Electric Scooter,,Electric,Current
+Okinawa,Okhi-90,Electric Scooter,Electric Scooter,,Electric,Current
+Okinawa,Praise,Electric Scooter,Electric Scooter,,Electric,Current
+Okinawa,Praise Pro,Electric Scooter,Electric Scooter,,Electric,Current
+Okinawa,R30,Electric Scooter,Electric Scooter,,Electric,Current
+Okinawa,Ridge+,Electric Scooter,Electric Scooter,,Electric,Current
+Ola Electric,Gig,Electric Scooter,Electric Scooter,,Electric,Current
+Ola Electric,Gig+,Electric Scooter,Electric Scooter,,Electric,Current
+Ola Electric,Roadster,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Ola Electric,Roadster Pro,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Ola Electric,Roadster X,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Ola Electric,Roadster X+,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Ola Electric,S1,Electric Scooter,Electric Scooter,,Electric,Discontinued
+Ola Electric,S1 Air,Electric Scooter,Electric Scooter,,Electric,Current
+Ola Electric,S1 Pro,Electric Scooter,Electric Scooter,,Electric,Current
+Ola Electric,S1 Pro+,Electric Scooter,Electric Scooter,,Electric,Current
+Ola Electric,S1 X,Electric Scooter,Electric Scooter,,Electric,Current
+Ola Electric,S1 X+,Electric Scooter,Electric Scooter,,Electric,Current
+Ola Electric,S1 Z,Electric Scooter,Electric Scooter,,Electric,Current
+Pure EV,ecoDryft,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Pure EV,ePluto 7G,Electric Scooter,Electric Scooter,,Electric,Current
+Pure EV,ePluto 7G Max,Electric Scooter,Electric Scooter,,Electric,Current
+Pure EV,ePluto 7G Pro,Electric Scooter,Electric Scooter,,Electric,Current
+Pure EV,eTrance Neo,Electric Scooter,Electric Scooter,,Electric,Current
+Pure EV,eTrance+,Electric Scooter,Electric Scooter,,Electric,Current
+Pure EV,eTryst 350,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Raptee.HV,T30,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Revolt,RV1,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Revolt,RV1+,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Revolt,RV300,Electric Motorcycle,Electric Motorcycle,,Electric,Discontinued
+Revolt,RV400,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Revolt,RV400 BRZ,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+River,Indie,Electric Scooter,Electric Scooter,,Electric,Current
+Royal Enfield,Bear 650,Motorcycle,Scrambler,648,Petrol,Current
+Royal Enfield,Bullet 350,Motorcycle,Cruiser,349,Petrol,Current
+Royal Enfield,Bullet 500,Motorcycle,Cruiser,499,Petrol,Discontinued
+Royal Enfield,Classic 350,Motorcycle,Cruiser,349,Petrol,Current
+Royal Enfield,Classic 500,Motorcycle,Cruiser,499,Petrol,Discontinued
+Royal Enfield,Classic 650,Motorcycle,Cruiser,648,Petrol,Current
+Royal Enfield,Continental GT 535,Motorcycle,Retro,535,Petrol,Discontinued
+Royal Enfield,Continental GT 650,Motorcycle,Retro,648,Petrol,Current
+Royal Enfield,Electra 350,Motorcycle,Cruiser,346,Petrol,Discontinued
+Royal Enfield,Flying Flea C6,Electric Motorcycle,Electric Motorcycle,,Electric,Upcoming
+Royal Enfield,Flying Flea S6,Electric Motorcycle,Electric Motorcycle,,Electric,Upcoming
+Royal Enfield,Fury,Motorcycle,Cruiser,346,Petrol,Discontinued
+Royal Enfield,Guerrilla 450,Motorcycle,Roadster,452,Petrol,Current
+Royal Enfield,Himalayan 411,Motorcycle,Adventure,411,Petrol,Discontinued
+Royal Enfield,Himalayan 450,Motorcycle,Adventure,452,Petrol,Current
+Royal Enfield,Hunter 350,Motorcycle,Retro,349,Petrol,Current
+Royal Enfield,Interceptor 650,Motorcycle,Retro,648,Petrol,Current
+Royal Enfield,Lightning 535,Motorcycle,Cruiser,535,Petrol,Discontinued
+Royal Enfield,Machismo,Motorcycle,Cruiser,346,Petrol,Discontinued
+Royal Enfield,Meteor 350,Motorcycle,Cruiser,349,Petrol,Current
+Royal Enfield,Scram 411,Motorcycle,Adventure,411,Petrol,Discontinued
+Royal Enfield,Scram 440,Motorcycle,Adventure,443,Petrol,Current
+Royal Enfield,Shotgun 650,Motorcycle,Cruiser,648,Petrol,Current
+Royal Enfield,Super Meteor 650,Motorcycle,Cruiser,648,Petrol,Current
+Royal Enfield,Thunderbird 350,Motorcycle,Cruiser,346,Petrol,Discontinued
+Royal Enfield,Thunderbird 350X,Motorcycle,Cruiser,346,Petrol,Discontinued
+Royal Enfield,Thunderbird 500,Motorcycle,Cruiser,499,Petrol,Discontinued
+Royal Enfield,Thunderbird 500X,Motorcycle,Cruiser,499,Petrol,Discontinued
+Simple Energy,Dot One,Electric Scooter,Electric Scooter,,Electric,Current
+Simple Energy,One,Electric Scooter,Electric Scooter,,Electric,Current
+Suzuki,Access 125,Scooter,Scooter,125,Petrol,Current
+Suzuki,Avenis 125,Scooter,Scooter,125,Petrol,Current
+Suzuki,Burgman Street 125,Scooter,Scooter,125,Petrol,Current
+Suzuki,Burgman Street EX,Scooter,Scooter,125,Petrol,Current
+Suzuki,e-Access,Electric Scooter,Electric Scooter,,Electric,Current
+Suzuki,Gixxer,Motorcycle,Naked,155,Petrol,Current
+Suzuki,Gixxer 250,Motorcycle,Naked,249,Petrol,Current
+Suzuki,Gixxer SF,Motorcycle,Fully Faired,155,Petrol,Current
+Suzuki,Gixxer SF 250,Motorcycle,Fully Faired,249,Petrol,Current
+Suzuki,GS150R,Motorcycle,Sports Commuter,150,Petrol,Discontinued
+Suzuki,GSX 250R,Motorcycle,Fully Faired,248,Petrol,Discontinued
+Suzuki,GSX-8S,Motorcycle,Naked,776,Petrol,Current
+Suzuki,GSX-S1000,Motorcycle,Naked,999,Petrol,Current
+Suzuki,GSX-S750,Motorcycle,Naked,749,Petrol,Discontinued
+Suzuki,Hayabusa,Motorcycle,Superbike,1340,Petrol,Current
+Suzuki,Hayate,Motorcycle,Commuter,113,Petrol,Discontinued
+Suzuki,Hayate EP,Motorcycle,Commuter,113,Petrol,Discontinued
+Suzuki,Intruder,Motorcycle,Cruiser,155,Petrol,Discontinued
+Suzuki,Katana,Motorcycle,Sports,999,Petrol,Discontinued
+Suzuki,Let's,Scooter,Scooter,110,Petrol,Discontinued
+Suzuki,Max 100,Motorcycle,Commuter,100,Petrol,Discontinued
+Suzuki,Slingshot,Motorcycle,Commuter,125,Petrol,Discontinued
+Suzuki,Slingshot Plus,Motorcycle,Commuter,125,Petrol,Discontinued
+Suzuki,Swish 125,Scooter,Scooter,125,Petrol,Discontinued
+Suzuki,V-Strom 1050,Motorcycle,Adventure,1037,Petrol,Discontinued
+Suzuki,V-Strom 650 XT,Motorcycle,Adventure,645,Petrol,Discontinued
+Suzuki,V-Strom SX,Motorcycle,Adventure,249,Petrol,Current
+Suzuki,Zeus,Motorcycle,Commuter,125,Petrol,Discontinued
+Tork Motors,Kratos,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Tork Motors,Kratos R,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Triumph,Bonneville Bobber,Motorcycle,Cruiser,1200,Petrol,Current
+Triumph,Bonneville Speedmaster,Motorcycle,Cruiser,1200,Petrol,Current
+Triumph,Bonneville T100,Motorcycle,Retro,900,Petrol,Current
+Triumph,Bonneville T120,Motorcycle,Retro,1200,Petrol,Current
+Triumph,Daytona 660,Motorcycle,Fully Faired,660,Petrol,Current
+Triumph,Rocket 3 GT,Motorcycle,Cruiser,2458,Petrol,Current
+Triumph,Rocket 3 R,Motorcycle,Cruiser,2458,Petrol,Current
+Triumph,Scrambler 1200 XC,Motorcycle,Scrambler,1200,Petrol,Current
+Triumph,Scrambler 1200 XE,Motorcycle,Scrambler,1200,Petrol,Current
+Triumph,Scrambler 400 X,Motorcycle,Scrambler,398,Petrol,Current
+Triumph,Scrambler 400 XC,Motorcycle,Scrambler,398,Petrol,Current
+Triumph,Scrambler 900,Motorcycle,Scrambler,900,Petrol,Current
+Triumph,Speed 400,Motorcycle,Roadster,398,Petrol,Current
+Triumph,Speed T4,Motorcycle,Roadster,398,Petrol,Current
+Triumph,Speed Triple 1200 RR,Motorcycle,Naked,1160,Petrol,Current
+Triumph,Speed Triple 1200 RS,Motorcycle,Naked,1160,Petrol,Current
+Triumph,Speed Twin 1200,Motorcycle,Retro,1200,Petrol,Current
+Triumph,Speed Twin 900,Motorcycle,Retro,900,Petrol,Current
+Triumph,Street Scrambler,Motorcycle,Scrambler,900,Petrol,Discontinued
+Triumph,Street Triple 765 R,Motorcycle,Naked,765,Petrol,Current
+Triumph,Street Triple 765 RS,Motorcycle,Naked,765,Petrol,Current
+Triumph,Street Twin,Motorcycle,Retro,900,Petrol,Discontinued
+Triumph,Thruxton 400,Motorcycle,Retro,398,Petrol,Current
+Triumph,Thruxton RS,Motorcycle,Retro,1200,Petrol,Current
+Triumph,Tiger 1200 GT,Motorcycle,Adventure,1160,Petrol,Current
+Triumph,Tiger 1200 Rally Pro,Motorcycle,Adventure,1160,Petrol,Current
+Triumph,Tiger 850 Sport,Motorcycle,Adventure,888,Petrol,Current
+Triumph,Tiger 900 GT,Motorcycle,Adventure,888,Petrol,Current
+Triumph,Tiger 900 Rally,Motorcycle,Adventure,888,Petrol,Current
+Triumph,Tiger 900 Rally Pro,Motorcycle,Adventure,888,Petrol,Current
+Triumph,Tiger Sport 660,Motorcycle,Adventure,660,Petrol,Current
+Triumph,Trident 660,Motorcycle,Naked,660,Petrol,Current
+TVS,Apache RR 310,Motorcycle,Fully Faired,312,Petrol,Current
+TVS,Apache RTR 150,Motorcycle,Sports Commuter,149,Petrol,Discontinued
+TVS,Apache RTR 160,Motorcycle,Sports Commuter,159,Petrol,Current
+TVS,Apache RTR 160 4V,Motorcycle,Sports Commuter,159,Petrol,Current
+TVS,Apache RTR 180,Motorcycle,Sports Commuter,177,Petrol,Current
+TVS,Apache RTR 200 4V,Motorcycle,Naked,197,Petrol,Current
+TVS,Apache RTR 310,Motorcycle,Naked,312,Petrol,Current
+TVS,Apache RTX 300,Motorcycle,Adventure,299,Petrol,Current
+TVS,Centra,Motorcycle,Commuter,100,Petrol,Discontinued
+TVS,Champ,Moped,Moped,50,Petrol,Discontinued
+TVS,Fiero,Motorcycle,Commuter,125,Petrol,Discontinued
+TVS,Flame,Motorcycle,Sports Commuter,125,Petrol,Discontinued
+TVS,iQube,Electric Scooter,Electric Scooter,,Electric,Current
+TVS,iQube S,Electric Scooter,Electric Scooter,,Electric,Current
+TVS,iQube ST,Electric Scooter,Electric Scooter,,Electric,Current
+TVS,Jive,Motorcycle,Commuter,110,Petrol,Discontinued
+TVS,Jupiter,Scooter,Scooter,110,Petrol,Current
+TVS,Jupiter 125,Scooter,Scooter,125,Petrol,Current
+TVS,Jupiter Grande,Scooter,Scooter,125,Petrol,Current
+TVS,Max 4R,Motorcycle,Commuter,100,Petrol,Discontinued
+TVS,NTORQ 125,Scooter,Scooter,125,Petrol,Current
+TVS,NTORQ 150,Scooter,Scooter,149,Petrol,Current
+TVS,Orbiter,Electric Scooter,Electric Scooter,,Electric,Current
+TVS,Phoenix,Motorcycle,Commuter,125,Petrol,Discontinued
+TVS,Radeon,Motorcycle,Commuter,110,Petrol,Current
+TVS,Raider 125,Motorcycle,Sports Commuter,125,Petrol,Current
+TVS,Ronin,Motorcycle,Neo-Retro,225,Petrol,Current
+TVS,Samurai,Motorcycle,Commuter,100,Petrol,Discontinued
+TVS,Scooty Pep Plus,Scooter,Scooter,87,Petrol,Current
+TVS,Scooty Streak,Scooter,Scooter,87,Petrol,Discontinued
+TVS,Scooty Zest,Scooter,Scooter,110,Petrol,Current
+TVS,Shogun,Motorcycle,Commuter,110,Petrol,Discontinued
+TVS,Sport,Motorcycle,Commuter,110,Petrol,Current
+TVS,Star City Plus,Motorcycle,Commuter,110,Petrol,Current
+TVS,Victor,Motorcycle,Commuter,110,Petrol,Discontinued
+TVS,Wego,Scooter,Scooter,110,Petrol,Discontinued
+TVS,X,Electric Scooter,Electric Scooter,,Electric,Current
+TVS,XL Super,Moped,Moped,70,Petrol,Discontinued
+TVS,XL100,Moped,Moped,99,Petrol,Current
+TVS,XL100 Heavy Duty,Moped,Moped,99,Petrol,Current
+Ultraviolette,F77,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Ultraviolette,F77 Mach 2,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Ultraviolette,F77 SuperStreet,Electric Motorcycle,Electric Motorcycle,,Electric,Current
+Ultraviolette,Tesseract,Electric Scooter,Electric Scooter,,Electric,Current
+Vespa,Elegante 150,Scooter,Scooter,150,Petrol,Current
+Vespa,LX 125,Scooter,Scooter,125,Petrol,Discontinued
+Vespa,Notte 125,Scooter,Scooter,125,Petrol,Current
+Vespa,Racing Sixties 125,Scooter,Scooter,125,Petrol,Current
+Vespa,S 125,Scooter,Scooter,125,Petrol,Discontinued
+Vespa,SXL 125,Scooter,Scooter,125,Petrol,Current
+Vespa,SXL 150,Scooter,Scooter,150,Petrol,Current
+Vespa,Tech 125,Scooter,Scooter,125,Petrol,Current
+Vespa,Urban Club 125,Scooter,Scooter,125,Petrol,Current
+Vespa,Vespa 946,Scooter,Scooter,155,Petrol,Discontinued
+Vespa,VXL 125,Scooter,Scooter,125,Petrol,Current
+Vespa,VXL 150,Scooter,Scooter,150,Petrol,Current
+Vespa,ZX 125,Scooter,Scooter,125,Petrol,Discontinued
+Vida (Hero MotoCorp),Vida V1 Plus,Electric Scooter,Electric Scooter,,Electric,Current
+Vida (Hero MotoCorp),Vida V1 Pro,Electric Scooter,Electric Scooter,,Electric,Current
+Vida (Hero MotoCorp),Vida V2 Lite,Electric Scooter,Electric Scooter,,Electric,Current
+Vida (Hero MotoCorp),Vida V2 Plus,Electric Scooter,Electric Scooter,,Electric,Current
+Vida (Hero MotoCorp),Vida V2 Pro,Electric Scooter,Electric Scooter,,Electric,Current
+Vida (Hero MotoCorp),Vida VX2 Go,Electric Scooter,Electric Scooter,,Electric,Current
+Vida (Hero MotoCorp),Vida VX2 Plus,Electric Scooter,Electric Scooter,,Electric,Current
+Yamaha,Aerox 155,Scooter,Maxi Scooter,155,Petrol,Current
+Yamaha,Aerox 155 Version S,Scooter,Maxi Scooter,155,Petrol,Current
+Yamaha,Alba,Motorcycle,Commuter,106,Petrol,Discontinued
+Yamaha,Alpha,Scooter,Scooter,113,Petrol,Discontinued
+Yamaha,Crux,Motorcycle,Commuter,100,Petrol,Discontinued
+Yamaha,Enticer,Motorcycle,Cruiser,150,Petrol,Discontinued
+Yamaha,Fascino 113,Scooter,Scooter,113,Petrol,Discontinued
+Yamaha,Fascino 125 Fi Hybrid,Scooter,Scooter,125,Petrol,Current
+Yamaha,Fazer,Motorcycle,Naked,153,Petrol,Discontinued
+Yamaha,Fazer 25,Motorcycle,Naked,249,Petrol,Discontinued
+Yamaha,Fazer FI,Motorcycle,Naked,149,Petrol,Discontinued
+Yamaha,FZ,Motorcycle,Naked,149,Petrol,Discontinued
+Yamaha,FZ 16,Motorcycle,Naked,153,Petrol,Discontinued
+Yamaha,FZ V2,Motorcycle,Naked,149,Petrol,Discontinued
+Yamaha,FZ-Fi V3,Motorcycle,Naked,149,Petrol,Discontinued
+Yamaha,FZ-S Fi V3,Motorcycle,Naked,149,Petrol,Discontinued
+Yamaha,FZ-S Fi V4,Motorcycle,Naked,149,Petrol,Current
+Yamaha,FZ-X,Motorcycle,Neo-Retro,149,Petrol,Current
+Yamaha,FZ25,Motorcycle,Naked,249,Petrol,Current
+Yamaha,FZS 25,Motorcycle,Naked,249,Petrol,Current
+Yamaha,Gladiator,Motorcycle,Commuter,125,Petrol,Discontinued
+Yamaha,Libero,Motorcycle,Commuter,110,Petrol,Discontinued
+Yamaha,MT-03,Motorcycle,Naked,321,Petrol,Current
+Yamaha,MT-07,Motorcycle,Naked,689,Petrol,Current
+Yamaha,MT-09,Motorcycle,Naked,890,Petrol,Current
+Yamaha,MT-10,Motorcycle,Naked,998,Petrol,Current
+Yamaha,MT-15,Motorcycle,Naked,155,Petrol,Discontinued
+Yamaha,MT-15 V2,Motorcycle,Naked,155,Petrol,Current
+Yamaha,R15 V2,Motorcycle,Fully Faired,150,Petrol,Discontinued
+Yamaha,R15 V3,Motorcycle,Fully Faired,155,Petrol,Discontinued
+Yamaha,R15 V4,Motorcycle,Fully Faired,155,Petrol,Current
+Yamaha,R15M,Motorcycle,Fully Faired,155,Petrol,Current
+Yamaha,R15S,Motorcycle,Fully Faired,155,Petrol,Discontinued
+Yamaha,Rajdoot 175,Motorcycle,Commuter,175,Petrol,Discontinued
+Yamaha,Ray,Scooter,Scooter,113,Petrol,Discontinued
+Yamaha,Ray Z,Scooter,Scooter,113,Petrol,Discontinued
+Yamaha,Ray ZR 125 Fi Hybrid,Scooter,Scooter,125,Petrol,Current
+Yamaha,Ray ZR Street Rally,Scooter,Scooter,125,Petrol,Current
+Yamaha,RD350,Motorcycle,Sports,347,Petrol,Discontinued
+Yamaha,RX 135,Motorcycle,Commuter,135,Petrol,Discontinued
+Yamaha,RX-G,Motorcycle,Commuter,135,Petrol,Discontinued
+Yamaha,RX100,Motorcycle,Commuter,98,Petrol,Discontinued
+Yamaha,RXZ,Motorcycle,Sports,135,Petrol,Discontinued
+Yamaha,Saluto,Motorcycle,Commuter,110,Petrol,Discontinued
+Yamaha,Saluto RX,Motorcycle,Commuter,110,Petrol,Discontinued
+Yamaha,SZ-R,Motorcycle,Sports Commuter,153,Petrol,Discontinued
+Yamaha,SZ-RR,Motorcycle,Sports Commuter,153,Petrol,Discontinued
+Yamaha,Tenere 700,Motorcycle,Adventure,689,Petrol,Current
+Yamaha,YBR 125,Motorcycle,Commuter,125,Petrol,Discontinued
+Yamaha,YZF-R1,Motorcycle,Superbike,998,Petrol,Current
+Yamaha,YZF-R1M,Motorcycle,Superbike,998,Petrol,Current
+Yamaha,YZF-R3,Motorcycle,Fully Faired,321,Petrol,Current
+Yamaha,YZF-R6,Motorcycle,Superbike,599,Petrol,Discontinued
+Yamaha,YZF-R7,Motorcycle,Fully Faired,689,Petrol,Current
+Yezdi,Yezdi Adventure,Motorcycle,Adventure,334,Petrol,Current
+Yezdi,Yezdi CL II,Motorcycle,Commuter,250,Petrol,Discontinued
+Yezdi,Yezdi Classic,Motorcycle,Commuter,250,Petrol,Discontinued
+Yezdi,Yezdi Deluxe,Motorcycle,Commuter,250,Petrol,Discontinued
+Yezdi,Yezdi Monarch,Motorcycle,Commuter,250,Petrol,Discontinued
+Yezdi,Yezdi Roadking,Motorcycle,Commuter,250,Petrol,Discontinued
+Yezdi,Yezdi Roadster,Motorcycle,Retro,334,Petrol,Current
+Yezdi,Yezdi Scrambler,Motorcycle,Scrambler,334,Petrol,Current
+Zelio,Eeva,Electric Scooter,Electric Scooter,,Electric,Current
+Zelio,Eeva ZX,Electric Scooter,Electric Scooter,,Electric,Current
+Zelio,Gracy,Electric Scooter,Electric Scooter,,Electric,Current
+Zelio,Gracy+,Electric Scooter,Electric Scooter,,Electric,Current
+Zelio,Knight,Electric Scooter,Electric Scooter,,Electric,Current
+Zelio,Little Gracy,Electric Scooter,Electric Scooter,,Electric,Current
+Zelio,Mystic,Electric Scooter,Electric Scooter,,Electric,Current

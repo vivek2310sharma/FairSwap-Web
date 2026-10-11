@@ -1,0 +1,203 @@
+category,subcategory,sub_subcategory,key_fields
+Goods,Mobiles & Tablets,Smartphones,brand|model|storage_gb|ram_gb|color|purchase_year|warranty_left|bill_available|box_available|condition
+Goods,Mobiles & Tablets,Feature Phones,brand|model|color|bill_available|condition
+Goods,Mobiles & Tablets,Tablets & iPads,brand|model|storage_gb|connectivity|purchase_year|warranty_left|bill_available|condition
+Goods,Mobiles & Tablets,Smartwatches & Fitness Bands,brand|model|compatible_with|purchase_year|bill_available|condition
+Goods,Mobiles & Tablets,Chargers & Cables,brand|compatible_model|condition|bill_available
+Goods,Mobiles & Tablets,Power Banks,brand|capacity_mah|condition|bill_available
+Goods,Mobiles & Tablets,Earphones & Headphones,brand|model|type|condition|bill_available
+Goods,Mobiles & Tablets,Cases & Covers,brand|compatible_model|condition
+Goods,Mobiles & Tablets,Memory Cards & Pen Drives,brand|capacity_gb|condition
+Goods,Computers & Laptops,Laptops,brand|model|processor|ram_gb|storage_gb|storage_type|screen_inches|purchase_year|warranty_left|bill_available|condition
+Goods,Computers & Laptops,Desktop Computers,brand|processor|ram_gb|storage_gb|includes_monitor|purchase_year|condition
+Goods,Computers & Laptops,Monitors,brand|screen_inches|resolution|panel_type|refresh_rate|condition
+Goods,Computers & Laptops,Printers & Scanners,brand|model|type|connectivity|condition
+Goods,Computers & Laptops,Keyboards & Mice,brand|model|connectivity|condition
+Goods,Computers & Laptops,Routers & Networking,brand|model|type|condition
+Goods,Computers & Laptops,Laptop Accessories,brand|compatible_model|type|condition
+Goods,Computers & Laptops,RAM & Storage Drives,brand|model|capacity|type|purchase_year|warranty_left|condition
+Goods,Computers & Laptops,Graphics Cards & Processors,brand|model|purchase_year|warranty_left|bill_available|condition
+Goods,Computers & Laptops,Cabinets & Power Supplies,brand|model|wattage|condition
+Goods,TVs Audio & Cameras,Televisions,brand|screen_inches|display_type|smart_tv|resolution|purchase_year|bill_available|condition
+Goods,TVs Audio & Cameras,Home Theatre & Soundbars,brand|model|channels|purchase_year|condition
+Goods,TVs Audio & Cameras,Bluetooth & Party Speakers,brand|model|purchase_year|bill_available|condition
+Goods,TVs Audio & Cameras,DSLR & Mirrorless Cameras,brand|model|shutter_count|lens_included|purchase_year|bill_available|condition
+Goods,TVs Audio & Cameras,Point & Shoot Cameras,brand|model|purchase_year|bill_available|condition
+Goods,TVs Audio & Cameras,Action Cameras & Drones,brand|model|purchase_year|bill_available|condition
+Goods,TVs Audio & Cameras,Camera Lenses & Accessories,brand|mount|focal_length|condition
+Goods,TVs Audio & Cameras,CCTV & Security Cameras,brand|type|channels|condition
+Goods,TVs Audio & Cameras,Projectors,brand|model|resolution|lamp_hours|condition
+Goods,TVs Audio & Cameras,Gaming Consoles,platform|model|storage|controllers_included|condition
+Goods,TVs Audio & Cameras,Video Games & Controllers,platform|title|condition
+Goods,Home Appliances,Refrigerators,brand|capacity_litres|door_type|energy_star_rating|purchase_year|bill_available|condition
+Goods,Home Appliances,Washing Machines,brand|capacity_kg|type|loading|energy_star_rating|purchase_year|condition
+Goods,Home Appliances,Air Conditioners,brand|tonnage|type|inverter|energy_star_rating|purchase_year|installation_included|bill_available|condition
+Goods,Home Appliances,Air Coolers & Fans,brand|type|capacity|purchase_year|condition
+Goods,Home Appliances,Water Purifiers & RO,brand|type|capacity_litres|purchase_year|condition
+Goods,Home Appliances,Geysers & Water Heaters,brand|capacity_litres|type|purchase_year|condition
+Goods,Home Appliances,Microwaves & OTG Ovens,brand|capacity_litres|type|purchase_year|condition
+Goods,Home Appliances,Mixer Grinders & Juicers,brand|wattage|purchase_year|condition
+Goods,Home Appliances,Induction & Gas Stoves,brand|type|burners|purchase_year|condition
+Goods,Home Appliances,Kitchen Chimneys & Hobs,brand|size_cm|purchase_year|condition
+Goods,Home Appliances,Vacuum Cleaners & Irons,brand|type|purchase_year|condition
+Goods,Home Appliances,Inverters & Batteries,brand|capacity_va|battery_ah|purchase_year|condition
+Goods,Home Appliances,Sewing Machines,brand|type|purchase_year|condition
+Goods,Home Appliances,Air Purifiers & Room Heaters,brand|type|purchase_year|condition
+Goods,Furniture,Sofas & Diwans,material|seating_capacity|color|dimensions|age_years|condition
+Goods,Furniture,Beds & Mattresses,bed_size|material|mattress_included|storage_type|age_years|condition
+Goods,Furniture,Wardrobes & Cupboards,material|doors|dimensions|age_years|condition
+Goods,Furniture,Dining Tables & Sets,material|seating_capacity|dimensions|age_years|condition
+Goods,Furniture,Study & Coffee Tables,material|dimensions|age_years|condition
+Goods,Furniture,Chairs & Stools,material|type|quantity|condition
+Goods,Furniture,Bookshelves & TV Units,material|dimensions|age_years|condition
+Goods,Furniture,Office Furniture,type|material|quantity|age_years|condition
+Goods,Furniture,Outdoor & Balcony Furniture,material|quantity|condition
+Goods,Home & Garden,Home Decor,type|material|condition
+Goods,Home & Garden,Kitchenware & Utensils,type|material|quantity|condition
+Goods,Home & Garden,Curtains & Bedsheets,type|size|quantity|condition
+Goods,Home & Garden,Carpets & Rugs,size|material|condition
+Goods,Home & Garden,Lighting,type|quantity|condition
+Goods,Home & Garden,Plants & Planters,type|size|quantity
+Goods,Home & Garden,Pooja Items & Mandirs,type|material|condition
+Goods,Home & Garden,Power Tools & Hand Tools,brand|type|condition
+Goods,Fashion,Men's T-shirts & Shirts,brand|size|color|condition|worn_times
+Goods,Fashion,Men's Jeans & Trousers,brand|waist_size|color|condition|worn_times
+Goods,Fashion,Men's Ethnic Wear,brand|type|size|occasion|condition
+Goods,Fashion,Men's Suits & Blazers,brand|size|color|condition
+Goods,Fashion,Men's Winter Wear,brand|type|size|condition
+Goods,Fashion,Women's Sarees,brand|fabric|occasion|condition
+Goods,Fashion,Women's Kurtas & Suits,brand|size|color|condition|worn_times
+Goods,Fashion,Women's Lehengas & Gowns,brand|size|color|occasion|condition
+Goods,Fashion,Women's Western Wear,brand|size|color|condition|worn_times
+Goods,Fashion,Women's Winter Wear,brand|type|size|condition
+Goods,Fashion,Men's Footwear,brand|size_uk|color|condition
+Goods,Fashion,Women's Footwear,brand|size_uk|color|condition
+Goods,Fashion,Handbags & Backpacks,brand|type|color|condition
+Goods,Fashion,Travel Luggage,brand|size|type|condition
+Goods,Fashion,Watches,brand|type|gender|condition|bill_available
+Goods,Fashion,Fashion Jewellery,type|material|condition
+Goods,Fashion,Sunglasses Belts & Wallets,brand|type|condition
+Goods,Kids & Baby,Strollers & Prams,brand|age_group|age_years|condition
+Goods,Kids & Baby,Car Seats,brand|age_group|age_years|condition
+Goods,Kids & Baby,Cribs & Cradles,brand|material|age_years|condition
+Goods,Kids & Baby,Walkers & Bouncers,brand|age_group|condition
+Goods,Kids & Baby,Toys & Games,brand|age_group|type|condition
+Goods,Kids & Baby,Ride-ons & Kids Cycles,brand|age_group|condition
+Goods,Kids & Baby,Kids Clothing,gender|age_group|size|brand|condition
+Goods,Kids & Baby,Kids Furniture,type|material|age_group|condition
+Goods,Kids & Baby,School Bags & Uniforms,type|school_or_board|size|condition
+Goods,Books & Education,Class 1-12 Textbooks,title|author|class|board|edition|condition
+Goods,Books & Education,College & Engineering Books,title|author|course|university|edition|condition
+Goods,Books & Education,Medical & Nursing Books,title|author|course|edition|condition
+Goods,Books & Education,Commerce Law & Management Books,title|author|course|edition|condition
+Goods,Books & Education,JEE & NEET Preparation,title|author|exam|edition_year|condition
+Goods,Books & Education,UPSC & State PSC Preparation,title|author|exam|edition_year|language|condition
+Goods,Books & Education,SSC Banking & Railway Preparation,title|author|exam|edition_year|language|condition
+Goods,Books & Education,CAT GATE & Other Exams,title|author|exam|edition_year|condition
+Goods,Books & Education,Novels & Fiction,title|author|language|condition
+Goods,Books & Education,Non-fiction & Self-help,title|author|language|condition
+Goods,Books & Education,Regional Language Books,title|author|language|condition
+Goods,Books & Education,Comics & Magazines,title|issue_or_volume|language|condition
+Goods,Books & Education,Coaching Notes & Study Material,subject|exam_or_class|institute|condition
+Goods,Sports Fitness & Hobbies,Treadmills & Exercise Bikes,brand|type|motorised|age_years|condition
+Goods,Sports Fitness & Hobbies,Weights Dumbbells & Home Gyms,brand|weight_kg|type|condition
+Goods,Sports Fitness & Hobbies,Yoga & Fitness Accessories,type|brand|condition
+Goods,Sports Fitness & Hobbies,Cricket Equipment,brand|type|size|condition
+Goods,Sports Fitness & Hobbies,Badminton Tennis & Table Tennis,brand|type|condition
+Goods,Sports Fitness & Hobbies,Football & Team Sports,brand|type|condition
+Goods,Sports Fitness & Hobbies,Carrom Chess & Indoor Games,type|brand|condition
+Goods,Sports Fitness & Hobbies,Trekking & Camping Gear,brand|type|condition
+Goods,Sports Fitness & Hobbies,Skating & Skateboards,brand|size|condition
+Goods,Sports Fitness & Hobbies,Guitars & String Instruments,brand|type|age_years|condition
+Goods,Sports Fitness & Hobbies,Keyboards & Pianos,brand|model|keys|age_years|condition
+Goods,Sports Fitness & Hobbies,Harmonium Tabla & Indian Instruments,type|brand|age_years|condition
+Goods,Sports Fitness & Hobbies,Drums & Percussion,brand|type|age_years|condition
+Goods,Sports Fitness & Hobbies,Art & Craft Supplies,type|brand|condition
+Goods,Sports Fitness & Hobbies,Coins Stamps & Collectibles,type|year|condition
+Goods,Sports Fitness & Hobbies,Antiques,type|age_years|condition
+Goods,Business & Industrial,Office Equipment,type|brand|age_years|condition|bill_available
+Goods,Business & Industrial,Shop Fittings & Display Racks,type|material|quantity|condition
+Goods,Business & Industrial,Commercial Kitchen Equipment,type|brand|capacity|age_years|condition
+Goods,Business & Industrial,Billing & POS Machines,brand|model|type|condition
+Goods,Business & Industrial,Deep Freezers & Commercial Refrigeration,brand|capacity_litres|age_years|condition
+Goods,Business & Industrial,Industrial Machinery,type|brand|model|capacity|age_years|condition
+Goods,Business & Industrial,Generators & Solar Panels,type|brand|capacity|age_years|condition
+Goods,Business & Industrial,Voltage Stabilizers,brand|capacity_kva|condition
+Goods,Business & Industrial,Agricultural Equipment & Pumps,type|brand|capacity|age_years|condition
+Goods,Business & Industrial,Medical & Lab Equipment,type|brand|age_years|condition
+Goods,Pet Supplies,Pet Food,brand|pet_type|quantity|expiry_date
+Goods,Pet Supplies,Cages Kennels & Aquariums,type|pet_type|size|condition
+Goods,Pet Supplies,Pet Accessories,type|pet_type|condition
+Vehicles,Cars,Hatchback,brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Cars,Sedan,brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Cars,Compact SUV,brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Cars,SUV,brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Cars,MUV & MPV,brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|seating_capacity|registration_state|insurance_valid_till|price|negotiable
+Vehicles,Cars,Luxury Cars,brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|price|negotiable
+Vehicles,Cars,Coupe & Convertible,brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|price|negotiable
+Vehicles,Cars,Electric & Hybrid Cars,brand|model|variant|year|battery_capacity_kwh|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable
+Vehicles,Cars,Vintage & Classic Cars,brand|model|year|km_driven|owner_number|registration_state|condition|price
+Vehicles,Motorcycles,Commuter Bikes,brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Motorcycles,Sports & Superbikes,brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Motorcycles,Cruiser Bikes,brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Motorcycles,Adventure & Touring Bikes,brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Motorcycles,Classic & Retro Bikes,brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Motorcycles,Electric Motorcycles,brand|model|year|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable
+Vehicles,Scooters,Petrol Scooters,brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable
+Vehicles,Scooters,Electric Scooters,brand|model|year|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable
+Vehicles,Scooters,Maxi Scooters & Mopeds,brand|model|year|engine_cc|km_driven|owner_number|registration_state|price|negotiable
+Vehicles,Bicycles,Geared Cycles,brand|gear_count|frame_size|age_years|condition|price
+Vehicles,Bicycles,Non-geared Cycles,brand|size_inches|age_years|condition|price
+Vehicles,Bicycles,Kids Cycles,brand|age_group|size_inches|condition|price
+Vehicles,Bicycles,Electric Cycles,brand|range_km|battery_warranty_left|age_years|condition|price
+Vehicles,Bicycles,Cycle Parts & Accessories,type|brand|condition
+Vehicles,Commercial Vehicles,Auto Rickshaws,brand|model|year|fuel_type|km_driven|owner_number|registration_state|permit_type|price
+Vehicles,Commercial Vehicles,E-Rickshaws,brand|model|year|battery_type|battery_warranty_left|registration_state|price
+Vehicles,Commercial Vehicles,Mini Trucks & Pickups,brand|model|year|payload_tons|fuel_type|km_driven|owner_number|registration_state|permit_type|fitness_valid_till|price
+Vehicles,Commercial Vehicles,Trucks & Tippers,brand|model|year|payload_tons|axle_config|km_driven|owner_number|registration_state|permit_type|fitness_valid_till|price
+Vehicles,Commercial Vehicles,Buses & Vans,brand|model|year|seating_capacity|fuel_type|km_driven|owner_number|registration_state|permit_type|price
+Vehicles,Commercial Vehicles,Tractors & Farm Vehicles,brand|model|year|horsepower|hours_used|owner_number|registration_state|price
+Vehicles,Commercial Vehicles,Construction Vehicles,brand|model|year|type|hours_used|price
+Vehicles,Vehicle Parts & Accessories,Car Tyres & Alloy Wheels,brand|size|compatible_models|condition
+Vehicles,Vehicle Parts & Accessories,Car Batteries & Electricals,brand|capacity_ah|condition|warranty_left
+Vehicles,Vehicle Parts & Accessories,Car Audio & Infotainment,brand|compatible_model|condition
+Vehicles,Vehicle Parts & Accessories,Car Seat Covers & Interiors,brand|compatible_model|condition
+Vehicles,Vehicle Parts & Accessories,Car Body Parts & Lights,brand|compatible_make_model|part_type|condition
+Vehicles,Vehicle Parts & Accessories,Bike Helmets & Riding Gear,brand|size|type|condition
+Vehicles,Vehicle Parts & Accessories,Bike Tyres & Spare Parts,brand|compatible_make_model|part_type|condition
+Vehicles,Vehicle Parts & Accessories,Bike Accessories,brand|compatible_make_model|type|condition
+Vehicles,Vehicle Parts & Accessories,Engines & Gearboxes,brand|compatible_make_model|year|condition
+Property,Residential for Sale,Apartment or Flat,bhk|bathrooms|carpet_area_sqft|floor|total_floors|facing|furnishing|property_age|ownership_type|rera_id|society_name|locality|city|price|maintenance_monthly|parking
+Property,Residential for Sale,Independent House or Villa,bhk|bathrooms|plot_area|built_up_area_sqft|floors|facing|furnishing|property_age|ownership_type|rera_id|locality|city|price|parking
+Property,Residential for Sale,Builder Floor,bhk|bathrooms|carpet_area_sqft|floor|total_floors|facing|furnishing|property_age|ownership_type|locality|city|price|parking
+Property,Residential for Sale,Studio Apartment,carpet_area_sqft|floor|furnishing|property_age|ownership_type|society_name|locality|city|price
+Property,Residential for Sale,Penthouse,bhk|bathrooms|carpet_area_sqft|terrace_area_sqft|facing|furnishing|property_age|rera_id|society_name|locality|city|price|parking
+Property,Residential for Sale,Farmhouse,bhk|plot_area|built_up_area_sqft|furnishing|ownership_type|locality|city|price
+Property,Residential for Rent,Apartment or Flat,bhk|bathrooms|area_sqft|floor|total_floors|furnishing|monthly_rent|security_deposit|maintenance|available_from|preferred_tenants|parking|society_name|locality|city
+Property,Residential for Rent,Independent House or Villa,bhk|bathrooms|area_sqft|floors|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|parking|locality|city
+Property,Residential for Rent,Builder Floor,bhk|bathrooms|area_sqft|floor|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|parking|locality|city
+Property,Residential for Rent,Studio Apartment,area_sqft|floor|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|locality|city
+Property,Residential for Rent,Single Room,area_sqft|attached_bathroom|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|locality|city
+Property,PG & Co-living,Boys PG,monthly_rent_per_bed|sharing_type|food_included|attached_bathroom|ac|wifi|security_deposit|available_from|locality|city
+Property,PG & Co-living,Girls PG,monthly_rent_per_bed|sharing_type|food_included|attached_bathroom|ac|wifi|security_deposit|available_from|locality|city
+Property,PG & Co-living,Co-living Spaces,monthly_rent_per_bed|sharing_type|food_included|ac|wifi|housekeeping|security_deposit|available_from|locality|city
+Property,PG & Co-living,Hostels,monthly_rent_per_bed|sharing_type|gender|food_included|security_deposit|available_from|locality|city
+Property,PG & Co-living,Flatmates & Shared Rooms,monthly_rent|gender_preference|furnishing|available_from|locality|city
+Property,PG & Co-living,Guest Houses & Homestays,rent_per_night|rooms|amenities|locality|city
+Property,Land & Plots,Residential Plot,plot_area|area_unit|facing|road_width_ft|boundary_wall|ownership_type|rera_or_authority_approved|locality|city|price
+Property,Land & Plots,Commercial Plot,plot_area|area_unit|facing|road_width_ft|boundary_wall|ownership_type|locality|city|price
+Property,Land & Plots,Agricultural Land,plot_area|area_unit|irrigation|road_access|ownership_type|village|district|state|price
+Property,Land & Plots,Farm Land with Fencing,plot_area|area_unit|water_source|road_access|ownership_type|village|district|state|price
+Property,Land & Plots,Industrial Land,plot_area|area_unit|zone|road_width_ft|ownership_type|locality|city|price
+Property,Commercial for Sale,Shops & Showrooms,carpet_area_sqft|floor|frontage_ft|washrooms|parking|ownership_type|locality|city|price
+Property,Commercial for Sale,Office Space,carpet_area_sqft|floor|furnishing|washrooms|parking|pantry|ownership_type|locality|city|price
+Property,Commercial for Sale,Warehouse & Godown,area_sqft|height_ft|loading_access|ownership_type|locality|city|price
+Property,Commercial for Sale,Industrial Shed & Building,area_sqft|power_load_kw|ownership_type|locality|city|price
+Property,Commercial for Rent,Shops & Showrooms,carpet_area_sqft|floor|frontage_ft|washrooms|parking|monthly_rent|security_deposit|lease_term|locality|city
+Property,Commercial for Rent,Office Space,carpet_area_sqft|floor|furnishing|washrooms|parking|pantry|monthly_rent|security_deposit|lease_term|locality|city
+Property,Commercial for Rent,Co-working Space,seats|monthly_rent_per_seat|amenities|locality|city
+Property,Commercial for Rent,Warehouse & Godown,area_sqft|height_ft|loading_access|monthly_rent|security_deposit|lease_term|locality|city
+Property,Commercial for Rent,Restaurant & Cafe Space,area_sqft|floor|kitchen_ready|monthly_rent|security_deposit|lease_term|locality|city
+Property,Commercial for Rent,Industrial Shed,area_sqft|power_load_kw|monthly_rent|security_deposit|lease_term|locality|city
+Property,Parking & Garages,Parking Space for Sale,type|covered|society_name|locality|city|price
+Property,Parking & Garages,Parking Space for Rent,type|covered|monthly_rent|society_name|locality|city

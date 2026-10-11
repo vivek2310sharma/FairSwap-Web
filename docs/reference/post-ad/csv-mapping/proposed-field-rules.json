@@ -1,0 +1,130 @@
+{
+  "provenance": {
+    "workbook": "FairSwap-CSV-Field-Matrix.xlsx",
+    "sha256": "ff853d9d2d9e788c97a68dfaa293b622d9fc29d083ba5c5e9d11c2abee42ad11",
+    "header_row": 5,
+    "sheet": "Proposed Rules"
+  },
+  "rows": [
+    {
+      "Rule ID": "R01",
+      "Name": "Category field applicability",
+      "Source basis": "Every category row lists key_fields; no explicit visible_when column.",
+      "Proposed behaviour": "Show category-specific fields listed for the exact selected full path; do not automatically remove existing common listing fields.",
+      "Enabled when - PROPOSED": "Category chosen; renderer/type decisions resolved.",
+      "Hidden/stale values - PROPOSED": "Keep old record values until reviewed transition; never silently persist inapplicable new values.",
+      "Validation note": "Unspecified requiredness remains unresolved. Existing draft/submit rules are independent.",
+      "Source / provenance": "india_categories.csv:1-203"
+    },
+    {
+      "Rule ID": "R02",
+      "Name": "Vehicle brand/model dependency",
+      "Source basis": "Car and two-wheeler catalogues both have brand/model; no dropdown behaviour is supplied.",
+      "Proposed behaviour": "For covered vehicle groups, filter models by selected brand and explicit catalogue/type mapping. Keep visible but disabled until a parent is selected or while loading.",
+      "Enabled when - PROPOSED": "Vehicle group and brand selected; lookup loaded successfully.",
+      "Hidden/stale values - PROPOSED": "Changing brand/type invalidates an incompatible model after confirmation.",
+      "Validation note": "Check model belongs to selected brand/type on server; do not apply universally to Goods.",
+      "Source / provenance": "india_car_brands_models.csv:1; india_bike_scooter_brands_models.csv:1"
+    },
+    {
+      "Rule ID": "R03",
+      "Name": "Confirm category/parent changes",
+      "Source basis": "Not specified by CSV; preserves the agreed Post Ad interaction.",
+      "Proposed behaviour": "Confirm removal of incompatible child/category details; retain unrelated common values.",
+      "Enabled when - PROPOSED": "No save in flight; action permitted by current form state.",
+      "Hidden/stale values - PROPOSED": "Do not delete legacy saved values merely because a newer rule hides an input.",
+      "Validation note": "Compute allowed values from approved category/version server-side; client state is not authority.",
+      "Source / provenance": "Proposal; project behaviour, not a CSV claim"
+    },
+    {
+      "Rule ID": "R04",
+      "Name": "Electric motorcycle/scooter fields",
+      "Source basis": "Electric rows omit engine_cc and list range_km/battery_warranty_left.",
+      "Proposed behaviour": "Use the exact electric leaf key_fields for applicability; do not add battery_capacity_kwh from the car row.",
+      "Enabled when - PROPOSED": "Electric leaf chosen; normal draft field state.",
+      "Hidden/stale values - PROPOSED": "Clear incompatible new values only through confirmed transitions.",
+      "Validation note": "Do not treat every non-electric motorcycle as Petrol; CNG exists in the supplied catalogue.",
+      "Source / provenance": "india_categories.csv:140-148; india_bike_scooter_brands_models.csv:69"
+    },
+    {
+      "Rule ID": "R05",
+      "Name": "Property amount basis",
+      "Source basis": "Source separately names price, monthly_rent, monthly_rent_per_bed, monthly_rent_per_seat and rent_per_night.",
+      "Proposed behaviour": "Preserve the leaf-specific amount label/basis. Model primary amount and period/unit separately from negotiability.",
+      "Enabled when - PROPOSED": "Applicable Property leaf; validated amount contract ready before persistence.",
+      "Hidden/stale values - PROPOSED": "Changing sale/rent/basis must not silently reinterpret an existing amount.",
+      "Validation note": "Money limits/precision and requiredness need approved DB/API rules.",
+      "Source / provenance": "india_categories.csv:170-203"
+    },
+    {
+      "Rule ID": "R06",
+      "Name": "Avoid duplicate canonical fields",
+      "Source basis": "CSV repeats price, condition, city/locality and uses title for books/games.",
+      "Proposed behaviour": "Map compatible common concepts once; keep title ambiguous until ad-title vs product-title meaning is approved.",
+      "Enabled when - PROPOSED": "Canonical mapping reviewed; otherwise preview unresolved control.",
+      "Hidden/stale values - PROPOSED": "Do not overwrite canonical data from a duplicate attribute.",
+      "Validation note": "One validated persistence authority per concept.",
+      "Source / provenance": "india_categories.csv:31,89-100,131-203"
+    },
+    {
+      "Rule ID": "R07",
+      "Name": "Boolean unanswered versus false",
+      "Source basis": "Keys such as bill_available, box_available and food_included suggest yes/no; source has no types/defaults.",
+      "Proposed behaviour": "Use unanswered/yes/no while drafting rather than treating untouched as false.",
+      "Enabled when - PROPOSED": "Applicable category; no invented default.",
+      "Hidden/stale values - PROPOSED": "Distinguish false, missing and removed.",
+      "Validation note": "Do not mark a field required merely because it appears in key_fields.",
+      "Source / provenance": "india_categories.csv:2,181-184"
+    },
+    {
+      "Rule ID": "R08",
+      "Name": "No automatic status-to-availability mapping",
+      "Source basis": "Cars use on_sale/discontinued/import_only; bikes use Current/Discontinued/Upcoming.",
+      "Proposed behaviour": "Preserve raw statuses and track independently from selectable/released flags. Retain discontinued models as reference for used listings.",
+      "Enabled when - PROPOSED": "Catalogue rule approved; Upcoming/import_only require review rather than silent enablement.",
+      "Hidden/stale values - PROPOSED": "Never remove a saved model because its market status changed.",
+      "Validation note": "No current manufacturer/availability verification is claimed.",
+      "Source / provenance": "Both vehicle CSV status columns"
+    },
+    {
+      "Rule ID": "R09",
+      "Name": "Separate availability and input state",
+      "Source basis": "No per-field is_visible/is_enabled/required_when columns are supplied.",
+      "Proposed behaviour": "Keep category visibility/new-listing eligibility separate from field visible_when, enabled_when, required_when and stale-value policy.",
+      "Enabled when - PROPOSED": "Compiled policy valid; unknown rules are not permission.",
+      "Hidden/stale values - PROPOSED": "Hidden/disabled is presentation, not authorization or automatic data deletion.",
+      "Validation note": "Revalidate submitted values on server and enforce ownership through RLS.",
+      "Source / provenance": "CSV headers; architectural proposal"
+    },
+    {
+      "Rule ID": "R10",
+      "Name": "Catalogue values are suggestions",
+      "Source basis": "Bike rows have one engine_cc/fuel_type per model; car rows omit fuel_type/year/variant.",
+      "Proposed behaviour": "Label defaults as catalogue hints, not immutable vehicle specifications. Do not infer year/variant or car powertrain from model text.",
+      "Enabled when - PROPOSED": "Relevant source data exists and applicability is reviewed.",
+      "Hidden/stale values - PROPOSED": "Missing engine remains null/unknown, never zero.",
+      "Validation note": "Seller confirmation and approved per-year/variant overrides need a later contract.",
+      "Source / provenance": "Vehicle CSV headers; missing engine rows"
+    },
+    {
+      "Rule ID": "R11",
+      "Name": "India-first display order",
+      "Source basis": "Taxonomy file lists Cars before Motorcycles and Scooters; user direction is two-wheelers first.",
+      "Proposed behaviour": "Preserve source order in evidence. Use an explicit separate display order: Motorcycles, Scooters, Cars, Bicycles, Vehicle Parts & Accessories, Commercial Vehicles.",
+      "Enabled when - PROPOSED": "Ordering affects display only, not release status.",
+      "Hidden/stale values - PROPOSED": "No source-row relabelling or historical listing reassignment.",
+      "Validation note": "All source groups remain represented; business scope is approved separately.",
+      "Source / provenance": "india_categories.csv:131-169; user direction"
+    },
+    {
+      "Rule ID": "R12",
+      "Name": "Empty versus failed dependent lookup",
+      "Source basis": "Behaviour is not specified by CSV.",
+      "Proposed behaviour": "Show an error for failed model loads and a distinct empty state for zero matching models; do not choose the first or fabricate a fallback.",
+      "Enabled when - PROPOSED": "Successful nonempty result; controlled Not listed option requires explicit proposal.",
+      "Hidden/stale values - PROPOSED": "Retain user input on network failure.",
+      "Validation note": "Do not create selectable IDs for missing catalogue entries.",
+      "Source / provenance": "Architectural proposal, not a CSV claim"
+    }
+  ]
+}

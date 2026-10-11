@@ -1,0 +1,1828 @@
+{
+  "provenance": {
+    "workbook": "FairSwap-CSV-Field-Matrix.xlsx",
+    "sha256": "ff853d9d2d9e788c97a68dfaa293b622d9fc29d083ba5c5e9d11c2abee42ad11",
+    "header_row": 5,
+    "sheet": "Categories"
+  },
+  "rows": [
+    {
+      "CSV line": 2,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Smartphones",
+      "key_fields (source; original order)": "brand|model|storage_gb|ram_gb|color|purchase_year|warranty_left|bill_available|box_available|condition",
+      "Review path ID (not DB ID)": "path-9779b1451e625294",
+      "Source": "india_categories.csv:2"
+    },
+    {
+      "CSV line": 3,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Feature Phones",
+      "key_fields (source; original order)": "brand|model|color|bill_available|condition",
+      "Review path ID (not DB ID)": "path-bbb4b2f43904101c",
+      "Source": "india_categories.csv:3"
+    },
+    {
+      "CSV line": 4,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Tablets & iPads",
+      "key_fields (source; original order)": "brand|model|storage_gb|connectivity|purchase_year|warranty_left|bill_available|condition",
+      "Review path ID (not DB ID)": "path-70b222a60e4a4974",
+      "Source": "india_categories.csv:4"
+    },
+    {
+      "CSV line": 5,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Smartwatches & Fitness Bands",
+      "key_fields (source; original order)": "brand|model|compatible_with|purchase_year|bill_available|condition",
+      "Review path ID (not DB ID)": "path-df038f780662819c",
+      "Source": "india_categories.csv:5"
+    },
+    {
+      "CSV line": 6,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Chargers & Cables",
+      "key_fields (source; original order)": "brand|compatible_model|condition|bill_available",
+      "Review path ID (not DB ID)": "path-76001b459e52fa6f",
+      "Source": "india_categories.csv:6"
+    },
+    {
+      "CSV line": 7,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Power Banks",
+      "key_fields (source; original order)": "brand|capacity_mah|condition|bill_available",
+      "Review path ID (not DB ID)": "path-f279c6e60abf4375",
+      "Source": "india_categories.csv:7"
+    },
+    {
+      "CSV line": 8,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Earphones & Headphones",
+      "key_fields (source; original order)": "brand|model|type|condition|bill_available",
+      "Review path ID (not DB ID)": "path-3fe827f3eb3958e0",
+      "Source": "india_categories.csv:8"
+    },
+    {
+      "CSV line": 9,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Cases & Covers",
+      "key_fields (source; original order)": "brand|compatible_model|condition",
+      "Review path ID (not DB ID)": "path-14fbab1e1b169b0a",
+      "Source": "india_categories.csv:9"
+    },
+    {
+      "CSV line": 10,
+      "category (source)": "Goods",
+      "subcategory (source)": "Mobiles & Tablets",
+      "sub_subcategory (source)": "Memory Cards & Pen Drives",
+      "key_fields (source; original order)": "brand|capacity_gb|condition",
+      "Review path ID (not DB ID)": "path-60c4d6281bd906c1",
+      "Source": "india_categories.csv:10"
+    },
+    {
+      "CSV line": 11,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Laptops",
+      "key_fields (source; original order)": "brand|model|processor|ram_gb|storage_gb|storage_type|screen_inches|purchase_year|warranty_left|bill_available|condition",
+      "Review path ID (not DB ID)": "path-cf6a88b3d99dfe45",
+      "Source": "india_categories.csv:11"
+    },
+    {
+      "CSV line": 12,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Desktop Computers",
+      "key_fields (source; original order)": "brand|processor|ram_gb|storage_gb|includes_monitor|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-5132aad95b669b4e",
+      "Source": "india_categories.csv:12"
+    },
+    {
+      "CSV line": 13,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Monitors",
+      "key_fields (source; original order)": "brand|screen_inches|resolution|panel_type|refresh_rate|condition",
+      "Review path ID (not DB ID)": "path-fa40a464d9bcd0d6",
+      "Source": "india_categories.csv:13"
+    },
+    {
+      "CSV line": 14,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Printers & Scanners",
+      "key_fields (source; original order)": "brand|model|type|connectivity|condition",
+      "Review path ID (not DB ID)": "path-9e235d65d7b91705",
+      "Source": "india_categories.csv:14"
+    },
+    {
+      "CSV line": 15,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Keyboards & Mice",
+      "key_fields (source; original order)": "brand|model|connectivity|condition",
+      "Review path ID (not DB ID)": "path-28965aa155f30d34",
+      "Source": "india_categories.csv:15"
+    },
+    {
+      "CSV line": 16,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Routers & Networking",
+      "key_fields (source; original order)": "brand|model|type|condition",
+      "Review path ID (not DB ID)": "path-8ae264cc411e6d29",
+      "Source": "india_categories.csv:16"
+    },
+    {
+      "CSV line": 17,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Laptop Accessories",
+      "key_fields (source; original order)": "brand|compatible_model|type|condition",
+      "Review path ID (not DB ID)": "path-4fc2bdb0746acc22",
+      "Source": "india_categories.csv:17"
+    },
+    {
+      "CSV line": 18,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "RAM & Storage Drives",
+      "key_fields (source; original order)": "brand|model|capacity|type|purchase_year|warranty_left|condition",
+      "Review path ID (not DB ID)": "path-ac08b10867e82a11",
+      "Source": "india_categories.csv:18"
+    },
+    {
+      "CSV line": 19,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Graphics Cards & Processors",
+      "key_fields (source; original order)": "brand|model|purchase_year|warranty_left|bill_available|condition",
+      "Review path ID (not DB ID)": "path-2dd9244da0c003c4",
+      "Source": "india_categories.csv:19"
+    },
+    {
+      "CSV line": 20,
+      "category (source)": "Goods",
+      "subcategory (source)": "Computers & Laptops",
+      "sub_subcategory (source)": "Cabinets & Power Supplies",
+      "key_fields (source; original order)": "brand|model|wattage|condition",
+      "Review path ID (not DB ID)": "path-b6ec266842135f3c",
+      "Source": "india_categories.csv:20"
+    },
+    {
+      "CSV line": 21,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Televisions",
+      "key_fields (source; original order)": "brand|screen_inches|display_type|smart_tv|resolution|purchase_year|bill_available|condition",
+      "Review path ID (not DB ID)": "path-3e520dd018ca58bc",
+      "Source": "india_categories.csv:21"
+    },
+    {
+      "CSV line": 22,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Home Theatre & Soundbars",
+      "key_fields (source; original order)": "brand|model|channels|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-dc655fb9eef325da",
+      "Source": "india_categories.csv:22"
+    },
+    {
+      "CSV line": 23,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Bluetooth & Party Speakers",
+      "key_fields (source; original order)": "brand|model|purchase_year|bill_available|condition",
+      "Review path ID (not DB ID)": "path-3e04ec05ef10daf7",
+      "Source": "india_categories.csv:23"
+    },
+    {
+      "CSV line": 24,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "DSLR & Mirrorless Cameras",
+      "key_fields (source; original order)": "brand|model|shutter_count|lens_included|purchase_year|bill_available|condition",
+      "Review path ID (not DB ID)": "path-eb5556e9367161b4",
+      "Source": "india_categories.csv:24"
+    },
+    {
+      "CSV line": 25,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Point & Shoot Cameras",
+      "key_fields (source; original order)": "brand|model|purchase_year|bill_available|condition",
+      "Review path ID (not DB ID)": "path-ee7f893b44faddb0",
+      "Source": "india_categories.csv:25"
+    },
+    {
+      "CSV line": 26,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Action Cameras & Drones",
+      "key_fields (source; original order)": "brand|model|purchase_year|bill_available|condition",
+      "Review path ID (not DB ID)": "path-a9ca9f93f8f69b83",
+      "Source": "india_categories.csv:26"
+    },
+    {
+      "CSV line": 27,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Camera Lenses & Accessories",
+      "key_fields (source; original order)": "brand|mount|focal_length|condition",
+      "Review path ID (not DB ID)": "path-e9612f300deb213f",
+      "Source": "india_categories.csv:27"
+    },
+    {
+      "CSV line": 28,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "CCTV & Security Cameras",
+      "key_fields (source; original order)": "brand|type|channels|condition",
+      "Review path ID (not DB ID)": "path-d8b1af2fb54ea8d1",
+      "Source": "india_categories.csv:28"
+    },
+    {
+      "CSV line": 29,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Projectors",
+      "key_fields (source; original order)": "brand|model|resolution|lamp_hours|condition",
+      "Review path ID (not DB ID)": "path-79f614eb8263d193",
+      "Source": "india_categories.csv:29"
+    },
+    {
+      "CSV line": 30,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Gaming Consoles",
+      "key_fields (source; original order)": "platform|model|storage|controllers_included|condition",
+      "Review path ID (not DB ID)": "path-b829e353f7b38e8b",
+      "Source": "india_categories.csv:30"
+    },
+    {
+      "CSV line": 31,
+      "category (source)": "Goods",
+      "subcategory (source)": "TVs Audio & Cameras",
+      "sub_subcategory (source)": "Video Games & Controllers",
+      "key_fields (source; original order)": "platform|title|condition",
+      "Review path ID (not DB ID)": "path-66821381c3e6ef3c",
+      "Source": "india_categories.csv:31"
+    },
+    {
+      "CSV line": 32,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Refrigerators",
+      "key_fields (source; original order)": "brand|capacity_litres|door_type|energy_star_rating|purchase_year|bill_available|condition",
+      "Review path ID (not DB ID)": "path-e811fc62b0768fa9",
+      "Source": "india_categories.csv:32"
+    },
+    {
+      "CSV line": 33,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Washing Machines",
+      "key_fields (source; original order)": "brand|capacity_kg|type|loading|energy_star_rating|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-7a6dddb8bd674ac8",
+      "Source": "india_categories.csv:33"
+    },
+    {
+      "CSV line": 34,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Air Conditioners",
+      "key_fields (source; original order)": "brand|tonnage|type|inverter|energy_star_rating|purchase_year|installation_included|bill_available|condition",
+      "Review path ID (not DB ID)": "path-6d725c488c89a6ba",
+      "Source": "india_categories.csv:34"
+    },
+    {
+      "CSV line": 35,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Air Coolers & Fans",
+      "key_fields (source; original order)": "brand|type|capacity|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-f7bc321dd1ad04cf",
+      "Source": "india_categories.csv:35"
+    },
+    {
+      "CSV line": 36,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Water Purifiers & RO",
+      "key_fields (source; original order)": "brand|type|capacity_litres|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-bcba8a2dba027f11",
+      "Source": "india_categories.csv:36"
+    },
+    {
+      "CSV line": 37,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Geysers & Water Heaters",
+      "key_fields (source; original order)": "brand|capacity_litres|type|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-675bf883e0f45a94",
+      "Source": "india_categories.csv:37"
+    },
+    {
+      "CSV line": 38,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Microwaves & OTG Ovens",
+      "key_fields (source; original order)": "brand|capacity_litres|type|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-28239f85b6297625",
+      "Source": "india_categories.csv:38"
+    },
+    {
+      "CSV line": 39,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Mixer Grinders & Juicers",
+      "key_fields (source; original order)": "brand|wattage|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-4e2a2f39606978c3",
+      "Source": "india_categories.csv:39"
+    },
+    {
+      "CSV line": 40,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Induction & Gas Stoves",
+      "key_fields (source; original order)": "brand|type|burners|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-ea7fe76d547a68ac",
+      "Source": "india_categories.csv:40"
+    },
+    {
+      "CSV line": 41,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Kitchen Chimneys & Hobs",
+      "key_fields (source; original order)": "brand|size_cm|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-03814b4b213ebc36",
+      "Source": "india_categories.csv:41"
+    },
+    {
+      "CSV line": 42,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Vacuum Cleaners & Irons",
+      "key_fields (source; original order)": "brand|type|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-a974a0be0862020a",
+      "Source": "india_categories.csv:42"
+    },
+    {
+      "CSV line": 43,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Inverters & Batteries",
+      "key_fields (source; original order)": "brand|capacity_va|battery_ah|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-196e859b551e1f2c",
+      "Source": "india_categories.csv:43"
+    },
+    {
+      "CSV line": 44,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Sewing Machines",
+      "key_fields (source; original order)": "brand|type|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-e5e38a211c07e6f7",
+      "Source": "india_categories.csv:44"
+    },
+    {
+      "CSV line": 45,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home Appliances",
+      "sub_subcategory (source)": "Air Purifiers & Room Heaters",
+      "key_fields (source; original order)": "brand|type|purchase_year|condition",
+      "Review path ID (not DB ID)": "path-a389ed740ed14ad1",
+      "Source": "india_categories.csv:45"
+    },
+    {
+      "CSV line": 46,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Sofas & Diwans",
+      "key_fields (source; original order)": "material|seating_capacity|color|dimensions|age_years|condition",
+      "Review path ID (not DB ID)": "path-f0beeeed59e17e93",
+      "Source": "india_categories.csv:46"
+    },
+    {
+      "CSV line": 47,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Beds & Mattresses",
+      "key_fields (source; original order)": "bed_size|material|mattress_included|storage_type|age_years|condition",
+      "Review path ID (not DB ID)": "path-a50a9150bd253d66",
+      "Source": "india_categories.csv:47"
+    },
+    {
+      "CSV line": 48,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Wardrobes & Cupboards",
+      "key_fields (source; original order)": "material|doors|dimensions|age_years|condition",
+      "Review path ID (not DB ID)": "path-013603d83ba3d270",
+      "Source": "india_categories.csv:48"
+    },
+    {
+      "CSV line": 49,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Dining Tables & Sets",
+      "key_fields (source; original order)": "material|seating_capacity|dimensions|age_years|condition",
+      "Review path ID (not DB ID)": "path-a4c792502c42c911",
+      "Source": "india_categories.csv:49"
+    },
+    {
+      "CSV line": 50,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Study & Coffee Tables",
+      "key_fields (source; original order)": "material|dimensions|age_years|condition",
+      "Review path ID (not DB ID)": "path-18e5567cccc4f9dc",
+      "Source": "india_categories.csv:50"
+    },
+    {
+      "CSV line": 51,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Chairs & Stools",
+      "key_fields (source; original order)": "material|type|quantity|condition",
+      "Review path ID (not DB ID)": "path-1330657630013604",
+      "Source": "india_categories.csv:51"
+    },
+    {
+      "CSV line": 52,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Bookshelves & TV Units",
+      "key_fields (source; original order)": "material|dimensions|age_years|condition",
+      "Review path ID (not DB ID)": "path-4656abacf362085d",
+      "Source": "india_categories.csv:52"
+    },
+    {
+      "CSV line": 53,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Office Furniture",
+      "key_fields (source; original order)": "type|material|quantity|age_years|condition",
+      "Review path ID (not DB ID)": "path-b2410f0e6c85702d",
+      "Source": "india_categories.csv:53"
+    },
+    {
+      "CSV line": 54,
+      "category (source)": "Goods",
+      "subcategory (source)": "Furniture",
+      "sub_subcategory (source)": "Outdoor & Balcony Furniture",
+      "key_fields (source; original order)": "material|quantity|condition",
+      "Review path ID (not DB ID)": "path-28a69c3ab9bcfaad",
+      "Source": "india_categories.csv:54"
+    },
+    {
+      "CSV line": 55,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home & Garden",
+      "sub_subcategory (source)": "Home Decor",
+      "key_fields (source; original order)": "type|material|condition",
+      "Review path ID (not DB ID)": "path-1f78b156e04aac4b",
+      "Source": "india_categories.csv:55"
+    },
+    {
+      "CSV line": 56,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home & Garden",
+      "sub_subcategory (source)": "Kitchenware & Utensils",
+      "key_fields (source; original order)": "type|material|quantity|condition",
+      "Review path ID (not DB ID)": "path-5bb9616acc657047",
+      "Source": "india_categories.csv:56"
+    },
+    {
+      "CSV line": 57,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home & Garden",
+      "sub_subcategory (source)": "Curtains & Bedsheets",
+      "key_fields (source; original order)": "type|size|quantity|condition",
+      "Review path ID (not DB ID)": "path-7b39ecbbaabbef58",
+      "Source": "india_categories.csv:57"
+    },
+    {
+      "CSV line": 58,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home & Garden",
+      "sub_subcategory (source)": "Carpets & Rugs",
+      "key_fields (source; original order)": "size|material|condition",
+      "Review path ID (not DB ID)": "path-a661da87a41c4381",
+      "Source": "india_categories.csv:58"
+    },
+    {
+      "CSV line": 59,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home & Garden",
+      "sub_subcategory (source)": "Lighting",
+      "key_fields (source; original order)": "type|quantity|condition",
+      "Review path ID (not DB ID)": "path-e797ee984ba2b89a",
+      "Source": "india_categories.csv:59"
+    },
+    {
+      "CSV line": 60,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home & Garden",
+      "sub_subcategory (source)": "Plants & Planters",
+      "key_fields (source; original order)": "type|size|quantity",
+      "Review path ID (not DB ID)": "path-06b2f46ba72d2356",
+      "Source": "india_categories.csv:60"
+    },
+    {
+      "CSV line": 61,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home & Garden",
+      "sub_subcategory (source)": "Pooja Items & Mandirs",
+      "key_fields (source; original order)": "type|material|condition",
+      "Review path ID (not DB ID)": "path-91359e681946dfaa",
+      "Source": "india_categories.csv:61"
+    },
+    {
+      "CSV line": 62,
+      "category (source)": "Goods",
+      "subcategory (source)": "Home & Garden",
+      "sub_subcategory (source)": "Power Tools & Hand Tools",
+      "key_fields (source; original order)": "brand|type|condition",
+      "Review path ID (not DB ID)": "path-f860c061bb57ac2b",
+      "Source": "india_categories.csv:62"
+    },
+    {
+      "CSV line": 63,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Men's T-shirts & Shirts",
+      "key_fields (source; original order)": "brand|size|color|condition|worn_times",
+      "Review path ID (not DB ID)": "path-7c5bb3feae256f1a",
+      "Source": "india_categories.csv:63"
+    },
+    {
+      "CSV line": 64,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Men's Jeans & Trousers",
+      "key_fields (source; original order)": "brand|waist_size|color|condition|worn_times",
+      "Review path ID (not DB ID)": "path-239201be6564b641",
+      "Source": "india_categories.csv:64"
+    },
+    {
+      "CSV line": 65,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Men's Ethnic Wear",
+      "key_fields (source; original order)": "brand|type|size|occasion|condition",
+      "Review path ID (not DB ID)": "path-3ec7c8edd761312d",
+      "Source": "india_categories.csv:65"
+    },
+    {
+      "CSV line": 66,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Men's Suits & Blazers",
+      "key_fields (source; original order)": "brand|size|color|condition",
+      "Review path ID (not DB ID)": "path-fa9eea7ff5d36d77",
+      "Source": "india_categories.csv:66"
+    },
+    {
+      "CSV line": 67,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Men's Winter Wear",
+      "key_fields (source; original order)": "brand|type|size|condition",
+      "Review path ID (not DB ID)": "path-03b2f6a0fbd30a1f",
+      "Source": "india_categories.csv:67"
+    },
+    {
+      "CSV line": 68,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Women's Sarees",
+      "key_fields (source; original order)": "brand|fabric|occasion|condition",
+      "Review path ID (not DB ID)": "path-ec9e7454306f475c",
+      "Source": "india_categories.csv:68"
+    },
+    {
+      "CSV line": 69,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Women's Kurtas & Suits",
+      "key_fields (source; original order)": "brand|size|color|condition|worn_times",
+      "Review path ID (not DB ID)": "path-8d778d87b008531d",
+      "Source": "india_categories.csv:69"
+    },
+    {
+      "CSV line": 70,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Women's Lehengas & Gowns",
+      "key_fields (source; original order)": "brand|size|color|occasion|condition",
+      "Review path ID (not DB ID)": "path-797880019162f8b5",
+      "Source": "india_categories.csv:70"
+    },
+    {
+      "CSV line": 71,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Women's Western Wear",
+      "key_fields (source; original order)": "brand|size|color|condition|worn_times",
+      "Review path ID (not DB ID)": "path-ed653c10e2c576c5",
+      "Source": "india_categories.csv:71"
+    },
+    {
+      "CSV line": 72,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Women's Winter Wear",
+      "key_fields (source; original order)": "brand|type|size|condition",
+      "Review path ID (not DB ID)": "path-2c6f826c24a6e0fc",
+      "Source": "india_categories.csv:72"
+    },
+    {
+      "CSV line": 73,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Men's Footwear",
+      "key_fields (source; original order)": "brand|size_uk|color|condition",
+      "Review path ID (not DB ID)": "path-f3bb8c355504e688",
+      "Source": "india_categories.csv:73"
+    },
+    {
+      "CSV line": 74,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Women's Footwear",
+      "key_fields (source; original order)": "brand|size_uk|color|condition",
+      "Review path ID (not DB ID)": "path-35c8d5ef4947f960",
+      "Source": "india_categories.csv:74"
+    },
+    {
+      "CSV line": 75,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Handbags & Backpacks",
+      "key_fields (source; original order)": "brand|type|color|condition",
+      "Review path ID (not DB ID)": "path-89359b146587b0fd",
+      "Source": "india_categories.csv:75"
+    },
+    {
+      "CSV line": 76,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Travel Luggage",
+      "key_fields (source; original order)": "brand|size|type|condition",
+      "Review path ID (not DB ID)": "path-ece6fb6e5310140e",
+      "Source": "india_categories.csv:76"
+    },
+    {
+      "CSV line": 77,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Watches",
+      "key_fields (source; original order)": "brand|type|gender|condition|bill_available",
+      "Review path ID (not DB ID)": "path-61a21cf69167be55",
+      "Source": "india_categories.csv:77"
+    },
+    {
+      "CSV line": 78,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Fashion Jewellery",
+      "key_fields (source; original order)": "type|material|condition",
+      "Review path ID (not DB ID)": "path-63c5e13c85dddfcb",
+      "Source": "india_categories.csv:78"
+    },
+    {
+      "CSV line": 79,
+      "category (source)": "Goods",
+      "subcategory (source)": "Fashion",
+      "sub_subcategory (source)": "Sunglasses Belts & Wallets",
+      "key_fields (source; original order)": "brand|type|condition",
+      "Review path ID (not DB ID)": "path-ed206b40360d3bda",
+      "Source": "india_categories.csv:79"
+    },
+    {
+      "CSV line": 80,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "Strollers & Prams",
+      "key_fields (source; original order)": "brand|age_group|age_years|condition",
+      "Review path ID (not DB ID)": "path-d09f7462253def7b",
+      "Source": "india_categories.csv:80"
+    },
+    {
+      "CSV line": 81,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "Car Seats",
+      "key_fields (source; original order)": "brand|age_group|age_years|condition",
+      "Review path ID (not DB ID)": "path-8feae1fcd250ccb6",
+      "Source": "india_categories.csv:81"
+    },
+    {
+      "CSV line": 82,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "Cribs & Cradles",
+      "key_fields (source; original order)": "brand|material|age_years|condition",
+      "Review path ID (not DB ID)": "path-969d8ef1734b340e",
+      "Source": "india_categories.csv:82"
+    },
+    {
+      "CSV line": 83,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "Walkers & Bouncers",
+      "key_fields (source; original order)": "brand|age_group|condition",
+      "Review path ID (not DB ID)": "path-4f15c3137739ca58",
+      "Source": "india_categories.csv:83"
+    },
+    {
+      "CSV line": 84,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "Toys & Games",
+      "key_fields (source; original order)": "brand|age_group|type|condition",
+      "Review path ID (not DB ID)": "path-e430a5664cd29784",
+      "Source": "india_categories.csv:84"
+    },
+    {
+      "CSV line": 85,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "Ride-ons & Kids Cycles",
+      "key_fields (source; original order)": "brand|age_group|condition",
+      "Review path ID (not DB ID)": "path-c770d3e46e8b9d3d",
+      "Source": "india_categories.csv:85"
+    },
+    {
+      "CSV line": 86,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "Kids Clothing",
+      "key_fields (source; original order)": "gender|age_group|size|brand|condition",
+      "Review path ID (not DB ID)": "path-f3f50daf8276d885",
+      "Source": "india_categories.csv:86"
+    },
+    {
+      "CSV line": 87,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "Kids Furniture",
+      "key_fields (source; original order)": "type|material|age_group|condition",
+      "Review path ID (not DB ID)": "path-d029ab89eb5af703",
+      "Source": "india_categories.csv:87"
+    },
+    {
+      "CSV line": 88,
+      "category (source)": "Goods",
+      "subcategory (source)": "Kids & Baby",
+      "sub_subcategory (source)": "School Bags & Uniforms",
+      "key_fields (source; original order)": "type|school_or_board|size|condition",
+      "Review path ID (not DB ID)": "path-2229c772cbd158c8",
+      "Source": "india_categories.csv:88"
+    },
+    {
+      "CSV line": 89,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "Class 1-12 Textbooks",
+      "key_fields (source; original order)": "title|author|class|board|edition|condition",
+      "Review path ID (not DB ID)": "path-1960386843e17969",
+      "Source": "india_categories.csv:89"
+    },
+    {
+      "CSV line": 90,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "College & Engineering Books",
+      "key_fields (source; original order)": "title|author|course|university|edition|condition",
+      "Review path ID (not DB ID)": "path-012d092a0672db1d",
+      "Source": "india_categories.csv:90"
+    },
+    {
+      "CSV line": 91,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "Medical & Nursing Books",
+      "key_fields (source; original order)": "title|author|course|edition|condition",
+      "Review path ID (not DB ID)": "path-a25318f4a6ade5a9",
+      "Source": "india_categories.csv:91"
+    },
+    {
+      "CSV line": 92,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "Commerce Law & Management Books",
+      "key_fields (source; original order)": "title|author|course|edition|condition",
+      "Review path ID (not DB ID)": "path-e52da67dd18e659d",
+      "Source": "india_categories.csv:92"
+    },
+    {
+      "CSV line": 93,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "JEE & NEET Preparation",
+      "key_fields (source; original order)": "title|author|exam|edition_year|condition",
+      "Review path ID (not DB ID)": "path-337e86cff3a4e5c0",
+      "Source": "india_categories.csv:93"
+    },
+    {
+      "CSV line": 94,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "UPSC & State PSC Preparation",
+      "key_fields (source; original order)": "title|author|exam|edition_year|language|condition",
+      "Review path ID (not DB ID)": "path-1a97d6b2db3be0b6",
+      "Source": "india_categories.csv:94"
+    },
+    {
+      "CSV line": 95,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "SSC Banking & Railway Preparation",
+      "key_fields (source; original order)": "title|author|exam|edition_year|language|condition",
+      "Review path ID (not DB ID)": "path-42dc31bcfab154a6",
+      "Source": "india_categories.csv:95"
+    },
+    {
+      "CSV line": 96,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "CAT GATE & Other Exams",
+      "key_fields (source; original order)": "title|author|exam|edition_year|condition",
+      "Review path ID (not DB ID)": "path-1d40a2b30d3d35fa",
+      "Source": "india_categories.csv:96"
+    },
+    {
+      "CSV line": 97,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "Novels & Fiction",
+      "key_fields (source; original order)": "title|author|language|condition",
+      "Review path ID (not DB ID)": "path-bb55a07f1dd14ab4",
+      "Source": "india_categories.csv:97"
+    },
+    {
+      "CSV line": 98,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "Non-fiction & Self-help",
+      "key_fields (source; original order)": "title|author|language|condition",
+      "Review path ID (not DB ID)": "path-c9b2a3bc5285f193",
+      "Source": "india_categories.csv:98"
+    },
+    {
+      "CSV line": 99,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "Regional Language Books",
+      "key_fields (source; original order)": "title|author|language|condition",
+      "Review path ID (not DB ID)": "path-2bed1e054f0ea16d",
+      "Source": "india_categories.csv:99"
+    },
+    {
+      "CSV line": 100,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "Comics & Magazines",
+      "key_fields (source; original order)": "title|issue_or_volume|language|condition",
+      "Review path ID (not DB ID)": "path-9c61fa76a6a9bcc1",
+      "Source": "india_categories.csv:100"
+    },
+    {
+      "CSV line": 101,
+      "category (source)": "Goods",
+      "subcategory (source)": "Books & Education",
+      "sub_subcategory (source)": "Coaching Notes & Study Material",
+      "key_fields (source; original order)": "subject|exam_or_class|institute|condition",
+      "Review path ID (not DB ID)": "path-0b686b09dd1b4593",
+      "Source": "india_categories.csv:101"
+    },
+    {
+      "CSV line": 102,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Treadmills & Exercise Bikes",
+      "key_fields (source; original order)": "brand|type|motorised|age_years|condition",
+      "Review path ID (not DB ID)": "path-bc31606391959726",
+      "Source": "india_categories.csv:102"
+    },
+    {
+      "CSV line": 103,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Weights Dumbbells & Home Gyms",
+      "key_fields (source; original order)": "brand|weight_kg|type|condition",
+      "Review path ID (not DB ID)": "path-dd944b168ff3cff7",
+      "Source": "india_categories.csv:103"
+    },
+    {
+      "CSV line": 104,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Yoga & Fitness Accessories",
+      "key_fields (source; original order)": "type|brand|condition",
+      "Review path ID (not DB ID)": "path-a1cc5e437efa5fcb",
+      "Source": "india_categories.csv:104"
+    },
+    {
+      "CSV line": 105,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Cricket Equipment",
+      "key_fields (source; original order)": "brand|type|size|condition",
+      "Review path ID (not DB ID)": "path-7fbbf03583b1ad33",
+      "Source": "india_categories.csv:105"
+    },
+    {
+      "CSV line": 106,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Badminton Tennis & Table Tennis",
+      "key_fields (source; original order)": "brand|type|condition",
+      "Review path ID (not DB ID)": "path-8d697f8fe256771d",
+      "Source": "india_categories.csv:106"
+    },
+    {
+      "CSV line": 107,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Football & Team Sports",
+      "key_fields (source; original order)": "brand|type|condition",
+      "Review path ID (not DB ID)": "path-ced6666a080de1c7",
+      "Source": "india_categories.csv:107"
+    },
+    {
+      "CSV line": 108,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Carrom Chess & Indoor Games",
+      "key_fields (source; original order)": "type|brand|condition",
+      "Review path ID (not DB ID)": "path-6e01054b6091558d",
+      "Source": "india_categories.csv:108"
+    },
+    {
+      "CSV line": 109,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Trekking & Camping Gear",
+      "key_fields (source; original order)": "brand|type|condition",
+      "Review path ID (not DB ID)": "path-be35ee0f53f215f3",
+      "Source": "india_categories.csv:109"
+    },
+    {
+      "CSV line": 110,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Skating & Skateboards",
+      "key_fields (source; original order)": "brand|size|condition",
+      "Review path ID (not DB ID)": "path-0f7f9b978fbd99e3",
+      "Source": "india_categories.csv:110"
+    },
+    {
+      "CSV line": 111,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Guitars & String Instruments",
+      "key_fields (source; original order)": "brand|type|age_years|condition",
+      "Review path ID (not DB ID)": "path-d332e85d01a17bec",
+      "Source": "india_categories.csv:111"
+    },
+    {
+      "CSV line": 112,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Keyboards & Pianos",
+      "key_fields (source; original order)": "brand|model|keys|age_years|condition",
+      "Review path ID (not DB ID)": "path-cd3173533b204c1d",
+      "Source": "india_categories.csv:112"
+    },
+    {
+      "CSV line": 113,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Harmonium Tabla & Indian Instruments",
+      "key_fields (source; original order)": "type|brand|age_years|condition",
+      "Review path ID (not DB ID)": "path-b7c8ef33b20d856f",
+      "Source": "india_categories.csv:113"
+    },
+    {
+      "CSV line": 114,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Drums & Percussion",
+      "key_fields (source; original order)": "brand|type|age_years|condition",
+      "Review path ID (not DB ID)": "path-01d76621b459b824",
+      "Source": "india_categories.csv:114"
+    },
+    {
+      "CSV line": 115,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Art & Craft Supplies",
+      "key_fields (source; original order)": "type|brand|condition",
+      "Review path ID (not DB ID)": "path-a2b59572ee666196",
+      "Source": "india_categories.csv:115"
+    },
+    {
+      "CSV line": 116,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Coins Stamps & Collectibles",
+      "key_fields (source; original order)": "type|year|condition",
+      "Review path ID (not DB ID)": "path-e8ff9aa1e1e1f765",
+      "Source": "india_categories.csv:116"
+    },
+    {
+      "CSV line": 117,
+      "category (source)": "Goods",
+      "subcategory (source)": "Sports Fitness & Hobbies",
+      "sub_subcategory (source)": "Antiques",
+      "key_fields (source; original order)": "type|age_years|condition",
+      "Review path ID (not DB ID)": "path-a50801f74abb3a9a",
+      "Source": "india_categories.csv:117"
+    },
+    {
+      "CSV line": 118,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Office Equipment",
+      "key_fields (source; original order)": "type|brand|age_years|condition|bill_available",
+      "Review path ID (not DB ID)": "path-0a75fe96768adcf3",
+      "Source": "india_categories.csv:118"
+    },
+    {
+      "CSV line": 119,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Shop Fittings & Display Racks",
+      "key_fields (source; original order)": "type|material|quantity|condition",
+      "Review path ID (not DB ID)": "path-df4fb9568cbfb2ea",
+      "Source": "india_categories.csv:119"
+    },
+    {
+      "CSV line": 120,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Commercial Kitchen Equipment",
+      "key_fields (source; original order)": "type|brand|capacity|age_years|condition",
+      "Review path ID (not DB ID)": "path-43849a573f1cc4ad",
+      "Source": "india_categories.csv:120"
+    },
+    {
+      "CSV line": 121,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Billing & POS Machines",
+      "key_fields (source; original order)": "brand|model|type|condition",
+      "Review path ID (not DB ID)": "path-92b38d106b638908",
+      "Source": "india_categories.csv:121"
+    },
+    {
+      "CSV line": 122,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Deep Freezers & Commercial Refrigeration",
+      "key_fields (source; original order)": "brand|capacity_litres|age_years|condition",
+      "Review path ID (not DB ID)": "path-055df7f164e749cc",
+      "Source": "india_categories.csv:122"
+    },
+    {
+      "CSV line": 123,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Industrial Machinery",
+      "key_fields (source; original order)": "type|brand|model|capacity|age_years|condition",
+      "Review path ID (not DB ID)": "path-740890ec46341749",
+      "Source": "india_categories.csv:123"
+    },
+    {
+      "CSV line": 124,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Generators & Solar Panels",
+      "key_fields (source; original order)": "type|brand|capacity|age_years|condition",
+      "Review path ID (not DB ID)": "path-a908c694cd7f6548",
+      "Source": "india_categories.csv:124"
+    },
+    {
+      "CSV line": 125,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Voltage Stabilizers",
+      "key_fields (source; original order)": "brand|capacity_kva|condition",
+      "Review path ID (not DB ID)": "path-f48492260d660ece",
+      "Source": "india_categories.csv:125"
+    },
+    {
+      "CSV line": 126,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Agricultural Equipment & Pumps",
+      "key_fields (source; original order)": "type|brand|capacity|age_years|condition",
+      "Review path ID (not DB ID)": "path-9d72d0eafe5496ca",
+      "Source": "india_categories.csv:126"
+    },
+    {
+      "CSV line": 127,
+      "category (source)": "Goods",
+      "subcategory (source)": "Business & Industrial",
+      "sub_subcategory (source)": "Medical & Lab Equipment",
+      "key_fields (source; original order)": "type|brand|age_years|condition",
+      "Review path ID (not DB ID)": "path-0ff59c1eb4e533fb",
+      "Source": "india_categories.csv:127"
+    },
+    {
+      "CSV line": 128,
+      "category (source)": "Goods",
+      "subcategory (source)": "Pet Supplies",
+      "sub_subcategory (source)": "Pet Food",
+      "key_fields (source; original order)": "brand|pet_type|quantity|expiry_date",
+      "Review path ID (not DB ID)": "path-2769a0cf28e7a228",
+      "Source": "india_categories.csv:128"
+    },
+    {
+      "CSV line": 129,
+      "category (source)": "Goods",
+      "subcategory (source)": "Pet Supplies",
+      "sub_subcategory (source)": "Cages Kennels & Aquariums",
+      "key_fields (source; original order)": "type|pet_type|size|condition",
+      "Review path ID (not DB ID)": "path-0a61aeb1477601de",
+      "Source": "india_categories.csv:129"
+    },
+    {
+      "CSV line": 130,
+      "category (source)": "Goods",
+      "subcategory (source)": "Pet Supplies",
+      "sub_subcategory (source)": "Pet Accessories",
+      "key_fields (source; original order)": "type|pet_type|condition",
+      "Review path ID (not DB ID)": "path-374ff5c14cfff142",
+      "Source": "india_categories.csv:130"
+    },
+    {
+      "CSV line": 131,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "Hatchback",
+      "key_fields (source; original order)": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-78f90186479f9657",
+      "Source": "india_categories.csv:131"
+    },
+    {
+      "CSV line": 132,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "Sedan",
+      "key_fields (source; original order)": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-150ba65e4aa6fc6c",
+      "Source": "india_categories.csv:132"
+    },
+    {
+      "CSV line": 133,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "Compact SUV",
+      "key_fields (source; original order)": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-361117cde35f351d",
+      "Source": "india_categories.csv:133"
+    },
+    {
+      "CSV line": 134,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "SUV",
+      "key_fields (source; original order)": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-1836a63c1a3c00cf",
+      "Source": "india_categories.csv:134"
+    },
+    {
+      "CSV line": 135,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "MUV & MPV",
+      "key_fields (source; original order)": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|seating_capacity|registration_state|insurance_valid_till|price|negotiable",
+      "Review path ID (not DB ID)": "path-3ac1a0818da22f1c",
+      "Source": "india_categories.csv:135"
+    },
+    {
+      "CSV line": 136,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "Luxury Cars",
+      "key_fields (source; original order)": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|price|negotiable",
+      "Review path ID (not DB ID)": "path-d674b6dc80bf30d0",
+      "Source": "india_categories.csv:136"
+    },
+    {
+      "CSV line": 137,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "Coupe & Convertible",
+      "key_fields (source; original order)": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|price|negotiable",
+      "Review path ID (not DB ID)": "path-0f337f0c38643602",
+      "Source": "india_categories.csv:137"
+    },
+    {
+      "CSV line": 138,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "Electric & Hybrid Cars",
+      "key_fields (source; original order)": "brand|model|variant|year|battery_capacity_kwh|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable",
+      "Review path ID (not DB ID)": "path-75a79f3272db1bb9",
+      "Source": "india_categories.csv:138"
+    },
+    {
+      "CSV line": 139,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Cars",
+      "sub_subcategory (source)": "Vintage & Classic Cars",
+      "key_fields (source; original order)": "brand|model|year|km_driven|owner_number|registration_state|condition|price",
+      "Review path ID (not DB ID)": "path-f5df406b71f4c774",
+      "Source": "india_categories.csv:139"
+    },
+    {
+      "CSV line": 140,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Motorcycles",
+      "sub_subcategory (source)": "Commuter Bikes",
+      "key_fields (source; original order)": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-0d4ade60eaf524f4",
+      "Source": "india_categories.csv:140"
+    },
+    {
+      "CSV line": 141,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Motorcycles",
+      "sub_subcategory (source)": "Sports & Superbikes",
+      "key_fields (source; original order)": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-baf845e73080c481",
+      "Source": "india_categories.csv:141"
+    },
+    {
+      "CSV line": 142,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Motorcycles",
+      "sub_subcategory (source)": "Cruiser Bikes",
+      "key_fields (source; original order)": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-f117e1953c446dab",
+      "Source": "india_categories.csv:142"
+    },
+    {
+      "CSV line": 143,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Motorcycles",
+      "sub_subcategory (source)": "Adventure & Touring Bikes",
+      "key_fields (source; original order)": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-379b3735c697d70d",
+      "Source": "india_categories.csv:143"
+    },
+    {
+      "CSV line": 144,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Motorcycles",
+      "sub_subcategory (source)": "Classic & Retro Bikes",
+      "key_fields (source; original order)": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-021767888f7998d3",
+      "Source": "india_categories.csv:144"
+    },
+    {
+      "CSV line": 145,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Motorcycles",
+      "sub_subcategory (source)": "Electric Motorcycles",
+      "key_fields (source; original order)": "brand|model|year|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable",
+      "Review path ID (not DB ID)": "path-3766e7a52b451847",
+      "Source": "india_categories.csv:145"
+    },
+    {
+      "CSV line": 146,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Scooters",
+      "sub_subcategory (source)": "Petrol Scooters",
+      "key_fields (source; original order)": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable",
+      "Review path ID (not DB ID)": "path-40b32d073cea4078",
+      "Source": "india_categories.csv:146"
+    },
+    {
+      "CSV line": 147,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Scooters",
+      "sub_subcategory (source)": "Electric Scooters",
+      "key_fields (source; original order)": "brand|model|year|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable",
+      "Review path ID (not DB ID)": "path-558c76d6a00c36b4",
+      "Source": "india_categories.csv:147"
+    },
+    {
+      "CSV line": 148,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Scooters",
+      "sub_subcategory (source)": "Maxi Scooters & Mopeds",
+      "key_fields (source; original order)": "brand|model|year|engine_cc|km_driven|owner_number|registration_state|price|negotiable",
+      "Review path ID (not DB ID)": "path-6ce79b6f2c87f75d",
+      "Source": "india_categories.csv:148"
+    },
+    {
+      "CSV line": 149,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Bicycles",
+      "sub_subcategory (source)": "Geared Cycles",
+      "key_fields (source; original order)": "brand|gear_count|frame_size|age_years|condition|price",
+      "Review path ID (not DB ID)": "path-7c7b8404f45fa5e3",
+      "Source": "india_categories.csv:149"
+    },
+    {
+      "CSV line": 150,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Bicycles",
+      "sub_subcategory (source)": "Non-geared Cycles",
+      "key_fields (source; original order)": "brand|size_inches|age_years|condition|price",
+      "Review path ID (not DB ID)": "path-7a859619a413732f",
+      "Source": "india_categories.csv:150"
+    },
+    {
+      "CSV line": 151,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Bicycles",
+      "sub_subcategory (source)": "Kids Cycles",
+      "key_fields (source; original order)": "brand|age_group|size_inches|condition|price",
+      "Review path ID (not DB ID)": "path-4bc3407d062cd609",
+      "Source": "india_categories.csv:151"
+    },
+    {
+      "CSV line": 152,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Bicycles",
+      "sub_subcategory (source)": "Electric Cycles",
+      "key_fields (source; original order)": "brand|range_km|battery_warranty_left|age_years|condition|price",
+      "Review path ID (not DB ID)": "path-98cd8efb7b9d8611",
+      "Source": "india_categories.csv:152"
+    },
+    {
+      "CSV line": 153,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Bicycles",
+      "sub_subcategory (source)": "Cycle Parts & Accessories",
+      "key_fields (source; original order)": "type|brand|condition",
+      "Review path ID (not DB ID)": "path-4c206b80dbb23e19",
+      "Source": "india_categories.csv:153"
+    },
+    {
+      "CSV line": 154,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Commercial Vehicles",
+      "sub_subcategory (source)": "Auto Rickshaws",
+      "key_fields (source; original order)": "brand|model|year|fuel_type|km_driven|owner_number|registration_state|permit_type|price",
+      "Review path ID (not DB ID)": "path-21d297d14a276a23",
+      "Source": "india_categories.csv:154"
+    },
+    {
+      "CSV line": 155,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Commercial Vehicles",
+      "sub_subcategory (source)": "E-Rickshaws",
+      "key_fields (source; original order)": "brand|model|year|battery_type|battery_warranty_left|registration_state|price",
+      "Review path ID (not DB ID)": "path-aff80e088ec9c8de",
+      "Source": "india_categories.csv:155"
+    },
+    {
+      "CSV line": 156,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Commercial Vehicles",
+      "sub_subcategory (source)": "Mini Trucks & Pickups",
+      "key_fields (source; original order)": "brand|model|year|payload_tons|fuel_type|km_driven|owner_number|registration_state|permit_type|fitness_valid_till|price",
+      "Review path ID (not DB ID)": "path-5c5ca6467e0ca3c8",
+      "Source": "india_categories.csv:156"
+    },
+    {
+      "CSV line": 157,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Commercial Vehicles",
+      "sub_subcategory (source)": "Trucks & Tippers",
+      "key_fields (source; original order)": "brand|model|year|payload_tons|axle_config|km_driven|owner_number|registration_state|permit_type|fitness_valid_till|price",
+      "Review path ID (not DB ID)": "path-c62a92c5ff065c51",
+      "Source": "india_categories.csv:157"
+    },
+    {
+      "CSV line": 158,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Commercial Vehicles",
+      "sub_subcategory (source)": "Buses & Vans",
+      "key_fields (source; original order)": "brand|model|year|seating_capacity|fuel_type|km_driven|owner_number|registration_state|permit_type|price",
+      "Review path ID (not DB ID)": "path-4026e1520d2dfab6",
+      "Source": "india_categories.csv:158"
+    },
+    {
+      "CSV line": 159,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Commercial Vehicles",
+      "sub_subcategory (source)": "Tractors & Farm Vehicles",
+      "key_fields (source; original order)": "brand|model|year|horsepower|hours_used|owner_number|registration_state|price",
+      "Review path ID (not DB ID)": "path-6787ae2646e4e12b",
+      "Source": "india_categories.csv:159"
+    },
+    {
+      "CSV line": 160,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Commercial Vehicles",
+      "sub_subcategory (source)": "Construction Vehicles",
+      "key_fields (source; original order)": "brand|model|year|type|hours_used|price",
+      "Review path ID (not DB ID)": "path-cc63765ed459c82e",
+      "Source": "india_categories.csv:160"
+    },
+    {
+      "CSV line": 161,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Car Tyres & Alloy Wheels",
+      "key_fields (source; original order)": "brand|size|compatible_models|condition",
+      "Review path ID (not DB ID)": "path-f69d9a4cd902aad9",
+      "Source": "india_categories.csv:161"
+    },
+    {
+      "CSV line": 162,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Car Batteries & Electricals",
+      "key_fields (source; original order)": "brand|capacity_ah|condition|warranty_left",
+      "Review path ID (not DB ID)": "path-a3cdf3554cb43e0b",
+      "Source": "india_categories.csv:162"
+    },
+    {
+      "CSV line": 163,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Car Audio & Infotainment",
+      "key_fields (source; original order)": "brand|compatible_model|condition",
+      "Review path ID (not DB ID)": "path-b79341a71b931c77",
+      "Source": "india_categories.csv:163"
+    },
+    {
+      "CSV line": 164,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Car Seat Covers & Interiors",
+      "key_fields (source; original order)": "brand|compatible_model|condition",
+      "Review path ID (not DB ID)": "path-f7d36493a1fce7cf",
+      "Source": "india_categories.csv:164"
+    },
+    {
+      "CSV line": 165,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Car Body Parts & Lights",
+      "key_fields (source; original order)": "brand|compatible_make_model|part_type|condition",
+      "Review path ID (not DB ID)": "path-8cdc6c67abffd8dc",
+      "Source": "india_categories.csv:165"
+    },
+    {
+      "CSV line": 166,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Bike Helmets & Riding Gear",
+      "key_fields (source; original order)": "brand|size|type|condition",
+      "Review path ID (not DB ID)": "path-f65e2d36c63f0b2e",
+      "Source": "india_categories.csv:166"
+    },
+    {
+      "CSV line": 167,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Bike Tyres & Spare Parts",
+      "key_fields (source; original order)": "brand|compatible_make_model|part_type|condition",
+      "Review path ID (not DB ID)": "path-872f28f4f4ee4876",
+      "Source": "india_categories.csv:167"
+    },
+    {
+      "CSV line": 168,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Bike Accessories",
+      "key_fields (source; original order)": "brand|compatible_make_model|type|condition",
+      "Review path ID (not DB ID)": "path-24f69e00d0563ecf",
+      "Source": "india_categories.csv:168"
+    },
+    {
+      "CSV line": 169,
+      "category (source)": "Vehicles",
+      "subcategory (source)": "Vehicle Parts & Accessories",
+      "sub_subcategory (source)": "Engines & Gearboxes",
+      "key_fields (source; original order)": "brand|compatible_make_model|year|condition",
+      "Review path ID (not DB ID)": "path-c104aae0b1c7388d",
+      "Source": "india_categories.csv:169"
+    },
+    {
+      "CSV line": 170,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Sale",
+      "sub_subcategory (source)": "Apartment or Flat",
+      "key_fields (source; original order)": "bhk|bathrooms|carpet_area_sqft|floor|total_floors|facing|furnishing|property_age|ownership_type|rera_id|society_name|locality|city|price|maintenance_monthly|parking",
+      "Review path ID (not DB ID)": "path-94cbca64cd18e938",
+      "Source": "india_categories.csv:170"
+    },
+    {
+      "CSV line": 171,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Sale",
+      "sub_subcategory (source)": "Independent House or Villa",
+      "key_fields (source; original order)": "bhk|bathrooms|plot_area|built_up_area_sqft|floors|facing|furnishing|property_age|ownership_type|rera_id|locality|city|price|parking",
+      "Review path ID (not DB ID)": "path-0920e5e15dee0d73",
+      "Source": "india_categories.csv:171"
+    },
+    {
+      "CSV line": 172,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Sale",
+      "sub_subcategory (source)": "Builder Floor",
+      "key_fields (source; original order)": "bhk|bathrooms|carpet_area_sqft|floor|total_floors|facing|furnishing|property_age|ownership_type|locality|city|price|parking",
+      "Review path ID (not DB ID)": "path-84b86d3d46faeac2",
+      "Source": "india_categories.csv:172"
+    },
+    {
+      "CSV line": 173,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Sale",
+      "sub_subcategory (source)": "Studio Apartment",
+      "key_fields (source; original order)": "carpet_area_sqft|floor|furnishing|property_age|ownership_type|society_name|locality|city|price",
+      "Review path ID (not DB ID)": "path-6c77a93af97c1fb5",
+      "Source": "india_categories.csv:173"
+    },
+    {
+      "CSV line": 174,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Sale",
+      "sub_subcategory (source)": "Penthouse",
+      "key_fields (source; original order)": "bhk|bathrooms|carpet_area_sqft|terrace_area_sqft|facing|furnishing|property_age|rera_id|society_name|locality|city|price|parking",
+      "Review path ID (not DB ID)": "path-2b23bd768cd3c814",
+      "Source": "india_categories.csv:174"
+    },
+    {
+      "CSV line": 175,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Sale",
+      "sub_subcategory (source)": "Farmhouse",
+      "key_fields (source; original order)": "bhk|plot_area|built_up_area_sqft|furnishing|ownership_type|locality|city|price",
+      "Review path ID (not DB ID)": "path-18d4ec7093794eac",
+      "Source": "india_categories.csv:175"
+    },
+    {
+      "CSV line": 176,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Rent",
+      "sub_subcategory (source)": "Apartment or Flat",
+      "key_fields (source; original order)": "bhk|bathrooms|area_sqft|floor|total_floors|furnishing|monthly_rent|security_deposit|maintenance|available_from|preferred_tenants|parking|society_name|locality|city",
+      "Review path ID (not DB ID)": "path-ef8fdf7bb7651ede",
+      "Source": "india_categories.csv:176"
+    },
+    {
+      "CSV line": 177,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Rent",
+      "sub_subcategory (source)": "Independent House or Villa",
+      "key_fields (source; original order)": "bhk|bathrooms|area_sqft|floors|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|parking|locality|city",
+      "Review path ID (not DB ID)": "path-171947e49609969c",
+      "Source": "india_categories.csv:177"
+    },
+    {
+      "CSV line": 178,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Rent",
+      "sub_subcategory (source)": "Builder Floor",
+      "key_fields (source; original order)": "bhk|bathrooms|area_sqft|floor|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|parking|locality|city",
+      "Review path ID (not DB ID)": "path-08f056d377f00427",
+      "Source": "india_categories.csv:178"
+    },
+    {
+      "CSV line": 179,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Rent",
+      "sub_subcategory (source)": "Studio Apartment",
+      "key_fields (source; original order)": "area_sqft|floor|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|locality|city",
+      "Review path ID (not DB ID)": "path-436faa3acf50b8c1",
+      "Source": "india_categories.csv:179"
+    },
+    {
+      "CSV line": 180,
+      "category (source)": "Property",
+      "subcategory (source)": "Residential for Rent",
+      "sub_subcategory (source)": "Single Room",
+      "key_fields (source; original order)": "area_sqft|attached_bathroom|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|locality|city",
+      "Review path ID (not DB ID)": "path-c9d21662f8e53c78",
+      "Source": "india_categories.csv:180"
+    },
+    {
+      "CSV line": 181,
+      "category (source)": "Property",
+      "subcategory (source)": "PG & Co-living",
+      "sub_subcategory (source)": "Boys PG",
+      "key_fields (source; original order)": "monthly_rent_per_bed|sharing_type|food_included|attached_bathroom|ac|wifi|security_deposit|available_from|locality|city",
+      "Review path ID (not DB ID)": "path-fb6c038dbd016c17",
+      "Source": "india_categories.csv:181"
+    },
+    {
+      "CSV line": 182,
+      "category (source)": "Property",
+      "subcategory (source)": "PG & Co-living",
+      "sub_subcategory (source)": "Girls PG",
+      "key_fields (source; original order)": "monthly_rent_per_bed|sharing_type|food_included|attached_bathroom|ac|wifi|security_deposit|available_from|locality|city",
+      "Review path ID (not DB ID)": "path-28c674b513a3b5f5",
+      "Source": "india_categories.csv:182"
+    },
+    {
+      "CSV line": 183,
+      "category (source)": "Property",
+      "subcategory (source)": "PG & Co-living",
+      "sub_subcategory (source)": "Co-living Spaces",
+      "key_fields (source; original order)": "monthly_rent_per_bed|sharing_type|food_included|ac|wifi|housekeeping|security_deposit|available_from|locality|city",
+      "Review path ID (not DB ID)": "path-8f17fac76aae729e",
+      "Source": "india_categories.csv:183"
+    },
+    {
+      "CSV line": 184,
+      "category (source)": "Property",
+      "subcategory (source)": "PG & Co-living",
+      "sub_subcategory (source)": "Hostels",
+      "key_fields (source; original order)": "monthly_rent_per_bed|sharing_type|gender|food_included|security_deposit|available_from|locality|city",
+      "Review path ID (not DB ID)": "path-a64c4482515e0ca6",
+      "Source": "india_categories.csv:184"
+    },
+    {
+      "CSV line": 185,
+      "category (source)": "Property",
+      "subcategory (source)": "PG & Co-living",
+      "sub_subcategory (source)": "Flatmates & Shared Rooms",
+      "key_fields (source; original order)": "monthly_rent|gender_preference|furnishing|available_from|locality|city",
+      "Review path ID (not DB ID)": "path-2a8ec69a82b64d27",
+      "Source": "india_categories.csv:185"
+    },
+    {
+      "CSV line": 186,
+      "category (source)": "Property",
+      "subcategory (source)": "PG & Co-living",
+      "sub_subcategory (source)": "Guest Houses & Homestays",
+      "key_fields (source; original order)": "rent_per_night|rooms|amenities|locality|city",
+      "Review path ID (not DB ID)": "path-1800081ba082c89c",
+      "Source": "india_categories.csv:186"
+    },
+    {
+      "CSV line": 187,
+      "category (source)": "Property",
+      "subcategory (source)": "Land & Plots",
+      "sub_subcategory (source)": "Residential Plot",
+      "key_fields (source; original order)": "plot_area|area_unit|facing|road_width_ft|boundary_wall|ownership_type|rera_or_authority_approved|locality|city|price",
+      "Review path ID (not DB ID)": "path-e9521985c0f66d42",
+      "Source": "india_categories.csv:187"
+    },
+    {
+      "CSV line": 188,
+      "category (source)": "Property",
+      "subcategory (source)": "Land & Plots",
+      "sub_subcategory (source)": "Commercial Plot",
+      "key_fields (source; original order)": "plot_area|area_unit|facing|road_width_ft|boundary_wall|ownership_type|locality|city|price",
+      "Review path ID (not DB ID)": "path-394c9b4bc71b4143",
+      "Source": "india_categories.csv:188"
+    },
+    {
+      "CSV line": 189,
+      "category (source)": "Property",
+      "subcategory (source)": "Land & Plots",
+      "sub_subcategory (source)": "Agricultural Land",
+      "key_fields (source; original order)": "plot_area|area_unit|irrigation|road_access|ownership_type|village|district|state|price",
+      "Review path ID (not DB ID)": "path-5adc91894438551a",
+      "Source": "india_categories.csv:189"
+    },
+    {
+      "CSV line": 190,
+      "category (source)": "Property",
+      "subcategory (source)": "Land & Plots",
+      "sub_subcategory (source)": "Farm Land with Fencing",
+      "key_fields (source; original order)": "plot_area|area_unit|water_source|road_access|ownership_type|village|district|state|price",
+      "Review path ID (not DB ID)": "path-4689647479ff1d4c",
+      "Source": "india_categories.csv:190"
+    },
+    {
+      "CSV line": 191,
+      "category (source)": "Property",
+      "subcategory (source)": "Land & Plots",
+      "sub_subcategory (source)": "Industrial Land",
+      "key_fields (source; original order)": "plot_area|area_unit|zone|road_width_ft|ownership_type|locality|city|price",
+      "Review path ID (not DB ID)": "path-0b544547dbcec5d1",
+      "Source": "india_categories.csv:191"
+    },
+    {
+      "CSV line": 192,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Sale",
+      "sub_subcategory (source)": "Shops & Showrooms",
+      "key_fields (source; original order)": "carpet_area_sqft|floor|frontage_ft|washrooms|parking|ownership_type|locality|city|price",
+      "Review path ID (not DB ID)": "path-178172deb3a7fd29",
+      "Source": "india_categories.csv:192"
+    },
+    {
+      "CSV line": 193,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Sale",
+      "sub_subcategory (source)": "Office Space",
+      "key_fields (source; original order)": "carpet_area_sqft|floor|furnishing|washrooms|parking|pantry|ownership_type|locality|city|price",
+      "Review path ID (not DB ID)": "path-6701248912febc7c",
+      "Source": "india_categories.csv:193"
+    },
+    {
+      "CSV line": 194,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Sale",
+      "sub_subcategory (source)": "Warehouse & Godown",
+      "key_fields (source; original order)": "area_sqft|height_ft|loading_access|ownership_type|locality|city|price",
+      "Review path ID (not DB ID)": "path-841e1bb4dd385f02",
+      "Source": "india_categories.csv:194"
+    },
+    {
+      "CSV line": 195,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Sale",
+      "sub_subcategory (source)": "Industrial Shed & Building",
+      "key_fields (source; original order)": "area_sqft|power_load_kw|ownership_type|locality|city|price",
+      "Review path ID (not DB ID)": "path-1692a5f100845dfb",
+      "Source": "india_categories.csv:195"
+    },
+    {
+      "CSV line": 196,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Rent",
+      "sub_subcategory (source)": "Shops & Showrooms",
+      "key_fields (source; original order)": "carpet_area_sqft|floor|frontage_ft|washrooms|parking|monthly_rent|security_deposit|lease_term|locality|city",
+      "Review path ID (not DB ID)": "path-d92f24f767f27abd",
+      "Source": "india_categories.csv:196"
+    },
+    {
+      "CSV line": 197,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Rent",
+      "sub_subcategory (source)": "Office Space",
+      "key_fields (source; original order)": "carpet_area_sqft|floor|furnishing|washrooms|parking|pantry|monthly_rent|security_deposit|lease_term|locality|city",
+      "Review path ID (not DB ID)": "path-d07ed109c9134c6b",
+      "Source": "india_categories.csv:197"
+    },
+    {
+      "CSV line": 198,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Rent",
+      "sub_subcategory (source)": "Co-working Space",
+      "key_fields (source; original order)": "seats|monthly_rent_per_seat|amenities|locality|city",
+      "Review path ID (not DB ID)": "path-25d53a9b1337f178",
+      "Source": "india_categories.csv:198"
+    },
+    {
+      "CSV line": 199,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Rent",
+      "sub_subcategory (source)": "Warehouse & Godown",
+      "key_fields (source; original order)": "area_sqft|height_ft|loading_access|monthly_rent|security_deposit|lease_term|locality|city",
+      "Review path ID (not DB ID)": "path-ec22e63c41c1ba0d",
+      "Source": "india_categories.csv:199"
+    },
+    {
+      "CSV line": 200,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Rent",
+      "sub_subcategory (source)": "Restaurant & Cafe Space",
+      "key_fields (source; original order)": "area_sqft|floor|kitchen_ready|monthly_rent|security_deposit|lease_term|locality|city",
+      "Review path ID (not DB ID)": "path-b40e6e712c2211a4",
+      "Source": "india_categories.csv:200"
+    },
+    {
+      "CSV line": 201,
+      "category (source)": "Property",
+      "subcategory (source)": "Commercial for Rent",
+      "sub_subcategory (source)": "Industrial Shed",
+      "key_fields (source; original order)": "area_sqft|power_load_kw|monthly_rent|security_deposit|lease_term|locality|city",
+      "Review path ID (not DB ID)": "path-0ff13bb998c96a84",
+      "Source": "india_categories.csv:201"
+    },
+    {
+      "CSV line": 202,
+      "category (source)": "Property",
+      "subcategory (source)": "Parking & Garages",
+      "sub_subcategory (source)": "Parking Space for Sale",
+      "key_fields (source; original order)": "type|covered|society_name|locality|city|price",
+      "Review path ID (not DB ID)": "path-59b2dc51ba7fc710",
+      "Source": "india_categories.csv:202"
+    },
+    {
+      "CSV line": 203,
+      "category (source)": "Property",
+      "subcategory (source)": "Parking & Garages",
+      "sub_subcategory (source)": "Parking Space for Rent",
+      "key_fields (source; original order)": "type|covered|monthly_rent|society_name|locality|city",
+      "Review path ID (not DB ID)": "path-fabef61f49da7bcd",
+      "Source": "india_categories.csv:203"
+    }
+  ]
+}

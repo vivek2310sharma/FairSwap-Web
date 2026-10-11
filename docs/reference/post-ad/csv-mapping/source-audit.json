@@ -1,0 +1,31 @@
+{
+  "provenance": {
+    "workbook": "FairSwap-CSV-Field-Matrix.xlsx",
+    "sha256": "ff853d9d2d9e788c97a68dfaa293b622d9fc29d083ba5c5e9d11c2abee42ad11",
+    "header_row": 5,
+    "sheet": "Sources"
+  },
+  "files": [
+    {
+      "File": "india_categories.csv",
+      "SHA-256 of original bytes": "9069b753947856084ef297f813328882c23437d63f444dcf167da9fbf3d3bd7e",
+      "Bytes": 20819,
+      "Data rows": 202,
+      "Original headers": "category | subcategory | sub_subcategory | key_fields"
+    },
+    {
+      "File": "india_car_brands_models.csv",
+      "SHA-256 of original bytes": "46434587a3eadae2472bc38e02063200d5e31a2da07adf6fe4c0558b081f59c4",
+      "Bytes": 23232,
+      "Data rows": 578,
+      "Original headers": "brand | model | body_type | segment | status"
+    },
+    {
+      "File": "india_bike_scooter_brands_models.csv",
+      "SHA-256 of original bytes": "c7b8159e500dd104c62fe76fabfb0d55b290533e3ea738f4aa6ef8ff0d09ab15",
+      "Bytes": 52887,
+      "Data rows": 830,
+      "Original headers": "brand | model | vehicle_type | category | engine_cc | fuel_type | status"
+    }
+  ]
+}
