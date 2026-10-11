@@ -23,6 +23,8 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
   let testCategoryId: string;
   let testCityId: string;
 
+  const REQUIRE_DB_TESTS = process.env.CI === "true" || process.env.REQUIRE_DB_TESTS === "true";
+
   beforeAll(async () => {
     try {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/`, {
@@ -33,7 +35,14 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       isSupabaseOnline = false;
     }
 
-    if (!isSupabaseOnline) return;
+    if (!isSupabaseOnline) {
+      if (REQUIRE_DB_TESTS) {
+        throw new Error(
+          `[FAIL-FAST] Supabase is not reachable at ${SUPABASE_URL}, but database security tests are strictly required (CI=true or REQUIRE_DB_TESTS=true). Failing suite to eliminate false-green tests.`
+        );
+      }
+      return;
+    }
 
     serviceClient = createClient<Database>(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -126,6 +135,11 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
   });
 
   function checkPrerequisite() {
+    if (!isSupabaseOnline && REQUIRE_DB_TESTS) {
+      throw new Error(
+        `[FAIL-FAST] Supabase is offline at ${SUPABASE_URL}. Test assertion aborted because REQUIRE_DB_TESTS=true.`
+      );
+    }
     return isSupabaseOnline;
   }
 
@@ -133,10 +147,19 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
   it("test_anonymous_listing_select_denied", async () => {
     if (!checkPrerequisite()) return;
     const anonClient = createClient(SUPABASE_URL, ANON_KEY);
+
+    // Anonymous select on private/revoked column (pin_code, landmark) must fail with permission denied (42501)
+    const { data: privData, error: privError } = await anonClient
+      .from("listings")
+      .select("id, pin_code");
+    expect(privError).not.toBeNull();
+    expect(privError?.code).toBe("42501");
+    expect(privData).toBeNull();
+
+    // Anonymous select on public columns without active listings must return empty data without leaking private listings
     const { data, error } = await anonClient.from("listings").select("id, title");
-    // Anonymous access is revoked at table level in 1.3
-    expect(error).not.toBeNull();
-    expect(data).toBeNull();
+    expect(error).toBeNull();
+    expect(Array.isArray(data)).toBe(true);
   });
 
   // 2. Binding Amendment 6: Storage Fully Server-Mediated
@@ -451,14 +474,22 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .select("id")
       .single();
 
-    await sellerClient
+    const { data: m2 } = await sellerClient
       .from("listing_media")
       .insert({
         listing_id: listingId,
         original_filename: "m2.jpg",
         content_type: "image/jpeg",
         file_size_bytes: 1000,
-      });
+      })
+      .select("id")
+      .single();
+
+    // Mark both media rows ready (required for reorder RPC)
+    await serviceClient
+      .from("listing_media")
+      .update({ processing_status: "ready" })
+      .in("id", [m1!.id, m2!.id]);
 
     // Make listing active
     await serviceClient
@@ -477,11 +508,20 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .single();
     const preReorderRev = activeRow!.revision;
 
-    // Update display_order of m1
-    const { error: reorderError } = await sellerClient
+    // Direct UPDATE on display_order is revoked from authenticated in 1.3/Migration 33
+    // Sellers must use public.seller_reorder_listing_media
+    const { error: directUpdateError } = await sellerClient
       .from("listing_media")
       .update({ display_order: 5 })
       .eq("id", m1!.id);
+    expect(directUpdateError).not.toBeNull();
+    expect(directUpdateError?.code).toBe("42501");
+
+    // Perform legitimate reorder via authoritative RPC
+    const { error: reorderError } = await sellerClient.rpc("seller_reorder_listing_media", {
+      listing_id: listingId,
+      media_ids: [m2!.id, m1!.id],
+    });
 
     expect(reorderError).toBeNull();
 
@@ -553,14 +593,81 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .update({ status: "pending_review" })
       .eq("id", listingId);
 
-    // Moderator tries to approve own listing
-    const { error: approveError } = await moderatorClient.rpc("moderate_listing", {
+    // Moderator tries to approve own listing via moderate_listing_reviewed
+    const { error: approveError } = await moderatorClient.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "approve",
+      reason: null,
+      expected_revision: 1,
+      expected_status: "pending_review",
+    });
+
+    expect(approveError).not.toBeNull();
+    expect(approveError?.message).toMatch(/cannot review their own listing|Listing unavailable/i);
+  });
+
+  // 10b. Legacy unversioned moderate_listing RPC access denied
+  it("test_legacy_moderate_listing_rpc_revoked", async () => {
+    if (!checkPrerequisite()) return;
+
+    const { data: testListing } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Legacy Bypass Test Listing",
+        category_id: testCategoryId,
+        city_id: testCityId,
+      })
+      .select("id")
+      .single();
+
+    const listingId = testListing!.id;
+    await serviceClient
+      .from("listings")
+      .update({ status: "pending_review" })
+      .eq("id", listingId);
+
+    // Calling legacy unversioned RPC must be rejected by permission denied / deprecation error
+    const { error: legacyError } = await moderatorClient.rpc("moderate_listing", {
       listing_id: listingId,
       action: "approve",
     });
 
-    expect(approveError).not.toBeNull();
-    expect(approveError?.message).toMatch(/cannot review their own listing/i);
+    expect(legacyError).not.toBeNull();
+    expect(legacyError?.message).toMatch(/permission denied|DEPRECATED_RPC/i);
+  });
+
+  // 10c. moderate_listing_reviewed rejects stale revision with PT409
+  it("test_moderate_listing_reviewed_rejects_stale_revision", async () => {
+    if (!checkPrerequisite()) return;
+
+    const { data: testListing } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Stale Revision Test Listing",
+        category_id: testCategoryId,
+        city_id: testCityId,
+      })
+      .select("id")
+      .single();
+
+    const listingId = testListing!.id;
+    // Advance revision to 2
+    await serviceClient
+      .from("listings")
+      .update({ status: "pending_review", revision: 2 })
+      .eq("id", listingId);
+
+    // Moderator tries to approve with stale revision 1
+    const { error: staleError } = await moderatorClient.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "approve",
+      reason: null,
+      expected_revision: 1,
+      expected_status: "pending_review",
+    });
+
+    expect(staleError).not.toBeNull();
+    expect(staleError?.message).toMatch(/MODERATION_REVIEW_CONFLICT|PT409/i);
   });
 
   // 11. Cross-owner edit denied
