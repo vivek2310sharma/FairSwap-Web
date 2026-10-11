@@ -82,20 +82,30 @@ jobs:
 
       - name: Run Schema & Media Invalidation pgTAP Tests
         run: |
-          # Run schema, contract, and media invalidation tests (excluding obsolete pre-existing pgTAP syntax in schema_email_outbox)
-          # Note: schema_email_outbox.test.sql remains unverified/excluded due to obsolete pre-existing pgTAP syntax
+          # Required baseline pgTAP test suite (fail-closed if any expected file is missing)
+          REQUIRED_FILES=(
+            "supabase/tests/admin_medium_operation.test.sql"
+            "supabase/tests/admin_reviewed_contract.test.sql"
+            "supabase/tests/schema_listings.test.sql"
+            "supabase/tests/schema_security.test.sql"
+          )
+          for req in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$req" ]; then
+              echo "::error::Required baseline pgTAP test file '$req' is missing. Aborting."
+              exit 1
+            fi
+          done
+
+          # Automatically discover all valid pgTAP test files (including future migrations like MOD-02B)
+          # Note: schema_email_outbox.test.sql remains explicitly documented as excluded/unverified due to obsolete pre-existing pgTAP syntax
           TEST_FILES=()
           for f in supabase/tests/*.test.sql; do
             if [ -f "$f" ] && [ "$(basename "$f")" != "schema_email_outbox.test.sql" ]; then
               TEST_FILES+=("$f")
             fi
           done
-          # Fail-closed enforcement: at least 4 pgTAP test files must be present and verified
-          if [ ${#TEST_FILES[@]} -lt 4 ]; then
-            echo "::error::Expected at least 4 pgTAP test files, but found ${#TEST_FILES[@]}. Aborting."
-            exit 1
-          fi
-          echo "Running pgTAP test files: ${TEST_FILES[*]}"
+
+          echo "Running pgTAP test files (${#TEST_FILES[@]} found): ${TEST_FILES[*]}"
           supabase test db "${TEST_FILES[@]}"
 
       - name: Run RLS & Database Security Tests

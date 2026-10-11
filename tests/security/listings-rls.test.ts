@@ -12,8 +12,44 @@ const SERVICE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
-function createJwtStaffClient(userId: string, email: string, aal: "aal1" | "aal2" = "aal2"): SupabaseClient<Database> {
-  const secret = "super-secret-jwt-token-with-at-least-32-characters-long";
+/**
+ * Synthetic Local AAL2 Authorization Fixture
+ *
+ * SCOPE & RESTRICTIONS:
+ * - This fixture manually creates and signs a synthetic JWT with an `aal: "aal2"` claim
+ *   using the standard, hardcoded local development JWT secret ("super-secret-jwt-token-with-at-least-32-characters-long").
+ * - It is strictly permitted ONLY on disposable local Supabase test environments (e.g. 127.0.0.1 / localhost).
+ * - It strictly verifies database authorization and RLS policies expecting an AAL2 claim.
+ * - IMPORTANT: This fixture does NOT represent actual MFA / TOTP verification. Real MFA/TOTP
+ *   end-to-end enrollment, challenge, and verification is a separate authentication acceptance
+ *   test and must not be claimed as completed by this fixture.
+ * - This helper will fail-fast and throw an error immediately if invoked against a hosted
+ *   or non-allowlisted Supabase URL.
+ * - Under no circumstances should hosted secrets or real signing keys be used or logged.
+ */
+function createSyntheticLocalAal2Client(
+  userId: string,
+  email: string,
+  aal: "aal1" | "aal2" = "aal2"
+): SupabaseClient<Database> {
+  const allowedHosts = ["127.0.0.1", "localhost"];
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(SUPABASE_URL);
+  } catch {
+    throw new Error(`[SECURITY FATAL] Invalid SUPABASE_URL: ${SUPABASE_URL}`);
+  }
+
+  if (!allowedHosts.includes(parsedUrl.hostname)) {
+    throw new Error(
+      `[SECURITY FATAL] Synthetic AAL2 test client generation is strictly restricted to local disposable environments (${allowedHosts.join(
+        ", "
+      )}). Target host "${parsedUrl.hostname}" is NOT allowlisted. Aborting.`
+    );
+  }
+
+  // Local development JWT secret for disposable Supabase CLI instance
+  const localDevSecret = "super-secret-jwt-token-with-at-least-32-characters-long";
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const payload = {
@@ -29,7 +65,7 @@ function createJwtStaffClient(userId: string, email: string, aal: "aal1" | "aal2
   const b64Header = Buffer.from(JSON.stringify(header)).toString("base64url");
   const b64Payload = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signature = crypto
-    .createHmac("sha256", secret)
+    .createHmac("sha256", localDevSecret)
     .update(`${b64Header}.${b64Payload}`)
     .digest("base64url");
   const token = `${b64Header}.${b64Payload}.${signature}`;
@@ -164,7 +200,7 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
     const m1 = await setupTestUser("moderator_rls_1@fairswap.local", "moderator");
     moderatorUser = m1.user;
     moderatorClient = m1.client;
-    modAal2Client = createJwtStaffClient(moderatorUser.id, moderatorUser.email, "aal2");
+    modAal2Client = createSyntheticLocalAal2Client(moderatorUser.id, moderatorUser.email, "aal2");
   });
 
   function checkPrerequisite() {
