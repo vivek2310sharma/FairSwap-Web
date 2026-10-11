@@ -47,6 +47,13 @@ export interface CategoryAttribute {
   created_at: string;
 }
 
+// Form/reference projections also accept the owner-scoped minimal RPC result.
+// Full database rows remain assignable; no missing timestamps/flags are fabricated.
+export type ListingCategoryReference = Pick<Category, "id" | "name" | "is_active">;
+export type ListingAttributeReference = Pick<CategoryAttribute,
+  "id" | "category_id" | "name" | "label" | "value_type" | "is_required" |
+  "options" | "validation_rules" | "sort_order">;
+
 export interface City {
   id: string;
   name: string;

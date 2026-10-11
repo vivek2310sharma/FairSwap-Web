@@ -4,19 +4,24 @@ import { proxy } from "@/proxy";
 
 const mockGetClaims = vi.fn();
 const mockRpc = vi.fn();
+const mockRefreshCookies = vi.fn();
 
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: vi.fn(() => ({
-    auth: {
-      getClaims: mockGetClaims,
-    },
-    rpc: mockRpc,
-  })),
+  createServerClient: vi.fn((_url, _key, options) => {
+    mockRefreshCookies(options);
+    return {
+      auth: {
+        getClaims: mockGetClaims,
+      },
+      rpc: mockRpc,
+    };
+  }),
 }));
 
 describe("Proxy Policy Re-acceptance Route Guard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRefreshCookies.mockReset();
   });
 
   it("redirects unauthenticated user accessing /account to /auth/sign-in with next parameter", async () => {
@@ -234,4 +239,94 @@ describe("Proxy Policy Re-acceptance Route Guard", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
   });
+});
+
+vi.mock("@/lib/logger", () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } }));
+
+describe("A0 safe account auth return and session regressions", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRefreshCookies.mockReset();
+  });
+
+  it.each([
+    "macro=goods", "macro=vehicles", "macro=property", "macro=",
+    "macro=goods&macro=goods", "macro=goods&macro=vehicles",
+    "macro=Goods", "macro=unknown", "macro=goods&filter=a%26b",
+  ])("preserves the original safe query %s through one next encoding", async (query) => {
+    mockGetClaims.mockResolvedValue({ data: { claims: null } });
+    const res = await proxy(new NextRequest(`http://localhost:3000/account/listings/new?${query}`));
+    const location = new URL(res.headers.get("location")!);
+    expect(location.origin).toBe("http://localhost:3000");
+    expect(location.pathname).toBe("/auth/sign-in");
+    expect(location.searchParams.get("next")).toBe(`/account/listings/new?${query}`);
+    expect(location.searchParams.getAll("next")).toHaveLength(1);
+    expect(mockGetClaims).toHaveBeenCalledTimes(1);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it.each(["macro=%5Cevil.example", "macro=bad%0Avalue", "macro=bad%0Dvalue", "macro=bad%00value"])(
+    "drops unsafe return-query input %s using the existing sanitizer", async (query) => {
+      mockGetClaims.mockResolvedValue({ data: { claims: null } });
+      const res = await proxy(new NextRequest(`http://localhost:3000/account/listings/new?${query}`));
+      expect(new URL(res.headers.get("location")!).searchParams.get("next")).toBe("/account/listings/new");
+    }
+  );
+
+  it("retains repeated macro values through existing policy-review handling", async () => {
+    mockGetClaims.mockResolvedValue({ data: { claims: { sub: "fixture-owner" } } });
+    mockRpc.mockResolvedValue({ data: false, error: null });
+    const res = await proxy(new NextRequest("http://localhost:3000/account/listings/new?macro=goods&macro=vehicles"));
+    const location = new URL(res.headers.get("location")!);
+    expect(location.pathname).toBe("/account/policy-review");
+    expect(location.searchParams.get("next")).toBe("/account/listings/new?macro=goods&macro=vehicles");
+    expect(mockRpc).toHaveBeenCalledWith("has_current_policy_acceptance");
+  });
+
+  it("keeps current session cookie refresh/cache/correlation behavior", async () => {
+    mockGetClaims.mockResolvedValue({ data: { claims: { sub: "fixture-owner" } } });
+    mockRpc.mockResolvedValue({ data: true, error: null });
+    mockRefreshCookies.mockImplementationOnce((options) => {
+      options.cookies.setAll([{ name: "fixture-session", value: "refreshed", options: { path: "/" } }]);
+    });
+    const req = new NextRequest("http://localhost:3000/account/listings/new?macro=goods");
+    const res = await proxy(req);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+    expect(req.cookies.get("fixture-session")?.value).toBe("refreshed");
+    expect(res.cookies.get("fixture-session")?.value).toBe("refreshed");
+    expect(res.headers.get("cache-control")).toBe("private, no-store, must-revalidate");
+    expect(res.headers.get("x-request-id")).toBeTruthy();
+  });
+
+  it("keeps claim-retrieval failure unauthenticated without querying policy", async () => {
+    mockGetClaims.mockRejectedValueOnce(new Error("Fixture auth error"));
+    const res = await proxy(new NextRequest("http://localhost:3000/account/listings/new?macro=goods"));
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).searchParams.get("next")).toBe("/account/listings/new?macro=goods");
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("retains the owner unauthenticated route behavior", async () => {
+    mockGetClaims.mockResolvedValue({ data: { claims: null } });
+    const res = await proxy(new NextRequest("http://localhost:3000/account/listings?sort=created_at"));
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/auth/sign-in");
+    expect(new URL(res.headers.get("location")!).searchParams.get("next")).toBe("/account/listings?sort=created_at");
+    expect(mockGetClaims).toHaveBeenCalledTimes(1);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("A0 proxy fallback pathname safety", () => {
+  it.each(["/account/%5Cevil.example", "/account/%0D%0Aevil"])(
+    "does not reuse an unsafe fallback pathname %s", async (pathname) => {
+      mockRefreshCookies.mockReset();
+      mockGetClaims.mockResolvedValue({ data: { claims: null } });
+      const res = await proxy(new NextRequest(`http://localhost:3000${pathname}?macro=goods`));
+      const location = new URL(res.headers.get("location")!);
+      expect(location.pathname).toBe("/auth/sign-in");
+      expect(location.searchParams.get("next")).toBe("/account");
+    }
+  );
 });

@@ -8,6 +8,9 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    // Generated artifacts of the isolated Post Ad preview (source stays linted).
+    "tools/post-ad-preview/.next/**",
+    "tools/post-ad-preview/next-env.d.ts",
     "out/**",
     "build/**",
     "next-env.d.ts",

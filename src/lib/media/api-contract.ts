@@ -5,6 +5,7 @@ import { isSellerWriteMaintenanceEnabled, SELLER_WRITE_MAINTENANCE_MESSAGE } fro
 import { checkPolicyAcceptanceStatus } from "@/lib/compliance/policy-acceptance";
 import { logger } from "@/lib/logger";
 import type { Database } from "@/types/database";
+import {hasSavedSubmissionFamily} from '@/lib/listings/saved-submission-family';
 
 export const MEDIA_ERROR_CODES = [
   "UNAUTHENTICATED",
@@ -200,7 +201,7 @@ export function mapRpcErrorToMediaError(
 }
 
 export type SellerMediaGuardResult =
-  | { allowed: true; listing: { id: string; seller_id: string; status: string; revision: number; cover_photo_id: string | null } }
+  | { allowed: true; newFamily?: boolean; listing: { id: string; seller_id: string; status: string; revision: number; cover_photo_id: string | null } }
   | { allowed: false; response: NextResponse<MediaApiErrorResponse> };
 
 /**
@@ -293,6 +294,10 @@ export async function verifySellerMediaMutationGuard(
     };
   }
 
+  let newFamily=false;
+  try{newFamily=await hasSavedSubmissionFamily(client,listingId);}catch{return {allowed:false,response:mediaApiError('MEDIA_SERVICE_UNAVAILABLE')};}
+  if(newFamily&&listing.status!=='draft')return {allowed:false,response:mediaApiError('LISTING_MEDIA_NOT_EDITABLE')};
+
   // 5. Allowed listing status check
   const isAllowedStatus = (ALLOWED_MEDIA_MUTATION_STATUSES as readonly string[]).includes(
     listing.status
@@ -307,6 +312,7 @@ export async function verifySellerMediaMutationGuard(
 
   return {
     allowed: true,
+    newFamily,
     listing,
   };
 }
