@@ -120,3 +120,56 @@ jobs:
             exit 1
           fi
           pnpm vitest run tests/security/listings-rls.test.ts
+
+      - name: Run MOD-03A Automatic Moderation Integration Tests
+        run: |
+          # Detect whether MOD-03A migrations and features are present on this branch
+          MIGRATION_38="supabase/migrations/20261011000038_create_moderation_queue_and_results.sql"
+          MIGRATION_39="supabase/migrations/20261011000039_moderation_dispatch_and_killswitch.sql"
+          INTEGRATION_TEST="src/__tests__/moderation-integration.test.ts"
+
+          if [ -f "$MIGRATION_38" ] || [ -f "$MIGRATION_39" ]; then
+            echo "MOD-03A migrations detected. Requiring integration test suite $INTEGRATION_TEST..."
+            if [ ! -f "$INTEGRATION_TEST" ]; then
+              echo "::error::MOD-03A migrations are present but required integration test $INTEGRATION_TEST is missing. Aborting."
+              exit 1
+            fi
+
+            # Parse dynamic connection configuration from local Supabase CLI
+            STATUS_JSON=$(supabase status -o json)
+            DB_URL=$(echo "$STATUS_JSON" | jq -r '.DB_URL // empty')
+            REST_URL=$(echo "$STATUS_JSON" | jq -r '.API_URL // empty')
+            ANON_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // empty')
+            SERVICE_ROLE_KEY=$(echo "$STATUS_JSON" | jq -r '.SERVICE_ROLE_KEY // empty')
+
+            if [ -z "$DB_URL" ] || [ -z "$REST_URL" ]; then
+              echo "::error::Failed to read local Supabase connection configuration from status output."
+              exit 1
+            fi
+
+            # Extract host and port safely
+            DB_PORT=$(echo "$DB_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
+            DB_HOST="127.0.0.1"
+
+            # Generate unique test run identity for this CI run
+            TASK_RUN_ID="ci-run-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
+            echo "Initializing test run identity: $TASK_RUN_ID on port $DB_PORT"
+
+            # Create disposable validation marker strictly in local PostgreSQL
+            supabase db query 'CREATE SCHEMA IF NOT EXISTS test_validation_meta;'
+            supabase db query 'CREATE TABLE IF NOT EXISTS test_validation_meta.run_identity (run_id text PRIMARY KEY, task text NOT NULL);'
+            supabase db query "INSERT INTO test_validation_meta.run_identity (run_id, task) VALUES ('$TASK_RUN_ID', 'MOD-03A') ON CONFLICT (run_id) DO UPDATE SET task = EXCLUDED.task;"
+
+            # Execute all MOD-03A integration tests with opt-in enabled
+            MOD03A_RUN_LOCAL_DB_TESTS=true \
+            MOD03A_TASK_RUN_ID="$TASK_RUN_ID" \
+            MOD03A_DB_HOST="$DB_HOST" \
+            MOD03A_DB_PORT="$DB_PORT" \
+            MOD03A_DB_NAME="postgres" \
+            NEXT_PUBLIC_SUPABASE_URL="$REST_URL" \
+            NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY" \
+            SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
+            pnpm vitest run "$INTEGRATION_TEST" --pool=threads
+          else
+            echo "MOD-03A migrations not detected on this branch; skipping MOD-03A integration suite."
+          fi

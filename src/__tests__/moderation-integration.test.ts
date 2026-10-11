@@ -734,4 +734,41 @@ describe.skipIf(!isIntegrationOptedIn)("MOD-03A End-to-End Automatic Moderation 
     const checkListing = await query(`SELECT status FROM public.listings WHERE id = $1`, [listing.id]);
     expect(checkListing.rows[0].status).toBe("pending_review");
   });
+  it("Case K [Real PostgREST RPC Smoke Test]: Service-role authenticated PostgREST HTTP transport executes batch claim and rejects anonymous callers", async () => {
+    if (!isIntegrationOptedIn) return;
+
+    const restUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54321";
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) {
+      throw new Error("ABORT: SUPABASE_SERVICE_ROLE_KEY must be provided for PostgREST RPC smoke test.");
+    }
+
+    // 1. Verify service_role client connects via real HTTP PostgREST endpoint
+    const postgrestServiceClient = createSupabaseClient(restUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const serviceRpcRes = await postgrestServiceClient.rpc("claim_moderation_batch", {
+      p_batch_size: 1,
+      p_lease_seconds: 10,
+    });
+
+    expect(serviceRpcRes.error).toBeNull();
+    expect(Array.isArray(serviceRpcRes.data)).toBe(true);
+
+    // 2. Verify anonymous client attempting the same PostgREST HTTP RPC is rejected with 401 / permission denied
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+    const anonClient = createSupabaseClient(restUrl, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const anonRpcRes = await anonClient.rpc("claim_moderation_batch", {
+      p_batch_size: 1,
+      p_lease_seconds: 10,
+    });
+
+    expect(anonRpcRes.error).not.toBeNull();
+    expect(anonRpcRes.error?.message).toContain("permission denied");
+  });
+
 });
