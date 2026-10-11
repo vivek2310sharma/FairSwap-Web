@@ -42,10 +42,60 @@ jobs:
       - name: Run Typecheck
         run: pnpm run typecheck
 
-      - name: Run Unit Tests
+      - name: Run Moderation Unit Tests
         run: |
           if compgen -G "src/__tests__/moderation-*.test.ts" > /dev/null; then
             pnpm vitest run src/__tests__/moderation-*.test.ts
           else
             echo "No moderation unit tests found on this branch; skipping."
+          fi
+
+  database-security-tests:
+    name: Supabase Local DB & Security Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start Disposable Local Supabase
+        run: supabase start -x studio,analytics,logflare,supavisor
+
+      - name: Run Database pgTAP Tests
+        run: |
+          if [ -d "supabase/tests" ]; then
+            supabase test db
+          else
+            echo "No supabase/tests directory found; skipping."
+          fi
+
+      - name: Run RLS & Database Security Tests
+        env:
+          CI: "true"
+          REQUIRE_DB_TESTS: "true"
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
+        run: |
+          if [ -f "tests/security/listings-rls.test.ts" ]; then
+            pnpm vitest run tests/security/listings-rls.test.ts
+          else
+            echo "No listings-rls.test.ts found; skipping."
           fi
