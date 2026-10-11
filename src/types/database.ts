@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -1399,6 +1399,16 @@ export type Database = {
       }
       moderate_listing: {
         Args: { action: string; listing_id: string; reason?: string }
+        Returns: Json
+      }
+      moderate_listing_reviewed: {
+        Args: {
+          action: string
+          expected_revision: number
+          expected_status: Database["public"]["Enums"]["listing_status_enum"]
+          listing_id: string
+          reason?: string | null
+        }
         Returns: Json
       }
       record_media_processing_result: {
