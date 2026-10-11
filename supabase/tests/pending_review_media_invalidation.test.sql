@@ -7,7 +7,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(30);
+SELECT plan(31);
 
 -- =============================================================================
 -- 1. Helper Structure and Routine Privilege Verification (15 structural checks: 5 has_function, 8 function_privs_are, 2 ok)
@@ -1170,6 +1170,116 @@ END;
 $test15$;
 
 SELECT pass('Multi-row direct DELETE executes one invalidation per deleted ready row in accordance with row-trigger semantics');
+
+-- =============================================================================
+-- 18. Behavioral Test 16: Review-Generation Invalidation on Seller Resubmission
+-- Verifies that when a rejected listing is resubmitted without edits, revision
+-- increments (1 -> 2), rejecting prior review tokens with PT409 while accepting
+-- current review tokens.
+-- =============================================================================
+DO $test16$
+DECLARE
+  v_ctx test_ids%ROWTYPE;
+  v_lid_resub uuid := '44444444-0000-4000-8000-000000000051'::uuid;
+  v_mid_resub uuid := '55555555-0000-4000-8000-000000000051'::uuid;
+  v_rec record;
+  v_res jsonb;
+  v_first_rev integer;
+  v_first_status public.listing_status_enum;
+BEGIN
+  SELECT * INTO STRICT v_ctx FROM test_ids LIMIT 1;
+
+  -- 1. Create draft listing with required fields
+  INSERT INTO public.listings (
+    id, seller_id, title, description, category_id, city_id, condition, price_type, price_paise,
+    pin_code, category_attributes
+  ) VALUES (
+    v_lid_resub, v_ctx.seller_id, 'Resubmit Regression Test', 'Valid detailed description meeting minimum length requirements.',
+    v_ctx.cat_id, v_ctx.city_id, 'good', 'fixed', 10000,
+    '302017', jsonb_build_object('brand', 'Generic')
+  );
+
+  INSERT INTO public.listing_media (id, listing_id, uploader_id, display_order, original_filename, content_type, file_size_bytes)
+  VALUES (v_mid_resub, v_lid_resub, v_ctx.seller_id, 0, 'resub.jpg', 'image/jpeg', 1024);
+
+  UPDATE public.listing_media SET processing_status = 'ready', original_storage_path = 'path/' || id || '.jpg'
+  WHERE id = v_mid_resub;
+
+  -- 2. First submission as seller -> pending_review, rev 1
+  PERFORM set_config('request.jwt.claims', jsonb_build_object('sub', v_ctx.seller_id::text, 'role', 'authenticated')::text, true);
+  v_res := app_security.impl_seller_submit_listing(v_lid_resub);
+
+  SELECT status, revision INTO STRICT v_rec FROM public.listings WHERE id = v_lid_resub;
+  v_first_rev := v_rec.revision;
+  v_first_status := v_rec.status;
+
+  IF v_first_rev != 1 OR v_first_status != 'pending_review' THEN
+    RAISE EXCEPTION 'TEST16_FAIL: Initial submission expected rev 1 pending_review, got rev % %', v_first_rev, v_first_status;
+  END IF;
+
+  -- 3. Moderator rejects listing
+  PERFORM set_config('request.jwt.claims', jsonb_build_object(
+    'sub', v_ctx.mod_id::text, 'role', 'authenticated', 'aal', 'aal2',
+    'amr', jsonb_build_array(jsonb_build_object('method', 'totp', 'timestamp', extract(epoch from clock_timestamp())::bigint))
+  )::text, true);
+
+  v_res := app_security.impl_moderate_listing_reviewed(
+    p_listing_id => v_lid_resub,
+    p_action => 'reject',
+    p_reason => 'Initial rejection note',
+    p_expected_revision => v_first_rev,
+    p_expected_status => v_first_status
+  );
+
+  -- 4. Seller resubmits UNCHANGED listing -> revision must advance to 2
+  PERFORM set_config('request.jwt.claims', jsonb_build_object('sub', v_ctx.seller_id::text, 'role', 'authenticated')::text, true);
+  v_res := app_security.impl_seller_submit_listing(v_lid_resub);
+
+  SELECT status, revision, rejection_reason INTO STRICT v_rec FROM public.listings WHERE id = v_lid_resub;
+  IF v_rec.status != 'pending_review' OR v_rec.revision != 2 OR v_rec.rejection_reason IS NOT NULL THEN
+    RAISE EXCEPTION 'TEST16_FAIL: Resubmission expected rev 2 pending_review with null rejection_reason, got rev % % reason=%',
+      v_rec.revision, v_rec.status, v_rec.rejection_reason;
+  END IF;
+
+  -- 5. Old token (rev 1) MUST fail with PT409
+  PERFORM set_config('request.jwt.claims', jsonb_build_object(
+    'sub', v_ctx.mod_id::text, 'role', 'authenticated', 'aal', 'aal2',
+    'amr', jsonb_build_array(jsonb_build_object('method', 'totp', 'timestamp', extract(epoch from clock_timestamp())::bigint))
+  )::text, true);
+
+  BEGIN
+    v_res := app_security.impl_moderate_listing_reviewed(
+      p_listing_id => v_lid_resub,
+      p_action => 'approve',
+      p_reason => NULL,
+      p_expected_revision => v_first_rev,
+      p_expected_status => 'pending_review'::public.listing_status_enum
+    );
+    RAISE EXCEPTION 'TEST16_FAIL: Stale review token unexpectedly succeeded';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLSTATE != 'PT409' THEN
+      RAISE EXCEPTION 'TEST16_FAIL: Expected PT409 on stale token, got %: %', SQLSTATE, SQLERRM;
+    END IF;
+  END;
+
+  -- 6. Current token (rev 2) MUST succeed
+  v_res := app_security.impl_moderate_listing_reviewed(
+    p_listing_id => v_lid_resub,
+    p_action => 'approve',
+    p_reason => NULL,
+    p_expected_revision => 2,
+    p_expected_status => 'pending_review'::public.listing_status_enum
+  );
+
+  SELECT status, revision INTO STRICT v_rec FROM public.listings WHERE id = v_lid_resub;
+  IF v_rec.status != 'active' OR v_rec.revision != 2 THEN
+    RAISE EXCEPTION 'TEST16_FAIL: Valid review token failed to approve listing cleanly: status=% rev=%', v_rec.status, v_rec.revision;
+  END IF;
+END;
+$test16$;
+
+SELECT pass('Resubmission of rejected listing increments revision, rejecting stale review tokens with PT409 and accepting current token');
+
 
 -- Clean up temporary test table
 DROP TABLE test_ids;
