@@ -3,6 +3,7 @@ name: CI Test & Validation
 on:
   pull_request:
     branches:
+      - main
       - staging
       - pr/**
       - feature/**
