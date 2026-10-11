@@ -553,14 +553,81 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .update({ status: "pending_review" })
       .eq("id", listingId);
 
-    // Moderator tries to approve own listing
-    const { error: approveError } = await moderatorClient.rpc("moderate_listing", {
+    // Moderator tries to approve own listing via moderate_listing_reviewed
+    const { error: approveError } = await moderatorClient.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "approve",
+      reason: null,
+      expected_revision: 1,
+      expected_status: "pending_review",
+    });
+
+    expect(approveError).not.toBeNull();
+    expect(approveError?.message).toMatch(/cannot review their own listing|Listing unavailable/i);
+  });
+
+  // 10b. Legacy unversioned moderate_listing RPC access denied
+  it("test_legacy_moderate_listing_rpc_revoked", async () => {
+    if (!checkPrerequisite()) return;
+
+    const { data: testListing } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Legacy Bypass Test Listing",
+        category_id: testCategoryId,
+        city_id: testCityId,
+      })
+      .select("id")
+      .single();
+
+    const listingId = testListing!.id;
+    await serviceClient
+      .from("listings")
+      .update({ status: "pending_review" })
+      .eq("id", listingId);
+
+    // Calling legacy unversioned RPC must be rejected by permission denied / deprecation error
+    const { error: legacyError } = await moderatorClient.rpc("moderate_listing", {
       listing_id: listingId,
       action: "approve",
     });
 
-    expect(approveError).not.toBeNull();
-    expect(approveError?.message).toMatch(/cannot review their own listing/i);
+    expect(legacyError).not.toBeNull();
+    expect(legacyError?.message).toMatch(/permission denied|DEPRECATED_RPC/i);
+  });
+
+  // 10c. moderate_listing_reviewed rejects stale revision with PT409
+  it("test_moderate_listing_reviewed_rejects_stale_revision", async () => {
+    if (!checkPrerequisite()) return;
+
+    const { data: testListing } = await sellerClient
+      .from("listings")
+      .insert({
+        title: "Stale Revision Test Listing",
+        category_id: testCategoryId,
+        city_id: testCityId,
+      })
+      .select("id")
+      .single();
+
+    const listingId = testListing!.id;
+    // Advance revision to 2
+    await serviceClient
+      .from("listings")
+      .update({ status: "pending_review", revision: 2 })
+      .eq("id", listingId);
+
+    // Moderator tries to approve with stale revision 1
+    const { error: staleError } = await moderatorClient.rpc("moderate_listing_reviewed", {
+      listing_id: listingId,
+      action: "approve",
+      reason: null,
+      expected_revision: 1,
+      expected_status: "pending_review",
+    });
+
+    expect(staleError).not.toBeNull();
+    expect(staleError?.message).toMatch(/MODERATION_REVIEW_CONFLICT|PT409/i);
   });
 
   // 11. Cross-owner edit denied
