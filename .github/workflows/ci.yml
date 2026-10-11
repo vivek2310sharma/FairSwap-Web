@@ -83,18 +83,20 @@ jobs:
       - name: Run Schema & Media Invalidation pgTAP Tests
         run: |
           # Run schema, contract, and media invalidation tests (excluding obsolete pre-existing pgTAP syntax in schema_email_outbox)
+          # Note: schema_email_outbox.test.sql remains unverified/excluded due to obsolete pre-existing pgTAP syntax
           TEST_FILES=()
           for f in supabase/tests/*.test.sql; do
             if [ -f "$f" ] && [ "$(basename "$f")" != "schema_email_outbox.test.sql" ]; then
               TEST_FILES+=("$f")
             fi
           done
-          if [ ${#TEST_FILES[@]} -gt 0 ]; then
-            echo "Running pgTAP test files: ${TEST_FILES[*]}"
-            supabase test db "${TEST_FILES[@]}"
-          else
-            echo "No matching pgTAP test files found."
+          # Fail-closed enforcement: at least 4 pgTAP test files must be present and verified
+          if [ ${#TEST_FILES[@]} -lt 4 ]; then
+            echo "::error::Expected at least 4 pgTAP test files, but found ${#TEST_FILES[@]}. Aborting."
+            exit 1
           fi
+          echo "Running pgTAP test files: ${TEST_FILES[*]}"
+          supabase test db "${TEST_FILES[@]}"
 
       - name: Run RLS & Database Security Tests
         env:
@@ -102,8 +104,9 @@ jobs:
           REQUIRE_DB_TESTS: "true"
           NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
         run: |
-          if [ -f "tests/security/listings-rls.test.ts" ]; then
-            pnpm vitest run tests/security/listings-rls.test.ts
-          else
-            echo "No listings-rls.test.ts found; skipping."
+          # Fail-closed enforcement: required security test file must exist
+          if [ ! -f "tests/security/listings-rls.test.ts" ]; then
+            echo "::error::Required security test file tests/security/listings-rls.test.ts not found. Aborting."
+            exit 1
           fi
+          pnpm vitest run tests/security/listings-rls.test.ts
