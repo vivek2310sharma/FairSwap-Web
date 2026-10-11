@@ -1,0 +1,122 @@
+name: CI Test & Validation
+
+on:
+  pull_request:
+    branches:
+      - staging
+      - pr/**
+      - feature/**
+  push:
+    branches:
+      - staging
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-validate:
+    name: Lint, Typecheck & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm run lint
+
+      - name: Run Typecheck
+        run: pnpm run typecheck
+
+      - name: Run Moderation Unit Tests
+        run: |
+          if compgen -G "src/__tests__/moderation-*.test.ts" > /dev/null; then
+            pnpm vitest run src/__tests__/moderation-*.test.ts
+          else
+            echo "No moderation unit tests found on this branch; skipping."
+          fi
+
+  database-security-tests:
+    name: Supabase Local DB & Security Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start Disposable Local Supabase
+        run: supabase start -x studio,analytics,logflare,supavisor
+
+      - name: Run Schema & Media Invalidation pgTAP Tests
+        run: |
+          # Required baseline pgTAP test suite (fail-closed if any expected file is missing)
+          REQUIRED_FILES=(
+            "supabase/tests/admin_medium_operation.test.sql"
+            "supabase/tests/admin_reviewed_contract.test.sql"
+            "supabase/tests/schema_listings.test.sql"
+            "supabase/tests/schema_security.test.sql"
+          )
+          for req in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$req" ]; then
+              echo "::error::Required baseline pgTAP test file '$req' is missing. Aborting."
+              exit 1
+            fi
+          done
+
+          # Automatically discover all valid pgTAP test files (including future migrations like MOD-02B)
+          # Note: schema_email_outbox.test.sql remains explicitly documented as excluded/unverified due to obsolete pre-existing pgTAP syntax
+          TEST_FILES=()
+          for f in supabase/tests/*.test.sql; do
+            if [ -f "$f" ] && [ "$(basename "$f")" != "schema_email_outbox.test.sql" ]; then
+              TEST_FILES+=("$f")
+            fi
+          done
+
+          echo "Running pgTAP test files (${#TEST_FILES[@]} found): ${TEST_FILES[*]}"
+          supabase test db "${TEST_FILES[@]}"
+
+      - name: Run RLS & Database Security Tests
+        env:
+          CI: "true"
+          REQUIRE_DB_TESTS: "true"
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321"
+        run: |
+          # Fail-closed enforcement: required security test file must exist
+          if [ ! -f "tests/security/listings-rls.test.ts" ]; then
+            echo "::error::Required security test file tests/security/listings-rls.test.ts not found. Aborting."
+            exit 1
+          fi
+          pnpm vitest run tests/security/listings-rls.test.ts
