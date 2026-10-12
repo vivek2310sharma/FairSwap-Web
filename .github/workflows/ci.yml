@@ -329,13 +329,12 @@ jobs:
           echo "Baseline migrations applied via CLI in ${DURATION}ms"
 
           echo "Auditing migration tracking table and verifying exact baseline versions..."
-          APPLIED_JSON=$(supabase migration list --output json)
-          echo "Supabase CLI migration list output:"
+          APPLIED_JSON=$(supabase db query "SELECT version FROM supabase_migrations.schema_migrations ORDER BY version ASC;" --output json)
+          echo "schema_migrations records in local PostgreSQL 17:"
           echo "$APPLIED_JSON"
 
-          # Extract recorded migration versions from CLI output
-          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq '[.[] | select(.remote != null and .remote != "")] | length')
-          echo "Recorded remote/database migration count: $RECORDED_COUNT"
+          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq 'length')
+          echo "Recorded migration count: $RECORDED_COUNT"
 
           if [ "$RECORDED_COUNT" -ne 36 ]; then
             echo "::error::Expected exactly 36 recorded migrations in baseline, but found $RECORDED_COUNT."
@@ -345,7 +344,7 @@ jobs:
           # Verify exact version list matching BASELINE_MIGRATIONS
           for mig in "${BASELINE_MIGRATIONS[@]}"; do
             VER=$(echo "$mig" | cut -d'_' -f1)
-            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v and .remote != null and .remote != "") | .version')
+            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v) | .version')
             if [ -z "$MATCH" ]; then
               echo "::error::Baseline migration version $VER missing from migration tracking!"
               exit 1
@@ -382,8 +381,11 @@ jobs:
           echo "MOD-02B migrations applied via CLI in ${DURATION}ms"
 
           echo "Auditing migration tracking table for exact 39 migrations..."
-          APPLIED_JSON=$(supabase migration list --output json)
-          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq '[.[] | select(.remote != null and .remote != "")] | length')
+          APPLIED_JSON=$(supabase db query "SELECT version FROM supabase_migrations.schema_migrations ORDER BY version ASC;" --output json)
+          echo "schema_migrations records after MOD-02B:"
+          echo "$APPLIED_JSON"
+
+          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq 'length')
           echo "Recorded migration count after MOD-02B: $RECORDED_COUNT"
 
           if [ "$RECORDED_COUNT" -ne 39 ]; then
@@ -393,7 +395,7 @@ jobs:
 
           for mig in "${MOD02B_MIGRATIONS[@]}"; do
             VER=$(echo "$mig" | cut -d'_' -f1)
-            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v and .remote != null and .remote != "") | .version')
+            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v) | .version')
             if [ -z "$MATCH" ]; then
               echo "::error::MOD-02B migration version $VER missing from migration tracking!"
               exit 1
@@ -454,8 +456,11 @@ jobs:
           echo "MOD-03A migrations applied via CLI in ${DURATION}ms"
 
           echo "Auditing migration tracking table for exact 41 migrations..."
-          APPLIED_JSON=$(supabase migration list --output json)
-          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq '[.[] | select(.remote != null and .remote != "")] | length')
+          APPLIED_JSON=$(supabase db query "SELECT version FROM supabase_migrations.schema_migrations ORDER BY version ASC;" --output json)
+          echo "schema_migrations records after MOD-03A:"
+          echo "$APPLIED_JSON"
+
+          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq 'length')
           echo "Recorded migration count after MOD-03A: $RECORDED_COUNT"
 
           if [ "$RECORDED_COUNT" -ne 41 ]; then
@@ -465,7 +470,7 @@ jobs:
 
           for mig in "${MOD03A_MIGRATIONS[@]}"; do
             VER=$(echo "$mig" | cut -d'_' -f1)
-            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v and .remote != null and .remote != "") | .version')
+            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v) | .version')
             if [ -z "$MATCH" ]; then
               echo "::error::MOD-03A migration version $VER missing from migration tracking!"
               exit 1
