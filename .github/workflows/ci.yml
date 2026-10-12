@@ -9,6 +9,7 @@ on:
       - feature/**
   push:
     branches:
+      - main
       - staging
 
 permissions:
@@ -213,3 +214,252 @@ jobs:
           else
             echo "MOD-03A migrations not detected on this branch; skipping MOD-03A integration suite."
           fi
+
+  pg17-release-rehearsal:
+    name: Isolated PostgreSQL 17 Release Rehearsal
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Phase 1 — Verify Supabase CLI & Pinned Image PG17 Compatibility
+        run: |
+          echo "=== Phase 1: Checking PostgreSQL 17 compatibility on disposable runner ==="
+          # Create isolated temporary staging directory for PG17 test stack without touching permanent repo config
+          mkdir -p /tmp/sb-pg17-rehearsal/supabase/migrations
+          mkdir -p /tmp/sb-pg17-rehearsal/supabase/tests
+
+          # Copy config.toml and override major_version = 17 in isolated directory
+          sed 's/major_version = 15/major_version = 17/' supabase/config.toml > /tmp/sb-pg17-rehearsal/supabase/config.toml
+          cp -r supabase/templates /tmp/sb-pg17-rehearsal/supabase/ || true
+
+          echo "Starting isolated Supabase stack with major_version = 17 in /tmp/sb-pg17-rehearsal..."
+          cd /tmp/sb-pg17-rehearsal
+          supabase start -x studio,analytics,logflare,supavisor
+
+          # Query actual server version
+          PG_VERSION=$(supabase db query "SHOW server_version;" --output json | jq -r '.[0].server_version // empty')
+          PG_NUM=$(supabase db query "SHOW server_version_num;" --output json | jq -r '.[0].server_version_num // empty')
+          echo "Actual PostgreSQL server version reported: $PG_VERSION (numeric: $PG_NUM)"
+
+          # Check if major version is 17
+          if [[ "$PG_VERSION" =~ ^17\. ]]; then
+            echo "✓ Phase 1 PASSED: Supabase CLI successfully started PostgreSQL 17 stack ($PG_VERSION)."
+          else
+            echo "::error::PostgreSQL 17 was requested but stack reported version '$PG_VERSION'. Aborting."
+            supabase stop
+            exit 1
+          fi
+
+      - name: Phase 2 — Reconstruct Production Baseline (Exact 36 Migrations)
+        run: |
+          echo "=== Phase 2: Reconstructing FairSwapProd 36-migration baseline ==="
+          cd /tmp/sb-pg17-rehearsal
+
+          # Define the exact 36 production baseline migrations (ordered)
+          BASELINE_MIGRATIONS=(
+            "20260914000001_create_accounts_and_profiles.sql"
+            "20260914000002_create_staff_and_security.sql"
+            "20260914000003_create_audit_and_privacy.sql"
+            "20260914000004_create_categories_and_locations.sql"
+            "20260914000005_create_listings.sql"
+            "20260914000006_create_listing_media.sql"
+            "20260914000007_create_storage_buckets_and_policies.sql"
+            "20260914000008_create_listing_rpcs.sql"
+            "20260914000009_create_discovery_and_favourites.sql"
+            "20260914000010_create_notifications.sql"
+            "20260914000011_create_communication.sql"
+            "20260914000012_create_abuse_controls_and_reports.sql"
+            "20260914000013_create_support_and_appeals.sql"
+            "20260914000014_create_privacy_fulfillment_and_fk_safety.sql"
+            "20260914000015_correct_report_notification_and_permissions.sql"
+            "20260914000016_staff_user_moderation_and_hardening.sql"
+            "20260914000017_fix_report_target_visibility.sql"
+            "20260916000018_performance_and_reliability_indexes.sql"
+            "20260916000019_fix_public_rls_staff_helper_execution.sql"
+            "20260918000020_legal_acceptance_and_age_audit.sql"
+            "20260918000021_policy_reacceptance_records.sql"
+            "20260926000022_listing_email_notifications.sql"
+            "20260926000023_email_outbox_dispatch_runtime.sql"
+            "20260926000024_email_outbox_runtime_extensions.sql"
+            "20260929000025_india_postal_location_schema.sql"
+            "20260930000026_fix_india_location_admin_and_lookup.sql"
+            "20260930000027_support_multi_district_pincodes.sql"
+            "20260930000028_harden_official_postal_snapshot.sql"
+            "20261001000029_fix_listing_landmark_column_permissions.sql"
+            "20261001000030_require_explicit_postal_source.sql"
+            "20261001000031_harden_public_listing_location_privacy.sql"
+            "20261001000032_add_staff_private_listing_location_access.sql"
+            "20261002000033_seller_media_management.sql"
+            "20261007153735_admin_pending_medium_download.sql"
+            "20261007153744_atomic_reviewed_moderation.sql"
+            "20261007161425_admin_pending_medium_download_info.sql"
+          )
+
+          echo "Applying ${#BASELINE_MIGRATIONS[@]} production baseline migrations..."
+          for mig in "${BASELINE_MIGRATIONS[@]}"; do
+            START_MS=$(date +%s%3N)
+            supabase db query --file "$GITHUB_WORKSPACE/supabase/migrations/$mig"
+            END_MS=$(date +%s%3N)
+            DURATION=$((END_MS - START_MS))
+            echo "  [BASE MIGRATION] $mig applied in ${DURATION}ms"
+          done
+
+          # Record baseline migrations into schema_migrations table
+          for mig in "${BASELINE_MIGRATIONS[@]}"; do
+            VER=$(echo "$mig" | cut -d'_' -f1)
+            supabase db query "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
+          done
+
+          echo "Auditing extensions and core tables in PG17 baseline..."
+          supabase db query "SELECT extname, extversion FROM pg_extension WHERE extname IN ('pgcrypto', 'uuid-ossp', 'pg_net', 'pg_cron', 'vault');"
+          supabase db query "SELECT count(*) AS total_public_tables FROM information_schema.tables WHERE table_schema = 'public';"
+          echo "✓ Phase 2 PASSED: 36-migration production baseline established."
+
+      - name: Phase 3 — Rehearse MOD-02B Security Migrations & Regression Tests
+        run: |
+          echo "=== Phase 3: Applying and testing MOD-02B security migrations ==="
+          cd /tmp/sb-pg17-rehearsal
+
+          MOD02B_MIGRATIONS=(
+            "20261010071050_invalidate_pending_review_on_media_mutation.sql"
+            "20261010080000_remediate_legacy_moderate_listing.sql"
+            "20261010090000_invalidate_resubmission_review_token.sql"
+          )
+
+          for mig in "${MOD02B_MIGRATIONS[@]}"; do
+            START_MS=$(date +%s%3N)
+            supabase db query --file "$GITHUB_WORKSPACE/supabase/migrations/$mig"
+            END_MS=$(date +%s%3N)
+            DURATION=$((END_MS - START_MS))
+            echo "  [MOD-02B MIGRATION] $mig applied in ${DURATION}ms"
+            VER=$(echo "$mig" | cut -d'_' -f1)
+            supabase db query "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
+          done
+
+          echo "Running pgTAP tests against PG17 with MOD-02B..."
+          cp "$GITHUB_WORKSPACE/supabase/tests/pending_review_media_invalidation.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
+          cp "$GITHUB_WORKSPACE/supabase/tests/admin_reviewed_contract.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
+          cp "$GITHUB_WORKSPACE/supabase/tests/admin_medium_operation.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
+          cp "$GITHUB_WORKSPACE/supabase/tests/schema_listings.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
+          cp "$GITHUB_WORKSPACE/supabase/tests/schema_security.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
+
+          supabase test db \
+            /tmp/sb-pg17-rehearsal/supabase/tests/pending_review_media_invalidation.test.sql \
+            /tmp/sb-pg17-rehearsal/supabase/tests/admin_reviewed_contract.test.sql \
+            /tmp/sb-pg17-rehearsal/supabase/tests/admin_medium_operation.test.sql \
+            /tmp/sb-pg17-rehearsal/supabase/tests/schema_listings.test.sql \
+            /tmp/sb-pg17-rehearsal/supabase/tests/schema_security.test.sql
+
+          # Run RLS security test suite against PG17 stack
+          STATUS_JSON=$(supabase status -o json)
+          REST_URL=$(echo "$STATUS_JSON" | jq -r '.API_URL // empty')
+          ANON_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // empty')
+          SERVICE_ROLE_KEY=$(echo "$STATUS_JSON" | jq -r '.SERVICE_ROLE_KEY // empty')
+
+          cd "$GITHUB_WORKSPACE"
+          CI=true \
+          REQUIRE_DB_TESTS=true \
+          NEXT_PUBLIC_SUPABASE_URL="$REST_URL" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY" \
+          SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
+          pnpm vitest run tests/security/listings-rls.test.ts
+
+          echo "✓ Phase 3 PASSED: MOD-02B security migrations and regression tests verified on PG17."
+
+      - name: Phase 4 — Rehearse Dormant MOD-03A Separately
+        run: |
+          echo "=== Phase 4: Applying and testing dormant MOD-03A migrations ==="
+          cd /tmp/sb-pg17-rehearsal
+
+          MOD03A_MIGRATIONS=(
+            "20261011000038_create_moderation_queue_and_results.sql"
+            "20261011000039_moderation_dispatch_and_killswitch.sql"
+          )
+
+          for mig in "${MOD03A_MIGRATIONS[@]}"; do
+            START_MS=$(date +%s%3N)
+            supabase db query --file "$GITHUB_WORKSPACE/supabase/migrations/$mig"
+            END_MS=$(date +%s%3N)
+            DURATION=$((END_MS - START_MS))
+            echo "  [MOD-03A MIGRATION] $mig applied in ${DURATION}ms"
+            VER=$(echo "$mig" | cut -d'_' -f1)
+            supabase db query "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
+          done
+
+          # Verify automation is disabled by default
+          SETTING_VAL=$(supabase db query "SELECT setting_value FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled';" --output json | jq -r '.[0].setting_value // empty')
+          echo "DB setting moderation_automation_enabled: '$SETTING_VAL'"
+          if [ "$SETTING_VAL" != "false" ]; then
+            echo "::error::Expected moderation_automation_enabled to default to 'false', but found '$SETTING_VAL'."
+            exit 1
+          fi
+
+          # Connection setup for integration test
+          STATUS_JSON=$(supabase status -o json)
+          DB_URL=$(echo "$STATUS_JSON" | jq -r '.DB_URL // empty')
+          REST_URL=$(echo "$STATUS_JSON" | jq -r '.API_URL // empty')
+          ANON_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // empty')
+          SERVICE_ROLE_KEY=$(echo "$STATUS_JSON" | jq -r '.SERVICE_ROLE_KEY // empty')
+          DB_PORT=$(echo "$DB_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
+
+          TASK_RUN_ID="ci-pg17-rehearsal-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
+          supabase db query 'CREATE SCHEMA IF NOT EXISTS test_validation_meta;'
+          supabase db query 'CREATE TABLE IF NOT EXISTS test_validation_meta.run_identity (run_id text PRIMARY KEY, task text NOT NULL);'
+          supabase db query "INSERT INTO test_validation_meta.run_identity (run_id, task) VALUES ('$TASK_RUN_ID', 'MOD-03A') ON CONFLICT (run_id) DO UPDATE SET task = EXCLUDED.task;"
+
+          cd "$GITHUB_WORKSPACE"
+          REPORT_FILE="mod03a-pg17-report.json"
+          MOD03A_RUN_LOCAL_DB_TESTS=true \
+          MOD03A_TASK_RUN_ID="$TASK_RUN_ID" \
+          MOD03A_DB_HOST="127.0.0.1" \
+          MOD03A_DB_PORT="$DB_PORT" \
+          MOD03A_DB_NAME="postgres" \
+          NEXT_PUBLIC_SUPABASE_URL="$REST_URL" \
+          NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY" \
+          SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY" \
+          pnpm vitest run src/__tests__/moderation-integration.test.ts --pool=threads --reporter=default --reporter=json --outputFile="$REPORT_FILE"
+
+          # Zero-skip audit
+          TOTAL=$(jq -r '.numTotalTests // empty' "$REPORT_FILE")
+          PASSED=$(jq -r '.numPassedTests // empty' "$REPORT_FILE")
+          FAILED=$(jq -r '.numFailedTests // empty' "$REPORT_FILE")
+          PENDING=$(jq -r '.numPendingTests // empty' "$REPORT_FILE")
+          SUCCESS=$(jq -r '.success // empty' "$REPORT_FILE")
+
+          echo "=== MOD-03A PG17 Rehearsal Audit ==="
+          echo "Total: $TOTAL | Passed: $PASSED | Failed: $FAILED | Skipped: $PENDING | Success: $SUCCESS"
+
+          if [ "$SUCCESS" != "true" ] || [ "$FAILED" -ne 0 ] || [ "$PENDING" -ne 0 ] || [ "$TOTAL" -lt 13 ]; then
+            echo "::error::MOD-03A zero-skip verification failed on PG17!"
+            exit 1
+          fi
+
+          echo "✓ Phase 4 PASSED: MOD-03A rehearsal verified with 13/13 scenarios passing on PostgreSQL 17."
+
+      - name: Phase 5 — Teardown Isolated PG17 Rehearsal Stack
+        if: always()
+        run: |
+          echo "Tearing down isolated PG17 Supabase stack..."
+          cd /tmp/sb-pg17-rehearsal && supabase stop || true
+          rm -rf /tmp/sb-pg17-rehearsal
