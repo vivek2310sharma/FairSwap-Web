@@ -267,7 +267,11 @@ export async function submitListingAction(listingId: string): Promise<ListingAct
   }
 
   revalidatePath("/account/listings");
-  return { success: true, listingId, message: "Listing submitted for review." };
+  return {
+    success: true,
+    listingId,
+    message: "Listing submitted for review.",
+  };
 }
 
 export async function transitionListingAction(

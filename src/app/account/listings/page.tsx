@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ListingStatus } from "@/types/listing";
 import { transitionListingAction, submitListingAction } from "./actions";
+import { ModerationStatusBadge } from "./ModerationStatusBadge";
 
 function getStatusBadge(status: ListingStatus) {
   const styles: Record<ListingStatus, string> = {
@@ -156,7 +157,14 @@ export default async function ListingsDashboardPage() {
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-bold text-gray-900">{listing.title}</h2>
-                      {getStatusBadge(listing.status)}
+                      {listing.status === "pending_review" ? (
+                        <ModerationStatusBadge
+                          listingId={listing.id}
+                          initialStatus={listing.status}
+                        />
+                      ) : (
+                        getStatusBadge(listing.status)
+                      )}
                       <span className="text-xs text-gray-400">Rev {listing.revision}</span>
                     </div>
 
