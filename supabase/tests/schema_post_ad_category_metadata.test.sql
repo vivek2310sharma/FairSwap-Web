@@ -74,8 +74,10 @@ UPDATE public.categories SET is_active = false WHERE slug = 'electronics';
 CREATE TEMP TABLE a1p_fixture_owner AS SELECT gen_random_uuid() AS id;
 INSERT INTO auth.users (id, email, raw_user_meta_data, raw_app_meta_data, created_at, updated_at)
 SELECT id, 'a1p-' || id::text || '@example.invalid',
-  '{"display_name":"A1-P inert schema owner"}'::jsonb, '{}'::jsonb, now(), now()
+  '{"display_name":"A1-P inert schema owner","terms_accepted":"true","terms_version":"2026-09-18","privacy_policy_version":"2026-09-18","acceptable_use_version":"2026-09-18","age_confirmed":"true"}'::jsonb, '{}'::jsonb, now(), now()
 FROM a1p_fixture_owner;
+INSERT INTO public.policy_acceptance_records (user_id, terms_version, privacy_policy_version, acceptable_use_version, minimum_age_confirmed)
+SELECT id, '2026-09-18', '2026-09-18', '2026-09-18', 18 FROM a1p_fixture_owner;
 INSERT INTO public.listings (seller_id, category_id, city_id, title, category_attributes)
 VALUES (
   (SELECT id FROM a1p_fixture_owner),

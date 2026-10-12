@@ -45,7 +45,10 @@ SELECT set_config('request.jwt.claim.sub', '', true);
 SELECT set_config('request.jwt.claims', '{}', true);
 INSERT INTO auth.users (id, email, raw_user_meta_data, raw_app_meta_data, created_at, updated_at)
 SELECT user_id, 'saved-context-' || user_id::text || '@example.invalid',
-  '{"display_name":"Synthetic saved context owner"}'::jsonb, '{}'::jsonb, now(), now()
+  '{"display_name":"Synthetic saved context owner","terms_accepted":"true","terms_version":"2026-09-18","privacy_policy_version":"2026-09-18","acceptable_use_version":"2026-09-18","age_confirmed":"true"}'::jsonb, '{}'::jsonb, now(), now()
+FROM sc_ids CROSS JOIN LATERAL (VALUES (owner_id), (other_id), (staff_id)) ids(user_id);
+INSERT INTO public.policy_acceptance_records (user_id, terms_version, privacy_policy_version, acceptable_use_version, minimum_age_confirmed)
+SELECT user_id, '2026-09-18', '2026-09-18', '2026-09-18', 18
 FROM sc_ids CROSS JOIN LATERAL (VALUES (owner_id), (other_id), (staff_id)) ids(user_id);
 INSERT INTO public.staff_roles (user_id, role) SELECT staff_id, 'administrator' FROM sc_ids;
 INSERT INTO public.cities (id, name, state, slug)

@@ -26,3 +26,14 @@ it('mismatched context does not establish family or submission eligibility',asyn
 it('listing projection supplies the category binding needed by owner fallbacks',async()=>{render(await ListingsDashboardPage());expect(m.select.mock.calls[0][0]).toMatch(/\bcategory_id\b/);});
 it('thrown context reads leave the unresolved draft unavailable',async()=>{m.rows=[{...rows[2],categories:null}];m.from.mockImplementation(table=>{if(table==='listing_vehicle_contexts')throw Error('Unavailable');const q={select:()=>q,eq:()=>q,order:()=>q,limit:async()=>({data:m.rows,error:null}),in:async()=>({data:[],error:null})};return q;});render(await ListingsDashboardPage());noSubmit('tw');expect(card('tw').getByText(/Category references could not be loaded/)).toBeInTheDocument();});
 it('Cars-only gate reads no disabled motorcycle or Property table',async()=>{m.flags={property:false,tw:false,cars:true};m.rows=[{...rows[3],categories:[]}];m.contexts.listing_car_contexts=[{listing_id:'car',category_id:'car-category'}];render(await ListingsDashboardPage());noSubmit('car');expect(card('car').getByText(/Test draft only/)).toBeInTheDocument();expect(m.from.mock.calls.map(c=>c[0])).toEqual(['listings','listing_car_contexts']);});
+
+it.each(['tw','car','pg'])('keeps one Awaiting review badge for pending %s when enhanced Goods status is enabled',async id=>{
+  process.env.NEXT_PUBLIC_ENABLE_ENHANCED_MODERATION_STATUS='true';
+  try {
+    m.rows=[{...rows.find(r=>r.id===id)!,status:'pending_review'}];
+    render(await ListingsDashboardPage());
+    expect(screen.getAllByText('Awaiting review')).toHaveLength(1);
+    expect(screen.queryByText('Under Review')).toBeNull();
+    expect(screen.queryByText('Checking...')).toBeNull();
+  } finally { delete process.env.NEXT_PUBLIC_ENABLE_ENHANCED_MODERATION_STATUS; }
+});
