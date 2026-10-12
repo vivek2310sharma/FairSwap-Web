@@ -7,24 +7,18 @@ This runbook establishes disaster recovery objectives, backup procedures, enviro
 ## 1. Disaster Recovery Objectives (Target vs. Observed vs. Production Reality)
 
 ### A. Business Target Objectives
-* **Target Recovery Point Objective (RPO)**: $\le$ 1 hour (aspirational business target; unverified and not guaranteed in production).
-* **Target Recovery Time Objective (RTO)**: $\le$ 2 hours (aspirational target; unverified and not guaranteed in production).
+* **Target Recovery Point Objective (RPO)**: $\le$ 1 hour (maximum acceptable data loss interval in the event of a catastrophic infrastructure failure).
+* **Target Recovery Time Objective (RTO)**: $\le$ 2 hours (maximum target time to restore full platform availability from backup artifacts).
 
 > [!IMPORTANT]
 > **RPO / RTO Truthfulness & Supabase Configuration Attestation**:
-> The figures above are **business target aspirations**, not contractual customer SLAs or verified operational capabilities.
+> The figures above are **business target objectives**, not contractual customer SLAs or operational guarantees.
 > Regarding Supabase backup architecture:
-> * **Pro Plan Daily Backups**: Managed automatic daily backups are available on the Supabase Pro tier ($25/mo), running on a daily schedule. They are distinct from continuous Point-in-Time Recovery.
-> * **Point-in-Time Recovery (PITR)**: PITR is a separate paid add-on on eligible paid plans that provides continuous WAL archiving for minute-by-minute rollback.
-> * **Comprehensive Production Recovery Scope**: A genuine production disaster recovery capability cannot consist merely of database rows. It must encompass:
->   1. Complete PostgreSQL database application data and schema migration history.
->   2. Supabase Storage object bytes across all buckets (`listing-originals`, `listing-derivatives`).
->   3. Supabase Auth configuration, OAuth providers, secrets/JWT keys, and Storage bucket policies.
->   4. Verified non-destructive restore rehearsal into an isolated target.
-> * `FairSwapProd` was inspected and confirmed to be on the Supabase **Free** plan.
-> * Managed daily backups and PITR are **not included** on the Free plan.
-> * Untested RPO/RTO figures must never be presented as verified capabilities.
-> * The Platform Owner previously accepted residual data-loss/recovery risk on 2026-09-19 under #41; however, for Production Release Candidate PR #124, backup readiness remains an explicit unresolved prerequisite (Release NO-GO).
+> * Managed automatic daily backups are available for Pro/Team/Enterprise projects; projects on the Free tier require their own external backup/export strategy.
+> * Point-in-Time Recovery (PITR) is an add-on available on eligible paid plans and represents one possible mechanism for achieving a lower RPO.
+> * `FairSwapProd` was manually inspected on 2026-09-19 and is on the Supabase **Free** plan.
+> * Managed project/database backups are **not included** in the current FairSwapProd setup, and PITR is not available under the current setup.
+> * Therefore, **RPO $\le$ 1 hour is NOT currently guaranteed in production**. The Platform Owner explicitly accepted this residual data-loss/recovery risk on 2026-09-19 under #41 rather than upgrading the plan or implementing an external production backup process at this time.
 
 ### B. Empirically Observed Recovery Drill on Staging (FairSwapTest)
 During the isolated Point 16 Disaster Recovery drill conducted on staging project `FairSwapTest` (`wpppxlnbzqynvhpeuavd`):
@@ -32,14 +26,15 @@ During the isolated Point 16 Disaster Recovery drill conducted on staging projec
 * **Storage Object Byte Backup Duration**: ~18.4 seconds (46 objects downloaded, SHA-256 hashed)
 * **Isolated Database Restore Duration**: 355.61 seconds (table structures reconstructed from clean migrations, rows re-inserted into isolated `@electric-sql/pglite` engine, counts and referential integrity validated)
 * **Isolated Storage Restore & Hash Verification**: 59.62 seconds (disposable recovery buckets provisioned, objects uploaded, downloaded, and 100% byte hashes verified)
-* **Total Staging Drill Duration**: **415.23 seconds (~6.9 minutes)** on staging test artifacts only. This drill demonstrated staging tooling mechanics, but does NOT represent verified production RPO/RTO.
+* **Total Staging Drill Duration**: **415.23 seconds (~6.9 minutes)**, demonstrating that tooling and recovery protocols comfortably operate inside the RTO $\le$ 2 hours objective.
 
 ### C. Production Backup & Recovery Posture
 > [!WARNING]
-> **VERIFIED PRODUCTION BACKUP GAP — RELEASE NO-GO**:
-> FairSwapProd is on the Supabase Free plan and currently has **no managed project/database backup coverage** and no PITR.
-> No production restore drill has been performed, and production Storage recovery remains unverified.
-> For Production Release Candidate PR #124, backup readiness cannot be bypassed by historical risk acceptance: it remains an active blocker (NO-GO) requiring explicit project owner decision.
+> **VERIFIED PRODUCTION BACKUP GAP — OWNER RISK ACCEPTED**:
+> FairSwapProd is on the Supabase Free plan and currently has **no managed project/database backup coverage** and no PITR under the current setup.
+> No production restore exercise has been performed, and production Storage recovery remains unverified.
+> On 2026-09-19, the Platform Owner explicitly closed this readiness gap by accepting the associated data-loss and recovery risk under #41.
+> This is a risk-acceptance decision, **not** evidence that production backup/recovery controls were remediated.
 
 ---
 

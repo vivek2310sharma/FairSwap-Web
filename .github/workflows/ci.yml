@@ -316,29 +316,42 @@ jobs:
             "20261007161425_admin_pending_medium_download_info.sql"
           )
 
-          echo "Applying ${#BASELINE_MIGRATIONS[@]} production baseline migrations via psql..."
-          CONTAINER_ID=$(docker ps --filter "name=supabase_db_fairswap-local" --format "{{.ID}}")
-          if [ -z "$CONTAINER_ID" ]; then
-            CONTAINER_ID=$(docker ps --filter "ancestor=supabase/postgres:17.4.1.080" --format "{{.ID}}" | head -n1)
-          fi
-          if [ -z "$CONTAINER_ID" ]; then
-            CONTAINER_ID=$(docker ps -q --filter "publish=54322" | head -n1)
-          fi
-          echo "Target PostgreSQL container ID: $CONTAINER_ID"
-
+          echo "Staging ${#BASELINE_MIGRATIONS[@]} baseline migrations in isolated environment..."
           for mig in "${BASELINE_MIGRATIONS[@]}"; do
-            START_MS=$(date +%s%3N)
-            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$GITHUB_WORKSPACE/supabase/migrations/$mig"
-            END_MS=$(date +%s%3N)
-            DURATION=$((END_MS - START_MS))
-            echo "  [BASE MIGRATION] $mig applied in ${DURATION}ms"
+            cp "$GITHUB_WORKSPACE/supabase/migrations/$mig" supabase/migrations/
           done
 
-          # Record baseline migrations into schema_migrations table
+          echo "Applying baseline migrations with 'supabase migration up'..."
+          START_MS=$(date +%s%3N)
+          supabase migration up
+          END_MS=$(date +%s%3N)
+          DURATION=$((END_MS - START_MS))
+          echo "Baseline migrations applied via CLI in ${DURATION}ms"
+
+          echo "Auditing migration tracking table and verifying exact baseline versions..."
+          APPLIED_JSON=$(supabase migration list --output json)
+          echo "Supabase CLI migration list output:"
+          echo "$APPLIED_JSON"
+
+          # Extract recorded migration versions from CLI output
+          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq '[.[] | select(.remote != null and .remote != "")] | length')
+          echo "Recorded remote/database migration count: $RECORDED_COUNT"
+
+          if [ "$RECORDED_COUNT" -ne 36 ]; then
+            echo "::error::Expected exactly 36 recorded migrations in baseline, but found $RECORDED_COUNT."
+            exit 1
+          fi
+
+          # Verify exact version list matching BASELINE_MIGRATIONS
           for mig in "${BASELINE_MIGRATIONS[@]}"; do
             VER=$(echo "$mig" | cut -d'_' -f1)
-            supabase db query "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
+            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v and .remote != null and .remote != "") | .version')
+            if [ -z "$MATCH" ]; then
+              echo "::error::Baseline migration version $VER missing from migration tracking!"
+              exit 1
+            fi
           done
+          echo "✓ All 36 baseline migration versions verified in migration history with zero discrepancies."
 
           echo "Auditing extensions and core tables in PG17 baseline..."
           supabase db query "SELECT extname, extversion FROM pg_extension WHERE extname IN ('pgcrypto', 'uuid-ossp', 'pg_net', 'pg_cron', 'vault');"
@@ -356,20 +369,37 @@ jobs:
             "20261010090000_invalidate_resubmission_review_token.sql"
           )
 
-          CONTAINER_ID=$(docker ps --filter "name=supabase_db_fairswap-local" --format "{{.ID}}")
-          if [ -z "$CONTAINER_ID" ]; then
-            CONTAINER_ID=$(docker ps -q --filter "publish=54322" | head -n1)
+          echo "Staging ${#MOD02B_MIGRATIONS[@]} MOD-02B migrations in isolated environment..."
+          for mig in "${MOD02B_MIGRATIONS[@]}"; do
+            cp "$GITHUB_WORKSPACE/supabase/migrations/$mig" supabase/migrations/
+          done
+
+          echo "Applying MOD-02B migrations with 'supabase migration up'..."
+          START_MS=$(date +%s%3N)
+          supabase migration up
+          END_MS=$(date +%s%3N)
+          DURATION=$((END_MS - START_MS))
+          echo "MOD-02B migrations applied via CLI in ${DURATION}ms"
+
+          echo "Auditing migration tracking table for exact 39 migrations..."
+          APPLIED_JSON=$(supabase migration list --output json)
+          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq '[.[] | select(.remote != null and .remote != "")] | length')
+          echo "Recorded migration count after MOD-02B: $RECORDED_COUNT"
+
+          if [ "$RECORDED_COUNT" -ne 39 ]; then
+            echo "::error::Expected exactly 39 recorded migrations after MOD-02B, but found $RECORDED_COUNT."
+            exit 1
           fi
 
           for mig in "${MOD02B_MIGRATIONS[@]}"; do
-            START_MS=$(date +%s%3N)
-            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$GITHUB_WORKSPACE/supabase/migrations/$mig"
-            END_MS=$(date +%s%3N)
-            DURATION=$((END_MS - START_MS))
-            echo "  [MOD-02B MIGRATION] $mig applied in ${DURATION}ms"
             VER=$(echo "$mig" | cut -d'_' -f1)
-            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -c "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
+            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v and .remote != null and .remote != "") | .version')
+            if [ -z "$MATCH" ]; then
+              echo "::error::MOD-02B migration version $VER missing from migration tracking!"
+              exit 1
+            fi
           done
+          echo "✓ All 39 migration versions (36 baseline + 3 MOD-02B) verified in migration history with zero discrepancies."
 
           echo "Running pgTAP tests against PG17 with MOD-02B..."
           cp "$GITHUB_WORKSPACE/supabase/tests/pending_review_media_invalidation.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
@@ -406,28 +436,45 @@ jobs:
           echo "=== Phase 4: Applying and testing dormant MOD-03A migrations ==="
           cd /tmp/sb-pg17-rehearsal
 
-          CONTAINER_ID=$(docker ps --filter "name=supabase_db_fairswap-local" --format "{{.ID}}")
-          if [ -z "$CONTAINER_ID" ]; then
-            CONTAINER_ID=$(docker ps -q --filter "publish=54322" | head -n1)
-          fi
-
           MOD03A_MIGRATIONS=(
             "20261011000038_create_moderation_queue_and_results.sql"
             "20261011000039_moderation_dispatch_and_killswitch.sql"
           )
 
+          echo "Staging ${#MOD03A_MIGRATIONS[@]} MOD-03A migrations in isolated environment..."
           for mig in "${MOD03A_MIGRATIONS[@]}"; do
-            START_MS=$(date +%s%3N)
-            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$GITHUB_WORKSPACE/supabase/migrations/$mig"
-            END_MS=$(date +%s%3N)
-            DURATION=$((END_MS - START_MS))
-            echo "  [MOD-03A MIGRATION] $mig applied in ${DURATION}ms"
-            VER=$(echo "$mig" | cut -d'_' -f1)
-            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -c "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
+            cp "$GITHUB_WORKSPACE/supabase/migrations/$mig" supabase/migrations/
           done
 
+          echo "Applying MOD-03A migrations with 'supabase migration up'..."
+          START_MS=$(date +%s%3N)
+          supabase migration up
+          END_MS=$(date +%s%3N)
+          DURATION=$((END_MS - START_MS))
+          echo "MOD-03A migrations applied via CLI in ${DURATION}ms"
+
+          echo "Auditing migration tracking table for exact 41 migrations..."
+          APPLIED_JSON=$(supabase migration list --output json)
+          RECORDED_COUNT=$(echo "$APPLIED_JSON" | jq '[.[] | select(.remote != null and .remote != "")] | length')
+          echo "Recorded migration count after MOD-03A: $RECORDED_COUNT"
+
+          if [ "$RECORDED_COUNT" -ne 41 ]; then
+            echo "::error::Expected exactly 41 recorded migrations after MOD-03A, but found $RECORDED_COUNT."
+            exit 1
+          fi
+
+          for mig in "${MOD03A_MIGRATIONS[@]}"; do
+            VER=$(echo "$mig" | cut -d'_' -f1)
+            MATCH=$(echo "$APPLIED_JSON" | jq -r --arg v "$VER" '.[] | select(.version == $v and .remote != null and .remote != "") | .version')
+            if [ -z "$MATCH" ]; then
+              echo "::error::MOD-03A migration version $VER missing from migration tracking!"
+              exit 1
+            fi
+          done
+          echo "✓ All 41 migration versions (36 baseline + 3 MOD-02B + 2 MOD-03A) verified in migration history with zero discrepancies."
+
           # Verify automation is disabled by default
-          SETTING_VAL=$(docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -t -A -c "SELECT setting_value FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled';")
+          SETTING_VAL=$(supabase db query "SELECT setting_value FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled';" --output json | jq -r '.[0].setting_value // empty')
           echo "DB setting moderation_automation_enabled: '$SETTING_VAL'"
           if [ "$SETTING_VAL" != "false" ]; then
             echo "::error::Expected moderation_automation_enabled to default to 'false', but found '$SETTING_VAL'."
