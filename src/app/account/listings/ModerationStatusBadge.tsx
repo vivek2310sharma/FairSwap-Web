@@ -142,7 +142,7 @@ export function ModerationStatusBadge({
   }
 
   return (
-    <div className="mt-2 flex flex-col gap-1">
+    <div className="inline-flex flex-col items-start gap-1">
       <div className="flex items-center gap-2">
         <span
           className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badgeColor}`}

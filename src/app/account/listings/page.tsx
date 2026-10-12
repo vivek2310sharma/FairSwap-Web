@@ -157,16 +157,16 @@ export default async function ListingsDashboardPage() {
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-bold text-gray-900">{listing.title}</h2>
-                      {getStatusBadge(listing.status)}
+                      {listing.status === "pending_review" ? (
+                        <ModerationStatusBadge
+                          listingId={listing.id}
+                          initialStatus={listing.status}
+                        />
+                      ) : (
+                        getStatusBadge(listing.status)
+                      )}
                       <span className="text-xs text-gray-400">Rev {listing.revision}</span>
                     </div>
-
-                    {listing.status === "pending_review" && (
-                      <ModerationStatusBadge
-                        listingId={listing.id}
-                        initialStatus={listing.status}
-                      />
-                    )}
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
                       <span className="font-semibold text-gray-900 text-sm">{priceDisplay}</span>

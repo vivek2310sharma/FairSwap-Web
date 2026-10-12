@@ -270,7 +270,7 @@ export async function submitListingAction(listingId: string): Promise<ListingAct
   return {
     success: true,
     listingId,
-    message: "Listing submitted. Your ad is being checked automatically.",
+    message: "Listing submitted for review.",
   };
 }
 
