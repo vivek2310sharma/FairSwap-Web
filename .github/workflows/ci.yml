@@ -316,10 +316,19 @@ jobs:
             "20261007161425_admin_pending_medium_download_info.sql"
           )
 
-          echo "Applying ${#BASELINE_MIGRATIONS[@]} production baseline migrations..."
+          echo "Applying ${#BASELINE_MIGRATIONS[@]} production baseline migrations via psql..."
+          CONTAINER_ID=$(docker ps --filter "name=supabase_db_fairswap-local" --format "{{.ID}}")
+          if [ -z "$CONTAINER_ID" ]; then
+            CONTAINER_ID=$(docker ps --filter "ancestor=supabase/postgres:17.4.1.080" --format "{{.ID}}" | head -n1)
+          fi
+          if [ -z "$CONTAINER_ID" ]; then
+            CONTAINER_ID=$(docker ps -q --filter "publish=54322" | head -n1)
+          fi
+          echo "Target PostgreSQL container ID: $CONTAINER_ID"
+
           for mig in "${BASELINE_MIGRATIONS[@]}"; do
             START_MS=$(date +%s%3N)
-            supabase db query --file "$GITHUB_WORKSPACE/supabase/migrations/$mig"
+            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$GITHUB_WORKSPACE/supabase/migrations/$mig"
             END_MS=$(date +%s%3N)
             DURATION=$((END_MS - START_MS))
             echo "  [BASE MIGRATION] $mig applied in ${DURATION}ms"
@@ -347,14 +356,19 @@ jobs:
             "20261010090000_invalidate_resubmission_review_token.sql"
           )
 
+          CONTAINER_ID=$(docker ps --filter "name=supabase_db_fairswap-local" --format "{{.ID}}")
+          if [ -z "$CONTAINER_ID" ]; then
+            CONTAINER_ID=$(docker ps -q --filter "publish=54322" | head -n1)
+          fi
+
           for mig in "${MOD02B_MIGRATIONS[@]}"; do
             START_MS=$(date +%s%3N)
-            supabase db query --file "$GITHUB_WORKSPACE/supabase/migrations/$mig"
+            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$GITHUB_WORKSPACE/supabase/migrations/$mig"
             END_MS=$(date +%s%3N)
             DURATION=$((END_MS - START_MS))
             echo "  [MOD-02B MIGRATION] $mig applied in ${DURATION}ms"
             VER=$(echo "$mig" | cut -d'_' -f1)
-            supabase db query "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
+            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -c "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
           done
 
           echo "Running pgTAP tests against PG17 with MOD-02B..."
@@ -392,6 +406,11 @@ jobs:
           echo "=== Phase 4: Applying and testing dormant MOD-03A migrations ==="
           cd /tmp/sb-pg17-rehearsal
 
+          CONTAINER_ID=$(docker ps --filter "name=supabase_db_fairswap-local" --format "{{.ID}}")
+          if [ -z "$CONTAINER_ID" ]; then
+            CONTAINER_ID=$(docker ps -q --filter "publish=54322" | head -n1)
+          fi
+
           MOD03A_MIGRATIONS=(
             "20261011000038_create_moderation_queue_and_results.sql"
             "20261011000039_moderation_dispatch_and_killswitch.sql"
@@ -399,16 +418,16 @@ jobs:
 
           for mig in "${MOD03A_MIGRATIONS[@]}"; do
             START_MS=$(date +%s%3N)
-            supabase db query --file "$GITHUB_WORKSPACE/supabase/migrations/$mig"
+            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < "$GITHUB_WORKSPACE/supabase/migrations/$mig"
             END_MS=$(date +%s%3N)
             DURATION=$((END_MS - START_MS))
             echo "  [MOD-03A MIGRATION] $mig applied in ${DURATION}ms"
             VER=$(echo "$mig" | cut -d'_' -f1)
-            supabase db query "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
+            docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -c "INSERT INTO supabase_migrations.schema_migrations (version) VALUES ('$VER') ON CONFLICT DO NOTHING;" || true
           done
 
           # Verify automation is disabled by default
-          SETTING_VAL=$(supabase db query "SELECT setting_value FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled';" --output json | jq -r '.[0].setting_value // empty')
+          SETTING_VAL=$(docker exec -i "$CONTAINER_ID" psql -U postgres -d postgres -t -A -c "SELECT setting_value FROM public.app_system_settings WHERE setting_key = 'moderation_automation_enabled';")
           echo "DB setting moderation_automation_enabled: '$SETTING_VAL'"
           if [ "$SETTING_VAL" != "false" ]; then
             echo "::error::Expected moderation_automation_enabled to default to 'false', but found '$SETTING_VAL'."
