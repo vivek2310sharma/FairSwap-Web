@@ -2,11 +2,11 @@ import "server-only";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ListingCategoryReference, ListingAttributeReference, City } from "@/types/listing";
-import { isVerifiedPostAdTestEnvironment } from "./test-runtime";
+import { isVerifiedPostAdTestEnvironment, isVerifiedGoodsProductionEnvironment } from "./test-runtime";
 import {classifyCategoryAssignment,loadSavedCategoryContext,savedContextSchema,type SavedContext} from "./saved-category-context";
 import type {PostAdLocations} from './post-ad-locations';
 
-export function isGoodsPostAdEnabled() { return isVerifiedPostAdTestEnvironment(process.env); }
+export function isGoodsPostAdEnabled() { return isVerifiedPostAdTestEnvironment(process.env) || isVerifiedGoodsProductionEnvironment(process.env); }
 const metadata = z.object({ id: z.string().uuid(), is_active: z.boolean(), macro_category: z.string().nullable(), new_listing_enabled: z.boolean() }).passthrough();
 export function isEligibleGoodsCategory(value: unknown): boolean {
   const parsed = metadata.safeParse(value);
@@ -36,7 +36,7 @@ export async function loadGoodsReferences(supabase: SupabaseClient, savedContext
 /** Presentation metadata is not RLS; seller clients and database guards remain authoritative. */
 export async function validatePostAdSelection(supabase: SupabaseClient, form: FormData, listingId?: string, userId?: string): Promise<string | null> {
   const entry = form.getAll("post_ad_entry");
-  if (!isGoodsPostAdEnabled()) return entry.length ? "The staging Post Ad flow is unavailable." : null;
+  if (!isGoodsPostAdEnabled()) return entry.length ? "The Post Ad flow is unavailable." : null;
   if (entry.length > 1 || (entry.length && entry[0] !== "goods" && entry[0] !== "legacy")) return "Invalid Post Ad context.";
   let goods = entry[0] === "goods";
   let savedCategoryId: string | undefined;
