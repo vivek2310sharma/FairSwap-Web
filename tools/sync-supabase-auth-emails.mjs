@@ -144,9 +144,12 @@ export async function run(args = process.argv.slice(2), token = process.env.SUPA
     throw new Error("Usage: audit|apply|rollback --env test|prod [--confirm APPLY-TEST|APPLY-PROD|ROLLBACK-TEST|ROLLBACK-PROD] [--backup /absolute/path] [--test-mails-verified]");
   }
   if (!token) throw new Error("Set SUPABASE_ACCESS_TOKEN securely (Supabase Management API PAT required)");
-  const current = pick(await authConfig(ref, token));
+  const hostedSettings = await authConfig(ref, token);
+  const smtpConfigured = typeof hostedSettings.smtp_host === "string" && hostedSettings.smtp_host.trim().length > 0;
+  const current = pick(hostedSettings);
   const desiredFromRepo = command === "rollback" ? null : candidate();
   process.stdout.write("Existing " + env + " hosted HTML analysis (metadata only):\n" + JSON.stringify(summary(current), null, 2) + "\n");
+  process.stdout.write("Custom SMTP host configured (no hostname exposed): " + smtpConfigured + "\n");
   if (desiredFromRepo) process.stdout.write("Matches repository target: " + equal(current, desiredFromRepo) + "\n");
 
   if (command === "audit") {
@@ -167,6 +170,7 @@ export async function run(args = process.argv.slice(2), token = process.env.SUPA
     desired = comparable(snapshot.fields);
     recoverable(desired);
   } else {
+    if (!smtpConfigured) throw new Error("Custom Auth SMTP not detected. New Free-tier projects cannot edit Auth templates using default SMTP");
     recoverable(current);
     if (env === "prod") {
       const test = pick(await authConfig(projects.test, token));
