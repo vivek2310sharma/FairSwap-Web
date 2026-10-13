@@ -1,0 +1,37 @@
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import type {SupabaseClient} from '@supabase/supabase-js';
+import type {Database} from '@/types/database';
+import {loadOwnerReadiness} from '@/lib/listings/readiness-server';
+import {fixture,lid,cid,vid,sid} from './readiness-fixtures';
+const owner='88888888-8888-4888-8888-888888888888';
+let tables:string[],rpcNames:string[],denied:Set<string>,family:'goods'|'property'|'two-wheelers'|'cars',mismatch:boolean;
+let contractMissing:boolean,contractKey:string|null;
+beforeEach(()=>{tables=[];rpcNames=[];denied=new Set();family='goods';mismatch=false;contractMissing=false;contractKey=null;
+  for(const [k,v] of Object.entries({NODE_ENV:'test',POST_AD_GOODS_TEST_ENABLED:'true',POST_AD_TWO_WHEELER_TEST_ENABLED:'true',POST_AD_CARS_TEST_ENABLED:'true',POST_AD_PROPERTY_TEST_ENABLED:'true',NEXT_PUBLIC_SUPABASE_URL:'https://wpppxlnbzqynvhpeuavd.supabase.co',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_isolated',SUPABASE_SECRET_KEY:'sb_secret_isolated',POST_AD_TEST_CREDENTIALS_VERIFIED:'wpppxlnbzqynvhpeuavd'}))vi.stubEnv(k,v);
+});afterEach(()=>vi.unstubAllEnvs());
+function client(){let listingReads=0;const v=fixture(family);const row={...v.listing,seller_id:owner};
+ const from=vi.fn((table:string)=>{tables.push(table);const filters:Record<string,unknown>={};let result:unknown=null;
+  if(table==='listings')result=listingReads++===0?row:mismatch?{...row,revision:99}:row;
+  if(table==='user_accounts')result={account_status:'active'};
+  if(table==='listing_media')result=[];
+  if(table.endsWith('_contexts'))result=table===(family==='property'?'listing_property_contexts':family==='cars'?'listing_car_contexts':'listing_vehicle_contexts')?{...v.context,society_name:'PRIVATE_SOCIETY'}:null;
+  if(table.endsWith('_category_contracts'))result={category_id:cid,version_id:vid,source_path:v.reference!.path,fields:v.reference!.fields,definition:v.reference!.categoryDefinition};
+  if(table.endsWith('_contract_versions'))result=contractMissing?null:{id:vid,contract_key:contractKey??v.reference!.contractKey,snapshot_id:sid,definition:v.reference!.versionDefinition,new_assignment_enabled:false};
+  const response=()=>({data:denied.has(table)?null:result,error:denied.has(table)?{code:'42501'}:null});
+  const q={select:()=>q,eq:(key:string,value:unknown)=>{filters[key]=value;return q;},order:()=>q,maybeSingle:async()=>response(),then:(resolve:(r:unknown)=>unknown)=>resolve(response())};return q;
+ });
+ const rpc=vi.fn(async(name:string)=>{rpcNames.push(name);if(denied.has(name))return {data:null,error:{code:'42501'}};return {error:null,data:name==='has_current_policy_acceptance'?true:name==='get_seller_listing_location_private'?[{listing_id:lid,pin_code:'302021',landmark:'PRIVATE_LANDMARK'}]:{category:{id:cid,name:'Synthetic category',is_active:true,new_listing_enabled:true,macro_category:family==='property'?'property':family==='goods'?'goods':'vehicles'},attributes:[]}};});
+ return {api:{auth:{getUser:async()=>({data:{user:{id:owner}},error:null})},from,rpc} as unknown as SupabaseClient<Database>,from,rpc};
+}
+it('default-OFF performs no gated reads or authentication',async()=>{vi.stubEnv('POST_AD_GOODS_TEST_ENABLED','false');const c=client();expect(await loadOwnerReadiness(c.api,lid)).toBeNull();expect(c.from).not.toHaveBeenCalled();expect(c.rpc).not.toHaveBeenCalled();});
+it.each(['goods','property','two-wheelers','cars'] as const)('actual loader evaluates owned %s via read-only operations',async f=>{family=f;const c=client(),r=await loadOwnerReadiness(c.api,lid);expect(r?.packet?.family).toBe(f);expect(r?.checks.find(c=>c.id==='photos.submission')?.outcome).toBe('fail');expect(rpcNames.every(n=>['has_current_policy_acceptance','get_seller_listing_category_context','get_seller_listing_location_private'].includes(n))).toBe(true);expect(c.from.mock.calls[0][0]).toBe('listings');expect(JSON.stringify(r)).not.toMatch(/PRIVATE_SOCIETY|PRIVATE_LANDMARK|302021/);});
+it.each(['user_accounts','listing_media','has_current_policy_acceptance','get_seller_listing_location_private'] as const)('query denial %s stays not_verified',async name=>{denied.add(name);const r=await loadOwnerReadiness(client().api,lid);const id=name==='user_accounts'?'common.account':name==='listing_media'?'photos.submission':name==='has_current_policy_acceptance'?'common.policy':'common.pin';expect(r?.checks.find(c=>c.id===id)?.outcome).toBe('not_verified');});
+it('saved category denial is not Goods eligibility',async()=>{denied.add('get_seller_listing_category_context');const r=await loadOwnerReadiness(client().api,lid);expect(r?.packet?.family).toBe('unresolved');expect(r?.checks.find(c=>c.id==='reference.binding')?.outcome).toBe('not_verified');});
+it('disabled family context tables are never queried',async()=>{family='cars';vi.stubEnv('POST_AD_TWO_WHEELER_TEST_ENABLED','false');vi.stubEnv('POST_AD_PROPERTY_TEST_ENABLED','false');const r=await loadOwnerReadiness(client().api,lid);expect(r?.packet?.family).toBe('cars');expect(tables).not.toContain('listing_vehicle_contexts');expect(tables).not.toContain('listing_property_contexts');});
+it('detected concurrent identity changes require refresh',async()=>{mismatch=true;const r=await loadOwnerReadiness(client().api,lid);expect(r?.packet?.consistency).toBe('mismatch');expect(r?.packet?.identity.revision).toBe(3);});
+it('invalid or unauthenticated owner data yields no packet',async()=>{const c=client();expect((await loadOwnerReadiness(c.api,'invalid'))?.packet).toBeNull();c.api.auth.getUser=vi.fn(async()=>({data:{user:null},error:null})) as unknown as typeof c.api.auth.getUser;expect((await loadOwnerReadiness(c.api,lid))?.packet).toBeNull();expect(c.from).not.toHaveBeenCalled();});
+
+it.each(['car_contract_versions','car_category_contracts']) ('denied saved contract read %s retains independent photos',async table=>{family='cars';denied.add(table);const r=await loadOwnerReadiness(client().api,lid);expect(r?.checks.find(c=>c.id==='reference.supported')?.outcome).toBe('not_verified');expect(r?.checks.find(c=>c.id==='photos.maximum')?.outcome).toBe('pass');expect(r?.checks.some(c=>c.id==='cars.minimum')).toBe(false);expect(r?.packet?.provenance.versionId).toBe(vid);});
+it('missing version read is not supported',async()=>{family='cars';contractMissing=true;const r=await loadOwnerReadiness(client().api,lid);expect(r?.checks.find(c=>c.id==='reference.supported')?.outcome).toBe('not_verified');expect(r?.checks.find(c=>c.id==='photos.maximum')?.outcome).toBe('pass');});
+it('closed saved version is read by binding and still supported',async()=>{family='cars';const r=await loadOwnerReadiness(client().api,lid);expect(r?.checks.find(c=>c.id==='reference.supported')?.outcome).toBe('pass');expect(r?.packet?.provenance.versionId).toBe(vid);});
+it('synthetic future key from actual loader is not silently replaced',async()=>{family='cars';contractKey='synthetic-future-v2';const r=await loadOwnerReadiness(client().api,lid);expect(r?.packet?.provenance.contract).toBe(contractKey);expect(r?.checks.find(c=>c.id==='reference.supported')?.outcome).toBe('not_verified');expect(r?.checks.some(c=>c.id==='cars.minimum')).toBe(false);});

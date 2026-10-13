@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { resolveCorrelationId, sanitizeUpstreamRequestId } from "@/lib/logger/correlation";
 import { logger } from "@/lib/logger";
-import { isRetiredAdminPath } from "@/lib/security/redirect";
+import { isRetiredAdminPath, sanitizeRedirectPath } from "@/lib/security/redirect";
 
 export async function proxy(request: NextRequest) {
   const startTime = Date.now();
@@ -39,26 +39,66 @@ export async function proxy(request: NextRequest) {
     "sbp_local_anon_key_for_testing";
 
   let cookiesMutated = false;
+  const pendingCookies: Parameters<SetAllCookies>[0] = [];
+  const authCacheHeaders = new Headers();
+
+  // Finalize the chosen response, without copying request or routing-control headers.
+  function finalizeResponse(target: NextResponse): NextResponse {
+    target.headers.set("x-request-id", correlationId);
+    if (cookiesMutated) {
+      pendingCookies.forEach(({ name, value, options }) =>
+        target.cookies.set(name, value, options)
+      );
+
+      // ResponseCookies indexes by name. Keep distinct host/domain deletion scopes
+      // (and successive writes) using the supported cookie serializer, not raw splitting.
+      if (new Set(pendingCookies.map(({ name }) => name)).size < pendingCookies.length) {
+        const serialized = pendingCookies.flatMap(({ name, value, options }) => {
+          const cookieResponse = new NextResponse();
+          cookieResponse.cookies.set(name, value, options);
+          return cookieResponse.headers.getSetCookie();
+        });
+        target.headers.delete("set-cookie");
+        serialized.forEach((cookie) => target.headers.append("set-cookie", cookie));
+      }
+
+      target.headers.set("Cache-Control", "private, no-store, must-revalidate");
+      authCacheHeaders.forEach((value, name) => target.headers.set(name, value));
+      if (target.headers.has("location")) {
+        // Next's cookie API generates this internal propagation header; redirects
+        // need browser Set-Cookie only, not pass-through middleware controls.
+        target.headers.delete("x-middleware-set-cookie");
+      }
+    }
+    return target;
+  }
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
-        cookiesMutated = true;
+      setAll(cookiesToSet, headers = {}) {
+        cookiesMutated ||= cookiesToSet.length > 0;
+        pendingCookies.push(...cookiesToSet);
+        // SSR 0.12.7 supplies cache headers on its first write only. Retain them
+        // across callbacks, and allowlist cache protection rather than all headers.
+        for (const [name, value] of Object.entries(headers)) {
+          if (["cache-control", "expires", "pragma"].includes(name.toLowerCase())) {
+            authCacheHeaders.set(name, value);
+          }
+        }
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value)
         );
+        const cookieHeader = request.headers.get("cookie");
+        if (cookieHeader === null) requestHeaders.delete("cookie");
+        else requestHeaders.set("cookie", cookieHeader);
         response = NextResponse.next({
           request: {
             headers: requestHeaders,
           },
         });
-        response.headers.set("x-request-id", correlationId);
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options)
-        );
       },
     },
   });
@@ -77,10 +117,6 @@ export async function proxy(request: NextRequest) {
   }
   const isAuthenticated = !!claims?.sub;
 
-  // 2. Enforce Cache-Control: private, no-store on response when mutating auth cookies
-  if (cookiesMutated) {
-    response.headers.set("Cache-Control", "private, no-store, must-revalidate");
-  }
 
   // 3. Route Guard: Protected Account Paths (/account/*)
   if (pathname.startsWith("/account")) {
@@ -90,10 +126,15 @@ export async function proxy(request: NextRequest) {
         route: pathname,
       });
       const signInUrl = new URL("/auth/sign-in", request.url);
-      signInUrl.searchParams.set("next", pathname);
+      signInUrl.searchParams.set(
+        "next",
+        sanitizeRedirectPath(
+          `${pathname}${request.nextUrl.search}`,
+          sanitizeRedirectPath(pathname, "/account")
+        )
+      );
       const redirectRes = NextResponse.redirect(signInUrl);
-      redirectRes.headers.set("x-request-id", correlationId);
-      return redirectRes;
+      return finalizeResponse(redirectRes);
     }
 
     // Explicitly allow policy review and safety/privacy exceptions through to Server Components
@@ -125,8 +166,7 @@ export async function proxy(request: NextRequest) {
           : pathname;
         reviewUrl.searchParams.set("next", targetPath);
         const redirectRes = NextResponse.redirect(reviewUrl);
-        redirectRes.headers.set("x-request-id", correlationId);
-        return redirectRes;
+        return finalizeResponse(redirectRes);
       }
     }
   }
@@ -134,9 +174,24 @@ export async function proxy(request: NextRequest) {
   // 4. Auth Pages (/auth/sign-in, /auth/sign-up): Redirect already-authenticated users
   if (pathname === "/auth/sign-in" || pathname === "/auth/sign-up") {
     if (isAuthenticated) {
-      const redirectRes = NextResponse.redirect(new URL("/account", request.url));
-      redirectRes.headers.set("x-request-id", correlationId);
-      return redirectRes;
+      // Valid token claims do not prove the Auth session still resolves to a
+      // user. Account pages require getUser too; otherwise these pages bounce.
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (!error && data.user) {
+          const redirectRes = NextResponse.redirect(new URL("/account", request.url));
+          return finalizeResponse(redirectRes);
+        }
+      } catch (err) {
+        logger.warn("auth.auth_page_user_verification_failed", {
+          request_id: correlationId,
+          route: pathname,
+          error_code: (err as Error)?.name || "AUTH_USER_ERROR",
+        });
+      }
+      // Missing/invalid sessions and transient failures reach normal auth.
+      // Keep any SDK cookie mutations through the existing finalizer; never
+      // clear unrelated sessions or replace page checks with claims-only auth.
     }
   }
 
@@ -147,7 +202,7 @@ export async function proxy(request: NextRequest) {
     duration_ms: Date.now() - startTime,
   });
 
-  return response;
+  return finalizeResponse(response);
 }
 
 export const config = {

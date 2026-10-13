@@ -1,0 +1,450 @@
+{
+  "key": "cars-draft-v1",
+  "status": "approved-test-draft-only",
+  "calendar": "UTC",
+  "paths": [
+    {
+      "slug": "car-hatchback",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "Hatchback"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "fuel_type",
+        "transmission",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-78f90186479f9657",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 131
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "Hatchback",
+          "key_fields": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "car-sedan",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "Sedan"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "fuel_type",
+        "transmission",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-150ba65e4aa6fc6c",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 132
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "Sedan",
+          "key_fields": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "car-compact-suv",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "Compact SUV"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "fuel_type",
+        "transmission",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-361117cde35f351d",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 133
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "Compact SUV",
+          "key_fields": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "car-suv",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "SUV"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "fuel_type",
+        "transmission",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-1836a63c1a3c00cf",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 134
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "SUV",
+          "key_fields": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "car-muv-mpv",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "MUV & MPV"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "fuel_type",
+        "transmission",
+        "km_driven",
+        "owner_number",
+        "seating_capacity",
+        "registration_state",
+        "insurance_valid_till",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-3ac1a0818da22f1c",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 135
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "MUV & MPV",
+          "key_fields": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|seating_capacity|registration_state|insurance_valid_till|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "car-luxury-cars",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "Luxury Cars"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "fuel_type",
+        "transmission",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-d674b6dc80bf30d0",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 136
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "Luxury Cars",
+          "key_fields": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "car-coupe-convertible",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "Coupe & Convertible"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "fuel_type",
+        "transmission",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-0f337f0c38643602",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 137
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "Coupe & Convertible",
+          "key_fields": "brand|model|variant|year|fuel_type|transmission|km_driven|owner_number|registration_state|insurance_valid_till|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "car-electric-hybrid-cars",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "Electric & Hybrid Cars"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "battery_capacity_kwh",
+        "range_km",
+        "battery_warranty_left",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-75a79f3272db1bb9",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 138
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "Electric & Hybrid Cars",
+          "key_fields": "brand|model|variant|year|battery_capacity_kwh|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "car-vintage-classic-cars",
+      "path": [
+        "Vehicles",
+        "Cars",
+        "Vintage & Classic Cars"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "year",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "condition",
+        "price"
+      ],
+      "provenance": {
+        "reviewKey": "path-f5df406b71f4c774",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 139
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Cars",
+          "sub_subcategory": "Vintage & Classic Cars",
+          "key_fields": "brand|model|year|km_driven|owner_number|registration_state|condition|price"
+        }
+      }
+    }
+  ],
+  "bodyMappings": [
+    {
+      "body": "Hatchback",
+      "leaf": "Hatchback",
+      "kind": "exact",
+      "reason": "Exact source body label"
+    },
+    {
+      "body": "Sedan",
+      "leaf": "Sedan",
+      "kind": "exact",
+      "reason": "Exact source body label"
+    },
+    {
+      "body": "Compact Sedan",
+      "leaf": "Sedan",
+      "kind": "grouped",
+      "reason": "FairSwap groups Compact Sedan under Sedan"
+    },
+    {
+      "body": "Compact SUV",
+      "leaf": "Compact SUV",
+      "kind": "exact",
+      "reason": "Exact source body label"
+    },
+    {
+      "body": "SUV",
+      "leaf": "SUV",
+      "kind": "exact",
+      "reason": "Exact source body label"
+    },
+    {
+      "body": "MUV",
+      "leaf": "MUV & MPV",
+      "kind": "grouped",
+      "reason": "FairSwap MUV navigation grouping; no MPV fact inferred"
+    },
+    {
+      "body": "Coupe",
+      "leaf": "Coupe & Convertible",
+      "kind": "grouped",
+      "reason": "FairSwap combined body navigation"
+    },
+    {
+      "body": "Convertible",
+      "leaf": "Coupe & Convertible",
+      "kind": "grouped",
+      "reason": "FairSwap combined body navigation"
+    }
+  ],
+  "luxurySegments": [
+    "luxury",
+    "supercar",
+    "ultra_luxury"
+  ],
+  "unresolvedBodies": [
+    "Station Wagon",
+    "Pickup"
+  ],
+  "knownSegments": [
+    "mass",
+    "luxury",
+    "supercar",
+    "ultra_luxury"
+  ],
+  "lifecycle": [
+    "on_sale",
+    "discontinued",
+    "import_only"
+  ],
+  "extensions": {
+    "powertrain": {
+      "leaf": "Electric & Hybrid Cars",
+      "sourceField": false,
+      "reason": "Seller declaration required before supplying known battery/electric-only range information; no draft answer required"
+    }
+  },
+  "options": {
+    "fuel_type": [
+      "petrol",
+      "diesel",
+      "cng",
+      "lpg",
+      "electric",
+      "hybrid",
+      "other"
+    ],
+    "transmission": [
+      "manual",
+      "automatic",
+      "amt",
+      "cvt",
+      "dct",
+      "other"
+    ],
+    "powertrain": [
+      "battery_electric",
+      "plug_in_hybrid",
+      "hybrid",
+      "other"
+    ]
+  },
+  "limits": {
+    "otherCharacters": 80,
+    "variantCharacters": 80,
+    "colourCharacters": 60,
+    "fallbackBrandCharacters": 100,
+    "fallbackModelCharacters": 150,
+    "pricePaiseMaximum": 100000000
+  },
+  "semantics": {
+    "luxury": "Source segment grouping only; no body or powertrain inference",
+    "electricHybrid": "Always unresolved catalogue powertrain; seller declaration is separate",
+    "vintageClassic": "Always unresolved classic status; no age threshold",
+    "importOnly": "Eligible draft candidate with server-derived review required",
+    "range": "Known values mean electric-only distance per charge; zero is distinct from unknown/not-applicable"
+  },
+  "sourceSnapshots": [
+    {
+      "file": "src/lib/listings/csv-fields/generated/categories.v1.json",
+      "sha256": "9e29b7a87526d1a0fae22572e7400f4b1d46ca0a4dd9bec2d9995591e394ea43"
+    },
+    {
+      "file": "src/lib/listings/csv-fields/generated/catalogues.v1.json",
+      "sha256": "dfab66421498bb02ef44352274a0f56c5bdb208f655b333f99d4b7e93ce5e1bf"
+    }
+  ]
+}

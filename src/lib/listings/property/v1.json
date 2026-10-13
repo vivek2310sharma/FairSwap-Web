@@ -1,0 +1,378 @@
+{
+  "key": "property-rental-draft-v1",
+  "status": "approved-test-draft-only",
+  "source": {
+    "file": "india_categories.csv",
+    "sha256": "9069b753947856084ef297f813328882c23437d63f444dcf167da9fbf3d3bd7e",
+    "rows": 202
+  },
+  "paths": [
+    {
+      "slug": "rental-apartment-or-flat",
+      "path": [
+        "Property",
+        "Residential for Rent",
+        "Apartment or Flat"
+      ],
+      "fields": [
+        "bhk",
+        "bathrooms",
+        "area_sqft",
+        "floor",
+        "total_floors",
+        "furnishing",
+        "monthly_rent",
+        "security_deposit",
+        "maintenance",
+        "available_from",
+        "preferred_tenants",
+        "parking",
+        "society_name",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-ef8fdf7bb7651ede",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 176
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "Residential for Rent",
+          "sub_subcategory": "Apartment or Flat",
+          "key_fields": "bhk|bathrooms|area_sqft|floor|total_floors|furnishing|monthly_rent|security_deposit|maintenance|available_from|preferred_tenants|parking|society_name|locality|city"
+        }
+      },
+      "basis": "dwelling"
+    },
+    {
+      "slug": "rental-independent-house-or-villa",
+      "path": [
+        "Property",
+        "Residential for Rent",
+        "Independent House or Villa"
+      ],
+      "fields": [
+        "bhk",
+        "bathrooms",
+        "area_sqft",
+        "floors",
+        "furnishing",
+        "monthly_rent",
+        "security_deposit",
+        "available_from",
+        "preferred_tenants",
+        "parking",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-171947e49609969c",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 177
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "Residential for Rent",
+          "sub_subcategory": "Independent House or Villa",
+          "key_fields": "bhk|bathrooms|area_sqft|floors|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|parking|locality|city"
+        }
+      },
+      "basis": "dwelling"
+    },
+    {
+      "slug": "rental-builder-floor",
+      "path": [
+        "Property",
+        "Residential for Rent",
+        "Builder Floor"
+      ],
+      "fields": [
+        "bhk",
+        "bathrooms",
+        "area_sqft",
+        "floor",
+        "furnishing",
+        "monthly_rent",
+        "security_deposit",
+        "available_from",
+        "preferred_tenants",
+        "parking",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-08f056d377f00427",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 178
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "Residential for Rent",
+          "sub_subcategory": "Builder Floor",
+          "key_fields": "bhk|bathrooms|area_sqft|floor|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|parking|locality|city"
+        }
+      },
+      "basis": "dwelling"
+    },
+    {
+      "slug": "rental-studio-apartment",
+      "path": [
+        "Property",
+        "Residential for Rent",
+        "Studio Apartment"
+      ],
+      "fields": [
+        "area_sqft",
+        "floor",
+        "furnishing",
+        "monthly_rent",
+        "security_deposit",
+        "available_from",
+        "preferred_tenants",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-436faa3acf50b8c1",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 179
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "Residential for Rent",
+          "sub_subcategory": "Studio Apartment",
+          "key_fields": "area_sqft|floor|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|locality|city"
+        }
+      },
+      "basis": "dwelling"
+    },
+    {
+      "slug": "rental-single-room",
+      "path": [
+        "Property",
+        "Residential for Rent",
+        "Single Room"
+      ],
+      "fields": [
+        "area_sqft",
+        "attached_bathroom",
+        "furnishing",
+        "monthly_rent",
+        "security_deposit",
+        "available_from",
+        "preferred_tenants",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-c9d21662f8e53c78",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 180
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "Residential for Rent",
+          "sub_subcategory": "Single Room",
+          "key_fields": "area_sqft|attached_bathroom|furnishing|monthly_rent|security_deposit|available_from|preferred_tenants|locality|city"
+        }
+      },
+      "basis": "advertised_room"
+    },
+    {
+      "slug": "rental-boys-pg",
+      "path": [
+        "Property",
+        "PG & Co-living",
+        "Boys PG"
+      ],
+      "fields": [
+        "monthly_rent_per_bed",
+        "sharing_type",
+        "food_included",
+        "attached_bathroom",
+        "ac",
+        "wifi",
+        "security_deposit",
+        "available_from",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-fb6c038dbd016c17",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 181
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "PG & Co-living",
+          "sub_subcategory": "Boys PG",
+          "key_fields": "monthly_rent_per_bed|sharing_type|food_included|attached_bathroom|ac|wifi|security_deposit|available_from|locality|city"
+        }
+      },
+      "basis": "per_bed"
+    },
+    {
+      "slug": "rental-girls-pg",
+      "path": [
+        "Property",
+        "PG & Co-living",
+        "Girls PG"
+      ],
+      "fields": [
+        "monthly_rent_per_bed",
+        "sharing_type",
+        "food_included",
+        "attached_bathroom",
+        "ac",
+        "wifi",
+        "security_deposit",
+        "available_from",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-28c674b513a3b5f5",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 182
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "PG & Co-living",
+          "sub_subcategory": "Girls PG",
+          "key_fields": "monthly_rent_per_bed|sharing_type|food_included|attached_bathroom|ac|wifi|security_deposit|available_from|locality|city"
+        }
+      },
+      "basis": "per_bed"
+    },
+    {
+      "slug": "rental-co-living-spaces",
+      "path": [
+        "Property",
+        "PG & Co-living",
+        "Co-living Spaces"
+      ],
+      "fields": [
+        "monthly_rent_per_bed",
+        "sharing_type",
+        "food_included",
+        "ac",
+        "wifi",
+        "housekeeping",
+        "security_deposit",
+        "available_from",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-8f17fac76aae729e",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 183
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "PG & Co-living",
+          "sub_subcategory": "Co-living Spaces",
+          "key_fields": "monthly_rent_per_bed|sharing_type|food_included|ac|wifi|housekeeping|security_deposit|available_from|locality|city"
+        }
+      },
+      "basis": "per_bed"
+    },
+    {
+      "slug": "rental-hostels",
+      "path": [
+        "Property",
+        "PG & Co-living",
+        "Hostels"
+      ],
+      "fields": [
+        "monthly_rent_per_bed",
+        "sharing_type",
+        "gender",
+        "food_included",
+        "security_deposit",
+        "available_from",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-a64c4482515e0ca6",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 184
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "PG & Co-living",
+          "sub_subcategory": "Hostels",
+          "key_fields": "monthly_rent_per_bed|sharing_type|gender|food_included|security_deposit|available_from|locality|city"
+        }
+      },
+      "basis": "per_bed"
+    },
+    {
+      "slug": "rental-flatmates-shared-rooms",
+      "path": [
+        "Property",
+        "PG & Co-living",
+        "Flatmates & Shared Rooms"
+      ],
+      "fields": [
+        "monthly_rent",
+        "gender_preference",
+        "furnishing",
+        "available_from",
+        "locality",
+        "city"
+      ],
+      "provenance": {
+        "reviewKey": "path-2a8ec69a82b64d27",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 185
+        },
+        "raw": {
+          "category": "Property",
+          "subcategory": "PG & Co-living",
+          "sub_subcategory": "Flatmates & Shared Rooms",
+          "key_fields": "monthly_rent|gender_preference|furnishing|available_from|locality|city"
+        }
+      },
+      "basis": null
+    }
+  ],
+  "implementationDecisions": {
+    "intent": "monthly rental/accommodation advertisement",
+    "currency": "INR",
+    "period": "month",
+    "financialAuthority": "listing_property_contexts.financial; no generic item price or duplicated monetary attributes",
+    "privateSocietyBoundary": "listing_property_contexts.society_name; owner-only RLS; never public category attributes/reference responses",
+    "maxPaise": 9007199254740991,
+    "limitMeaning": "JavaScript safe-integer technical representation limit, not a market ceiling",
+    "area": "positive square feet, at most two decimal places; no measurement basis inferred",
+    "counts": "bhk/bathrooms nonnegative whole counts; floors/total_floors positive whole counts; maximum 10000; floor is signed integer label -1000..1000 without cross-field convention",
+    "textLimit": 200,
+    "amenities": [
+      "attached_bathroom",
+      "food_included",
+      "ac",
+      "wifi",
+      "housekeeping",
+      "parking"
+    ],
+    "extensions": {
+      "rental_basis": "Flatmates & Shared Rooms: advertised_room or occupant_share, explicitly selected before known rent",
+      "area_basis": "unspecified/carpet/built_up/super_built_up optional seller declaration on area_sqft paths"
+    },
+    "maintenance": "unanswered/unknown/included_in_rent/none/separate; separate positive monthly charge with explicit matching rental basis",
+    "deposit": "optional one-time paise, known zero permitted, associated with advertised basis; no refundability inference"
+  }
+}

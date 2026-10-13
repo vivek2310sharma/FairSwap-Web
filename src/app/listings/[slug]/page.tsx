@@ -12,6 +12,12 @@ import {
   getSellerPublicListings,
 } from "@/lib/discovery/queries";
 import { createClient } from "@/lib/supabase/server";
+import {z} from 'zod';
+import {loadOwnerReadiness} from '@/lib/listings/readiness-server';
+import {reviewableField,reviewPacketSchema} from '@/lib/listings/submission-readiness';
+import {propertyRentSummary,paiseToPropertyRupees} from '@/lib/listings/property/contract';
+import type {Database} from '@/types/database';
+import type {SupabaseClient} from '@supabase/supabase-js';
 import {
   MapPin,
   Calendar,
@@ -100,7 +106,40 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
     isFavourited = !!fav;
   }
 
-  const formattedPrice =
+  // Reuse the saved owner projection only on the existing authorized preview.
+  // A captured packet must describe this exact record, not a newer revision.
+  const assessment=isOwnerOrStaffPreview&&authData?.user?.id===listing.seller_id
+    ?await loadOwnerReadiness(supabase as SupabaseClient<Database>,listing.id):null;
+  const parsed=reviewPacketSchema.safeParse(assessment?.packet);
+  const packet=parsed.success&&parsed.data.identity.id===listing.id
+    &&parsed.data.identity.category_id===listing.category.id
+    &&parsed.data.identity.revision===listing.revision
+    &&parsed.data.identity.status===listing.status
+    &&parsed.data.identity.updated_at===listing.updated_at
+    &&parsed.data.consistency!=='mismatch'
+    &&parsed.data.advertisement.title===listing.title
+    &&parsed.data.advertisement.description===listing.description
+    &&parsed.data.checks.some(c=>c.id==='reference.supported'&&c.outcome==='pass')
+    ?parsed.data:null;
+  let specifications: {field:string;label:string;value:string}[]=[];
+  let specificationsUnavailable=!!assessment&&!packet;
+  if(packet)specifications=packet.sellerAnswers;
+  else if(!assessment){
+    // Goods/legacy definitions remain the source of public field membership.
+    // Failed/invalid reads never fall back to raw stored keys or nested values.
+    const definitions=await supabase.from('category_attributes').select('category_id,name,label').eq('category_id',listing.category.id);
+    const rows=z.array(z.object({category_id:z.string().uuid(),name:z.string(),label:z.string()})).safeParse(definitions.data);
+    specificationsUnavailable=!!definitions.error||!rows.success||rows.data.some(a=>a.category_id!==listing.category.id);
+    if(!specificationsUnavailable&&rows.success)specifications=rows.data.flatMap(a=>{
+      const value=listing.category_attributes?.[a.name];
+      return reviewableField(a.name)&&(typeof value==='string'||typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value))
+        ?[{field:a.name,label:a.label,value:String(value)}]:[];
+    });
+  }
+  const rental=packet?.pricing.kind==='rental'?packet.pricing.financial:null;
+  const formattedPrice = assessment&&!packet?'Saved amount could not be verified':
+    packet?.family==='property'&&!rental?'Rental financial declarations could not be verified':
+    rental?propertyRentSummary(rental):
     listing.price_type === "free"
       ? "Free"
       : listing.price_paise !== null && listing.price_paise !== undefined
@@ -236,20 +275,20 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
               </div>
 
               {/* Category-specific attributes if any */}
-              {listing.category_attributes &&
-                Object.keys(listing.category_attributes).length > 0 && (
+              {specificationsUnavailable&&<p role="status">Saved specifications could not be verified. No raw category values are displayed.</p>}
+              {specifications.length > 0 && (
                   <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
                     <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
                       Item Specifications
                     </h2>
                     <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-                      {Object.entries(listing.category_attributes).map(([key, val]) => (
-                        <div key={key}>
+                      {specifications.map(answer => (
+                        <div key={answer.field}>
                           <dt className="text-xs font-medium capitalize text-muted">
-                            {key.replace(/_/g, " ")}
+                            {answer.label}
                           </dt>
                           <dd className="mt-1 text-sm font-semibold text-foreground">
-                            {String(val)}
+                            {answer.value}
                           </dd>
                         </div>
                       ))}
@@ -258,6 +297,11 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                 )}
 
               {/* Description */}
+              {rental&&<section aria-label="Rental financial declarations">
+                <p>Basis: {rental.basis??'Unanswered'} · period: month</p>
+                <p>One-time deposit: {rental.deposit?.state==='known'?`INR ${paiseToPropertyRupees(rental.deposit.amount_paise)}`:rental.deposit?.state??'Unanswered'}</p>
+                <p>Maintenance: {rental.maintenance?.state==='separate'?`INR ${paiseToPropertyRupees(rental.maintenance.amount_paise)} / month / ${rental.maintenance.basis}`:rental.maintenance?.state??'Unanswered'}</p>
+              </section>}
               <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
                   Description

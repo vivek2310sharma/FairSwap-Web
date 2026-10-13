@@ -44,6 +44,184 @@ export type Database = {
         }
         Relationships: []
       }
+      car_brands: {
+        Row: {
+          id: string
+          label: string
+        }
+        Insert: {
+          id?: string
+          label: string
+        }
+        Update: {
+          id?: string
+          label?: string
+        }
+        Relationships: []
+      }
+      car_catalogue_rows: {
+        Row: {
+          model_id: string
+          raw: Json
+          selection_enabled: boolean
+          snapshot_id: string
+          source_order: number
+          source_row: number
+        }
+        Insert: {
+          model_id: string
+          raw: Json
+          selection_enabled?: boolean
+          snapshot_id: string
+          source_order: number
+          source_row: number
+        }
+        Update: {
+          model_id?: string
+          raw?: Json
+          selection_enabled?: boolean
+          snapshot_id?: string
+          source_order?: number
+          source_row?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_catalogue_rows_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "car_models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "car_catalogue_rows_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "car_source_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_category_contracts: {
+        Row: {
+          category_id: string
+          display_order: number
+          fields: Json
+          source_path: Json
+          source_provenance: Json
+          version_id: string
+        }
+        Insert: {
+          category_id: string
+          display_order: number
+          fields: Json
+          source_path: Json
+          source_provenance: Json
+          version_id: string
+        }
+        Update: {
+          category_id?: string
+          display_order?: number
+          fields?: Json
+          source_path?: Json
+          source_provenance?: Json
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_category_contracts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "car_category_contracts_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "car_contract_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_contract_versions: {
+        Row: {
+          contract_key: string
+          definition: Json
+          id: string
+          new_assignment_enabled: boolean
+          snapshot_id: string
+        }
+        Insert: {
+          contract_key: string
+          definition: Json
+          id?: string
+          new_assignment_enabled?: boolean
+          snapshot_id: string
+        }
+        Update: {
+          contract_key?: string
+          definition?: Json
+          id?: string
+          new_assignment_enabled?: boolean
+          snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_contract_versions_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "car_source_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_models: {
+        Row: {
+          brand_id: string
+          id: string
+          label: string
+        }
+        Insert: {
+          brand_id: string
+          id?: string
+          label: string
+        }
+        Update: {
+          brand_id?: string
+          id?: string
+          label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "car_models_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "car_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      car_source_snapshots: {
+        Row: {
+          id: string
+          row_count: number
+          sha256: string
+          source_file: string
+        }
+        Insert: {
+          id?: string
+          row_count: number
+          sha256: string
+          source_file: string
+        }
+        Update: {
+          id?: string
+          row_count?: number
+          sha256?: string
+          source_file?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -51,7 +229,9 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean
+          macro_category: string | null
           name: string
+          new_listing_enabled: boolean
           slug: string
           sort_order: number
           updated_at: string
@@ -62,7 +242,9 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean
+          macro_category?: string | null
           name: string
+          new_listing_enabled?: boolean
           slug: string
           sort_order?: number
           updated_at?: string
@@ -73,7 +255,9 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean
+          macro_category?: string | null
           name?: string
+          new_listing_enabled?: boolean
           slug?: string
           sort_order?: number
           updated_at?: string
@@ -392,6 +576,71 @@ export type Database = {
         }
         Relationships: []
       }
+      listing_car_contexts: {
+        Row: {
+          brand_id: string | null
+          brand_text: string | null
+          category_id: string
+          classification_review_required: boolean
+          listing_id: string
+          mode: string
+          model_id: string | null
+          model_text: string | null
+          version_id: string
+        }
+        Insert: {
+          brand_id?: string | null
+          brand_text?: string | null
+          category_id: string
+          classification_review_required?: boolean
+          listing_id: string
+          mode: string
+          model_id?: string | null
+          model_text?: string | null
+          version_id: string
+        }
+        Update: {
+          brand_id?: string | null
+          brand_text?: string | null
+          category_id?: string
+          classification_review_required?: boolean
+          listing_id?: string
+          mode?: string
+          model_id?: string | null
+          model_text?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_car_contexts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "car_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_car_contexts_category_id_version_id_fkey"
+            columns: ["category_id", "version_id"]
+            isOneToOne: false
+            referencedRelation: "car_category_contracts"
+            referencedColumns: ["category_id", "version_id"]
+          },
+          {
+            foreignKeyName: "listing_car_contexts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_car_contexts_model_id_brand_id_fkey"
+            columns: ["model_id", "brand_id"]
+            isOneToOne: false
+            referencedRelation: "car_models"
+            referencedColumns: ["id", "brand_id"]
+          },
+        ]
+      }
       listing_media: {
         Row: {
           content_type: string
@@ -452,6 +701,45 @@ export type Database = {
             foreignKeyName: "listing_media_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_property_contexts: {
+        Row: {
+          category_id: string
+          financial: Json
+          listing_id: string
+          society_name: string | null
+          version_id: string
+        }
+        Insert: {
+          category_id: string
+          financial: Json
+          listing_id: string
+          society_name?: string | null
+          version_id: string
+        }
+        Update: {
+          category_id?: string
+          financial?: Json
+          listing_id?: string
+          society_name?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_property_contexts_category_id_version_id_fkey"
+            columns: ["category_id", "version_id"]
+            isOneToOne: false
+            referencedRelation: "property_category_contracts"
+            referencedColumns: ["category_id", "version_id"]
+          },
+          {
+            foreignKeyName: "listing_property_contexts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
@@ -531,6 +819,71 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_vehicle_contexts: {
+        Row: {
+          brand_id: string | null
+          brand_text: string | null
+          category_id: string
+          classification_review_required: boolean
+          listing_id: string
+          mode: string
+          model_id: string | null
+          model_text: string | null
+          version_id: string
+        }
+        Insert: {
+          brand_id?: string | null
+          brand_text?: string | null
+          category_id: string
+          classification_review_required?: boolean
+          listing_id: string
+          mode: string
+          model_id?: string | null
+          model_text?: string | null
+          version_id: string
+        }
+        Update: {
+          brand_id?: string | null
+          brand_text?: string | null
+          category_id?: string
+          classification_review_required?: boolean
+          listing_id?: string
+          mode?: string
+          model_id?: string | null
+          model_text?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_vehicle_contexts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_vehicle_contexts_category_id_version_id_fkey"
+            columns: ["category_id", "version_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_category_contracts"
+            referencedColumns: ["category_id", "version_id"]
+          },
+          {
+            foreignKeyName: "listing_vehicle_contexts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_vehicle_contexts_model_id_brand_id_fkey"
+            columns: ["model_id", "brand_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_models"
+            referencedColumns: ["id", "brand_id"]
           },
         ]
       }
@@ -909,6 +1262,78 @@ export type Database = {
         }
         Relationships: []
       }
+      property_category_contracts: {
+        Row: {
+          category_id: string
+          definition: Json
+          display_order: number
+          fields: Json
+          source_path: Json
+          source_provenance: Json
+          version_id: string
+        }
+        Insert: {
+          category_id: string
+          definition: Json
+          display_order: number
+          fields: Json
+          source_path: Json
+          source_provenance: Json
+          version_id: string
+        }
+        Update: {
+          category_id?: string
+          definition?: Json
+          display_order?: number
+          fields?: Json
+          source_path?: Json
+          source_provenance?: Json
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_category_contracts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_category_contracts_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "property_contract_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_contract_versions: {
+        Row: {
+          contract_key: string
+          definition: Json
+          id: string
+          new_assignment_enabled: boolean
+          source_file: string
+          source_sha256: string
+        }
+        Insert: {
+          contract_key: string
+          definition: Json
+          id?: string
+          new_assignment_enabled?: boolean
+          source_file: string
+          source_sha256: string
+        }
+        Update: {
+          contract_key?: string
+          definition?: Json
+          id?: string
+          new_assignment_enabled?: boolean
+          source_file?: string
+          source_sha256?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           assigned_to: string | null
@@ -1125,6 +1550,208 @@ export type Database = {
           created_at?: string
           id?: string
           reason?: string | null
+        }
+        Relationships: []
+      }
+      vehicle_brands: {
+        Row: {
+          id: string
+          label: string
+        }
+        Insert: {
+          id?: string
+          label: string
+        }
+        Update: {
+          id?: string
+          label?: string
+        }
+        Relationships: []
+      }
+      vehicle_catalogue_rows: {
+        Row: {
+          model_id: string
+          raw: Json
+          selection_enabled: boolean
+          snapshot_id: string
+          source_order: number
+          source_row: number
+        }
+        Insert: {
+          model_id: string
+          raw: Json
+          selection_enabled?: boolean
+          snapshot_id: string
+          source_order: number
+          source_row: number
+        }
+        Update: {
+          model_id?: string
+          raw?: Json
+          selection_enabled?: boolean
+          snapshot_id?: string
+          source_order?: number
+          source_row?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_catalogue_rows_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_catalogue_rows_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_source_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_category_contracts: {
+        Row: {
+          category_id: string
+          display_order: number
+          fields: Json
+          source_path: Json
+          source_provenance: Json
+          version_id: string
+        }
+        Insert: {
+          category_id: string
+          display_order: number
+          fields: Json
+          source_path: Json
+          source_provenance: Json
+          version_id: string
+        }
+        Update: {
+          category_id?: string
+          display_order?: number
+          fields?: Json
+          source_path?: Json
+          source_provenance?: Json
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_category_contracts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_category_contracts_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_contract_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_contract_versions: {
+        Row: {
+          contract_key: string
+          definition: Json
+          id: string
+          new_assignment_enabled: boolean
+          snapshot_id: string
+        }
+        Insert: {
+          contract_key: string
+          definition: Json
+          id?: string
+          new_assignment_enabled?: boolean
+          snapshot_id: string
+        }
+        Update: {
+          contract_key?: string
+          definition?: Json
+          id?: string
+          new_assignment_enabled?: boolean
+          snapshot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_contract_versions_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_source_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_models: {
+        Row: {
+          brand_id: string
+          id: string
+          label: string
+        }
+        Insert: {
+          brand_id: string
+          id?: string
+          label: string
+        }
+        Update: {
+          brand_id?: string
+          id?: string
+          label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_models_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_registration_states: {
+        Row: {
+          id: string
+          kind: string
+          label: string
+          reference_key: string
+          source_url: string
+        }
+        Insert: {
+          id?: string
+          kind: string
+          label: string
+          reference_key: string
+          source_url: string
+        }
+        Update: {
+          id?: string
+          kind?: string
+          label?: string
+          reference_key?: string
+          source_url?: string
+        }
+        Relationships: []
+      }
+      vehicle_source_snapshots: {
+        Row: {
+          id: string
+          row_count: number
+          sha256: string
+          source_file: string
+        }
+        Insert: {
+          id?: string
+          row_count: number
+          sha256: string
+          source_file: string
+        }
+        Update: {
+          id?: string
+          row_count?: number
+          sha256?: string
+          source_file?: string
         }
         Relationships: []
       }
@@ -1366,6 +1993,10 @@ export type Database = {
           target_type: Database["public"]["Enums"]["report_target_type_enum"]
         }[]
       }
+      get_seller_listing_category_context: {
+        Args: { p_listing_id: string }
+        Returns: Json
+      }
       get_seller_listing_location_private: {
         Args: { p_listing_id: string }
         Returns: {
@@ -1373,6 +2004,10 @@ export type Database = {
           listing_id: string
           pin_code: string
         }[]
+      }
+      get_seller_submission_status: {
+        Args: { listing_id: string }
+        Returns: Json
       }
       get_staff_listing_location_private: {
         Args: { p_listing_id: string }
@@ -1387,7 +2022,33 @@ export type Database = {
         Args: { listing_id: string }
         Returns: boolean
       }
+      lookup_car_catalogue: {
+        Args: {
+          p_brand_id?: string
+          p_category_id: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_selected_id?: string
+          p_version_id: string
+          p_view?: string
+        }
+        Returns: Json
+      }
       lookup_pincode: { Args: { p_pincode: string }; Returns: Json }
+      lookup_two_wheeler_catalogue: {
+        Args: {
+          p_brand_id?: string
+          p_category_id: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_selected_id?: string
+          p_version_id: string
+          p_view?: string
+        }
+        Returns: Json
+      }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_conversation_read: {
         Args: { conversation_id: string; message_id: string }
@@ -1425,6 +2086,34 @@ export type Database = {
         Args: { age_confirmed: boolean; terms_and_privacy_accepted: boolean }
         Returns: Json
       }
+      save_car_draft: {
+        Args: {
+          p_listing: Json
+          p_listing_id: string
+          p_resolution: Json
+          p_version_id: string
+        }
+        Returns: string
+      }
+      save_property_draft: {
+        Args: {
+          p_financial: Json
+          p_listing: Json
+          p_listing_id: string
+          p_society_name: string
+          p_version_id: string
+        }
+        Returns: string
+      }
+      save_two_wheeler_draft: {
+        Args: {
+          p_listing: Json
+          p_listing_id: string
+          p_resolution: Json
+          p_version_id: string
+        }
+        Returns: string
+      }
       search_public_listings: {
         Args: {
           category_id?: string
@@ -1442,27 +2131,23 @@ export type Database = {
         Returns: Json
       }
       seller_delete_listing_media: {
-        Args: {
-          listing_id: string
-          media_id: string
-        }
+        Args: { listing_id: string; media_id: string }
         Returns: Json
       }
       seller_reorder_listing_media: {
-        Args: {
-          listing_id: string
-          media_ids: string[]
-        }
+        Args: { listing_id: string; media_ids: string[] }
         Returns: Json
       }
       seller_set_listing_cover_photo: {
-        Args: {
-          listing_id: string
-          media_id: string
-        }
+        Args: { listing_id: string; media_id: string }
         Returns: Json
       }
-      seller_submit_listing: { Args: { listing_id: string }; Returns: Json }
+      seller_submit_listing:
+        | { Args: { listing_id: string }; Returns: Json }
+        | {
+            Args: { expected_revision: number; listing_id: string }
+            Returns: Json
+          }
       seller_transition_listing: {
         Args: { action: string; listing_id: string }
         Returns: Json

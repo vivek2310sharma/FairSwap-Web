@@ -1,0 +1,13 @@
+import React from 'react';
+import {afterEach,expect,it,vi} from 'vitest';
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {PropertyDetails} from '@/components/listings/PropertyFields';
+import {propertyV1,emptyPropertyFinancial,validatePropertyDraft} from '@/lib/listings/property/contract';
+const path=propertyV1.paths[0];
+const reference={...path,id:'11111111-1111-4111-8111-111111111111',name:'Apartment',version_id:'22222222-2222-4222-8222-222222222222',is_active:true,new_listing_enabled:true,display_order:0};
+const validate=(answers:unknown)=>validatePropertyDraft(answers,emptyPropertyFinancial(path),null,path);
+afterEach(cleanup);
+it.each([123,123.4,123.45,0.29,0.01,1.01,999999999.99,1e9])('preserves valid area %s',area=>expect(validate({area_sqft:area}).data?.answers.area_sqft).toBe(area));
+it.each([123.45000001,0.00000001,1.111,0,-1,NaN,Infinity,-Infinity,1000000000.01,null,'123.45'])('rejects supplied invalid area %s',area=>expect(validate({area_sqft:area}).error).toBeTruthy());
+it('distinguishes unanswered area from a supplied invalid measurement',()=>{expect(validate({}).error).toBeUndefined();expect(validate({area_sqft:undefined}).error).toBeUndefined();expect(validate({area_sqft:null}).error).toBeTruthy();});
+it('actual area control preserves measurements and shares draft validation',()=>{const change=vi.fn();const r=render(<PropertyDetails category={reference} answers={{}} change={change} society="" setSociety={vi.fn()}/>);expect(screen.getByLabelText('area_sqft')).toHaveValue(null);for(const text of ['0.29','123.45000001','0.00000001']){fireEvent.change(screen.getByLabelText('area_sqft'),{target:{value:text}});const answers:Record<string,unknown>={[change.mock.lastCall![0]]:change.mock.lastCall![1]};expect(answers.area_sqft).toBe(Number(text));expect(!!validate(answers).error).toBe(text!=='0.29');}r.rerender(<PropertyDetails category={structuredClone(reference)} answers={{area_sqft:123.45}} change={change} society="" setSociety={vi.fn()}/>);expect(screen.getByLabelText('area_sqft')).toHaveValue(123.45);fireEvent.change(screen.getByLabelText('area_sqft'),{target:{value:''}});expect(validate({[change.mock.lastCall![0]]:change.mock.lastCall![1]}).error).toBeUndefined();});

@@ -60,3 +60,22 @@ describe("sanitizeRedirectPath", () => {
     expect(sanitizeRedirectPath("/account\0evil")).toBe("/account");
   });
 });
+
+describe("A0 safe nested Post Ad returns", () => {
+  it.each(["macro=goods", "macro=vehicles", "macro=property", "macro=goods&macro=goods", "macro=goods&macro=vehicles"])(
+    "preserves %s without collapsing repeated macro keys", (query) => {
+      const next = sanitizeRedirectPath(`/account/listings/new?${query}`);
+      const signInQuery = new URLSearchParams({ next });
+      const decodedNext = new URL(`/auth/sign-in?${signInQuery}`, "https://fairswap.example").searchParams.get("next");
+      expect(decodedNext).toBe(`/account/listings/new?${query}`);
+      expect(sanitizeRedirectPath(decodedNext)).toBe(next);
+    }
+  );
+
+  it.each(["https://evil.example", "//evil.example", "/%2Fevil.example", "/%5Cevil.example", "/account%0D%0ALocation:evil", "/account%00", "/account%09"])(
+    "still rejects unsafe nested return %j", (value) => {
+      const encoded = new URLSearchParams({ next: value });
+      expect(sanitizeRedirectPath(encoded.get("next"))).toBe("/account");
+    }
+  );
+});

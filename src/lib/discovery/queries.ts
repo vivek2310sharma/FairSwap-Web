@@ -23,6 +23,8 @@ export interface PublicListingDetail {
   price_paise: number | null;
   category_attributes: Record<string, unknown>;
   status: ListingStatus;
+  revision: number;
+  updated_at: string;
   created_at: string;
   published_at: string | null;
   category: {
@@ -217,6 +219,8 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
       price_paise,
       category_attributes,
       status,
+      revision,
+      updated_at,
       created_at,
       published_at,
       category:categories(id, name, slug, icon),
@@ -398,6 +402,8 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
     price_paise: listing.price_paise,
     category_attributes: listing.category_attributes as Record<string, unknown>,
     status: listing.status,
+    revision: listing.revision,
+    updated_at: listing.updated_at,
     created_at: listing.created_at,
     published_at: listing.published_at,
     category: Array.isArray(listing.category) ? listing.category[0] : listing.category,

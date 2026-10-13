@@ -73,6 +73,8 @@ describe("Public Location Privacy Application DTO & Query Tests (#81)", () => {
       price_paise: 500000,
       category_attributes: {},
       status: "active",
+      revision: 1,
+      updated_at: "2026-10-01T10:05:00Z",
       created_at: "2026-10-01T10:00:00Z",
       published_at: "2026-10-01T10:05:00Z",
       category: { id: "cat-1", name: "Sports", slug: "sports", icon: null },

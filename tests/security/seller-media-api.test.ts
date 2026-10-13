@@ -1,6 +1,6 @@
 import { logger } from "@/lib/logger";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import sharp from "sharp";
 import { NextRequest } from "next/server";
 import { mediaApiError, mapRpcErrorToMediaError } from "@/lib/media/api-contract";
@@ -8,6 +8,8 @@ import { mediaApiError, mapRpcErrorToMediaError } from "@/lib/media/api-contract
 const mockAuthUser = vi.fn();
 const mockRpc = vi.fn();
 const mockDbFrom = vi.fn();
+let newSubmissionFamily=false;
+let failSubmissionFamilyRead=false;
 const mockServiceStorage = {
   getBucket: vi.fn().mockResolvedValue({ data: { id: "listing-originals" }, error: null }),
   from: vi.fn().mockReturnValue({
@@ -35,7 +37,9 @@ vi.mock("@/lib/supabase/request-auth", () => ({
       context: {
         user,
         client: {
-          from: (...args: unknown[]) => mockDbFrom(...args),
+          from: (...args: unknown[]) => ['listing_vehicle_contexts','listing_car_contexts','listing_property_contexts'].includes(String(args[0]))
+            ? {select:()=>({eq:()=>({maybeSingle:async()=>({data:newSubmissionFamily&&args[0]==='listing_car_contexts'?{listing_id:'11111111-1111-1111-1111-111111111111'}:null,error:failSubmissionFamilyRead?{message:'Context read failed'}:null})})})}
+            : mockDbFrom(...args),
           rpc: (...args: unknown[]) => mockRpc(...args),
         },
         authType: req.headers.get("authorization") ? "bearer" : "cookie",
@@ -66,8 +70,14 @@ describe("Seller Media API Route Contracts & Mutation Guards (#103)", () => {
 let failSnapshotDb = false;
 let orderCalled = false;
 
+  afterEach(() => vi.unstubAllEnvs());
 
   beforeEach(() => {
+    // This suite models the installed family schema, independently of submission.
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL','https://wpppxlnbzqynvhpeuavd.supabase.co');
+    vi.stubEnv('STAGING_SUPABASE_URL','');
+    vi.stubEnv('SUPABASE_URL','');
+    newSubmissionFamily=false;failSubmissionFamilyRead=false;
     failSnapshotDb = false;
     orderCalled = false;
     vi.clearAllMocks();
@@ -185,6 +195,16 @@ let orderCalled = false;
       }
       return {};
     });
+  });
+
+  it('new-family pending mutations are rejected before upload/storage or mutation RPC; family read failures fail closed',async()=>{
+    newSubmissionFamily=true;
+    const original=mockDbFrom.getMockImplementation()!;
+    mockDbFrom.mockImplementation((table:string)=>table==='listings'?{select:()=>({eq:()=>({maybeSingle:async()=>({data:{id:listingId,seller_id:ownerId,status:'pending_review',revision:9,cover_photo_id:mediaId1},error:null})})})}:original(table));
+    const req=new NextRequest(`http://localhost/api/listings/${listingId}/media`,{method:'POST'});
+    const response=await postUploadMedia(req,{params:Promise.resolve({id:listingId})});expect(response.status).toBe(409);expect((await response.json()).code).toBe('LISTING_MEDIA_NOT_EDITABLE');expect(mockServiceStorage.from).not.toHaveBeenCalled();expect(mockServiceRpc).not.toHaveBeenCalled();
+    failSubmissionFamilyRead=true;
+    const unavailable=await postUploadMedia(new NextRequest(`http://localhost/api/listings/${listingId}/media`,{method:'POST'}),{params:Promise.resolve({id:listingId})});expect(unavailable.status).toBe(503);expect(mockServiceStorage.from).not.toHaveBeenCalled();
   });
 
   describe("A. Owner Media Snapshot GET (/api/listings/[id]/media)", () => {

@@ -1,0 +1,75 @@
+import { chromium, expect } from '@playwright/test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const base='http://127.0.0.1:4317';
+const output='artifacts/post-ad-preview';
+fs.mkdirSync(output,{recursive:true});
+const browser=await chromium.launch({headless:true});
+const page=await browser.newPage({viewport:{width:1280,height:900}});
+const errors=[], requests=[], lookups=[];
+page.on('pageerror',e=>errors.push(e.message));
+page.on('request',r=>requests.push(r.url()));
+page.on('response',r=>{if(r.url().includes('/api/catalogue')&&r.ok())void r.json().then(data=>lookups.push(data)).catch(error=>{if(!error.message.includes('No data found for resource'))errors.push(error.message);});});
+const group=()=>page.getByRole('combobox',{name:'Source group',exact:true});
+const leaf=()=>page.getByLabel('Category *',{exact:true});
+const field=key=>page.getByLabel(new RegExp('^\\d+\\. '+key+'$'));
+async function choose(groupName,leafName){await group().selectOption({label:groupName});await leaf().selectOption({label:leafName});}
+async function clearSection(){await page.getByRole('button',{name:'Change section',exact:true}).click();if(await page.getByRole('dialog').count())await page.getByRole('button',{name:'Remove details and continue'}).click();await page.getByRole('heading',{name:'What would you like to list?'}).waitFor();}
+async function chooseBrand(brand){await expect(field('brand')).toBeEnabled();await field('brand').selectOption({label:brand});await expect(field('model')).toBeEnabled();}
+async function chooseModel(name){await page.getByLabel('Search source models',{exact:true}).fill(name);await expect(field('model')).toBeEnabled();const option=field('model').locator('option').filter({hasText:new RegExp('^'+name+' — ')});await expect(option).toHaveCount(1);await field('model').selectOption(await option.getAttribute('value'));await expect(page.getByRole('heading',{name:'Raw catalogue row — hints, not immutable year/variant specifications'})).toBeVisible();}
+try {
+await page.goto(base);await page.getByRole('heading',{name:'What would you like to list?'}).waitFor();
+await page.screenshot({path:output+'/selector-desktop.png',fullPage:true});
+await page.keyboard.press('Tab');assert.equal(await page.locator(':focus').getAttribute('href'),'/?macro=goods');
+await page.getByRole('link',{name:/Goods/}).click();await choose('Mobiles & Tablets','Smartphones');
+await expect(page.getByText('Exact field order: brand|model|storage_gb|ram_gb|color|purchase_year|warranty_left|bill_available|box_available|condition',{exact:true})).toBeVisible();
+await field('storage_gb').fill('0');await field('bill_available').selectOption('no');await expect(field('box_available')).toHaveValue('');
+await page.getByLabel(/Title/).fill('CSV smartphone preview');await page.getByLabel(/Description/).fill('Testing source-backed in-memory preview.');await page.getByLabel('City / locality').fill('Jaipur');await page.getByLabel('PIN code',{exact:true}).fill('302021');await page.getByLabel('Price (₹ Rupees) *',{exact:true}).fill('2500');
+await page.getByRole('button',{name:'Preview draft data'}).click();const summary=page.getByRole('region',{name:'In-memory draft summary'});await expect(summary).toContainText('"bill_available": false');await expect(summary).toContainText('"storage_gb": 0');
+await page.screenshot({path:output+'/smartphones-desktop.png',fullPage:true});
+await group().selectOption('Furniture');await page.getByRole('dialog').waitFor();await page.getByRole('button',{name:'Cancel / stay'}).click();await expect(field('storage_gb')).toHaveValue('0');await expect(group()).toHaveValue('Mobiles & Tablets');
+await group().selectOption('Furniture');await page.getByRole('button',{name:'Remove details and continue'}).click();await expect(group()).toHaveValue('Furniture');await expect(leaf()).toHaveValue('');await expect(page.getByLabel(/Title/)).toHaveValue('CSV smartphone preview');
+await clearSection();await page.getByRole('link',{name:/Vehicles/}).click();
+await group().waitFor();
+assert.deepEqual(await group().locator('option').allTextContents(),['Select a group','Motorcycles','Scooters','Cars','Bicycles','Vehicle Parts & Accessories','Commercial Vehicles']);
+await page.goBack();await page.getByRole('heading',{name:'What would you like to list?'}).waitFor();await page.goForward();await group().waitFor();
+await choose('Motorcycles','Commuter Bikes');await expect(field('model')).toBeDisabled();await chooseBrand('Bajaj');await chooseModel('Freedom 125');await expect(page.locator('pre').filter({hasText:'Freedom 125'})).toContainText('"fuel_type": "CNG"');
+await expect(page.getByRole('heading',{name:'Motorcycle/Scooter proposal overlay v1 — not approved'})).toBeVisible();
+await field('variant').fill('Seller-described variant');await field('km_driven').fill('0');
+await field('brand').selectOption('Honda');await page.getByRole('dialog',{name:'Confirm incompatible model removal'}).waitFor();await page.getByRole('button',{name:'Keep brand and model'}).click();await expect(field('brand')).toHaveValue('Bajaj');
+await field('brand').selectOption('Honda');await page.getByRole('button',{name:'Clear model and change brand'}).click();await expect(field('model')).toHaveValue('');await expect(field('brand')).toHaveValue('Honda');
+await expect(field('variant')).toHaveValue('Seller-described variant');await expect(field('km_driven')).toHaveValue('0');await expect(page.getByLabel(/Title/)).toHaveValue('CSV smartphone preview');
+await expect(field('model')).toBeEnabled();await chooseModel('Shine');
+await page.goBack();await page.getByRole('dialog').waitFor();await page.getByRole('button',{name:'Cancel / stay'}).click();await page.waitForURL('**/?macro=vehicles');await expect(field('brand')).toHaveValue('Honda');
+await page.screenshot({path:output+'/motorcycles-desktop.png',fullPage:true});
+const beforeReview=await field('model').inputValue();
+await page.getByRole('combobox',{name:'Compatibility review view',exact:true}).selectOption('review');await page.getByLabel('Search source models',{exact:true}).fill('CB300F');
+await expect(page.getByRole('region',{name:'Compatibility coverage'})).toContainText('unresolved: Body style does not establish commuter versus sport use.');
+await expect(field('model').locator('option').filter({hasText:/^CB300F — /})).toBeDisabled();await expect(field('model')).toHaveValue(beforeReview);
+await page.screenshot({path:output+'/motorcycle-review-desktop.png',fullPage:true});
+await leaf().selectOption({label:'Electric Motorcycles'});await page.getByRole('button',{name:'Remove details and continue'}).click();await expect(page.getByText(/Exact field order:.*range_km\|battery_warranty_left/)).toBeVisible();assert.equal(await page.getByText('battery_capacity_kwh',{exact:true}).count(),0);
+await chooseBrand('Revolt');await chooseModel('RV400');await expect(page.getByText('engine_cc blank: unknown, not zero.')).toBeVisible();await page.screenshot({path:output+'/electric-motorcycles-desktop.png',fullPage:true});
+await group().selectOption('Scooters');await page.getByRole('button',{name:'Remove details and continue'}).click();await leaf().selectOption({label:'Petrol Scooters'});await chooseBrand('Honda');await chooseModel('Activa 6G');
+const retainedScooter=await field('model').inputValue();
+await page.getByRole('combobox',{name:'Proposed lookup state',exact:true}).selectOption('unstarted');await expect(field('model')).toBeDisabled();await expect(field('brand')).toBeEnabled();await expect(field('model')).toHaveValue(retainedScooter);await expect(page.getByText('Model lookup unstarted or missing. Model stays disabled; selected value retained.')).toBeVisible();
+await page.getByRole('combobox',{name:'Proposed lookup state',exact:true}).selectOption('loading');await expect(field('model')).toBeDisabled();await expect(page.getByText('Loading model lookup…',{exact:true})).toBeVisible();
+await page.getByRole('combobox',{name:'Proposed lookup state',exact:true}).selectOption('error');await expect(page.getByRole('alert').filter({hasText:'Model lookup failed'})).toBeVisible();
+await page.getByRole('combobox',{name:'Proposed lookup state',exact:true}).selectOption('empty');await expect(page.getByText('No matching models. No fallback option has been invented.')).toBeVisible();
+await page.getByRole('combobox',{name:'Proposed lookup state',exact:true}).selectOption('ready');await expect(field('model')).toBeEnabled();await expect(field('model')).not.toHaveValue('');
+await expect(field('model')).toHaveValue(retainedScooter);
+await leaf().selectOption({label:'Electric Scooters'});await page.getByRole('button',{name:'Remove details and continue'}).click();await chooseBrand('Ampere');await chooseModel('Magnus EX');
+await expect(page.locator('pre').filter({hasText:'Magnus EX'})).toContainText('"vehicle_type": "Electric Scooter"');await expect(page.getByText('engine_cc blank: unknown, not zero.')).toBeVisible();
+await page.setViewportSize({width:390,height:844});await page.screenshot({path:output+'/electric-scooter-mobile.png',fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.setViewportSize({width:1280,height:900});
+await page.getByRole('combobox',{name:'Compatibility review view',exact:true}).selectOption('review');await field('brand').selectOption('Honda');await page.getByRole('button',{name:'Clear model and change brand'}).click();await page.getByLabel('Search source models',{exact:true}).fill('Activa 6G');
+await expect(field('model')).toBeDisabled();await expect(page.getByRole('region',{name:'Compatibility coverage'})).toContainText('incompatible: Explicit proposal maps source type/style to Petrol Scooters, not Electric Scooters.');
+await group().selectOption('Cars');await page.getByRole('button',{name:'Remove details and continue'}).click();await leaf().selectOption({label:'Electric & Hybrid Cars'});await chooseBrand('Tata');await page.getByText('Unresolved catalogue crosswalk',{exact:true}).click();await expect(page.getByText(/Cars have no fuel\/year\/variant columns/)).toBeVisible();await page.screenshot({path:output+'/cars-unresolved-desktop.png',fullPage:true});
+await clearSection();await page.getByRole('link',{name:/Property/}).click();await choose('PG & Co-living','Boys PG');await expect(page.getByText(/Source amount basis: monthly_rent_per_bed/)).toBeVisible();await expect(field('food_included')).toHaveValue('');assert.equal(await page.getByLabel(/Condition/).count(),0);
+await page.setViewportSize({width:390,height:844});await page.screenshot({path:output+'/pg-mobile.png',fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+await choose('Residential for Rent','Apartment or Flat');await expect(page.getByText(/Source amount basis: monthly_rent\./)).toBeVisible();
+await page.getByText('Preview adapter: simulate category states',{exact:true}).click();await page.getByRole('combobox',{name:'Simulated data state',exact:true}).selectOption('loading');await expect(page.getByText('Loading categories…',{exact:true})).toBeVisible();await page.getByRole('combobox',{name:'Simulated data state',exact:true}).selectOption('error');await expect(page.getByRole('alert').filter({hasText:'Unable to load categories'})).toBeVisible();await page.getByRole('combobox',{name:'Simulated data state',exact:true}).selectOption('empty');await expect(page.getByText('No categories are available in this section.')).toBeVisible();await page.getByRole('combobox',{name:'Simulated data state',exact:true}).selectOption('ready');
+await clearSection();await page.screenshot({path:output+'/selector-mobile.png',fullPage:true});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+await page.goto(base+'/?macro=goods&macro=goods');await expect(page.getByRole('alert')).toContainText('Invalid or repeated section value');
+assert.deepEqual(errors,[]);assert.ok(requests.every(url=>new URL(url).origin===base));assert.ok(lookups.length>0);assert.ok(lookups.every(l=>l.rows.length<=25));
+fs.writeFileSync(output+'/browser-results.json',JSON.stringify({result:'PASS',viewports:[1280,390],screenshots:9,checks:['source hierarchy/order','smartphone false/zero/unanswered','common retention','group confirmation/cancel','brand/model confirmation/cancel','variant/zero retained after confirmed parent change','source brand/type scoping','CNG','blank electric engine','electric exact membership','conventional and electric motorcycles','petrol and electric scooters','unstarted/loading/error/empty lookup preserves model','Brand independent of model lookup','ambiguous Naked row retained in review and unselectable','Petrol model cannot be selected in Electric leaf','proposal overlay visibly unapproved','car unresolved powertrain','PG per-bed versus rental monthly basis','category lookup states','Back/Forward with confirmation','keyboard focus','mobile overflow','invalid repeated query','bounded lookup payloads','no external requests'],lookupResponses:lookups.length,pageErrors:errors,requestOrigins:[...new Set(requests.map(u=>new URL(u).origin))]},null,2));
+console.log('Browser PASS: hardened lookup states, proposed leaf filtering/review, conventional/electric/CNG examples, retained unrelated inputs; 9 screenshots; no external requests.');
+} finally {await browser.close();}

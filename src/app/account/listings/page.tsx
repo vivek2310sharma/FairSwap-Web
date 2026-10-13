@@ -4,8 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { ListingStatus } from "@/types/listing";
 import { transitionListingAction, submitListingAction } from "./actions";
 import { ModerationStatusBadge } from "./ModerationStatusBadge";
+import {isPropertyEnabled} from '@/lib/listings/property/server';
+import {propertyFinancialSchema,propertyRentSummary,isPropertyRentalCategory} from '@/lib/listings/property/contract';
+import {twoWheelerV1} from '@/lib/listings/two-wheeler/contract';
+import {carsV1} from '@/lib/listings/cars/contract';
+import {isTwoWheelerEnabled,isCarsEnabled} from '@/lib/listings/two-wheeler/server';
+import {isVerifiedSubmissionTestEnvironment} from '@/lib/listings/test-runtime';
 
-function getStatusBadge(status: ListingStatus) {
+
+function getStatusBadge(status: ListingStatus, testFamily=false) {
   const styles: Record<ListingStatus, string> = {
     draft: "bg-gray-100 text-gray-800 border-gray-300",
     pending_review: "bg-amber-100 text-amber-800 border-amber-300",
@@ -36,7 +43,7 @@ function getStatusBadge(status: ListingStatus) {
         styles[status] || styles.draft
       }`}
     >
-      {labels[status] || status}
+      {testFamily&&status==='pending_review'?'Awaiting review':labels[status] || status}
     </span>
   );
 }
@@ -65,6 +72,7 @@ export default async function ListingsDashboardPage() {
     .from("listings")
     .select(`
       id,
+      category_id,
       slug,
       title,
       price_type,
@@ -77,12 +85,37 @@ export default async function ListingsDashboardPage() {
       cover_photo_id,
       created_at,
       updated_at,
-      categories(name),
+      categories(name,slug),
       cities(name)
     `)
     .eq("seller_id", user.id)
     .order("updated_at", { ascending: false })
     .limit(100);
+
+  const propertyIds=(listings??[]).map(l=>l.id);
+  const propertyResult=isPropertyEnabled()&&propertyIds.length?await (async()=>{
+    try {return await supabase.from('listing_property_contexts').select('listing_id,category_id,financial').in('listing_id',propertyIds);}
+    catch {return {data:null,error:{message:'Saved Property references could not be loaded.'}};}
+  })():null;
+  const rentals=new Map((propertyResult?.error?[]:propertyResult?.data??[]).filter(p=>listings?.some(l=>l.id===p.listing_id&&l.category_id===p.category_id)).map(p=>[p.listing_id,p.financial]));
+  // Only displayed, owned drafts with an unresolved ordinary relation need fallback.
+  const unresolvedIds=(listings??[]).filter(l=>{
+    const category=Array.isArray(l.categories)?l.categories[0]:l.categories;
+    return ['draft','pending_review'].includes(l.status)&&!category?.slug?.trim()&&!rentals.has(l.id);
+  }).map(l=>l.id);
+  const loadVehicleContexts=async(table:'listing_vehicle_contexts'|'listing_car_contexts',enabled:boolean)=>{
+    if(!enabled||!unresolvedIds.length)return {ids:new Set<string>(),failed:false};
+    try {
+      const result=await supabase.from(table).select('listing_id,category_id').in('listing_id',unresolvedIds);
+      if(result.error)return {ids:new Set<string>(),failed:true};
+      return {ids:new Set((result.data??[]).filter(c=>listings?.some(l=>l.id===c.listing_id&&l.category_id===c.category_id)).map(c=>c.listing_id)),failed:false};
+    } catch {return {ids:new Set<string>(),failed:true};}
+  };
+  const [motorcycleContexts,carContexts]=await Promise.all([
+    loadVehicleContexts('listing_vehicle_contexts',isTwoWheelerEnabled()),
+    loadVehicleContexts('listing_car_contexts',isCarsEnabled()),
+  ]);
+  const contextLookupFailed=!!propertyResult?.error||motorcycleContexts.failed||carContexts.failed;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -134,8 +167,13 @@ export default async function ListingsDashboardPage() {
       ) : (
         <div className="mt-6 space-y-4">
           {listings?.map((listing) => {
+            const propertyDraft=isPropertyRentalCategory(listing.categories)||rentals.has(listing.id);
+            const categoryReference=Array.isArray(listing.categories)?listing.categories[0]:listing.categories;
+            const vehicleDraft=motorcycleContexts.ids.has(listing.id)||carContexts.ids.has(listing.id)||[...twoWheelerV1.paths,...carsV1.paths].some(path=>path.slug===categoryReference?.slug);
+            const unresolvedFamily=!propertyDraft&&!vehicleDraft&&!categoryReference?.slug?.trim();
+            const financial=propertyFinancialSchema.safeParse(rentals.get(listing.id));
             const priceDisplay =
-              listing.price_type === "free"
+              propertyDraft ? financial.success?propertyRentSummary(financial.data):'Rental details unavailable' : listing.price_type === "free"
                 ? "Free"
                 : listing.price_paise
                 ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
@@ -157,13 +195,13 @@ export default async function ListingsDashboardPage() {
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="text-lg font-bold text-gray-900">{listing.title}</h2>
-                      {listing.status === "pending_review" ? (
+                      {listing.status === "pending_review" && !propertyDraft && !vehicleDraft ? (
                         <ModerationStatusBadge
                           listingId={listing.id}
                           initialStatus={listing.status}
                         />
                       ) : (
-                        getStatusBadge(listing.status)
+                        getStatusBadge(listing.status,propertyDraft||vehicleDraft)
                       )}
                       <span className="text-xs text-gray-400">Rev {listing.revision}</span>
                     </div>
@@ -204,10 +242,13 @@ export default async function ListingsDashboardPage() {
                       href={`/account/listings/${listing.id}/edit`}
                       className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                     >
-                      Edit
+                      {(propertyDraft||vehicleDraft)&&listing.status==='pending_review'?'View saved details':'Edit'}
                     </Link>
 
-                    {listing.status === "draft" && (
+                    {listing.status==='draft'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">{isVerifiedSubmissionTestEnvironment(process.env)?'Open the saved draft to check Test submission availability. Approval and publication remain disabled.':'Test draft only. Submission and publication are unavailable.'}</p>}
+                    {listing.status==='pending_review'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">Awaiting review. Saved details and photos are read-only; this listing remains private.</p>}
+                    {listing.status==='draft'&&unresolvedFamily&&<p role="status" className="text-sm text-amber-800">{contextLookupFailed?'Category references could not be loaded. Submission is unavailable. Try again later.':'Category information is unavailable. Submission is unavailable until this draft’s category is verified.'}</p>}
+                    {listing.status === "draft" && !propertyDraft && !vehicleDraft && !unresolvedFamily && (
                       <form action={onSubmitListing.bind(null, listing.id)}>
                         <button
                           type="submit"
