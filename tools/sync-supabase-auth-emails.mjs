@@ -145,9 +145,9 @@ export async function run(args = process.argv.slice(2), token = process.env.SUPA
   }
   if (!token) throw new Error("Set SUPABASE_ACCESS_TOKEN securely (Supabase Management API PAT required)");
   const current = pick(await authConfig(ref, token));
-  const desiredFromRepo = candidate();
+  const desiredFromRepo = command === "rollback" ? null : candidate();
   process.stdout.write("Existing " + env + " hosted HTML analysis (metadata only):\n" + JSON.stringify(summary(current), null, 2) + "\n");
-  process.stdout.write("Matches repository target: " + equal(current, desiredFromRepo) + "\n");
+  if (desiredFromRepo) process.stdout.write("Matches repository target: " + equal(current, desiredFromRepo) + "\n");
 
   if (command === "audit") {
     process.stdout.write("Read-only audit and existing HTML backup: " + storeBackup(ref, current) + "\n");
@@ -155,7 +155,7 @@ export async function run(args = process.argv.slice(2), token = process.env.SUPA
   }
   const authorization = command.toUpperCase() + "-" + env.toUpperCase();
   if (option("--confirm") !== authorization) throw new Error("Explicit --confirm " + authorization + " required");
-  if (env === "prod" && !options.includes("--test-mails-verified")) {
+  if (env === "prod" && command === "apply" && !options.includes("--test-mails-verified")) {
     throw new Error("Production requires --test-mails-verified after controlled FairSwapTest signup, OTP and recovery email checks");
   }
   let desired = desiredFromRepo;
