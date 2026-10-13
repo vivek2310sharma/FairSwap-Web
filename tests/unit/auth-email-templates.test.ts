@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { extractOtpFromEmail } from "../helpers/extract-otp";
 
 const root = process.cwd();
 const readTemplate = (name: string) =>
@@ -25,10 +26,16 @@ describe("Supabase Auth email templates (#126, #111)", () => {
 
   it("renders exactly one Supabase 6-digit OTP placeholder, not a magic login link", () => {
     const doc = parse(otpHtml);
-    expect(doc.getElementById("otp-code")?.textContent?.trim()).toBe("{{ .Token }}");
+    expect(doc.getElementById("otp-token")?.textContent?.trim()).toBe("{{ .Token }}");
+    expect(doc.getElementById("otp-token")?.getAttribute("data-testid")).toBe("otp-token");
     expect(otpHtml.match(/{{ \.Token }}/g)).toHaveLength(1);
     expect(otpHtml).not.toContain("{{ .TokenHash }}");
     expect(doc.querySelector("a[href*='token_hash']")).toBeNull();
+  });
+
+  it("remains compatible with the existing Mailpit OTP parser and excludes CSS hex matches", () => {
+    const rendered = otpHtml.replace("{{ .Token }}", "849201");
+    expect(extractOtpFromEmail({ html: rendered })).toBe("849201");
   });
 
   it.each([
