@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import type {SupabaseClient} from "@supabase/supabase-js";
-import {isVerifiedPostAdTestEnvironment, POST_AD_TEST_PROJECT} from "@/lib/listings/test-runtime";
+import {isVerifiedPostAdTestEnvironment, isVerifiedGoodsProductionEnvironment, POST_AD_TEST_PROJECT, POST_AD_PRODUCTION_PROJECT} from "@/lib/listings/test-runtime";
 import {isEligibleGoodsCategory, loadGoodsReferences, validatePostAdSelection} from "@/lib/listings/post-ad-server";
 const listingId="55555555-5555-4555-8555-555555555555";
 const id = "11111111-1111-4111-8111-111111111111";
@@ -31,6 +31,41 @@ describe("server-controlled Test activation",()=>{
     expect(isVerifiedPostAdTestEnvironment({...preview,NEXT_PUBLIC_SUPABASE_URL:"https://kriuhwppxgxsyyrbjsau.supabase.co"})).toBe(false);
   });
   it("requires verified provenance for opaque credentials",()=>{const modern={...env,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_fixture",SUPABASE_SECRET_KEY:"sb_secret_fixture"};expect(isVerifiedPostAdTestEnvironment(modern)).toBe(false);expect(isVerifiedPostAdTestEnvironment({...modern,POST_AD_TEST_CREDENTIALS_VERIFIED:POST_AD_TEST_PROJECT})).toBe(true);});
+});
+describe("Goods-only Production activation",()=>{
+  const production={
+    NODE_ENV:"production",VERCEL_ENV:"production",VERCEL_GIT_COMMIT_REF:"main",
+    POST_AD_GOODS_PRODUCTION_ENABLED:"true",
+    POST_AD_PRODUCTION_CREDENTIALS_VERIFIED:POST_AD_PRODUCTION_PROJECT,
+    NEXT_PUBLIC_SITE_URL:"https://fairswap.in",
+    NEXT_PUBLIC_SUPABASE_URL:`https://${POST_AD_PRODUCTION_PROJECT}.supabase.co`,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_testfixture",
+    SUPABASE_SECRET_KEY:"sb_secret_testfixture",
+  };
+  it("defaults to OFF and requires explicit exact-production project attestation",()=>{
+    expect(isVerifiedGoodsProductionEnvironment({})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment(production)).toBe(true);
+    expect(isVerifiedGoodsProductionEnvironment({...production,POST_AD_GOODS_PRODUCTION_ENABLED:"false"})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,POST_AD_PRODUCTION_CREDENTIALS_VERIFIED:undefined})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,VERCEL_ENV:"preview"})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,NODE_ENV:"test"})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,VERCEL_GIT_COMMIT_REF:"staging"})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,NEXT_PUBLIC_SITE_URL:"https://staging.fairswap.in"})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,NEXT_PUBLIC_SUPABASE_URL:`https://${POST_AD_TEST_PROJECT}.supabase.co`})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,SUPABASE_URL:`https://${POST_AD_TEST_PROJECT}.supabase.co`})).toBe(false);
+  });
+  it("never enables Test family submission, and rejects absent or mismatched credentials",()=>{
+    for (const switchName of ["POST_AD_GOODS_TEST_ENABLED","POST_AD_TWO_WHEELER_TEST_ENABLED",
+      "POST_AD_CARS_TEST_ENABLED","POST_AD_PROPERTY_TEST_ENABLED","POST_AD_SUBMISSION_TEST_ENABLED"]) {
+      expect(isVerifiedGoodsProductionEnvironment({...production,[switchName]:"true"})).toBe(false);
+    }
+    expect(isVerifiedGoodsProductionEnvironment({...production,SUPABASE_SECRET_KEY:undefined})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:undefined})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,SUPABASE_SECRET_KEY:"sb_publishable_wrongrole"})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:"sb_secret_wrongrole"})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,NEXT_PUBLIC_SUPABASE_ANON_KEY:jwt(POST_AD_TEST_PROJECT,"anon")})).toBe(false);
+    expect(isVerifiedGoodsProductionEnvironment({...production,SUPABASE_SERVICE_ROLE_KEY:jwt(POST_AD_TEST_PROJECT,"service_role")})).toBe(false);
+  });
 });
 describe("authoritative Goods data",()=>{
   it("merges/deduplicates saved definitions and never queries them through discovery",async()=>{const other="22222222-2222-4222-8222-222222222222";const savedAttribute={id:"33333333-3333-4333-8333-333333333333",category_id:id,name:"brand",label:"Brand",value_type:"text" as const,is_required:true,options:null,validation_rules:null,sort_order:0};const newAttribute={...savedAttribute,id:"44444444-4444-4444-8444-444444444444",category_id:other};const saved={category:goods,attributes:[savedAttribute]};const c=client([{data:[goods,{...goods,id:other}],error:null},{data:[newAttribute,newAttribute],error:null},{data:[],error:null}]);expect(await loadGoodsReferences(c.supabase,saved)).toEqual({status:"ready",categories:[{...goods,id:other},goods],attributes:[newAttribute,savedAttribute],cities:[]});expect(c.calls).toContainEqual(["in","category_id",[other]]);expect(c.calls).not.toContainEqual(["in","category_id",[id,other]]);});
