@@ -44,6 +44,9 @@ jobs:
       - name: Run Typecheck
         run: pnpm run typecheck
 
+      - name: Run New Post Ad & Saved Edit Regression Tests
+        run: pnpm vitest run tests/unit/post-ad-goods-entry.test.tsx tests/unit/post-ad-goods-page.test.tsx tests/unit/post-ad-goods-server.test.ts tests/unit/post-ad-goods-edit-retention.test.tsx
+
       - name: Run Moderation Unit Tests
         run: |
           if compgen -G "src/__tests__/moderation-*.test.ts*" > /dev/null; then
