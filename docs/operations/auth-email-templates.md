@@ -51,6 +51,8 @@ node tools/sync-supabase-auth-emails.mjs rollback --env test --backup /ABSOLUTE/
 node tools/sync-supabase-auth-emails.mjs rollback --env prod --backup /ABSOLUTE/BACKUP.json --confirm ROLLBACK-PROD --test-mails-verified
 ```
 
+**Antigravity on Windows 11:** Run these `node` commands in the project workspace terminal using PowerShell. Have the operator supply `SUPABASE_ACCESS_TOKEN` through a **secret environment variable** (never echo or paste it in a prompt). Rollback paths are absolute Windows paths such as `C:\\Users\\<account>\\.fairswap\\auth-email-backups\\<backup>.json`; quote the argument. The utility is cross-platform and stores backups in the executing user's home directory.
+
 Backups contain **only five approved Auth config fields**: the two existing HTML templates, two subject lines, and shared email OTP expiration. The helper never saves a full Supabase Auth config, which may include sensitive SMTP or OAuth secrets. Backups are saved with restricted permissions under `~/.fairswap/auth-email-backups` and are never committed to Git. The helper refuses to write when existing templates/subjects/expiry cannot be restored, when another admin changed the config during preflight, or when production is ahead of FairSwapTest. Read-after-write GET verification confirms remote persistence, but **does not replace sending actual emails and checking inbox rendering**.
 
 **Important limitations:** No hosted Auth settings change merely by merging the GitHub PR. Live HTML cannot be audited through the presently connected Supabase MCP tools; use the Management API helper or the authenticated dashboard. A GitHub CI pass verifies repository behavior, not delivery by Supabase SMTP.
