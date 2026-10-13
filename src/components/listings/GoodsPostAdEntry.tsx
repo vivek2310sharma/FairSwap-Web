@@ -1,6 +1,5 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import PostAdFlow from "./PostAdFlow";
 import ListingForm from "./ListingForm";
 import { buildMacroCategoryUrl, parseMacroCategory } from "@/lib/listings/macro-category";
@@ -43,6 +42,5 @@ export default function GoodsPostAdEntry({references, vehicles, property, locati
       if(locations&&!cities.length)return <p role="status">No active city/location references are available.</p>;
       return <ListingForm categories={categories} allAttributes={attributes} cities={cities} postAdEntry={section==='property'?'property':section==='vehicles'?'vehicle':'goods'} property={section==='property'&&property?{references:property}:undefined} vehicle={section==='vehicles'&&vehicles?{references:vehicles}:undefined} {...controls} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={maintenanceMessage} />;
     }} />
-    <Link href="/account/listings/new?entry=legacy" className="text-sm font-medium text-emerald-700 underline">Use existing posting form</Link>
   </div>;
 }
