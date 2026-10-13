@@ -49,7 +49,13 @@ export default async function NewListingPage({
 
   const integrationEnabled = isGoodsPostAdEnabled();
   const query = await searchParams;
-  if (integrationEnabled && query.entry !== "legacy") {
+  // The former `?entry=legacy` creation route is retired wherever Post Ad is
+  // active. Canonicalize every old/new `entry` variant so it cannot bypass
+  // the main-category selector. Existing listing edit URLs are unaffected.
+  if (integrationEnabled && query.entry !== undefined) {
+    redirect("/account/listings/new");
+  }
+  if (integrationEnabled) {
     const typed=supabase as SupabaseClient<Database>;
     const locationRequest=loadPostAdLocations(supabase);
     const [references,tw,cars,property,locations]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest]);
