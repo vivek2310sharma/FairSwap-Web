@@ -77,11 +77,29 @@ describe("authoritative Goods data",()=>{
 describe("seller action category/context validation",()=>{
   it("create ignores forged saved-listing/category context and never calls the owner RPC",async()=>{const c=client([{data:{...goods,new_listing_enabled:false},error:null}]);const f=form();f.set("listing_id",listingId);f.set("saved_category_context",JSON.stringify({category:goods,attributes:[]}));expect(await validatePostAdSelection(c.supabase,f)).toMatch(/active, enabled/);expect(c.rpc).not.toHaveBeenCalled();});
   it.each([{data:null,error:{code:"42501"}},{data:{...goods,is_active:"false"},error:null}])("update fails closed on denied/malformed saved references %j",async result=>{const c=client([{data:{category_id:id,seller_id:"owner"},error:null},result]);expect(await validatePostAdSelection(c.supabase,form(),listingId,"owner")).toMatch(/Saved category could not be verified/);expect(c.from).toHaveBeenCalledOnce();expect(c.rpc).toHaveBeenCalledExactlyOnceWith("get_seller_listing_category_context",{p_listing_id:listingId});});
-  it("cannot bypass Goods assignment eligibility by claiming legacy",async()=>{const c=client([{data:{...goods,new_listing_enabled:false},error:null}]);expect(await validatePostAdSelection(c.supabase,form("legacy"))).toMatch(/active, enabled Goods/);});
+  it("refuses direct old-form creation before category lookup or any database mutation",async()=>{
+    const c=client([]);
+    expect(await validatePostAdSelection(c.supabase,form("legacy"))).toMatch(/Invalid Post Ad context/);
+    expect(await validatePostAdSelection(c.supabase,form(null))).toMatch(/Choose Goods/);
+    expect(c.from).not.toHaveBeenCalled();
+    expect(c.rpc).not.toHaveBeenCalled();
+  });
   it.each([{...goods,new_listing_enabled:false},{...goods,is_active:false,new_listing_enabled:false}])("retains a closed saved Goods category without new-assignment eligibility: %j",async saved=>{const c=client([{data:{category_id:id,seller_id:"owner"},error:null},{data:saved,error:null},{data:saved,error:null}]);expect(await validatePostAdSelection(c.supabase,form(null),listingId,"owner")).toBeNull();expect(c.from).toHaveBeenCalledTimes(1);});
   it.each([{...goods,new_listing_enabled:false},{...goods,is_active:false}])("rejects changing to a different closed Goods category: %j",async selected=>{const other="22222222-2222-4222-8222-222222222222";const c=client([{data:{category_id:id,seller_id:"owner"},error:null},{data:goods,error:null},{data:{...selected,id:other},error:null}]);expect(await validatePostAdSelection(c.supabase,form("goods",other),listingId,"owner")).toMatch(/active, enabled/);});
   it("OFF preserves original path without metadata reads",async()=>{vi.stubEnv("POST_AD_GOODS_TEST_ENABLED","false");const c=client([]);expect(await validatePostAdSelection(c.supabase,form(null))).toBeNull();expect(c.from).not.toHaveBeenCalled();expect(await validatePostAdSelection(c.supabase,form())).toMatch(/unavailable/);});
-  it("accepts only verified Goods, while explicitly preserving legacy bicycle entry",async()=>{const c=client([{data:goods,error:null},{data:{...goods,macro_category:null},error:null}]);expect(await validatePostAdSelection(c.supabase,form())).toBeNull();expect(await validatePostAdSelection(c.supabase,form("legacy"))).toBeNull();expect(await validatePostAdSelection(c.supabase,form(null))).toMatch(/Choose Goods/);});
+  it("accepts verified new Goods but never permits a legacy bicycle creation",async()=>{
+    const c=client([{data:goods,error:null}]);
+    expect(await validatePostAdSelection(c.supabase,form())).toBeNull();
+    expect(await validatePostAdSelection(c.supabase,form("legacy"))).toMatch(/Invalid/);
+    expect(await validatePostAdSelection(c.supabase,form(null))).toMatch(/Choose Goods/);
+    expect(c.from).toHaveBeenCalledTimes(1);
+  });
+  it("retains previously saved legacy bicycle edits without offering new legacy listing creation",async()=>{
+    const saved={...goods,macro_category:null,new_listing_enabled:false};
+    const c=client([{data:{category_id:id,seller_id:"owner"},error:null},{data:saved,error:null}]);
+    expect(await validatePostAdSelection(c.supabase,form(null),listingId,"owner")).toBeNull();
+    expect(c.rpc).toHaveBeenCalledExactlyOnceWith("get_seller_listing_category_context",{p_listing_id:listingId});
+  });
   it.each(["vehicles","property","Goods",""])("rejects untrusted context %s",async entry=>{const c=client([]);expect(await validatePostAdSelection(c.supabase,form(entry))).toMatch(/Invalid/);expect(c.from).not.toHaveBeenCalled();});
   it("rejects repeated/missing/invalid category/context",async()=>{const c=client([]);const repeated=form();repeated.append("post_ad_entry","goods");expect(await validatePostAdSelection(c.supabase,repeated)).toMatch(/Invalid/);const duplicate=form();duplicate.append("category_id",id);expect(await validatePostAdSelection(c.supabase,duplicate)).toMatch(/valid Goods/);expect(await validatePostAdSelection(c.supabase,form("goods",""))).toMatch(/valid Goods/);expect(await validatePostAdSelection(c.supabase,form("goods","not-uuid"))).toMatch(/valid Goods/);expect(c.from).not.toHaveBeenCalled();});
   it.each([{data:null,error:null},{data:{...goods,is_active:false},error:null},{data:{...goods,macro_category:null},error:null},{data:{...goods,new_listing_enabled:false},error:null},{data:null,error:{code:"connection"}}])("rejects invalid selection/database error %j",async result=>{const c=client([result]);expect(await validatePostAdSelection(c.supabase,form())).toBeTypeOf("string");});

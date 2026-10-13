@@ -37,7 +37,10 @@ export async function loadGoodsReferences(supabase: SupabaseClient, savedContext
 export async function validatePostAdSelection(supabase: SupabaseClient, form: FormData, listingId?: string, userId?: string): Promise<string | null> {
   const entry = form.getAll("post_ad_entry");
   if (!isGoodsPostAdEnabled()) return entry.length ? "The Post Ad flow is unavailable." : null;
-  if (entry.length > 1 || (entry.length && entry[0] !== "goods" && entry[0] !== "legacy")) return "Invalid Post Ad context.";
+  // New drafts must originate in the integrated Goods flow; legacy is an
+  // edit-only saved-context compatibility path, not a new-listing choice.
+  if (entry.length > 1 || (entry.length === 1 && entry[0] !== "goods" && (entry[0] !== "legacy" || !listingId))) return "Invalid Post Ad context.";
+  if (!listingId && entry.length !== 1) return "Choose Goods in the new Post Ad flow.";
   let goods = entry[0] === "goods";
   let savedCategoryId: string | undefined;
   let savedContext: SavedContext | undefined;
@@ -51,14 +54,14 @@ export async function validatePostAdSelection(supabase: SupabaseClient, form: Fo
     savedCategoryId = savedContext.category.id;
     if (!goods && entry[0] === "goods") return "Post Ad context does not match the saved category.";
     if (goods && entry[0] === "legacy") return "Post Ad context does not match the saved category.";
-  } else if (!entry.length) return "Choose Goods or use the existing posting form.";
+  }
   const ids = form.getAll("category_id");
   if (ids.length !== 1 || !z.string().uuid().safeParse(ids[0]).success) return "Select a valid Goods category.";
   // Retaining the authoritative saved category is not a new assignment.
   if (listingId && ids[0] === savedCategoryId && classifyCategoryAssignment("update",savedCategoryId,null,savedContext)==="retention") return null;
   const selected = await supabase.from("categories").select("*").eq("id", ids[0]).maybeSingle();
   if (selected.error) return "Category could not be verified. Please try again later.";
-  // An explicit legacy entry cannot exempt a newly assigned Goods category.
+  // Retained legacy editing cannot exempt a newly assigned Goods category.
   if (!goods) {
     const parsed = metadata.safeParse(selected.data);
     if (!parsed.success) return "Category metadata could not be verified.";
