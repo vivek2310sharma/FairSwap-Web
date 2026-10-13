@@ -555,6 +555,7 @@ jobs:
           set -euo pipefail
           mkdir -p /tmp/fairswap-issue133/supabase/migrations /tmp/fairswap-issue133/supabase/tests
           sed 's/major_version = 15/major_version = 17/' supabase/config.toml > /tmp/fairswap-issue133/supabase/config.toml
+          cp -r supabase/templates /tmp/fairswap-issue133/supabase/
           grep -q 'major_version = 17' /tmp/fairswap-issue133/supabase/config.toml
           cd /tmp/fairswap-issue133
           supabase start -x studio,analytics,logflare,supavisor
