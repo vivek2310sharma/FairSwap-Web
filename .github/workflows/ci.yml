@@ -146,6 +146,10 @@ jobs:
           }
           [[ -f tests/security/post-ad-compatibility-disposable-db.test.ts &&
              -f tests/security/sql/post-ad-current-base-compatibility.sql ]] || exit 1
+          # supabase test db provisions pgTAP in its own runner/session; the
+          # independent node-postgres connection needs the extension installed.
+          # This DDL is strictly inside the disposable local Supabase DB.
+          supabase db query "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
           supabase db query "CREATE SCHEMA IF NOT EXISTS test_validation_meta;"
           supabase db query "CREATE TABLE IF NOT EXISTS test_validation_meta.run_identity (run_id text PRIMARY KEY, task text NOT NULL);"
           supabase db query "INSERT INTO test_validation_meta.run_identity (run_id,task) VALUES ('$POST_AD_DB_RUN_ID','POST-AD-DISPOSABLE-DB-VERIFY-01') ON CONFLICT (run_id) DO UPDATE SET task=excluded.task;"
