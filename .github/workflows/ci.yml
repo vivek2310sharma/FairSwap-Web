@@ -82,6 +82,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Create Issue 133 migration scaffold with pinned Supabase CLI (temporary)
+        run: |
+          supabase migration new post_ad_listing_insert_category_guard
+          FILE=$(find supabase/migrations -maxdepth 1 -name '*_post_ad_listing_insert_category_guard.sql' -print -quit)
+          test -n "$FILE"
+          echo "FAIRSWAP_CLI_GENERATED_FILE=$(basename "$FILE")"
+          rm -- "$FILE"
+
       - name: Start Disposable Local Supabase
         run: supabase start -x studio,analytics,logflare,supavisor
 
