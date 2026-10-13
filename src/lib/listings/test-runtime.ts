@@ -24,7 +24,17 @@ export function requiresSavedSubmissionFamilyReads(env: Record<string, string | 
   return false;
 }
 export function isVerifiedPostAdTestEnvironment(env: Record<string, string | undefined>): boolean {
-  if (env.POST_AD_GOODS_TEST_ENABLED !== "true" || env.NODE_ENV === "production") return false;
+  // Vercel builds Preview with NODE_ENV=production. Allow only the staging
+  // Preview with an explicit branch-scoped Test opt-in; never Production.
+  const stagingPreview =
+    env.NODE_ENV === "production" &&
+    env.VERCEL_ENV === "preview" &&
+    env.POST_AD_STAGING_PREVIEW_ENABLED === POST_AD_TEST_PROJECT &&
+    (!env.VERCEL_GIT_COMMIT_REF || env.VERCEL_GIT_COMMIT_REF === "staging");
+  if (env.POST_AD_GOODS_TEST_ENABLED !== "true") return false;
+  if (env.VERCEL_ENV && env.VERCEL_ENV !== "preview") return false;
+  if (env.VERCEL_ENV === "preview" && !stagingPreview) return false;
+  if (env.NODE_ENV === "production" && !stagingPreview) return false;
   if (env.NEXT_PUBLIC_SUPABASE_URL !== testUrl) return false;
   for (const name of ["STAGING_SUPABASE_URL", "SUPABASE_URL"]) {
     if (env[name] && env[name] !== testUrl) return false;

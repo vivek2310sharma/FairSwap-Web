@@ -19,6 +19,17 @@ beforeEach(()=>{for(const [k,v] of Object.entries(env))vi.stubEnv(k,v);vi.stubEn
 afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();});
 describe("server-controlled Test activation",()=>{
   it("defaults off and requires explicit Test target and correct key roles",()=>{expect(isVerifiedPostAdTestEnvironment({})).toBe(false);expect(isVerifiedPostAdTestEnvironment(env)).toBe(true);expect(isVerifiedPostAdTestEnvironment({...env,POST_AD_GOODS_TEST_ENABLED:"false"})).toBe(false);expect(isVerifiedPostAdTestEnvironment({...env,NODE_ENV:"production"})).toBe(false);expect(isVerifiedPostAdTestEnvironment({...env,NEXT_PUBLIC_SUPABASE_URL:"https://other.supabase.co"})).toBe(false);expect(isVerifiedPostAdTestEnvironment({...env,STAGING_SUPABASE_URL:"https://other.supabase.co"})).toBe(false);expect(isVerifiedPostAdTestEnvironment({...env,SUPABASE_SECRET_KEY:jwt("other","service_role")})).toBe(false);expect(isVerifiedPostAdTestEnvironment({...env,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:jwt(POST_AD_TEST_PROJECT,"service_role")})).toBe(false);});
+  it("allows only verified staging Vercel Preview builds, never Production or other branches",()=>{
+    const preview={...env,NODE_ENV:"production",VERCEL_ENV:"preview",VERCEL_GIT_COMMIT_REF:"staging",POST_AD_STAGING_PREVIEW_ENABLED:POST_AD_TEST_PROJECT};
+    expect(isVerifiedPostAdTestEnvironment(preview)).toBe(true);
+    expect(isVerifiedPostAdTestEnvironment({...preview,VERCEL_GIT_COMMIT_REF:undefined})).toBe(true);
+    expect(isVerifiedPostAdTestEnvironment({...preview,VERCEL_ENV:"production"})).toBe(false);
+    expect(isVerifiedPostAdTestEnvironment({...preview,VERCEL_GIT_COMMIT_REF:"main"})).toBe(false);
+    expect(isVerifiedPostAdTestEnvironment({...preview,VERCEL_GIT_COMMIT_REF:"feature/other"})).toBe(false);
+    expect(isVerifiedPostAdTestEnvironment({...preview,POST_AD_STAGING_PREVIEW_ENABLED:"false"})).toBe(false);
+    expect(isVerifiedPostAdTestEnvironment({...preview,POST_AD_STAGING_PREVIEW_ENABLED:"kriuhwppxgxsyyrbjsau"})).toBe(false);
+    expect(isVerifiedPostAdTestEnvironment({...preview,NEXT_PUBLIC_SUPABASE_URL:"https://kriuhwppxgxsyyrbjsau.supabase.co"})).toBe(false);
+  });
   it("requires verified provenance for opaque credentials",()=>{const modern={...env,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_fixture",SUPABASE_SECRET_KEY:"sb_secret_fixture"};expect(isVerifiedPostAdTestEnvironment(modern)).toBe(false);expect(isVerifiedPostAdTestEnvironment({...modern,POST_AD_TEST_CREDENTIALS_VERIFIED:POST_AD_TEST_PROJECT})).toBe(true);});
 });
 describe("authoritative Goods data",()=>{
