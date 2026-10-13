@@ -58,6 +58,41 @@ export function isVerifiedPostAdTestEnvironment(env: Record<string, string | und
   }
   return true;
 }
+/** Independent, default-OFF Goods-only Production release boundary.
+ * Unlike the Test gate, this cannot activate Vehicles, Property or family submit.
+ * Enable only AFTER the Production Goods metadata/context migrations are applied.
+ * Backend RLS, ownership and Zod validation remain the write authority. */
+export const POST_AD_PRODUCTION_PROJECT = "kriuhwppxgxsyyrbjsau";
+const productionUrl = `https://${POST_AD_PRODUCTION_PROJECT}.supabase.co`;
+export function isVerifiedGoodsProductionEnvironment(env: Record<string, string | undefined>): boolean {
+  if (env.VERCEL_ENV !== "production" || env.NODE_ENV !== "production") return false;
+  if (env.VERCEL_GIT_COMMIT_REF && env.VERCEL_GIT_COMMIT_REF !== "main") return false;
+  if (env.POST_AD_GOODS_PRODUCTION_ENABLED !== "true") return false;
+  if (env.POST_AD_PRODUCTION_CREDENTIALS_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
+  if (env.NEXT_PUBLIC_SITE_URL !== "https://fairswap.in") return false;
+  if (env.NEXT_PUBLIC_SUPABASE_URL !== productionUrl) return false;
+  if ([env.STAGING_SUPABASE_URL, env.SUPABASE_URL].some(url => url && url !== productionUrl)) return false;
+  // Never transfer the Test family/submission activation switches into Production.
+  if ([env.POST_AD_GOODS_TEST_ENABLED, env.POST_AD_TWO_WHEELER_TEST_ENABLED,
+    env.POST_AD_CARS_TEST_ENABLED, env.POST_AD_PROPERTY_TEST_ENABLED,
+    env.POST_AD_SUBMISSION_TEST_ENABLED].includes("true")) return false;
+  const publicKeys = [env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, env.NEXT_PUBLIC_SUPABASE_ANON_KEY].filter(Boolean) as string[];
+  const privateKeys = [env.SUPABASE_SECRET_KEY, env.SUPABASE_SERVICE_ROLE_KEY].filter(Boolean) as string[];
+  if (!publicKeys.length || !privateKeys.length) return false;
+  const matches = (key: string, role: "anon" | "service_role") => {
+    const prefix = role === "anon" ? "sb_publishable_" : "sb_secret_";
+    if (key.startsWith(prefix)) return true; // Opaque keys require the operator attestation above.
+    try {
+      const parts = key.split(".");
+      if (parts.length !== 3) return false;
+      const claims = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
+      return claims.role === role &&
+        (claims.ref === POST_AD_PRODUCTION_PROJECT || claims.iss === productionUrl + "/auth/v1");
+    } catch { return false; }
+  };
+  return publicKeys.every(key => matches(key,"anon")) && privateKeys.every(key => matches(key,"service_role"));
+}
+
 export function isVerifiedTwoWheelerTestEnvironment(env: Record<string, string | undefined>): boolean {
   return env.POST_AD_TWO_WHEELER_TEST_ENABLED === "true" && isVerifiedPostAdTestEnvironment(env);
 }
