@@ -12,7 +12,7 @@ import {
   assertRpcSuccess,
   claimJobs,
   parseInvocationPayload,
-} from "./email-outbox-worker";
+} from "../_shared/email-outbox-worker";
 
 export const S1_TEST_SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
 export const S1_CAPTURE_CODE = "S1_TEST_CAPTURE_NOT_DELIVERED";
