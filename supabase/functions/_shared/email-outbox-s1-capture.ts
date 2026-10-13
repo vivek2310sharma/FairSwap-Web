@@ -8,11 +8,54 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import {
-  assertRpcSuccess,
-  claimJobs,
-  parseInvocationPayload,
-} from "../_shared/email-outbox-worker";
+
+// These deliberately small RPC/payload helpers are self-contained so this
+// capture Edge bundle does NOT even import the production Resend worker.
+type ClaimedS1Job = {
+  id: string;
+  listing_id: string;
+  recipient_user_id: string;
+  event_type: string;
+  lock_token: string | null;
+};
+
+function parseS1InvocationPayload(body: unknown): { targetJobId?: string } | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  const value = body as Record<string, unknown>;
+  if (Object.keys(value).length === 0) return { targetJobId: undefined };
+  if ("record" in value) {
+    const parsed = z.object({ record: z.object({ id: z.string().uuid() }).passthrough() })
+      .passthrough().safeParse(value);
+    return parsed.success ? { targetJobId: parsed.data.record.id } : null;
+  }
+  const parsed = z.object({ id: z.string().uuid() }).strict().safeParse(value);
+  return parsed.success ? { targetJobId: parsed.data.id } : null;
+}
+
+async function claimS1Jobs(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: SupabaseClient<any>,
+  targetJobId?: string
+): Promise<ClaimedS1Job[]> {
+  const lockToken = crypto.randomUUID();
+  const { data, error } = targetJobId
+    ? await supabase.rpc("claim_email_outbox_job_by_id", {
+      p_job_id: targetJobId, p_lock_token: lockToken, p_stale_timeout_seconds: 600,
+    })
+    : await supabase.rpc("claim_email_outbox_batch", {
+      p_batch_size: 10, p_lock_token: lockToken, p_stale_timeout_seconds: 600,
+    });
+  if (error || !Array.isArray(data)) throw new Error("S1 email capture could not claim jobs");
+  return data as ClaimedS1Job[];
+}
+
+async function assertS1CapturePersisted(
+  rpc: PromiseLike<{ data: boolean | null; error: { message: string } | null }>
+): Promise<void> {
+  const { data, error } = await rpc;
+  if (error || data !== true) throw new Error("S1 email capture persistence failed");
+}
+
 
 export const S1_TEST_SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
 export const S1_CAPTURE_CODE = "S1_TEST_CAPTURE_NOT_DELIVERED";
@@ -88,13 +131,13 @@ export async function handleS1CaptureRequest(
   } catch {
     return json(400, { error: "Invalid JSON" });
   }
-  const parsedPayload = parseInvocationPayload(body);
-  if ("error" in parsedPayload) {
+  const parsedPayload = parseS1InvocationPayload(body);
+  if (parsedPayload === null) {
     return json(400, { error: "Invalid outbox invocation" });
   }
 
   try {
-    const jobs = await claimJobs(supabase, parsedPayload.targetJobId);
+    const jobs = await claimS1Jobs(supabase, parsedPayload.targetJobId);
     const allowedIds = new Set(cfg.approvedListingIds);
 
     // Validate the entire claimed batch BEFORE completing any capture.
@@ -109,7 +152,7 @@ export async function handleS1CaptureRequest(
     }
 
     for (const job of jobs) {
-      await assertRpcSuccess(supabase.rpc("fail_email_outbox_job", {
+      await assertS1CapturePersisted(supabase.rpc("fail_email_outbox_job", {
         p_job_id: job.id,
         p_lock_token: job.lock_token,
         p_error_code: S1_CAPTURE_CODE,
@@ -118,7 +161,7 @@ export async function handleS1CaptureRequest(
         p_is_permanent: true,
         p_max_attempts: 5,
         p_backoff_seconds: 0,
-      }), "S1 non-delivering outbox persistence failure");
+      }));
     }
 
     return json(200, {
