@@ -183,3 +183,29 @@ export async function handleModerationWorkerRequest(
     });
   }
 }
+
+
+/**
+ * Validates a dispatch token against the encrypted Supabase Vault copy, without
+ * exposing the secret to the Edge Function's environment or API callers.
+ * The database RPC is executable by service_role only and returns a boolean.
+ * Never invoke moderation claim/finalization on a failed or unavailable check.
+ */
+export async function authorizeModerationWorkerRequest(
+  req: Request,
+  supabase: SupabaseClient
+): Promise<boolean> {
+  const candidate = req.headers.get("x-moderation-worker-secret");
+  if (!candidate || !/^[a-f0-9]{64}$/.test(candidate)) {
+    return false;
+  }
+
+  try {
+    const { data, error } = await supabase.rpc("verify_moderation_worker_secret", {
+      p_candidate: candidate,
+    });
+    return error === null && data === true;
+  } catch {
+    return false;
+  }
+}
