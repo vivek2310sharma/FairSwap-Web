@@ -75,7 +75,7 @@ The proposed hosted run has distinct preparatory and execution phases;
    `S1_CAPTURE_RUN_ID`, `S1_CAPTURE_EXPIRES_AT_UTC`,
    `S1_CAPTURE_LISTING_IDS` (comma-separated three UUIDs),
    `S1_CAPTURE_STAFF_RECIPIENT_ID`, and existing worker secret.
-   Capture function intentionally does not request `RESEND_API_KEY`.
+   Capture function intentionally does not request `RESEND_API_KEY`. Deploy this dedicated function with `verify_jwt=false` (equivalent to the existing worker) **only after operator approval**, because the database `pg_net` invocation carries the internal `x-email-worker-secret`, not an end-user JWT. Confirm the Edge Function's `verify_jwt` setting from the hosted project after deployment.
 4. **Route safely:** record and protect the original Test-only
    `vault.email_outbox_worker_url` secret; inspect pending HTTP requests,
    ongoing deliveries and other invocation routes. Repoint *only Test's*
