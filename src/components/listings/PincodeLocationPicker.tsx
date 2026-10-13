@@ -10,6 +10,7 @@ export interface PincodeLocationPickerProps {
   initialLandmark?: string | null;
   initialLookup?: PincodeLookupResult | null;
   cities: City[];
+  isProperty?: boolean;
 }
 
 interface InitialLocationState {
@@ -219,6 +220,7 @@ export default function PincodeLocationPicker({
   initialLandmark = "",
   initialLookup,
   cities,
+  isProperty = false,
 }: PincodeLocationPickerProps) {
   const initial = useMemo(
     () =>
@@ -479,12 +481,12 @@ export default function PincodeLocationPicker({
       <input type="hidden" name="landmark" value={landmark} />
 
       <div className="rounded-lg border border-gray-200 bg-emerald-50/50 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-emerald-900">Where is the item?</h3>
+        <h3 className="text-sm font-semibold text-emerald-900">{isProperty?'Where is the rental property?':'Where is the item?'}</h3>
 
         {/* PIN Code Input */}
         <div>
           <label htmlFor="pincode_picker_input" className="block text-xs font-semibold text-gray-700">
-            PIN Code *
+            PIN code *
           </label>
           <div className="mt-1 flex items-center gap-2">
             <input
@@ -640,8 +642,7 @@ export default function PincodeLocationPicker({
         {/* Privacy reassurance footnote */}
         <div className="pt-2 border-t border-emerald-100/60 text-xs text-gray-500 space-y-0.5">
           <p className="font-medium text-gray-600">🔒 Privacy protection:</p>
-          <p>Only your approximate area is shown publicly on FairSwap.</p>
-          <p>You can decide the exact pickup location later with the buyer in chat.</p>
+          {isProperty?<><p>Property drafts are not public. Society/building text is private to the owner.</p><p>Arrange viewing details in chat when appropriate.</p></>:<><p>Only your approximate area is shown publicly on FairSwap.</p><p>You can decide the exact pickup location later with the buyer in chat.</p></>}
         </div>
       </div>
     </div>

@@ -1,0 +1,579 @@
+brand,model,body_type,segment,status
+Maruti Suzuki,800,Hatchback,mass,discontinued
+Maruti Suzuki,Alto,Hatchback,mass,discontinued
+Maruti Suzuki,Alto 800,Hatchback,mass,discontinued
+Maruti Suzuki,Alto K10,Hatchback,mass,on_sale
+Maruti Suzuki,A-Star,Hatchback,mass,discontinued
+Maruti Suzuki,Zen,Hatchback,mass,discontinued
+Maruti Suzuki,Zen Estilo,Hatchback,mass,discontinued
+Maruti Suzuki,Estilo,Hatchback,mass,discontinued
+Maruti Suzuki,Wagon R,Hatchback,mass,on_sale
+Maruti Suzuki,Wagon R Stingray,Hatchback,mass,discontinued
+Maruti Suzuki,Celerio,Hatchback,mass,on_sale
+Maruti Suzuki,Celerio X,Hatchback,mass,discontinued
+Maruti Suzuki,Ritz,Hatchback,mass,discontinued
+Maruti Suzuki,Swift,Hatchback,mass,on_sale
+Maruti Suzuki,Dzire,Compact Sedan,mass,on_sale
+Maruti Suzuki,Baleno,Hatchback,mass,on_sale
+Maruti Suzuki,Baleno RS,Hatchback,mass,discontinued
+Maruti Suzuki,Ignis,Hatchback,mass,on_sale
+Maruti Suzuki,S-Presso,Hatchback,mass,on_sale
+Maruti Suzuki,Esteem,Sedan,mass,discontinued
+Maruti Suzuki,SX4,Sedan,mass,discontinued
+Maruti Suzuki,Ciaz,Sedan,mass,discontinued
+Maruti Suzuki,Kizashi,Sedan,mass,discontinued
+Maruti Suzuki,Omni,MUV,mass,discontinued
+Maruti Suzuki,Eeco,MUV,mass,on_sale
+Maruti Suzuki,Versa,MUV,mass,discontinued
+Maruti Suzuki,Ertiga,MUV,mass,on_sale
+Maruti Suzuki,XL6,MUV,mass,on_sale
+Maruti Suzuki,Invicto,MUV,mass,on_sale
+Maruti Suzuki,Gypsy,SUV,mass,discontinued
+Maruti Suzuki,S-Cross,Compact SUV,mass,discontinued
+Maruti Suzuki,Vitara Brezza,Compact SUV,mass,discontinued
+Maruti Suzuki,Brezza,Compact SUV,mass,on_sale
+Maruti Suzuki,Fronx,Compact SUV,mass,on_sale
+Maruti Suzuki,Victoris,Compact SUV,mass,on_sale
+Maruti Suzuki,Grand Vitara,SUV,mass,on_sale
+Maruti Suzuki,Jimny,SUV,mass,on_sale
+Maruti Suzuki,e Vitara,SUV,mass,on_sale
+Hyundai,Santro,Hatchback,mass,discontinued
+Hyundai,Santro Xing,Hatchback,mass,discontinued
+Hyundai,Eon,Hatchback,mass,discontinued
+Hyundai,i10,Hatchback,mass,discontinued
+Hyundai,Grand i10,Hatchback,mass,discontinued
+Hyundai,Grand i10 Nios,Hatchback,mass,on_sale
+Hyundai,Getz Prime,Hatchback,mass,discontinued
+Hyundai,i20,Hatchback,mass,on_sale
+Hyundai,Elite i20,Hatchback,mass,discontinued
+Hyundai,i20 Active,Hatchback,mass,discontinued
+Hyundai,i20 N Line,Hatchback,mass,on_sale
+Hyundai,Accent,Sedan,mass,discontinued
+Hyundai,Accent Viva,Sedan,mass,discontinued
+Hyundai,Verna,Sedan,mass,on_sale
+Hyundai,Elantra,Sedan,mass,discontinued
+Hyundai,Sonata,Sedan,mass,discontinued
+Hyundai,Sonata Embera,Sedan,mass,discontinued
+Hyundai,Xcent,Compact Sedan,mass,discontinued
+Hyundai,Aura,Compact Sedan,mass,on_sale
+Hyundai,Venue,Compact SUV,mass,on_sale
+Hyundai,Venue N Line,Compact SUV,mass,on_sale
+Hyundai,Exter,Compact SUV,mass,on_sale
+Hyundai,Creta,SUV,mass,on_sale
+Hyundai,Creta N Line,SUV,mass,on_sale
+Hyundai,Creta Electric,SUV,mass,on_sale
+Hyundai,Alcazar,SUV,mass,on_sale
+Hyundai,Tucson,SUV,mass,on_sale
+Hyundai,Santa Fe,SUV,mass,discontinued
+Hyundai,Terracan,SUV,mass,discontinued
+Hyundai,Kona Electric,SUV,mass,discontinued
+Hyundai,Ioniq 5,SUV,mass,on_sale
+Tata,Nano,Hatchback,mass,discontinued
+Tata,Indica,Hatchback,mass,discontinued
+Tata,Indica V2,Hatchback,mass,discontinued
+Tata,Indica Vista,Hatchback,mass,discontinued
+Tata,Indica eV2,Hatchback,mass,discontinued
+Tata,Bolt,Hatchback,mass,discontinued
+Tata,Tiago,Hatchback,mass,on_sale
+Tata,Tiago NRG,Hatchback,mass,on_sale
+Tata,Tiago EV,Hatchback,mass,on_sale
+Tata,Altroz,Hatchback,mass,on_sale
+Tata,Altroz Racer,Hatchback,mass,on_sale
+Tata,Indigo,Sedan,mass,discontinued
+Tata,Indigo CS,Compact Sedan,mass,discontinued
+Tata,Indigo eCS,Compact Sedan,mass,discontinued
+Tata,Indigo Marina,Station Wagon,mass,discontinued
+Tata,Manza,Sedan,mass,discontinued
+Tata,Zest,Compact Sedan,mass,discontinued
+Tata,Tigor,Compact Sedan,mass,on_sale
+Tata,Tigor EV,Compact Sedan,mass,on_sale
+Tata,Punch,Compact SUV,mass,on_sale
+Tata,Punch EV,Compact SUV,mass,on_sale
+Tata,Nexon,Compact SUV,mass,on_sale
+Tata,Nexon EV,Compact SUV,mass,on_sale
+Tata,Curvv,SUV,mass,on_sale
+Tata,Curvv EV,SUV,mass,on_sale
+Tata,Harrier,SUV,mass,on_sale
+Tata,Harrier EV,SUV,mass,on_sale
+Tata,Safari,SUV,mass,on_sale
+Tata,Safari Storme,SUV,mass,discontinued
+Tata,Sierra,SUV,mass,on_sale
+Tata,Sumo,MUV,mass,discontinued
+Tata,Sumo Victa,MUV,mass,discontinued
+Tata,Sumo Spacio,MUV,mass,discontinued
+Tata,Sumo Gold,MUV,mass,discontinued
+Tata,Aria,MUV,mass,discontinued
+Tata,Hexa,MUV,mass,discontinued
+Tata,Venture,MUV,mass,discontinued
+Tata,Estate,Station Wagon,mass,discontinued
+Tata,Xenon,Pickup,mass,discontinued
+Mahindra,Scorpio,SUV,mass,discontinued
+Mahindra,Scorpio Classic,SUV,mass,on_sale
+Mahindra,Scorpio N,SUV,mass,on_sale
+Mahindra,Bolero,SUV,mass,on_sale
+Mahindra,Bolero Neo,SUV,mass,on_sale
+Mahindra,Bolero Neo Plus,SUV,mass,on_sale
+Mahindra,Thar,SUV,mass,on_sale
+Mahindra,Thar Roxx,SUV,mass,on_sale
+Mahindra,XUV300,Compact SUV,mass,discontinued
+Mahindra,XUV 3XO,Compact SUV,mass,on_sale
+Mahindra,XUV400,Compact SUV,mass,on_sale
+Mahindra,XUV500,SUV,mass,discontinued
+Mahindra,XUV700,SUV,mass,on_sale
+Mahindra,Alturas G4,SUV,mass,discontinued
+Mahindra,BE 6,SUV,mass,on_sale
+Mahindra,XEV 9e,SUV,mass,on_sale
+Mahindra,XEV 9S,SUV,mass,on_sale
+Mahindra,KUV100,Hatchback,mass,discontinued
+Mahindra,KUV100 NXT,Hatchback,mass,discontinued
+Mahindra,Reva,Hatchback,mass,discontinued
+Mahindra,e2o,Hatchback,mass,discontinued
+Mahindra,e2o Plus,Hatchback,mass,discontinued
+Mahindra,Verito,Sedan,mass,discontinued
+Mahindra,Verito Vibe,Compact Sedan,mass,discontinued
+Mahindra,eVerito,Sedan,mass,discontinued
+Mahindra,Logan,Sedan,mass,discontinued
+Mahindra,Xylo,MUV,mass,discontinued
+Mahindra,Marazzo,MUV,mass,discontinued
+Mahindra,Quanto,MUV,mass,discontinued
+Mahindra,NuvoSport,MUV,mass,discontinued
+Mahindra,Armada,SUV,mass,discontinued
+Mahindra,Commander,SUV,mass,discontinued
+Mahindra,Scorpio Getaway,Pickup,mass,discontinued
+Toyota,Etios,Sedan,mass,discontinued
+Toyota,Platinum Etios,Sedan,mass,discontinued
+Toyota,Etios Liva,Hatchback,mass,discontinued
+Toyota,Etios Cross,Hatchback,mass,discontinued
+Toyota,Glanza,Hatchback,mass,on_sale
+Toyota,Corolla,Sedan,mass,discontinued
+Toyota,Corolla Altis,Sedan,mass,discontinued
+Toyota,Yaris,Sedan,mass,discontinued
+Toyota,Camry,Sedan,luxury,on_sale
+Toyota,Prius,Hatchback,mass,discontinued
+Toyota,Urban Cruiser,Compact SUV,mass,discontinued
+Toyota,Urban Cruiser Taisor,Compact SUV,mass,on_sale
+Toyota,Urban Cruiser Hyryder,SUV,mass,on_sale
+Toyota,Fortuner,SUV,mass,on_sale
+Toyota,Fortuner Legender,SUV,mass,on_sale
+Toyota,Land Cruiser,SUV,luxury,discontinued
+Toyota,Land Cruiser Prado,SUV,luxury,discontinued
+Toyota,Land Cruiser 300,SUV,luxury,on_sale
+Toyota,Innova,MUV,mass,discontinued
+Toyota,Innova Crysta,MUV,mass,on_sale
+Toyota,Innova Hycross,MUV,mass,on_sale
+Toyota,Qualis,MUV,mass,discontinued
+Toyota,Rumion,MUV,mass,on_sale
+Toyota,Vellfire,MUV,luxury,on_sale
+Toyota,Alphard,MUV,luxury,import_only
+Toyota,Hilux,Pickup,mass,on_sale
+Honda,Brio,Hatchback,mass,discontinued
+Honda,Jazz,Hatchback,mass,discontinued
+Honda,City,Sedan,mass,on_sale
+Honda,City Hybrid,Sedan,mass,on_sale
+Honda,Civic,Sedan,mass,discontinued
+Honda,Accord,Sedan,mass,discontinued
+Honda,Amaze,Compact Sedan,mass,on_sale
+Honda,WR-V,Compact SUV,mass,discontinued
+Honda,Elevate,SUV,mass,on_sale
+Honda,CR-V,SUV,mass,discontinued
+Honda,BR-V,MUV,mass,discontinued
+Honda,Mobilio,MUV,mass,discontinued
+Kia,Seltos,SUV,mass,on_sale
+Kia,Sonet,Compact SUV,mass,on_sale
+Kia,Syros,Compact SUV,mass,on_sale
+Kia,Carens,MUV,mass,on_sale
+Kia,Carens Clavis,MUV,mass,on_sale
+Kia,Carens Clavis EV,MUV,mass,on_sale
+Kia,Carnival,MUV,luxury,on_sale
+Kia,EV6,SUV,luxury,on_sale
+Kia,EV9,SUV,luxury,on_sale
+MG,Comet EV,Hatchback,mass,on_sale
+MG,Astor,SUV,mass,on_sale
+MG,Hector,SUV,mass,on_sale
+MG,Hector Plus,SUV,mass,on_sale
+MG,ZS EV,SUV,mass,on_sale
+MG,Windsor EV,MUV,mass,on_sale
+MG,Gloster,SUV,mass,on_sale
+MG,M9,MUV,luxury,on_sale
+MG,Cyberster,Convertible,luxury,on_sale
+Renault,Kwid,Hatchback,mass,on_sale
+Renault,Pulse,Hatchback,mass,discontinued
+Renault,Scala,Sedan,mass,discontinued
+Renault,Fluence,Sedan,mass,discontinued
+Renault,Logan,Sedan,mass,discontinued
+Renault,Kiger,Compact SUV,mass,on_sale
+Renault,Captur,SUV,mass,discontinued
+Renault,Duster,SUV,mass,on_sale
+Renault,Koleos,SUV,mass,discontinued
+Renault,Triber,MUV,mass,on_sale
+Renault,Lodgy,MUV,mass,discontinued
+Nissan,Micra,Hatchback,mass,discontinued
+Nissan,Micra Active,Hatchback,mass,discontinued
+Nissan,Sunny,Sedan,mass,discontinued
+Nissan,Teana,Sedan,mass,discontinued
+Nissan,Magnite,Compact SUV,mass,on_sale
+Nissan,Kicks,SUV,mass,discontinued
+Nissan,Terrano,SUV,mass,discontinued
+Nissan,X-Trail,SUV,mass,on_sale
+Nissan,Evalia,MUV,mass,discontinued
+Nissan,370Z,Coupe,luxury,discontinued
+Nissan,GT-R,Coupe,luxury,discontinued
+Datsun,redi-GO,Hatchback,mass,discontinued
+Datsun,Go,Hatchback,mass,discontinued
+Datsun,Go+,MUV,mass,discontinued
+Skoda,Fabia,Hatchback,mass,discontinued
+Skoda,Rapid,Sedan,mass,discontinued
+Skoda,Laura,Sedan,luxury,discontinued
+Skoda,Octavia,Sedan,luxury,on_sale
+Skoda,Octavia RS,Sedan,luxury,discontinued
+Skoda,Superb,Sedan,luxury,on_sale
+Skoda,Slavia,Sedan,mass,on_sale
+Skoda,Kylaq,Compact SUV,mass,on_sale
+Skoda,Kushaq,SUV,mass,on_sale
+Skoda,Yeti,SUV,mass,discontinued
+Skoda,Karoq,SUV,luxury,discontinued
+Skoda,Kodiaq,SUV,luxury,on_sale
+Volkswagen,Polo,Hatchback,mass,discontinued
+Volkswagen,Polo GT,Hatchback,mass,discontinued
+Volkswagen,Golf GTI,Hatchback,luxury,on_sale
+Volkswagen,Vento,Sedan,mass,discontinued
+Volkswagen,Virtus,Sedan,mass,on_sale
+Volkswagen,Jetta,Sedan,mass,discontinued
+Volkswagen,Passat,Sedan,luxury,discontinued
+Volkswagen,Phaeton,Sedan,luxury,discontinued
+Volkswagen,Beetle,Hatchback,luxury,discontinued
+Volkswagen,Taigun,SUV,mass,on_sale
+Volkswagen,T-Roc,SUV,luxury,on_sale
+Volkswagen,Tiguan,SUV,luxury,on_sale
+Volkswagen,Tiguan Allspace,SUV,luxury,discontinued
+Volkswagen,Touareg,SUV,luxury,discontinued
+Citroen,C3,Hatchback,mass,on_sale
+Citroen,eC3,Hatchback,mass,on_sale
+Citroen,C3 Aircross,Compact SUV,mass,on_sale
+Citroen,Basalt,SUV,mass,on_sale
+Citroen,C5 Aircross,SUV,luxury,on_sale
+Jeep,Compass,SUV,luxury,on_sale
+Jeep,Meridian,SUV,luxury,on_sale
+Jeep,Wrangler,SUV,luxury,on_sale
+Jeep,Grand Cherokee,SUV,luxury,on_sale
+Force,Gurkha,SUV,mass,on_sale
+Force,Trax,MUV,mass,discontinued
+Force,Trax Cruiser,MUV,mass,discontinued
+Force,One,SUV,mass,discontinued
+Isuzu,D-Max V-Cross,Pickup,mass,on_sale
+Isuzu,Hi-Lander,Pickup,mass,on_sale
+Isuzu,MU-X,SUV,mass,on_sale
+Isuzu,MU-7,SUV,mass,discontinued
+Ford,Ikon,Sedan,mass,discontinued
+Ford,Escort,Sedan,mass,discontinued
+Ford,Fiesta,Sedan,mass,discontinued
+Ford,Fiesta Classic,Sedan,mass,discontinued
+Ford,Fusion,Hatchback,mass,discontinued
+Ford,Mondeo,Sedan,luxury,discontinued
+Ford,Figo,Hatchback,mass,discontinued
+Ford,Figo Aspire,Compact Sedan,mass,discontinued
+Ford,Aspire,Compact Sedan,mass,discontinued
+Ford,Freestyle,Compact SUV,mass,discontinued
+Ford,EcoSport,Compact SUV,mass,discontinued
+Ford,Endeavour,SUV,mass,discontinued
+Ford,Mustang,Coupe,luxury,discontinued
+Chevrolet,Spark,Hatchback,mass,discontinued
+Chevrolet,Beat,Hatchback,mass,discontinued
+Chevrolet,Sail U-VA,Hatchback,mass,discontinued
+Chevrolet,Aveo U-VA,Hatchback,mass,discontinued
+Chevrolet,Sail,Sedan,mass,discontinued
+Chevrolet,Aveo,Sedan,mass,discontinued
+Chevrolet,Optra,Sedan,mass,discontinued
+Chevrolet,Optra Magnum,Sedan,mass,discontinued
+Chevrolet,Cruze,Sedan,mass,discontinued
+Chevrolet,Enjoy,MUV,mass,discontinued
+Chevrolet,Tavera,MUV,mass,discontinued
+Chevrolet,Captiva,SUV,mass,discontinued
+Chevrolet,Trailblazer,SUV,mass,discontinued
+Chevrolet,Forester,Station Wagon,mass,discontinued
+Chevrolet,Camaro,Coupe,luxury,import_only
+Chevrolet,Corvette,Coupe,supercar,import_only
+Fiat,Uno,Hatchback,mass,discontinued
+Fiat,Palio,Hatchback,mass,discontinued
+Fiat,Palio Stile,Hatchback,mass,discontinued
+Fiat,Palio Adventure,Station Wagon,mass,discontinued
+Fiat,Punto,Hatchback,mass,discontinued
+Fiat,Punto Evo,Hatchback,mass,discontinued
+Fiat,Punto Pure,Hatchback,mass,discontinued
+Fiat,Abarth Punto,Hatchback,mass,discontinued
+Fiat,Abarth 595,Hatchback,luxury,discontinued
+Fiat,Avventura,Compact SUV,mass,discontinued
+Fiat,Siena,Sedan,mass,discontinued
+Fiat,Petra,Sedan,mass,discontinued
+Fiat,Linea,Sedan,mass,discontinued
+Fiat,Linea Classic,Sedan,mass,discontinued
+Mitsubishi,Lancer,Sedan,mass,discontinued
+Mitsubishi,Cedia,Sedan,mass,discontinued
+Mitsubishi,Lancer Evolution X,Sedan,luxury,import_only
+Mitsubishi,Outlander,SUV,mass,discontinued
+Mitsubishi,Pajero,SUV,mass,discontinued
+Mitsubishi,Pajero Sport,SUV,mass,discontinued
+Mitsubishi,Montero,SUV,mass,discontinued
+Opel,Corsa,Hatchback,mass,discontinued
+Opel,Astra,Sedan,mass,discontinued
+Opel,Vectra,Sedan,mass,discontinued
+Daewoo,Matiz,Hatchback,mass,discontinued
+Daewoo,Cielo,Sedan,mass,discontinued
+Daewoo,Nexia,Sedan,mass,discontinued
+Hindustan Motors,Ambassador,Sedan,mass,discontinued
+Hindustan Motors,Contessa,Sedan,mass,discontinued
+Premier,Padmini,Sedan,mass,discontinued
+Premier,118NE,Sedan,mass,discontinued
+Premier,Rio,SUV,mass,discontinued
+Premier,Sigma,MUV,mass,discontinued
+Peugeot,309,Sedan,mass,discontinued
+SsangYong,Rexton,SUV,mass,discontinued
+Subaru,Impreza,Sedan,luxury,discontinued
+Subaru,Legacy,Sedan,luxury,discontinued
+Subaru,WRX STI,Sedan,luxury,discontinued
+Subaru,XV,SUV,luxury,discontinued
+Subaru,Forester,SUV,luxury,discontinued
+Subaru,Outback,Station Wagon,luxury,discontinued
+Mercedes-Benz,A-Class,Hatchback,luxury,discontinued
+Mercedes-Benz,A-Class Limousine,Sedan,luxury,discontinued
+Mercedes-Benz,B-Class,Hatchback,luxury,discontinued
+Mercedes-Benz,CLA,Sedan,luxury,discontinued
+Mercedes-Benz,C-Class,Sedan,luxury,on_sale
+Mercedes-Benz,C-Class Cabriolet,Convertible,luxury,discontinued
+Mercedes-Benz,CLS,Sedan,luxury,discontinued
+Mercedes-Benz,E-Class,Sedan,luxury,on_sale
+Mercedes-Benz,E-Class Cabriolet,Convertible,luxury,discontinued
+Mercedes-Benz,S-Class,Sedan,luxury,on_sale
+Mercedes-Benz,Maybach S-Class,Sedan,ultra_luxury,on_sale
+Mercedes-Benz,SLK,Convertible,luxury,discontinued
+Mercedes-Benz,SLC,Convertible,luxury,discontinued
+Mercedes-Benz,SL,Convertible,luxury,on_sale
+Mercedes-Benz,AMG GT,Coupe,luxury,on_sale
+Mercedes-Benz,AMG GT 4-Door,Sedan,luxury,on_sale
+Mercedes-Benz,GLA,Compact SUV,luxury,on_sale
+Mercedes-Benz,GLB,SUV,luxury,discontinued
+Mercedes-Benz,GLC,SUV,luxury,on_sale
+Mercedes-Benz,GLC Coupe,SUV,luxury,on_sale
+Mercedes-Benz,GLE,SUV,luxury,on_sale
+Mercedes-Benz,GLE Coupe,SUV,luxury,on_sale
+Mercedes-Benz,GLS,SUV,luxury,on_sale
+Mercedes-Benz,Maybach GLS,SUV,ultra_luxury,on_sale
+Mercedes-Benz,G-Class,SUV,luxury,on_sale
+Mercedes-Benz,GL-Class,SUV,luxury,discontinued
+Mercedes-Benz,ML-Class,SUV,luxury,discontinued
+Mercedes-Benz,R-Class,MUV,luxury,discontinued
+Mercedes-Benz,EQA,SUV,luxury,on_sale
+Mercedes-Benz,EQB,SUV,luxury,on_sale
+Mercedes-Benz,EQC,SUV,luxury,discontinued
+Mercedes-Benz,EQE SUV,SUV,luxury,on_sale
+Mercedes-Benz,EQS,Sedan,luxury,on_sale
+Mercedes-Benz,EQS SUV,SUV,luxury,on_sale
+Mercedes-Benz,Maybach EQS SUV,SUV,ultra_luxury,on_sale
+Mercedes-Benz,G 580 Electric,SUV,luxury,on_sale
+BMW,1 Series,Hatchback,luxury,discontinued
+BMW,2 Series Gran Coupe,Sedan,luxury,on_sale
+BMW,3 Series,Sedan,luxury,discontinued
+BMW,3 Series Gran Limousine,Sedan,luxury,on_sale
+BMW,3 Series Gran Turismo,Hatchback,luxury,discontinued
+BMW,4 Series,Coupe,luxury,discontinued
+BMW,4 Series Gran Coupe,Sedan,luxury,discontinued
+BMW,5 Series,Sedan,luxury,on_sale
+BMW,5 Series Gran Turismo,Hatchback,luxury,discontinued
+BMW,6 Series,Coupe,luxury,discontinued
+BMW,6 Series Gran Coupe,Sedan,luxury,discontinued
+BMW,6 Series Gran Turismo,Hatchback,luxury,discontinued
+BMW,7 Series,Sedan,luxury,on_sale
+BMW,8 Series,Coupe,luxury,on_sale
+BMW,8 Series Gran Coupe,Sedan,luxury,on_sale
+BMW,Z4,Convertible,luxury,on_sale
+BMW,i8,Coupe,luxury,discontinued
+BMW,M2,Coupe,luxury,on_sale
+BMW,M3,Sedan,luxury,discontinued
+BMW,M4,Coupe,luxury,on_sale
+BMW,M5,Sedan,luxury,on_sale
+BMW,M8,Coupe,luxury,on_sale
+BMW,X1,Compact SUV,luxury,on_sale
+BMW,X2,Compact SUV,luxury,discontinued
+BMW,X3,SUV,luxury,on_sale
+BMW,X4,SUV,luxury,discontinued
+BMW,X5,SUV,luxury,on_sale
+BMW,X6,SUV,luxury,on_sale
+BMW,X7,SUV,luxury,on_sale
+BMW,XM,SUV,luxury,on_sale
+BMW,iX1,Compact SUV,luxury,on_sale
+BMW,iX,SUV,luxury,on_sale
+BMW,i4,Sedan,luxury,on_sale
+BMW,i5,Sedan,luxury,on_sale
+BMW,i7,Sedan,luxury,on_sale
+BMW,i7 M70,Sedan,luxury,on_sale
+Mini,Cooper 3 Door,Hatchback,luxury,on_sale
+Mini,Cooper 5 Door,Hatchback,luxury,on_sale
+Mini,Cooper Convertible,Convertible,luxury,on_sale
+Mini,Cooper SE,Hatchback,luxury,on_sale
+Mini,John Cooper Works,Hatchback,luxury,on_sale
+Mini,Clubman,Station Wagon,luxury,discontinued
+Mini,Paceman,Hatchback,luxury,discontinued
+Mini,Countryman,Compact SUV,luxury,on_sale
+Audi,A3,Sedan,luxury,discontinued
+Audi,A3 Cabriolet,Convertible,luxury,discontinued
+Audi,A4,Sedan,luxury,on_sale
+Audi,A5,Coupe,luxury,discontinued
+Audi,A5 Sportback,Sedan,luxury,discontinued
+Audi,A5 Cabriolet,Convertible,luxury,discontinued
+Audi,A6,Sedan,luxury,on_sale
+Audi,A7,Sedan,luxury,discontinued
+Audi,A8,Sedan,luxury,discontinued
+Audi,A8 L,Sedan,luxury,on_sale
+Audi,S3,Sedan,luxury,discontinued
+Audi,S5 Sportback,Sedan,luxury,on_sale
+Audi,RS5 Sportback,Sedan,luxury,on_sale
+Audi,RS6 Avant,Station Wagon,luxury,discontinued
+Audi,RS7 Sportback,Sedan,luxury,on_sale
+Audi,TT,Coupe,luxury,discontinued
+Audi,R8,Coupe,supercar,discontinued
+Audi,R8 Spyder,Convertible,supercar,discontinued
+Audi,Q2,Compact SUV,luxury,discontinued
+Audi,Q3,Compact SUV,luxury,on_sale
+Audi,Q3 Sportback,Compact SUV,luxury,on_sale
+Audi,Q5,SUV,luxury,on_sale
+Audi,Q5 Sportback,SUV,luxury,discontinued
+Audi,SQ5,SUV,luxury,discontinued
+Audi,Q7,SUV,luxury,on_sale
+Audi,Q8,SUV,luxury,on_sale
+Audi,SQ8,SUV,luxury,discontinued
+Audi,RS Q3,Compact SUV,luxury,discontinued
+Audi,RS Q8,SUV,luxury,on_sale
+Audi,e-tron,SUV,luxury,discontinued
+Audi,e-tron Sportback,SUV,luxury,discontinued
+Audi,Q8 e-tron,SUV,luxury,on_sale
+Audi,Q8 Sportback e-tron,SUV,luxury,on_sale
+Audi,Q6 e-tron,SUV,luxury,on_sale
+Audi,e-tron GT,Sedan,luxury,on_sale
+Audi,RS e-tron GT,Sedan,luxury,on_sale
+Volvo,S40,Sedan,luxury,discontinued
+Volvo,S60,Sedan,luxury,discontinued
+Volvo,S60 Cross Country,Sedan,luxury,discontinued
+Volvo,S80,Sedan,luxury,discontinued
+Volvo,S90,Sedan,luxury,on_sale
+Volvo,V40,Hatchback,luxury,discontinued
+Volvo,V40 Cross Country,Hatchback,luxury,discontinued
+Volvo,V90 Cross Country,Station Wagon,luxury,discontinued
+Volvo,XC40,Compact SUV,luxury,on_sale
+Volvo,XC40 Recharge,Compact SUV,luxury,discontinued
+Volvo,C40 Recharge,Compact SUV,luxury,on_sale
+Volvo,EX30,Compact SUV,luxury,on_sale
+Volvo,EX40,Compact SUV,luxury,on_sale
+Volvo,XC60,SUV,luxury,on_sale
+Volvo,XC90,SUV,luxury,on_sale
+Land Rover,Freelander 2,SUV,luxury,discontinued
+Land Rover,Defender,SUV,luxury,on_sale
+Land Rover,Discovery,SUV,luxury,on_sale
+Land Rover,Discovery 4,SUV,luxury,discontinued
+Land Rover,Discovery Sport,SUV,luxury,on_sale
+Land Rover,Range Rover Evoque,SUV,luxury,on_sale
+Land Rover,Range Rover Velar,SUV,luxury,on_sale
+Land Rover,Range Rover Sport,SUV,luxury,on_sale
+Land Rover,Range Rover,SUV,ultra_luxury,on_sale
+Jaguar,XE,Sedan,luxury,discontinued
+Jaguar,XF,Sedan,luxury,discontinued
+Jaguar,XJ,Sedan,luxury,discontinued
+Jaguar,XK,Coupe,luxury,discontinued
+Jaguar,F-Type,Coupe,luxury,discontinued
+Jaguar,E-Pace,Compact SUV,luxury,discontinued
+Jaguar,F-Pace,SUV,luxury,discontinued
+Jaguar,I-Pace,SUV,luxury,discontinued
+Lexus,ES,Sedan,luxury,on_sale
+Lexus,LS,Sedan,luxury,on_sale
+Lexus,IS,Sedan,luxury,import_only
+Lexus,RC,Coupe,luxury,import_only
+Lexus,LC 500h,Coupe,luxury,on_sale
+Lexus,UX,Compact SUV,luxury,import_only
+Lexus,NX,SUV,luxury,on_sale
+Lexus,RX,SUV,luxury,on_sale
+Lexus,LX,SUV,luxury,on_sale
+Lexus,LM,MUV,luxury,on_sale
+Porsche,911,Coupe,supercar,on_sale
+Porsche,718 Boxster,Convertible,luxury,on_sale
+Porsche,718 Cayman,Coupe,luxury,on_sale
+Porsche,Panamera,Sedan,luxury,on_sale
+Porsche,Taycan,Sedan,luxury,on_sale
+Porsche,Taycan Cross Turismo,Station Wagon,luxury,on_sale
+Porsche,Macan,SUV,luxury,on_sale
+Porsche,Macan Electric,SUV,luxury,on_sale
+Porsche,Cayenne,SUV,luxury,on_sale
+Porsche,Cayenne Coupe,SUV,luxury,on_sale
+Rolls-Royce,Ghost,Sedan,ultra_luxury,on_sale
+Rolls-Royce,Phantom,Sedan,ultra_luxury,on_sale
+Rolls-Royce,Wraith,Coupe,ultra_luxury,discontinued
+Rolls-Royce,Dawn,Convertible,ultra_luxury,discontinued
+Rolls-Royce,Spectre,Coupe,ultra_luxury,on_sale
+Rolls-Royce,Cullinan,SUV,ultra_luxury,on_sale
+Bentley,Continental GT,Coupe,ultra_luxury,on_sale
+Bentley,Continental GTC,Convertible,ultra_luxury,on_sale
+Bentley,Flying Spur,Sedan,ultra_luxury,on_sale
+Bentley,Mulsanne,Sedan,ultra_luxury,discontinued
+Bentley,Bentayga,SUV,ultra_luxury,on_sale
+Lamborghini,Gallardo,Coupe,supercar,discontinued
+Lamborghini,Murcielago,Coupe,supercar,discontinued
+Lamborghini,Aventador,Coupe,supercar,discontinued
+Lamborghini,Huracan,Coupe,supercar,discontinued
+Lamborghini,Revuelto,Coupe,supercar,on_sale
+Lamborghini,Urus,SUV,supercar,on_sale
+Lamborghini,Urus SE,SUV,supercar,on_sale
+Ferrari,California,Convertible,supercar,discontinued
+Ferrari,California T,Convertible,supercar,discontinued
+Ferrari,458 Italia,Coupe,supercar,discontinued
+Ferrari,488 GTB,Coupe,supercar,discontinued
+Ferrari,488 Pista,Coupe,supercar,discontinued
+Ferrari,F8 Tributo,Coupe,supercar,discontinued
+Ferrari,F8 Spider,Convertible,supercar,discontinued
+Ferrari,599 GTB,Coupe,supercar,discontinued
+Ferrari,F12berlinetta,Coupe,supercar,discontinued
+Ferrari,FF,Coupe,supercar,discontinued
+Ferrari,GTC4Lusso,Coupe,supercar,discontinued
+Ferrari,812 Superfast,Coupe,supercar,discontinued
+Ferrari,812 GTS,Convertible,supercar,discontinued
+Ferrari,Portofino,Convertible,supercar,discontinued
+Ferrari,Roma,Coupe,supercar,on_sale
+Ferrari,SF90 Stradale,Coupe,supercar,on_sale
+Ferrari,296 GTB,Coupe,supercar,on_sale
+Ferrari,Purosangue,SUV,supercar,on_sale
+Ferrari,12Cilindri,Coupe,supercar,on_sale
+Maserati,Ghibli,Sedan,luxury,discontinued
+Maserati,Quattroporte,Sedan,luxury,discontinued
+Maserati,GranTurismo,Coupe,luxury,on_sale
+Maserati,GranCabrio,Convertible,luxury,on_sale
+Maserati,MC20,Coupe,supercar,on_sale
+Maserati,Levante,SUV,luxury,discontinued
+Maserati,Grecale,SUV,luxury,on_sale
+Aston Martin,Rapide,Sedan,supercar,discontinued
+Aston Martin,DB11,Coupe,supercar,discontinued
+Aston Martin,DB12,Coupe,supercar,on_sale
+Aston Martin,DBS Superleggera,Coupe,supercar,discontinued
+Aston Martin,Vantage,Coupe,supercar,on_sale
+Aston Martin,Vanquish,Coupe,supercar,discontinued
+Aston Martin,DBX,SUV,supercar,discontinued
+Aston Martin,DBX707,SUV,supercar,on_sale
+McLaren,570S,Coupe,supercar,import_only
+McLaren,720S,Coupe,supercar,import_only
+McLaren,GT,Coupe,supercar,import_only
+McLaren,Artura,Coupe,supercar,import_only
+Lotus,Emira,Coupe,supercar,on_sale
+Lotus,Eletre,SUV,supercar,on_sale
+Tesla,Model Y,SUV,luxury,on_sale
+Tesla,Model 3,Sedan,luxury,import_only
+Tesla,Model S,Sedan,luxury,import_only
+Tesla,Model X,SUV,luxury,import_only
+Tesla,Cybertruck,Pickup,luxury,import_only
+BYD,Atto 3,SUV,mass,on_sale
+BYD,Seal,Sedan,luxury,on_sale
+BYD,eMAX 7,MUV,mass,on_sale
+BYD,Sealion 7,SUV,luxury,on_sale
+VinFast,VF 6,SUV,mass,on_sale
+VinFast,VF 7,SUV,mass,on_sale
+Cadillac,Escalade,SUV,luxury,import_only
+Chrysler,300C,Sedan,luxury,discontinued
+Chrysler,Sebring,Sedan,luxury,import_only
+Dodge,Challenger,Coupe,luxury,import_only
+Hummer,H2,SUV,luxury,import_only
+Hummer,H3,SUV,luxury,import_only

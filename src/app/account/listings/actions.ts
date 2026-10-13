@@ -7,6 +7,12 @@ import { draftListingSchema, ListingCondition, ListingPriceType } from "@/types/
 import type { Database, Json } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
+import { validatePostAdSelection } from "@/lib/listings/post-ad-server";
+import { saveVehicleDraft } from "@/lib/listings/two-wheeler/server";
+import {savePropertyDraft,isPropertyEnabled} from '@/lib/listings/property/server';
+import {isPropertyRentalCategory} from '@/lib/listings/property/contract';
+import {loadSubmissionState} from '@/lib/listings/submission-server';
+import {isVerifiedSubmissionTestEnvironment} from '@/lib/listings/test-runtime';
 import {
   isSellerWriteMaintenanceEnabled,
   SELLER_WRITE_MAINTENANCE_MESSAGE,
@@ -46,6 +52,17 @@ export async function createDraftListingAction(
   if (!user) {
     return { error: "You must be signed in to create a listing." };
   }
+
+  if (formData.get("post_ad_entry") === "vehicle") {
+    const result=await saveVehicleDraft(supabase as SupabaseClient<Database>,formData);
+    if (result.success) revalidatePath("/account/listings");
+    return result;
+  }
+  if(formData.get('post_ad_entry')==='property'){
+    const result=await savePropertyDraft(supabase as SupabaseClient<Database>,formData);if(result.success)revalidatePath('/account/listings');return result;
+  }
+  const selectionError = await validatePostAdSelection(supabase, formData);
+  if (selectionError) return { error: selectionError };
 
   const rawAttributes = formData.get("category_attributes") as string;
   let categoryAttributes: Record<string, unknown> = {};
@@ -137,6 +154,17 @@ export async function updateListingAction(
     return { error: "You must be signed in." };
   }
 
+  if (formData.get("post_ad_entry") === "vehicle") {
+    const result=await saveVehicleDraft(supabase as SupabaseClient<Database>,formData,listingId);
+    if (result.success) {revalidatePath("/account/listings");revalidatePath(`/account/listings/${listingId}/edit`);}
+    return result;
+  }
+  if(formData.get('post_ad_entry')==='property'){
+    const result=await savePropertyDraft(supabase as SupabaseClient<Database>,formData,listingId);if(result.success){revalidatePath('/account/listings');revalidatePath(`/account/listings/${listingId}/edit`);}return result;
+  }
+  const selectionError = await validatePostAdSelection(supabase, formData, listingId, user.id);
+  if (selectionError) return { error: selectionError };
+
   const rawAttributes = formData.get("category_attributes") as string;
   let categoryAttributes: Record<string, unknown> = {};
   try {
@@ -201,7 +229,7 @@ export async function updateListingAction(
   return { success: true, listingId, message: "Listing updated successfully." };
 }
 
-export async function submitListingAction(listingId: string): Promise<ListingActionResult> {
+export async function submitListingAction(listingId: string, expectedRevision?: number): Promise<ListingActionResult> {
   if (isSellerWriteMaintenanceEnabled()) {
     return { error: SELLER_WRITE_MAINTENANCE_MESSAGE };
   }
@@ -216,12 +244,33 @@ export async function submitListingAction(listingId: string): Promise<ListingAct
     };
   }
 
+  // Persisted family, never a caller-supplied macro or readiness flag.
+  try {
+    const submission=isVerifiedSubmissionTestEnvironment(process.env)?await loadSubmissionState(supabase,listingId):null;
+    if(submission?.family){
+      if(!submission.enabled)return {error:'Test submission is disabled. Saved records remain available.'};
+      if(!Number.isSafeInteger(expectedRevision)||expectedRevision!<1)return {error:'Save and reload this draft before submitting.'};
+      const {data,error}=await supabase.rpc('seller_submit_listing',{listing_id:listingId,expected_revision:expectedRevision!});
+      if(error)return {error:error.message};
+      revalidatePath('/account/listings');revalidatePath(`/account/listings/${listingId}/edit`);
+      const result=data as {result?:string}|null;
+      return {success:true,listingId,message:result?.result==='already_pending'?'Already awaiting review.':'Listing submitted for review.'};
+    }
+  }catch(e){return {error:e instanceof Error?e.message:'Submission eligibility is unavailable'};}
+
   // Server-side location integrity check
   const { data: listingData } = await supabase
     .from("listings")
-    .select("locality_id")
+    .select("locality_id,categories(slug)")
     .eq("id", listingId)
     .single();
+
+  if(isPropertyRentalCategory(listingData?.categories))return {error:'Property review/publication is disabled'};
+  if(isPropertyEnabled()){
+    const property=await supabase.from('listing_property_contexts').select('listing_id').eq('listing_id',listingId).maybeSingle();
+    if(property.error)return {error:'Unable to verify draft submission eligibility'};
+    if(property.data)return {error:'Property review/publication is disabled'};
+  }
 
   const { data: privLocData } = await (
     supabase as SupabaseClient<Database>

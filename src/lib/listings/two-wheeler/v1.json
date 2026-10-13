@@ -1,0 +1,425 @@
+{
+  "key": "two-wheeler-draft-v1",
+  "status": "approved-draft-only",
+  "calendar": "UTC",
+  "sourceSnapshots": [
+    {
+      "file": "src/lib/listings/csv-fields/generated/categories.v1.json",
+      "sha256": "9e29b7a87526d1a0fae22572e7400f4b1d46ca0a4dd9bec2d9995591e394ea43"
+    },
+    {
+      "file": "src/lib/listings/csv-fields/generated/catalogues.v1.json",
+      "sha256": "dfab66421498bb02ef44352274a0f56c5bdb208f655b333f99d4b7e93ce5e1bf"
+    }
+  ],
+  "paths": [
+    {
+      "slug": "tw-commuter-bikes",
+      "path": [
+        "Vehicles",
+        "Motorcycles",
+        "Commuter Bikes"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "engine_cc",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-0d4ade60eaf524f4",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 140
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Motorcycles",
+          "sub_subcategory": "Commuter Bikes",
+          "key_fields": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "tw-sports-superbikes",
+      "path": [
+        "Vehicles",
+        "Motorcycles",
+        "Sports & Superbikes"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "engine_cc",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-baf845e73080c481",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 141
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Motorcycles",
+          "sub_subcategory": "Sports & Superbikes",
+          "key_fields": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "tw-cruiser-bikes",
+      "path": [
+        "Vehicles",
+        "Motorcycles",
+        "Cruiser Bikes"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "engine_cc",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-f117e1953c446dab",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 142
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Motorcycles",
+          "sub_subcategory": "Cruiser Bikes",
+          "key_fields": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "tw-adventure-touring-bikes",
+      "path": [
+        "Vehicles",
+        "Motorcycles",
+        "Adventure & Touring Bikes"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "engine_cc",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-379b3735c697d70d",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 143
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Motorcycles",
+          "sub_subcategory": "Adventure & Touring Bikes",
+          "key_fields": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "tw-classic-retro-bikes",
+      "path": [
+        "Vehicles",
+        "Motorcycles",
+        "Classic & Retro Bikes"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "engine_cc",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-021767888f7998d3",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 144
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Motorcycles",
+          "sub_subcategory": "Classic & Retro Bikes",
+          "key_fields": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "tw-electric-motorcycles",
+      "path": [
+        "Vehicles",
+        "Motorcycles",
+        "Electric Motorcycles"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "year",
+        "range_km",
+        "battery_warranty_left",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-3766e7a52b451847",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 145
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Motorcycles",
+          "sub_subcategory": "Electric Motorcycles",
+          "key_fields": "brand|model|year|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "tw-petrol-scooters",
+      "path": [
+        "Vehicles",
+        "Scooters",
+        "Petrol Scooters"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "variant",
+        "year",
+        "engine_cc",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "insurance_valid_till",
+        "color",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-40b32d073cea4078",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 146
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Scooters",
+          "sub_subcategory": "Petrol Scooters",
+          "key_fields": "brand|model|variant|year|engine_cc|km_driven|owner_number|registration_state|insurance_valid_till|color|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "tw-electric-scooters",
+      "path": [
+        "Vehicles",
+        "Scooters",
+        "Electric Scooters"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "year",
+        "range_km",
+        "battery_warranty_left",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-558c76d6a00c36b4",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 147
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Scooters",
+          "sub_subcategory": "Electric Scooters",
+          "key_fields": "brand|model|year|range_km|battery_warranty_left|km_driven|owner_number|registration_state|price|negotiable"
+        }
+      }
+    },
+    {
+      "slug": "tw-maxi-scooters-mopeds",
+      "path": [
+        "Vehicles",
+        "Scooters",
+        "Maxi Scooters & Mopeds"
+      ],
+      "fields": [
+        "brand",
+        "model",
+        "year",
+        "engine_cc",
+        "km_driven",
+        "owner_number",
+        "registration_state",
+        "price",
+        "negotiable"
+      ],
+      "provenance": {
+        "reviewKey": "path-6ce79b6f2c87f75d",
+        "source": {
+          "file": "india_categories.csv",
+          "row": 148
+        },
+        "raw": {
+          "category": "Vehicles",
+          "subcategory": "Scooters",
+          "sub_subcategory": "Maxi Scooters & Mopeds",
+          "key_fields": "brand|model|year|engine_cc|km_driven|owner_number|registration_state|price|negotiable"
+        }
+      }
+    }
+  ],
+  "mappings": [
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Commuter",
+      "fuel": null,
+      "leaf": "Commuter Bikes"
+    },
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Sports",
+      "fuel": null,
+      "leaf": "Sports & Superbikes"
+    },
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Fully Faired",
+      "fuel": null,
+      "leaf": "Sports & Superbikes"
+    },
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Superbike",
+      "fuel": null,
+      "leaf": "Sports & Superbikes"
+    },
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Cruiser",
+      "fuel": null,
+      "leaf": "Cruiser Bikes"
+    },
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Adventure",
+      "fuel": null,
+      "leaf": "Adventure & Touring Bikes"
+    },
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Touring",
+      "fuel": null,
+      "leaf": "Adventure & Touring Bikes"
+    },
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Retro",
+      "fuel": null,
+      "leaf": "Classic & Retro Bikes"
+    },
+    {
+      "vehicleType": "Motorcycle",
+      "style": "Neo-Retro",
+      "fuel": null,
+      "leaf": "Classic & Retro Bikes"
+    },
+    {
+      "vehicleType": "Electric Motorcycle",
+      "style": "Electric Motorcycle",
+      "fuel": "Electric",
+      "leaf": "Electric Motorcycles"
+    },
+    {
+      "vehicleType": "Scooter",
+      "style": "Scooter",
+      "fuel": "Petrol",
+      "leaf": "Petrol Scooters"
+    },
+    {
+      "vehicleType": "Scooter",
+      "style": "Maxi Scooter",
+      "fuel": null,
+      "leaf": "Maxi Scooters & Mopeds"
+    },
+    {
+      "vehicleType": "Moped",
+      "style": "Moped",
+      "fuel": null,
+      "leaf": "Maxi Scooters & Mopeds"
+    },
+    {
+      "vehicleType": "Electric Scooter",
+      "style": "Electric Scooter",
+      "fuel": "Electric",
+      "leaf": "Electric Scooters"
+    }
+  ],
+  "unresolvedStyles": [
+    "Naked",
+    "Sports Commuter",
+    "Scrambler",
+    "Roadster",
+    "Dual-Sport"
+  ],
+  "technicalLimits": {
+    "maxJsonNumber": 9007199254740991,
+    "fallbackBrandCharacters": 100,
+    "fallbackModelCharacters": 150,
+    "decimalRepresentation": "JSON finite IEEE-754 number; SQL numeric; no rounding on save",
+    "aliases": "None approved in V1; exact case-insensitive trimmed brand/model matching only"
+  }
+}

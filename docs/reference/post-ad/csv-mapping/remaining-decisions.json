@@ -1,0 +1,130 @@
+{
+  "provenance": {
+    "workbook": "FairSwap-CSV-Field-Matrix.xlsx",
+    "sha256": "ff853d9d2d9e788c97a68dfaa293b622d9fc29d083ba5c5e9d11c2abee42ad11",
+    "header_row": 5,
+    "sheet": "Decisions"
+  },
+  "rows": [
+    {
+      "ID": "D01",
+      "Topic": "Field contract absent",
+      "Source observation": "The category CSV provides paths and key_fields only; no types, bounds, requiredness or conditional rules.",
+      "Recommendation - NOT APPROVED": "Keep missing requirements explicitly unset; approve scoped overrides, not one global required default.",
+      "Scope": "All categories",
+      "Source": "india_categories.csv:1"
+    },
+    {
+      "ID": "D02",
+      "Topic": "Car dimensions overlap",
+      "Source observation": "Cars contains SUV, Luxury Cars, Electric & Hybrid Cars and Vintage & Classic Cars. A model can fit more than one dimension.",
+      "Recommendation - NOT APPROVED": "Retain source labels; propose faceted body/segment/powertrain/age mapping for explicit approval before DB IDs.",
+      "Scope": "Cars",
+      "Source": "india_categories.csv:131-139"
+    },
+    {
+      "ID": "D03",
+      "Topic": "Car electric/hybrid filter lacks data",
+      "Source observation": "Car model header has brand/model/body_type/segment/status, but no fuel_type, year or variants.",
+      "Recommendation - NOT APPROVED": "Do not infer powertrain from names; keep Electric & Hybrid catalogue filtering unresolved.",
+      "Scope": "Cars",
+      "Source": "india_car_brands_models.csv:1; india_categories.csv:138"
+    },
+    {
+      "ID": "D04",
+      "Topic": "Two-wheeler category crosswalk",
+      "Source observation": "Bike catalogue has 19 category labels; taxonomy has six Motorcycle and three Scooter leaves.",
+      "Recommendation - NOT APPROVED": "Use explicit many-to-one/many-to-many review mappings; never exact string matching or silent reclassification.",
+      "Scope": "Motorcycles/Scooters",
+      "Source": "india_bike_scooter_brands_models.csv:category; india_categories.csv:140-148"
+    },
+    {
+      "ID": "D05",
+      "Topic": "CNG is represented",
+      "Source observation": "Bajaj Freedom 125 is recorded with fuel_type=CNG; ordinary Motorcycle key_fields omit fuel_type.",
+      "Recommendation - NOT APPROVED": "Review whether to expose a fuel field or source-derived hint. Do not assume all combustion motorcycles are Petrol.",
+      "Scope": "Motorcycles",
+      "Source": "india_bike_scooter_brands_models.csv:69; india_categories.csv:140-144"
+    },
+    {
+      "ID": "D06",
+      "Topic": "Electric motorcycle/scooter capacity absent",
+      "Source observation": "Those two electric key_fields lists lack battery_capacity_kwh; the electric/hybrid car list has it.",
+      "Recommendation - NOT APPROVED": "Keep this omission visible. Adding battery capacity to bikes is a new field proposal, not CSV implementation.",
+      "Scope": "Electric two-wheelers",
+      "Source": "india_categories.csv:138,145,147"
+    },
+    {
+      "ID": "D07",
+      "Topic": "Generic keys have different meaning",
+      "Source observation": "storage_type is used for Laptops and Beds & Mattresses; type/capacity/size have multiple contexts.",
+      "Recommendation - NOT APPROVED": "Treat full category-path plus field key as an initial definition identity. Share only proven equivalent definitions.",
+      "Scope": "Multiple groups",
+      "Source": "india_categories.csv:11,47 and Field Matrix"
+    },
+    {
+      "ID": "D08",
+      "Topic": "Title may not mean ad title",
+      "Source observation": "title is used for books and Video Games & Controllers.",
+      "Recommendation - NOT APPROVED": "Decide book/game title versus canonical listing headline; do not silently alias them.",
+      "Scope": "Books/games",
+      "Source": "india_categories.csv:31,89-100"
+    },
+    {
+      "ID": "D09",
+      "Topic": "Duplicate child-cycle placement",
+      "Source observation": "Goods has Ride-ons & Kids Cycles and Vehicles has Kids Cycles.",
+      "Recommendation - NOT APPROVED": "Retain both source paths. Recommend one canonical bicycle home plus cross-discovery; record an approved crosswalk.",
+      "Scope": "Kids/Bicycles",
+      "Source": "india_categories.csv:85,151"
+    },
+    {
+      "ID": "D10",
+      "Topic": "Amounts, units and basis",
+      "Source observation": "plot_area sometimes appears without area_unit; maintenance and maintenance_monthly differ; rental basis varies.",
+      "Recommendation - NOT APPROVED": "Approve exact units and money mappings per path; do not merge or assume square feet universally.",
+      "Scope": "Property",
+      "Source": "india_categories.csv:170-203"
+    },
+    {
+      "ID": "D11",
+      "Topic": "Catalogue market statuses unverified",
+      "Source observation": "Files contain raw market-status labels, including Upcoming and import_only.",
+      "Recommendation - NOT APPROVED": "Keep raw source status separate from selectable and source_verified_at; do not assert present-day availability.",
+      "Scope": "Both catalogues",
+      "Source": "Vehicle CSV status columns"
+    },
+    {
+      "ID": "D12",
+      "Topic": "Missing engine values",
+      "Source observation": "176 two-wheeler engine_cc cells are blank: 174 electric rows and two Petrol rows (Hero MotoCorp Majestic/Puch).",
+      "Recommendation - NOT APPROVED": "Retain blank as unknown/null. Do not convert to zero or fill from an unverified website.",
+      "Scope": "Two-wheelers",
+      "Source": "india_bike_scooter_brands_models.csv; see audit JSON"
+    },
+    {
+      "ID": "D13",
+      "Topic": "Baseline condition compatibility",
+      "Source observation": "condition is absent in 34 Property, 24 Vehicle and two Goods rows (Plants & Planters, Pet Food).",
+      "Recommendation - NOT APPROVED": "Missing key does not grant permission to remove the existing required condition contract; review category-aware submission.",
+      "Scope": "Multiple groups",
+      "Source": "india_categories.csv:60,128,131-203"
+    },
+    {
+      "ID": "D14",
+      "Topic": "Catalogue coverage is partial",
+      "Source observation": "The provided catalogues are cars and selected two-wheelers; Goods models, bicycles and commercial vehicles lack dedicated lists.",
+      "Recommendation - NOT APPROVED": "Do not reuse a car list for commercial types or invent Goods brands. Mark unsupported lookups explicitly.",
+      "Scope": "Goods/Bicycles/Commercial",
+      "Source": "CSV headers; india_categories.csv:149-169"
+    },
+    {
+      "ID": "D15",
+      "Topic": "CSV changes are not launch permission",
+      "Source observation": "Raw taxonomy has no approved/staged/published state or mapping to existing listing category IDs.",
+      "Recommendation - NOT APPROVED": "Keep legacy IDs/attributes intact; review new identifiers and DB/API enforcement before activation.",
+      "Scope": "All categories",
+      "Source": "All source CSVs; project contract"
+    }
+  ]
+}

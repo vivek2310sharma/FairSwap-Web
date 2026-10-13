@@ -208,8 +208,9 @@ export async function POST(
       });
 
     if (uploadOrigError) {
-      await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
-      try { await serviceClient.from("listing_media").delete().eq("id", mediaId); } catch {}
+      if(guard.newFamily)await serviceClient.rpc('record_media_processing_result',{media_id:mediaId,paths:{},dimensions:{},status:'failed',error:'Failed to upload original image'});
+      if (!guard.newFamily) await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
+      try { if (!guard.newFamily) await serviceClient.from("listing_media").delete().eq("id", mediaId); } catch {}
       return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to upload image. Please try again.");
     }
 
@@ -229,7 +230,7 @@ export async function POST(
     try {
       derivatives = await processImageBuffer(fileBuffer);
     } catch {
-      await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
+      if (!guard.newFamily) await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
       await serviceClient.rpc("record_media_processing_result", {
         media_id: mediaId,
         paths: { original: originalPath },
@@ -267,9 +268,9 @@ export async function POST(
 
     if (uThumb.error || uMedium.error || uLarge.error) {
       if (uploadedDerivatives.length > 0) {
-        await serviceClient.storage.from("listing-derivatives").remove(uploadedDerivatives).catch(() => {});
+        if (!guard.newFamily) await serviceClient.storage.from("listing-derivatives").remove(uploadedDerivatives).catch(() => {});
       }
-      await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
+      if (!guard.newFamily) await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
 
       await serviceClient.rpc("record_media_processing_result", {
         media_id: mediaId,
@@ -300,9 +301,10 @@ export async function POST(
     });
 
     if (readyError) {
-      await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
-      await serviceClient.storage.from("listing-derivatives").remove([thumbPath, mediumPath, largePath]).catch(() => {});
-      try { await serviceClient.from("listing_media").delete().eq("id", mediaId); } catch {}
+      if(guard.newFamily)await serviceClient.rpc('record_media_processing_result',{media_id:mediaId,paths:{},dimensions:{},status:'failed',error:'Failed to finalize accepted attachment'});
+      if (!guard.newFamily) await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
+      if (!guard.newFamily) await serviceClient.storage.from("listing-derivatives").remove([thumbPath, mediumPath, largePath]).catch(() => {});
+      try { if (!guard.newFamily) await serviceClient.from("listing_media").delete().eq("id", mediaId); } catch {}
       return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to finalize media processing.");
     }
 
@@ -333,14 +335,15 @@ export async function POST(
       }
     );
   } catch {
+    if(guard.newFamily)await serviceClient.rpc('record_media_processing_result',{media_id:mediaId,paths:{},dimensions:{},status:'failed',error:'Accepted attachment processing encountered an unexpected error'});
     if (originalUploaded) {
-      await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
+      if (!guard.newFamily) await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
     }
     if (uploadedDerivatives.length > 0) {
-      await serviceClient.storage.from("listing-derivatives").remove(uploadedDerivatives).catch(() => {});
+      if (!guard.newFamily) await serviceClient.storage.from("listing-derivatives").remove(uploadedDerivatives).catch(() => {});
     }
     try {
-      await serviceClient.from("listing_media").delete().eq("id", mediaId);
+      if (!guard.newFamily) await serviceClient.from("listing_media").delete().eq("id", mediaId);
     } catch {
       // Ignored
     }
