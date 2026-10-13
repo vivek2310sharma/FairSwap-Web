@@ -2,15 +2,19 @@ import { readFileSync } from "node:fs";
 import { Client, type QueryResult } from "pg";
 import { expect, it } from "vitest";
 
-// Source prepared only. No connection without explicit opt-in and lab identity.
-// Existing CI/RLS/MOD suites are unchanged. Role simulation is not live MFA proof.
+// Explicit opt-in only. The GitHub CI profile accepts the pinned local Supabase
+// PG15 port; lab runs continue to require their dedicated loopback ports and
+// run marker. No hosted Test/Production session or real MFA proof is claimed.
 const enabled = process.env.POST_AD_RUN_LOCAL_DB_TESTS === "true";
 it.skipIf(!enabled)("executes real Goods and three-family compatibility assertions in the identified disposable database", async () => {
   const host = process.env.POST_AD_DB_HOST;
   const port = Number(process.env.POST_AD_DB_PORT);
   const runId = process.env.POST_AD_DB_RUN_ID;
-  if (!["127.0.0.1", "localhost"].includes(host ?? "") || ![55432, 55442].includes(port)) {
-    throw new Error("Explicit isolated loopback port 55432 (PG15) or 55442 (PG17) required");
+  const githubDisposable = process.env.GITHUB_ACTIONS === "true" &&
+    process.env.CI === "true" && port === 54322;
+  if (!["127.0.0.1", "localhost"].includes(host ?? "") ||
+      (![55432, 55442].includes(port) && !githubDisposable)) {
+    throw new Error("Only isolated loopback PG15/PG17 ports or CI-gated local Supabase 54322 are allowed");
   }
   if (!runId || !/^post-ad-disposable-[a-zA-Z0-9-]+$/.test(runId)) {
     throw new Error("Unique approved disposable run identity required");
@@ -33,7 +37,7 @@ it.skipIf(!enabled)("executes real Goods and three-family compatibility assertio
       [runId, "POST-AD-DISPOSABLE-DB-VERIFY-01"]);
     expect(marker.rows).toHaveLength(1);
     const version = await client.query("SELECT current_setting('server_version_num')::integer AS version");
-    expect(Math.floor(version.rows[0].version / 10000)).toBe(port === 55432 ? 15 : 17);
+    expect(Math.floor(version.rows[0].version / 10000)).toBe(port === 55432 || githubDisposable ? 15 : 17);
     await client.query("SELECT set_config('app.post_ad_test_run_id',$1,false)", [runId]);
     const source = readFileSync("tests/security/sql/post-ad-current-base-compatibility.sql", "utf8");
     const result = await client.query(source);

@@ -218,6 +218,35 @@ jobs:
             echo "MOD-03A migrations not detected on this branch; skipping MOD-03A integration suite."
           fi
 
+      - name: Run S1 Disposable Direct Auth & Family Compatibility SQL
+        env:
+          CI: "true"
+          POST_AD_RUN_LOCAL_DB_TESTS: "true"
+          POST_AD_DB_HOST: "127.0.0.1"
+          POST_AD_DB_PORT: "54322"
+          POST_AD_DB_RUN_ID: "post-ad-disposable-${{ github.run_id }}-${{ github.run_attempt }}"
+        run: |
+          set -euo pipefail
+          # This step is disposable LOCAL contract evidence, not hosted Test S1.
+          [[ "${GITHUB_ACTIONS:-}" == "true" ]] || { echo "::error::GitHub Actions isolation required"; exit 1; }
+          [[ "$POST_AD_DB_RUN_ID" =~ ^post-ad-disposable-[0-9]+-[0-9]+$ ]] || exit 1
+          DB_URL=$(supabase status -o json | jq -r '.DB_URL // empty')
+          # Never print DB_URL: it contains the local container password.
+          [[ "$DB_URL" =~ ^postgres(ql)?://postgres:[^@]+@127\.0\.0\.1:54322/postgres$ ]] || {
+            echo "::error::Only the positively identified local 127.0.0.1:54322/postgres stack is allowed"
+            exit 1
+          }
+          [[ -f tests/security/post-ad-compatibility-disposable-db.test.ts &&
+             -f tests/security/sql/post-ad-current-base-compatibility.sql ]] || exit 1
+          # supabase test db provisions pgTAP in its own runner/session; the
+          # independent node-postgres connection needs the extension installed.
+          # This DDL is strictly inside the disposable local Supabase DB.
+          supabase db query "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
+          supabase db query "CREATE SCHEMA IF NOT EXISTS test_validation_meta;"
+          supabase db query "CREATE TABLE IF NOT EXISTS test_validation_meta.run_identity (run_id text PRIMARY KEY, task text NOT NULL);"
+          supabase db query "INSERT INTO test_validation_meta.run_identity (run_id,task) VALUES ('$POST_AD_DB_RUN_ID','POST-AD-DISPOSABLE-DB-VERIFY-01') ON CONFLICT (run_id) DO UPDATE SET task=excluded.task;"
+          pnpm vitest run tests/security/post-ad-compatibility-disposable-db.test.ts
+
   pg17-release-rehearsal:
     name: Isolated PostgreSQL 17 Release Rehearsal
     runs-on: ubuntu-latest
