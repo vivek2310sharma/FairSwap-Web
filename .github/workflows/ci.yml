@@ -46,7 +46,7 @@ jobs:
 
       - name: Run Auth Email Template Contract Tests
         run: |
-          pnpm vitest run tests/unit/auth-email-templates.test.ts
+          pnpm vitest run tests/unit/auth-email-templates.test.ts tests/unit/sign-in-actions.test.ts tests/auth/callback.test.ts
           node --test tools/sync-supabase-auth-emails.test.mjs
 
       - name: Run New Post Ad & Saved Edit Regression Tests
