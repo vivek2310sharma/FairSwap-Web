@@ -537,3 +537,63 @@ jobs:
           echo "Tearing down isolated PG17 Supabase stack..."
           cd /tmp/sb-pg17-rehearsal && supabase stop || true
           rm -rf /tmp/sb-pg17-rehearsal
+
+  post-ad-insert-guard-pg17:
+    name: Post Ad INSERT RLS Production Baseline (PostgreSQL 17)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+
+      - name: Start disposable PostgreSQL 17 stack
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/fairswap-issue133/supabase/migrations /tmp/fairswap-issue133/supabase/tests
+          sed 's/major_version = 15/major_version = 17/' supabase/config.toml > /tmp/fairswap-issue133/supabase/config.toml
+          cp -r supabase/templates /tmp/fairswap-issue133/supabase/
+          grep -q 'major_version = 17' /tmp/fairswap-issue133/supabase/config.toml
+          cd /tmp/fairswap-issue133
+          supabase start -x studio,analytics,logflare,supavisor
+          VERSION=$(supabase db query 'SHOW server_version;' --output json | jq -r '.[0].server_version // empty')
+          [[ "$VERSION" == 17.* ]] || { echo "::error::PostgreSQL 17 required, found $VERSION"; exit 1; }
+
+      - name: Reconstruct exact Production 36 migration baseline
+        run: |
+          set -euo pipefail
+          for file in "$GITHUB_WORKSPACE"/supabase/migrations/*.sql; do
+            name=$(basename "$file")
+            version=$(echo "$name" | cut -d '_' -f1)
+            if [[ "$version" < '20261007161426' ]]; then
+              cp "$file" /tmp/fairswap-issue133/supabase/migrations/
+            fi
+          done
+          FILES=$(find /tmp/fairswap-issue133/supabase/migrations -maxdepth 1 -name '*.sql' | wc -l)
+          [[ "$FILES" -eq 36 ]] || { echo "::error::Expected 36 baseline files, found $FILES"; exit 1; }
+          cd /tmp/fairswap-issue133
+          supabase migration up
+          RECORDED=$(supabase db query 'SELECT count(*)::int AS total FROM supabase_migrations.schema_migrations;' --output json | jq -r '.[0].total')
+          [[ "$RECORDED" -eq 36 ]] || { echo "::error::Expected 36 baseline versions, found $RECORDED"; exit 1; }
+
+      - name: Rehearse Goods 38 to 39 INSERT RLS guard
+        run: |
+          set -euo pipefail
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261008210921_post_ad_category_metadata.sql" /tmp/fairswap-issue133/supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261009163210_seller_listing_category_context.sql" /tmp/fairswap-issue133/supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261013192336_post_ad_listing_insert_category_guard.sql" /tmp/fairswap-issue133/supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/tests/listings_insert_category_eligibility.test.sql" /tmp/fairswap-issue133/supabase/tests/
+          cd /tmp/fairswap-issue133
+          supabase migration up
+          RECORDED=$(supabase db query 'SELECT count(*)::int AS total FROM supabase_migrations.schema_migrations;' --output json | jq -r '.[0].total')
+          [[ "$RECORDED" -eq 39 ]] || { echo "::error::Expected Goods-only 39 migration versions, found $RECORDED"; exit 1; }
+          supabase test db /tmp/fairswap-issue133/supabase/tests/listings_insert_category_eligibility.test.sql
+
+      - name: Teardown isolated PostgreSQL 17 stack
+        if: always()
+        run: |
+          cd /tmp/fairswap-issue133 && supabase stop || true
+          rm -rf /tmp/fairswap-issue133
