@@ -22,6 +22,37 @@ Both HTML files independently use the same accessible, table-based FairSwap shel
 3. Run `corepack pnpm typecheck`, `corepack pnpm lint`, and the relevant existing signup/OTP/callback tests.
 4. With a **disposable/local** Supabase stack, send one signup confirmation and one email sign-in code to controlled test inboxes. Confirm HTML, subject, link redemption, OTP redemption, expiry, resend rules, and no unexpected account creation.
 
+## Hosted audit and managed rollout
+
+Supabase's **Management API** supports read/write access to hosted Auth email templates. The repository provides a strict, version-controlled helper (`tools/sync-supabase-auth-emails.mjs`) that first retrieves and analyzes **existing hosted HTML**. It reports template presence, hashes, whether signup and OTP token placeholders are present, configured subjects, OTP duration, and JWT lifetime, without logging actual HTML or secrets.
+
+Use a **Supabase Management API personal access token** held in your local environment as `SUPABASE_ACCESS_TOKEN` (or a properly protected secret store). Never paste it into an issue, PR, chat, repository, terminal recording, or GitHub logs. A Supabase `service_role`, anon, or publishable key is **not** a Management API token. Access needs the appropriate Auth config read/write scopes. The connected Supabase database/Edge Function interface does not itself edit hosted Auth template settings.
+
+```sh
+# Pre-change read-only audits: always run both before rollout.
+node tools/sync-supabase-auth-emails.mjs audit --env test
+node tools/sync-supabase-auth-emails.mjs audit --env prod
+
+# First update FairSwapTest; copies are taken before write and then verified.
+node tools/sync-supabase-auth-emails.mjs apply --env test --confirm APPLY-TEST
+
+# After confirming real signup, email OTP and recovery email delivery
+# and redemption on FairSwapTest, authorize production.
+node tools/sync-supabase-auth-emails.mjs apply --env prod --confirm APPLY-PROD --test-mails-verified
+
+# Verify that both hosted projects exactly match version-controlled templates.
+node tools/sync-supabase-auth-emails.mjs audit --env test
+node tools/sync-supabase-auth-emails.mjs audit --env prod
+
+# Emergency rollback: provide the exact absolute backup path printed earlier.
+node tools/sync-supabase-auth-emails.mjs rollback --env test --backup /ABSOLUTE/BACKUP.json --confirm ROLLBACK-TEST
+node tools/sync-supabase-auth-emails.mjs rollback --env prod --backup /ABSOLUTE/BACKUP.json --confirm ROLLBACK-PROD --test-mails-verified
+```
+
+Backups contain **only five approved Auth config fields**: the two existing HTML templates, two subject lines, and shared email OTP expiration. The helper never saves a full Supabase Auth config, which may include sensitive SMTP or OAuth secrets. Backups are saved with restricted permissions under `~/.fairswap/auth-email-backups` and are never committed to Git. The helper refuses to write when existing templates/subjects/expiry cannot be restored, when another admin changed the config during preflight, or when production is ahead of FairSwapTest. Read-after-write GET verification confirms remote persistence, but **does not replace sending actual emails and checking inbox rendering**.
+
+**Important limitations:** No hosted Auth settings change merely by merging the GitHub PR. Live HTML cannot be audited through the presently connected Supabase MCP tools; use the Management API helper or the authenticated dashboard. A GitHub CI pass verifies repository behavior, not delivery by Supabase SMTP.
+
 ## Hosted rollout (explicit approval required)
 
 This repository's local config does not automatically update hosted Supabase Auth template HTML, subject lines, or `Email OTP Expiration`. Use the following order; do not apply this solely because the PR merges.
