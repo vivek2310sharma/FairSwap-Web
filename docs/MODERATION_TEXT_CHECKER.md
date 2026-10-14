@@ -9,7 +9,7 @@ The current rule-set version is `prototype_v0.1.1` (updated from `prototype_v0.1
 - This is NOT a complete listing validator, fraud detector, image moderator, or auto-approval system.
 - An outcome of `no_review_flags` means strictly: *"The selected prototype text checks completed and found no review flags."*
 - It must NEVER be interpreted as *"This ad is genuine"* or *"This ad is approved for publication."*
-- It is NOT connected to submission or publication and is NOT imported by any running application code.
+- **Current integration (source checked 2026-10-14):** This *pure evaluator* IS imported and called by `supabase/functions/_shared/listing-moderation-worker.ts` during claimed-job moderation. Its signals are subsequently finalized through trusted moderation RPCs. It has no authority to approve, publish or reject a listing by itself.
 
 ## 2. Sealed Public Evaluator & Input Contract
 - **Sealed Public API**: `evaluateListingText(rawInput: unknown): ModerationEvaluationResult` accepts raw input only. No caller-supplied runners, plugin overrides, or mutable registries are permitted.
@@ -48,10 +48,8 @@ The current rule-set version is `prototype_v0.1.1` (updated from `prototype_v0.1
 - **Sentence independence**: A negated statement in one sentence does not exempt a positive demand in another sentence within the same ad (e.g. "No advance payment required. Pay ₹1,000 before viewing the flat." is flagged).
 - **Reason**: `"Explicit payment-before-viewing request found."`
 
-## 5. Limitations & Future Integration Safeguards
+## 5. Limitations and server-worker integration boundaries
 - **Language Coverage**: Covers English and Indian English phrases. Does NOT cover Hindi, Hinglish, transliterated scripts, obfuscated l33tspeak, or images.
 - **No Network Requests**: Does not resolve shortened URLs, check DNS, or call external APIs.
-- **No Revision/Photo Binding**: This module evaluates only plain text. Future backend integration must:
-  1. Bind results to the exact listing `revision` and media hash/snapshot.
-  2. Verify that seller account status and photo readiness hold at the moment of publication.
-  3. Ensure background runner results never override a human moderator's rejection or removal.
+- **Pure checker only:** Listing revision, claim token, timeout/lease and media-state invariants live in the moderation worker and database RPC layers; text evaluation itself does not inspect images, prove identity or track state. See [MOD-03A](MOD_03A_AUTOMATIC_MODERATION.md) and `supabase/functions/_shared/listing-moderation-worker.ts`.
+- **Fail-closed integration:** Missing checks, stale claims or changed listing/media state must not create public visibility. Background outcomes may not override a human removal/rejection. Keep the existing worker, moderation and database security regression tests.

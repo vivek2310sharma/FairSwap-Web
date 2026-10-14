@@ -6,7 +6,7 @@
 
 POST AD DRAFT JOURNEY ACCEPTED — remaining Test draft acceptance checks completed on 10 October 2026. Native confirmations are operator-confirmed; owner reads and catalogue hydration are automated browser observations. This is not readiness for public posting.
 
-Checked 10 October 2026 on existing branch `codex/post-ad-a0`. Application: http://127.0.0.1:4318/account/listings/new. Existing approved ordinary owner session only; FairSwapTest project `wpppxlnbzqynvhpeuavd`. The existing Test launcher and runtime gate were inspected; configured public/staging project aliases matched, gated forms rendered, and no credentials were printed. See [runtime targeting](../../../artifacts/evidence/post-ad-journey/runtime-target.json).
+Checked 10 October 2026 on existing branch `codex/post-ad-a0`. Application: http://127.0.0.1:4318/account/listings/new. Existing approved ordinary owner session only; FairSwapTest project `wpppxlnbzqynvhpeuavd`. The existing Test launcher and runtime gate were inspected; configured public/staging project aliases matched, gated forms rendered, and no credentials were printed. See runtime targeting (`artifacts/evidence/post-ad-journey/runtime-target.json`).
 
 ## Observed defects and bounded corrections
 
@@ -48,7 +48,7 @@ Reference loading/error/empty and unavailable/default-OFF cases were exercised i
 
 ## Read-only saved draft checks
 
-IDs resolved from existing verification evidence; successful editor reads used the same approved owner session, and the owner dashboard showed all its 12 entries as Draft. No owner identifiers, private society text, credentials or photo URLs exported. See [compact draft reads](../../../artifacts/evidence/post-ad-journey/draft-reads.json).
+IDs resolved from existing verification evidence; successful editor reads used the same approved owner session, and the owner dashboard showed all its 12 entries as Draft. No owner identifiers, private society text, credentials or photo URLs exported. See compact draft reads (`artifacts/evidence/post-ad-journey/draft-reads.json`).
 
 | Family and documented ID | New read-only result |
 | --- | --- |
@@ -70,8 +70,8 @@ Actual field/validator tests cover incomplete Known declarations, supported powe
 
 Before implementation:
 
-- `node node_modules/vitest/vitest.mjs run tests/unit/post-ad-goods-entry.test.tsx tests/unit/post-ad-journey-fields.test.tsx --maxWorkers=1 --minWorkers=1`: **6 failed / 25 passed**, 31 tests. [Before output](../../../artifacts/evidence/post-ad-journey/before-tests.txt).
-- `node node_modules/vitest/vitest.mjs run tests/unit/post-ad-journey-dashboard.test.tsx --maxWorkers=1 --minWorkers=1`: **1 failed / 1 passed**, 2 tests. [Dashboard before](../../../artifacts/evidence/post-ad-journey/dashboard-before.txt).
+- `node node_modules/vitest/vitest.mjs run tests/unit/post-ad-goods-entry.test.tsx tests/unit/post-ad-journey-fields.test.tsx --maxWorkers=1 --minWorkers=1`: **6 failed / 25 passed**, 31 tests. Before output (`artifacts/evidence/post-ad-journey/before-tests.txt`).
+- `node node_modules/vitest/vitest.mjs run tests/unit/post-ad-journey-dashboard.test.tsx --maxWorkers=1 --minWorkers=1`: **1 failed / 1 passed**, 2 tests. Dashboard before (`artifacts/evidence/post-ad-journey/dashboard-before.txt`).
 - Intermediate expanded 15-file run: **1 failed / 174 passed**, exposing the unchanged-query loading defect. The final log replaces that intermediate output; the failing assertion was Catalogue Brand toBeEnabled after confirming Not listed → mapped.
 
 Final affected suite, **15 files / 175 tests PASS**, no React act warnings:
@@ -80,9 +80,9 @@ Final affected suite, **15 files / 175 tests PASS**, no React act warnings:
 node node_modules/vitest/vitest.mjs run tests/unit/post-ad-goods-entry.test.tsx tests/unit/post-ad-journey-fields.test.tsx tests/unit/post-ad-journey-dashboard.test.tsx tests/unit/post-ad-flow.test.tsx tests/unit/post-ad-selector.test.tsx tests/unit/post-ad-form-payload.test.tsx tests/unit/property-controls.test.tsx tests/unit/property-server.test.ts tests/unit/property-area-precision.test.tsx tests/unit/car-answer-controls.test.tsx tests/unit/two-wheeler-retention.test.tsx tests/unit/post-ad-goods-edit-retention.test.tsx tests/unit/saved-category-form-preservation.test.tsx tests/unit/post-ad-locations.test.ts src/__tests__/pincode-picker.test.tsx --maxWorkers=1 --minWorkers=1
 ```
 
-Final Goods description follow-up: `node node_modules/vitest/vitest.mjs run tests/unit/post-ad-goods-entry.test.tsx tests/unit/post-ad-selector.test.tsx --maxWorkers=1 --minWorkers=1` — **35 tests PASS**, [output](../../../artifacts/evidence/post-ad-journey/final-copy-tests.txt).
+Final Goods description follow-up: `node node_modules/vitest/vitest.mjs run tests/unit/post-ad-goods-entry.test.tsx tests/unit/post-ad-selector.test.tsx --maxWorkers=1 --minWorkers=1` — **35 tests PASS**, output (`artifacts/evidence/post-ad-journey/final-copy-tests.txt`).
 
-[Final test output](../../../artifacts/evidence/post-ad-journey/final-tests.txt). Tests use isolated action/reference mocks, not live writes.
+Final test output (`artifacts/evidence/post-ad-journey/final-tests.txt`). Tests use isolated action/reference mocks, not live writes.
 
 | Command | Final result |
 | --- | --- |
@@ -100,7 +100,7 @@ React checklist applied: existing component/server boundaries retained, no new f
 
 - [Goods retention/session/media evidence in repository progress](../../PROGRESS.md), including original synthetic Goods fixture and inactive-category retention. Current isolated retention tests passed; historical external writes and non-owner probes are not new executions.
 - [Two-wheeler verification](csv-mapping/Two-Wheeler-V1-Verification.md) and [Cars verification](csv-mapping/Cars-V1-Verification.md): original draft persistence, versioned catalogue and authenticated security results.
-- [Property V1 report](../../../artifacts/evidence/property-v1/report.json): original owner RPC/persistence/private storage and financial authority; [Property entry/precision correction](../../../artifacts/evidence/property-entry-precision-fix/verification.md): previous isolated SQL comparison with its stub limitations.
+- Property V1 report (`artifacts/evidence/property-v1/report.json`): original owner RPC/persistence/private storage and financial authority; Property entry/precision correction (`artifacts/evidence/property-entry-precision-fix/verification.md`): previous isolated SQL comparison with its stub limitations.
 
 ## Remaining work
 
@@ -114,11 +114,11 @@ The requested close-out is complete. No new fixture, feature expansion or public
 
 ## Focused diff, screenshots and preservation
 
-[Focused source/test diff](../../../artifacts/evidence/post-ad-journey/focused.diff) compares this task against immediate pre-task file backups, preserving earlier uncommitted milestones. Eight runtime files, two existing test files and two new test files changed; the acceptance report is separate.
+Focused source/test diff (`artifacts/evidence/post-ad-journey/focused.diff`) compares this task against immediate pre-task file backups, preserving earlier uncommitted milestones. Eight runtime files, two existing test files and two new test files changed; the acceptance report is separate.
 
-Six useful captures: [selector](../../../artifacts/evidence/post-ad-journey/selector-mobile.jpg), [Goods desktop](../../../artifacts/evidence/post-ad-journey/goods-desktop.jpg), [Motorcycle mobile](../../../artifacts/evidence/post-ad-journey/motorcycle-mobile.jpg), [Cars mobile](../../../artifacts/evidence/post-ad-journey/cars-mobile.jpg), [PG mobile](../../../artifacts/evidence/post-ad-journey/property-pg-mobile.jpg), [Flatmates mobile](../../../artifacts/evidence/post-ad-journey/property-flatmates-mobile.jpg). Screenshots are viewport captures of real 4318 forms with synthetic unsaved inputs. The final selector tab remains available; temporary viewport override reset.
+Six useful captures: selector (`artifacts/evidence/post-ad-journey/selector-mobile.jpg`), Goods desktop (`artifacts/evidence/post-ad-journey/goods-desktop.jpg`), Motorcycle mobile (`artifacts/evidence/post-ad-journey/motorcycle-mobile.jpg`), Cars mobile (`artifacts/evidence/post-ad-journey/cars-mobile.jpg`), PG mobile (`artifacts/evidence/post-ad-journey/property-pg-mobile.jpg`), Flatmates mobile (`artifacts/evidence/post-ad-journey/property-flatmates-mobile.jpg`). Screenshots are viewport captures of real 4318 forms with synthetic unsaved inputs. The final selector tab remains available; temporary viewport override reset.
 
-[Preservation checks](../../../artifacts/evidence/post-ad-journey/preservation-checks.json): all 48 migration files and count unchanged; .env.local hash unchanged. No SQL, RLS, RPC, contract amount/requiredness, catalogue eligibility, reference import/category activation, retained draft/photo mutation, pricing policy or public gates changed. Goods submission behavior and prior retention/session-recovery logic preserved. No Docker, upgrade, commit, push or deployment.
+Preservation checks (`artifacts/evidence/post-ad-journey/preservation-checks.json`): all 48 migration files and count unchanged; .env.local hash unchanged. No SQL, RLS, RPC, contract amount/requiredness, catalogue eligibility, reference import/category activation, retained draft/photo mutation, pricing policy or public gates changed. Goods submission behavior and prior retention/session-recovery logic preserved. No Docker, upgrade, commit, push or deployment.
 
 
 ## Remaining-checks close-out — 10 October 2026
@@ -133,13 +133,13 @@ Only runtime file src/app/account/listings/page.tsx changed. Its existing authen
 
 The existing gated Property batch also reads category_id and ignores failed/mismatched context data. Motorcycle and Cars fallbacks each make at most one gated batch read, restricted to unresolved displayed owner drafts. Returned listing/category bindings must match. Default-OFF skips gated tables; a Cars-only gate never queries disabled Motorcycle/Property tables. Failed or thrown reads do not establish a family or eligibility. No per-row RPC or elevated client was added. Existing server/database submission and publication gates were unchanged.
 
-[Focused source/test diff](../../../artifacts/evidence/post-ad-close-out/focused.diff) compares the dashboard and its actual-component regression file against immediate pre-close-out backups, preserving all previous dirty branch work. The report is updated separately.
+Focused source/test diff (`artifacts/evidence/post-ad-close-out/focused.diff`) compares the dashboard and its actual-component regression file against immediate pre-close-out backups, preserving all previous dirty branch work. The report is updated separately.
 
-Before runtime correction, the expanded actual-dashboard suite reproduced **12 failures / 2 passes (14 tests)**. [Before log](../../../artifacts/evidence/post-ad-close-out/dashboard-before.txt). The same 14 cases passed after the correction, [first after log](../../../artifacts/evidence/post-ad-close-out/dashboard-after.txt). Three additional checks cover the category_id projection, thrown reads and independent Cars-only gate. Final dashboard result: **17 tests PASS**. Null/empty scenarios are isolated mocks; shared Test categories were not changed.
+Before runtime correction, the expanded actual-dashboard suite reproduced **12 failures / 2 passes (14 tests)**. Before log (`artifacts/evidence/post-ad-close-out/dashboard-before.txt`). The same 14 cases passed after the correction, first after log (`artifacts/evidence/post-ad-close-out/dashboard-after.txt`). Three additional checks cover the category_id projection, thrown reads and independent Cars-only gate. Final dashboard result: **17 tests PASS**. Null/empty scenarios are isolated mocks; shared Test categories were not changed.
 
 ### Completed owner/browser and operator checks
 
-[Compact browser record](../../../artifacts/evidence/post-ad-close-out/browser-checks.json) records actual reads at http://127.0.0.1:4318, FairSwapTest wpppxlnbzqynvhpeuavd.
+Compact browser record (`artifacts/evidence/post-ad-close-out/browser-checks.json`) records actual reads at http://127.0.0.1:4318, FairSwapTest wpppxlnbzqynvhpeuavd.
 
 | Check | Method and outcome |
 | --- | --- |
@@ -166,7 +166,7 @@ Final affected regressions, **4 files / 47 tests PASS** (dashboard 17, real jour
 node node_modules/vitest/vitest.mjs run tests/unit/post-ad-journey-dashboard.test.tsx tests/unit/post-ad-journey-fields.test.tsx tests/unit/two-wheeler-retention.test.tsx tests/unit/post-ad-goods-edit-retention.test.tsx --maxWorkers=1 --minWorkers=1
 ~~~
 
-[Final output](../../../artifacts/evidence/post-ad-close-out/final-tests.txt). Isolated Supabase/action/reference mocks; no live writes. These tests exercise the actual dashboard/controls/edit boundary, not duplicate classification helpers.
+Final output (`artifacts/evidence/post-ad-close-out/final-tests.txt`). Isolated Supabase/action/reference mocks; no live writes. These tests exercise the actual dashboard/controls/edit boundary, not duplicate classification helpers.
 
 | Command | Result |
 | --- | --- |
@@ -176,6 +176,6 @@ node node_modules/vitest/vitest.mjs run tests/unit/post-ad-journey-dashboard.tes
 | node tools/post-ad-preview/verify-imports.mjs | PASS: 35 real Goods modules / 18 preview modules. |
 | git -c safe.directory='C:/Users/VivekKumar/OneDrive - Nobly A S/Documents/FairSwap' -c core.safecrlf=false diff --check | PASS; focused diff has zero added trailing-whitespace lines. |
 
-[Preservation checks](../../../artifacts/evidence/post-ad-close-out/preservation-checks.json): all 48 migration hashes/count and .env.local hash unchanged against the prior acceptance baseline. SQL, database/RLS/RPC contracts, private society permissions, financial authority, pricing policy, reference imports/category state and publication gates unchanged. Saved fixtures/photos were read only; no create/save/upload/submit/publication or ownership/role change. Goods, two-wheeler, Cars and Property retention/session-recovery implementation remains intact. No Docker, dependency upgrade, commit, push or deployment.
+Preservation checks (`artifacts/evidence/post-ad-close-out/preservation-checks.json`): all 48 migration hashes/count and .env.local hash unchanged against the prior acceptance baseline. SQL, database/RLS/RPC contracts, private society permissions, financial authority, pricing policy, reference imports/category state and publication gates unchanged. Saved fixtures/photos were read only; no create/save/upload/submit/publication or ownership/role change. Goods, two-wheeler, Cars and Property retention/session-recovery implementation remains intact. No Docker, dependency upgrade, commit, push or deployment.
 
 NOT RUN in this close-out: full historical suite/audit, production build, SQL harness/security exercise, photo operations, submission/moderation/publication, new fixtures, category activation or deployment. Stop after this bounded close-out.

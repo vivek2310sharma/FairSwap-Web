@@ -1,6 +1,9 @@
 # FairSwap — Tabletop Incident Simulation Evidence (2026-09-19)
 
 > [!NOTE]
+> **Historical simulation only:** The numbered "Phase 1–6" headings below are *incident-response exercise steps*, **not** the retired FairSwap product-development phases. They and their timings are hypothetical; no real key rotation, breach, rollback or Production test was performed. Consult the current [incident runbook](incident-response-runbook.md) and verify today's Indian legal/reporting requirements before acting.
+
+> [!NOTE]
 > **SIMULATION NOTICE — TABLETOP EXERCISE ONLY**:
 > This document records the theoretical walkthrough of a **non-production tabletop exercise** conducted to evaluate FairSwap's incident response runbook, decision points, small-team operational roles, and statutory reporting clocks.
 > **No live production incident occurred**.
@@ -115,9 +118,9 @@
 
 | Category | Gap Identified in Exercise | Planned Corrective Action Item | Owner | Target Status |
 |---|---|---|---|---|
-| **Staffing** | Single operator would face high cognitive load handling key rotation, rollback, and forensics concurrently. | Onboard and verify a named Backup Production Owner (**Blocker in #41**). | Vivek Kumar | Pre-Public Beta |
+| **Staffing** | Single operator would face high cognitive load handling key rotation, rollback, and forensics concurrently. | Reconsider an alternate trained Production operator (**risk accepted in #41; issue closure did not remediate it**). | Vivek Kumar | Pre-Public Beta |
 | **Tooling** | Exposure was noticed post-commit rather than pre-commit. | Implement local pre-commit hooks to scan for secret key patterns prior to git push. | Vivek Kumar | Next release |
-| **Monitoring** | 5xx alert was simulated as an email/dashboard alert rather than an urgent phone notification. | Configure external uptime and error webhook alerting to phone (**Blocker in #41**). | Vivek Kumar | Pre-Public Beta |
+| **Monitoring** | 5xx alert was simulated as an email/dashboard alert rather than an urgent phone notification. | Reconsider urgent error escalation (**gap risk-accepted under #41, not technically implemented through issue closure**). | Vivek Kumar | Pre-Public Beta |
 | **Architecture** | Forward-only database migration discipline enables frontend rollback without schema conflicts. | Maintain strict forward-only migration discipline across all releases. | Engineering | Permanent Invariant |
 
 ---

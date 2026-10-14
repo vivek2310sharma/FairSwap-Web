@@ -1,5 +1,8 @@
 # FairSwap — Backup and Disaster Recovery Runbook (Public Beta Readiness)
 
+> [!IMPORTANT]
+> **Freshness boundary (2026-10-14):** The production plan, managed backup/PITR gap and owner risk acceptance below are based on the **2026-09-19** dashboard inspection (issue #41), **not a new 2026-10-14 billing/backup audit**. A single historical Test restore does not demonstrate current Production recovery. Reconfirm live backup coverage, restore path, Storage protection and operator availability before any broader launch decision.
+
 This runbook establishes disaster recovery objectives, backup procedures, environmental safety boundaries, and restore verification protocols for **FairSwap** (a peer-to-peer local classifieds platform).
 
 ---
@@ -26,12 +29,12 @@ During the isolated Point 16 Disaster Recovery drill conducted on staging projec
 * **Storage Object Byte Backup Duration**: ~18.4 seconds (46 objects downloaded, SHA-256 hashed)
 * **Isolated Database Restore Duration**: 355.61 seconds (table structures reconstructed from clean migrations, rows re-inserted into isolated `@electric-sql/pglite` engine, counts and referential integrity validated)
 * **Isolated Storage Restore & Hash Verification**: 59.62 seconds (disposable recovery buckets provisioned, objects uploaded, downloaded, and 100% byte hashes verified)
-* **Total Staging Drill Duration**: **415.23 seconds (~6.9 minutes)**, demonstrating that tooling and recovery protocols comfortably operate inside the RTO $\le$ 2 hours objective.
+* **Total Staging Drill Duration**: **415.23 seconds (~6.9 minutes)**, which completed within the **Test** RTO target for that specific dataset; this is **not** proof that Production can recover within two hours or satisfy the stated RPO.
 
 ### C. Production Backup & Recovery Posture
 > [!WARNING]
 > **VERIFIED PRODUCTION BACKUP GAP — OWNER RISK ACCEPTED**:
-> FairSwapProd is on the Supabase Free plan and currently has **no managed project/database backup coverage** and no PITR under the current setup.
+> At the **last documented dashboard inspection (2026-09-19)**, FairSwapProd was on Supabase Free with **no managed project/database backups or PITR**. This Markdown review did **not** independently recheck current billing or backups.
 > No production restore exercise has been performed, and production Storage recovery remains unverified.
 > On 2026-09-19, the Platform Owner explicitly closed this readiness gap by accepting the associated data-loss and recovery risk under #41.
 > This is a risk-acceptance decision, **not** evidence that production backup/recovery controls were remediated.
@@ -121,7 +124,7 @@ pnpm tsx scripts/verify-restore.ts --restore-target=local
 
 ## 5. Production Backup Verification Record and Future Checklist
 
-Current verified state on 2026-09-19:
+Historical verified state as of **2026-09-19** (requires a fresh read-only inspection for new release decisions):
 
 1. [x] FairSwapProd plan inspected in the Supabase Dashboard: **Free**.
 2. [x] Managed project/database backups confirmed **not included** under the current setup.
