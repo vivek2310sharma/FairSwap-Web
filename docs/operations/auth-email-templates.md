@@ -70,3 +70,8 @@ This repository's local config does not automatically update hosted Supabase Aut
 **Rollback:** Restore the previously captured environment-specific HTML, subjects, and OTP expiration together; then send controlled test emails to verify restored behavior. Do not modify `auth.users`, sessions, RLS, or database schema for this change.
 
 **Reference limitation:** #111 includes a DBA.dk PDF attachment. It could not be fetched through the connected GitHub attachment interface during preparation. The FairSwap design is independently authored; visually compare against that issue attachment during PR review if exact stylistic parity is required.
+
+
+## Password-recovery branding follow-up (#142)
+
+The recovery email is a separate hosted Supabase Auth template, not changed by #126/#111. See [password-recovery-email.md](./password-recovery-email.md) for the recovery-only audited deployment, private backups, Test → Prod acceptance, and rollback. Retain the 600-second verification expiry and existing secure password-reset callback.
