@@ -1,5 +1,8 @@
 # CSV field layer v1
 
+> [!NOTE]
+> **Current source boundary (2026-10-14):** This CSV field layer and its two-wheeler overlay are source-derived **preview/proposal** contracts. Separate FairSwapTest owner-draft work does **not** approve production category activation, required fields, database UUIDs or catalogue mappings. Review the [Post Ad evidence index](../../../../docs/reference/post-ad/README.md) and [current state](../../../../docs/CURRENT_STATE.md) before reuse.
+
 This is a compiled reference contract used by the existing isolated Post Ad preview. It has no production category activation, database IDs, persistence, posting eligibility, or publish authority. The real Goods entry, saved values, draft retention and session recovery use their existing contracts.
 
 `scripts/compile-csv-fields.py` uses Python's strict CSV reader and verifies all three original byte hashes against the supplied workbook's Sources sheet before compilation. Run with the bundled Python runtime; no package installation is needed. `scripts/extract-csv-mapping.py` recovers the missing mapping references from the supplied workbook with workbook hash/sheet/header-row provenance and refuses to overwrite different references. Extraction is a one-time recovery, not a repeated source audit.
@@ -16,7 +19,7 @@ The hardening uses catalogue-specific strict car/two-wheeler Zod schemas before 
 
 Lookup dependence is explicit in `rule.lookupDependent`. Only dependent fields require `lookup: ready`; an omitted or unstarted lookup disables Model. Brand does not inherit that dependency. Its source brand list is loaded independently of Model enablement and survives temporary model lookup failures. Existing values are neither deleted nor validated by presentation state.
 
-## Motorcycle/Scooter proposal v1 — not approved
+## Motorcycle/Scooter source proposal v1 — not approved for publication
 
 `proposals/two-wheelers.v1.json` is the single machine-readable overlay: nine source paths and 101 path-scoped field memberships, with immutable snapshot hashes, exact source references/order, proposed input/units/bounds/options, draft/submission requirements, visibility/enablement, dependency handling and unresolved persistence candidates. `scripts/build-two-wheeler-proposal.mjs` deterministically authors only this proposal; it does not rewrite the source snapshots. `two-wheeler-proposal.ts` validates the overlay and evaluates compatibility/advisory bounds outside React. The real Goods graph does not import it.
 

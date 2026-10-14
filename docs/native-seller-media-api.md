@@ -1,5 +1,8 @@
 # Native Seller Media API & Server Contract
 
+> [!NOTE]
+> **Source status reviewed 2026-10-14:** The server API from [PR #104](https://github.com/vivek2310sharma/FairSwap-Web/pull/104) merged to staging on 2026-10-02. Its media routes and unified bearer/cookie authentication are present on both `main` and `staging`. Source presence/CI is **not** independent end-to-end native-device acceptance; do not infer hosted upload/privacy tests or an Android/iOS release from this contract.
+
 ## Overview
 This specification details the server-mediated seller media contract introduced in **FairSwap-Web** (Issue #103 / PR #104) as the backend dependency for **FairSwap-iOS** milestone iOS-5 (Native Seller Media Management).
 
@@ -12,7 +15,7 @@ It establishes unified authentication for both web cookies and native mobile Bea
 ### Unified Request Authentication (`src/lib/supabase/request-auth.ts`)
 The API routes use a single, unified request-authentication boundary:
 - **Web**: Browser session cookies via `@supabase/ssr`.
-- **Native iOS**: Supabase access tokens via HTTP header:
+- **Native iOS and Android**: Supabase access tokens via HTTP header:
   ```http
   Authorization: Bearer <Supabase access token>
   ```
@@ -380,9 +383,9 @@ Response format when item was already absent (idempotent 200):
 
 ---
 
-## 7. Scope & Next Steps
-- **Completed**: FairSwap-Web Task A backend HTTP and database contract (Feature branch: `feature/103-native-seller-media-api`, PR #104 targeting `staging`).
-- **Target Environment**: FairSwapTest (`wpppxlnbzqynvhpeuavd`) / staging only.
-- **Hosted Verification**: NOT YET PERFORMED FOR THIS FEATURE CONTRACT (awaiting merge to staging and deployment).
-- **FairSwapProd**: Strictly untouched (read-nothing / write-nothing).
-- **FairSwap-iOS**: Unchanged during Task A. Native Swift UI, PhotosPicker, compression, and view models will be implemented in **iOS-5 Task B** after this Web PR is reviewed, merged to staging, and migrations are applied to FairSwapTest.
+## 7. Merged source and remaining acceptance
+
+- **Merged source:** [PR #104](https://github.com/vivek2310sharma/FairSwap-Web/pull/104) merged into `staging` on 2026-10-02. The API routes and `src/lib/supabase/request-auth.ts` are present in both permanent Web branches.
+- **Evidence boundary:** Earlier Task A notes about a pending PR are historical. This Markdown review does not run real bearer-token uploads, Media Storage reads, delete/reorder/cover operations or a native app build. Treat that hosted/device behavior as **unverified by this review**.
+- **Cross-platform clients:** The Expo/React Native iOS and Android apps are separate consumers of this server contract. Verify Android in Android Studio and iOS in Antigravity + Xcode; the original Swift-specific iOS-5 Task B notes describe the old plan, not proof of a modern release.
+- **Future changes:** On FairSwapTest test invalid/malformed Bearer precedence, non-owner denial, account-policy checks, photo count/format/size, idempotent deletes, post-commit reconciliation and private derivatives. Require separate approval and verification before any Production API or database change.

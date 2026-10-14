@@ -52,3 +52,5 @@ The following are **preserved for provenance**, not current setup, rollout or fe
 - [Legacy milestone prompt scripts](../prompts/) — **do not paste into the current agent**; use the active issue/PR workflow instead.
 
 **Do not delete, silently rewrite, or pretend to re-run historical evidence.** Preserve source/migration history and add a dated correction or new report when facts change. The old `MANIFEST.sha256` validates an earlier instruction-pack snapshot, **not this live repository**.
+
+**Markdown link integrity:** `corepack pnpm docs:check` verifies relative links across **all tracked Markdown files**, including this documentation index and source-level READMEs. Historic Post Ad `artifacts/evidence/` files were not committed to Git; references to them are intentionally presented as **plain file paths**, not nonfunctional clickable links. External URLs and live provider settings still require separate verification.

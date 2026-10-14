@@ -11,9 +11,9 @@
 - Repository: `C:/Users/VivekKumar/OneDrive - Nobly A S/Documents/FairSwap` (FairSwap-Web).
 - Branch: `codex/post-ad-a0`; HEAD: `c415d689124f405db56cbe8d7daecde7eeef1c29`.
 - Origin fetch/push: `https://github.com/vivek2310sharma/FairSwap-Web.git` (configured URL has an account-name prefix, not a credential).
-- Baseline: **190 dirty entries: 23 tracked modifications and 167 untracked files**, including two local cache files. No staged entries. Exact full porcelain status, including every untracked path, is retained in [baseline-status.txt](../../../artifacts/evidence/post-ad-closeout-01/baseline-status.txt).
+- Baseline: **190 dirty entries: 23 tracked modifications and 167 untracked files**, including two local cache files. No staged entries. Exact full porcelain status, including every untracked path, is retained in baseline-status.txt (`artifacts/evidence/post-ad-closeout-01/baseline-status.txt`).
 - Tracked diff at baseline: 23 files, 1,599 insertions / 202 deletions. This excludes untracked implementation and ignored evidence; it is not the whole feature size.
-- [Baseline SHA-256 inventory](../../../artifacts/evidence/post-ad-closeout-01/baseline-hashes.json): **807 existing source/test/SQL/script/tool/document/evidence/config files**, excluding this task's new evidence and generated Python cache. Final comparison found **0 changes**. No accepted file was reset, stashed, cleaned, overwritten, staged or moved.
+- Baseline SHA-256 inventory (`artifacts/evidence/post-ad-closeout-01/baseline-hashes.json`): **807 existing source/test/SQL/script/tool/document/evidence/config files**, excluding this task's new evidence and generated Python cache. Final comparison found **0 changes**. No accepted file was reset, stashed, cleaned, overwritten, staged or moved.
 - Existing artifacts are ignored by `/artifacts/`; browser evidence is ignored by `/.playwright-mcp/`. These remain local retained evidence, not implicitly tracked source. Environment secrets, tokens, cookies and raw authenticated requests are excluded from the handoff.
 
 Only this closeout note and new local closeout evidence were created. Source, migrations, existing verification notes, fixtures, configuration, dependencies and index were not changed. No fetch, branch switch/creation, commit, push, merge, live action or deployment occurred.
@@ -38,7 +38,7 @@ The full migration and file boundary is below. Approval criteria, public family 
 
 Classes: **A** accepted Post Ad implementation; **B** automated tests; **C** approved existing SQL; **D** runtime stabilisation; **E** evidence/documentation/tooling; **F** unrelated/generated local material; **G** potential moderation overlap. Multiple classes denote shared files.
 
-[Exact machine-readable classification](../../../artifacts/evidence/post-ad-closeout-01/file-classification.json) maps every one of the 190 baseline paths to a proposed commit or explicit hold/exclusion. The appendix reproduces that inventory. File eligibility is based on the current diff and retained acceptance records, not “everything dirty is Post Ad”.
+Exact machine-readable classification (`artifacts/evidence/post-ad-closeout-01/file-classification.json`) maps every one of the 190 baseline paths to a proposed commit or explicit hold/exclusion. The appendix reproduces that inventory. File eligibility is based on the current diff and retained acceptance records, not “everything dirty is Post Ad”.
 
 ### SQL for owner/Test-family handoff — exact historical bytes, chronological dependency order
 
@@ -97,7 +97,7 @@ Installed executables were used directly; no package installation, dependency re
 | `git diff --check` | **PASS, exit 0**; informational existing LF/CRLF notices. |
 | Baseline hashes / index | **807 files unchanged; no staged delta**. New report formatting also checked. |
 
-Total disjoint application tests: **708 across 41 files**, plus the separate one-test runtime regression. This does not inflate the earlier 614 claim or include live/SQL results. [Exact 37-file selection](../../../artifacts/evidence/post-ad-closeout-01/test-selection.json), [614 results](../../../artifacts/evidence/post-ad-closeout-01/tests.json), [94 results](../../../artifacts/evidence/post-ad-closeout-01/foundation-tests.json) and command logs are retained locally.
+Total disjoint application tests: **708 across 41 files**, plus the separate one-test runtime regression. This does not inflate the earlier 614 claim or include live/SQL results. Exact 37-file selection (`artifacts/evidence/post-ad-closeout-01/test-selection.json`), 614 results (`artifacts/evidence/post-ad-closeout-01/tests.json`), 94 results (`artifacts/evidence/post-ad-closeout-01/foundation-tests.json`) and command logs are retained locally.
 
 The first sandboxed Vitest invocation failed to load configuration because esbuild's parent-directory read was denied; **zero tests executed**. Normal tool approval permitted the same existing isolated test selection outside that filesystem restriction, and it passed. This was a test-startup restriction, not a business-logic defect; no implementation was changed.
 
@@ -105,7 +105,7 @@ These results validate the **current complete dirty checkout**, which contains e
 
 ## 5. Retained live owner evidence
 
-[POST-AD-LIVE-02](../../../artifacts/evidence/post-ad-live-02/REPORT.md) and [owner verification section 17](Post-Ad-Owner-Flow-Verification.md) remain the authoritative current live draft record. No browser, save, upload, submit or notification was repeated for closeout.
+POST-AD-LIVE-02 (`artifacts/evidence/post-ad-live-02/REPORT.md`) and [owner verification section 17](Post-Ad-Owner-Flow-Verification.md) remain the authoritative current live draft record. No browser, save, upload, submit or notification was repeated for closeout.
 
 | Family / existing live sample | Verified saved → ordinary-owner read → restored → readiness → owner preview | Media / limit |
 | --- | --- | --- |
