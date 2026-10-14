@@ -1,10 +1,14 @@
 # FairSwap.in - master product and engineering specification
 
+> [!IMPORTANT]
+> **Archived 2026-09 starter specification.** This document records the original milestone-based product and engineering plan; its `Phase 1` / `Phase 2` and initial 1.1 execution commands are **not current instructions or release gates**. Follow [START_HERE](START_HERE.md), [CURRENT_STATE](docs/CURRENT_STATE.md), [CONTRIBUTING](CONTRIBUTING.md) and the [current roadmap](docs/ROADMAP.md) for authorized ongoing work. Preserve the historic functional/security rationale here as reference; verify actual code and hosted configuration before treating any older feature/status claim as current.
+
+
 Version: 4.0 - Antigravity sequential-build edition | Updated: 2026-09-13
 
 This is the Project Bible for FairSwap.in in Antigravity. It retains the Phase 1 product scope while separating reference requirements, workspace rules, planning, execution authorization, and verification.
 
-## 0. Execution gate and reading map
+## 0. Original milestone execution gate (historical only)
 
 **This Project Bible describes the complete Phase 1 product. It is not permission to implement all of it. The first request is PLAN ONLY for Milestone 1.1.**
 

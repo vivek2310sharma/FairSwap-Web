@@ -1,5 +1,9 @@
 # Post Ad owner-flow verification
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Dated evidence/decision contract, **not current release authorization**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../CURRENT_STATE.md), [roadmap](../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 11 October 2026. **CURRENT: POST-AD-LIVE-02 PASS — all scoped owner draft/photo comparisons completed.** This is a draft milestone, not submission, approval, publication or public-release authorisation. Full current evidence is in section 17 and the [LIVE-02 report](../../../artifacts/evidence/post-ad-live-02/REPORT.md).
 
 - **Automated:** fresh 614 passing tests / 37 files; live-observation assertions pass for all four families; focused lint, root/preview types, imports and whitespace pass. Hostile metadata and mismatched contract/identity fail-closed cases remain isolated-test evidence.

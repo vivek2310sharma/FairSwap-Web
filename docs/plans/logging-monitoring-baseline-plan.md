@@ -1,5 +1,9 @@
 # FairSwap Logging & Monitoring Baseline Plan (r1)
 
+> [!IMPORTANT]
+> **Historical implementation plan / dated scope.** Revision states and old approval/branch references below describe a prior task, not permission to run commands against today's repository. Start with [current state](../CURRENT_STATE.md), [roadmap](../ROADMAP.md), [contributing](../../CONTRIBUTING.md), and an explicitly scoped current issue. Preserve this original evidence; never use obsolete milestone prompts to re-scaffold, overwrite, migrate or deploy.
+
+
 > [!NOTE]
 > **Historical Plan & Implementation Status Notice**:
 > This document records the original architectural design plan formulated between Milestone 1.2 and Milestone 1.3 on **2026-09-13**.

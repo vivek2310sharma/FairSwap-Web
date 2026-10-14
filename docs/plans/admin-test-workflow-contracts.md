@@ -1,5 +1,9 @@
 # Admin Test workflow contracts — implementation evidence
 
+> [!IMPORTANT]
+> **Historical implementation plan / dated scope.** Revision states and old approval/branch references below describe a prior task, not permission to run commands against today's repository. Start with [current state](../CURRENT_STATE.md), [roadmap](../ROADMAP.md), [contributing](../../CONTRIBUTING.md), and an explicitly scoped current issue. Preserve this original evidence; never use obsolete milestone prompts to re-scaffold, overwrite, migrate or deploy.
+
+
 Date: 2026-10-07 (Europe/Copenhagen). Source baseline c415d689124f405db56cbe8d7daecde7eeef1c29, local branch codex/admin-test-workflow-contracts. The owner approved the exact two proposals and scoped checkout in the Admin conversation ("approve for all"). This supersedes historical no-backend-change wording only for these Test changes. No Web application, other-platform client, old migration, dependency or Production file changed.
 
 ## Applied Test changes

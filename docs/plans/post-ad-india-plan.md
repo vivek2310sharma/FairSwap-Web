@@ -1,5 +1,9 @@
 # FairSwap Post Ad — r2 A0 scope amendment
 
+> [!IMPORTANT]
+> **Historical implementation plan / dated scope.** Revision states and old approval/branch references below describe a prior task, not permission to run commands against today's repository. Start with [current state](../CURRENT_STATE.md), [roadmap](../ROADMAP.md), [contributing](../../CONTRIBUTING.md), and an explicitly scoped current issue. Preserve this original evidence; never use obsolete milestone prompts to re-scaffold, overwrite, migrate or deploy.
+
+
 Revision: **r2 — A0 BUILD AUTHORIZED; remaining integration PROPOSED / NOT AUTHORIZED**\
 Date: **2026-10-08 (Europe/Copenhagen)**\
 Branch: `codex/post-ad-a0`, based on `c415d689124f405db56cbe8d7daecde7eeef1c29`.

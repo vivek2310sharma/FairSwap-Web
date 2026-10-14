@@ -1,5 +1,9 @@
 # FairSwap Post Ad redesign - draft Codex prompt
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Original agent instruction draft, **not an active instruction to execute**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../CURRENT_STATE.md), [roadmap](../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 ## Execution mode: PLAN ONLY
 
 Act as FairSwap's principal engineer in the existing FairSwap-Web workspace in Antigravity. This request authorizes investigation and a proposed implementation plan only. Do not edit application files, create branches/worktrees, install packages, seed data, run migrations, write to any hosted database, commit, push, or deploy. Return the plan in the conversation/Antigravity review surface without creating repository planning files unless separately authorized. A later explicit BUILD approval is required.

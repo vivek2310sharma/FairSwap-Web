@@ -1,5 +1,9 @@
 # S1 — Direct authorization: read-only inventory and execution plan
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Dated evidence/decision contract, **not current release authorization**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../CURRENT_STATE.md), [roadmap](../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 **Date:** 13 October 2026. **Status:** PHASE 1 READ-ONLY REVIEW; HOSTED S1 **NOT VERIFIED**.
 **Authority:** [Issue #118](https://github.com/vivek2310sharma/FairSwap-Web/issues/118),
 `Post-Ad-Release-Prerequisites-Review.md` S1–S5, and the retained Test-submission verification checklist.
