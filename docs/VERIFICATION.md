@@ -1,64 +1,55 @@
-# FairSwap - verification protocol
+# FairSwap verification protocol
 
-This procedure defines required evidence; it does not report executed application tests. Read only the sections applicable to the authorized milestone.
+**Current, issue-based verification (14 October 2026).** This document defines *how to prove an implementation*, not a claim that a specific test has run. No milestone-number prerequisite or Phase 1/Phase 2 completion rule applies to current changes.
 
-## Every coherent build batch
+## Target and evidence first
 
-Implement -> execute the relevant checks -> inspect actual output/exit status -> fix -> rerun. Several related files may form one batch. Test-driven red-to-green work is fine; unexplained red tests are not readiness.
+Identify: branch and commit, exact files under test, OS/terminal, package versions, browser/viewport, **local disposable** vs **FairSwapTest** vs **FairSwapProd**, identity/role, command, exit status, output and redacted log references.
 
-Keep normal terminal approvals. Record the real error, not merely that an agent summary says 'failed'. Preserve process exit status in the actual shell; logging through a pipeline must not replace a failed test's status with the logger's zero exit.
+Use `git status` and `git diff --check` on the proposed change. Verify the test runner and dependencies correspond to the checked-out revision. Tests and artifacts produced from an older worktree do **not** prove a new release candidate.
 
-Run new tests, not just write them. A build alone does not verify behavior, ownership, RLS or storage. Unit-test mocks can isolate logic but cannot substitute for required real local integration.
+## Choose the relevant gates
 
-## 1.1 prerequisites and browser scope
-
-Detect actual OS/shell/native versus WSL/container environment. Project packages and Playwright Chromium binary downloads require reviewed build scope and terminal approval. OS libraries, global tools and machine-security changes require separate explicit permission. See `docs/BOOTSTRAP.md`.
-
-Use Chromium only for the initial desktop/mobile VIEWPORT smoke checks. This does not certify Safari/WebKit, Firefox, real hardware, all assistive technologies or a security audit. A future release support matrix can expand coverage through a reviewed plan.
-
-A command pending approval is not a failed test. An unavailable browser/dependency is BLOCKED / NOT RUN. Do not disable policy controls, automatically invoke privileged installers, or remove browser assertions to claim completion.
-
-## 1.1 final checks
-
-| Check | Required evidence |
+| Changed boundary | Required verification |
 | --- | --- |
-| `pnpm lint` | Actual final-file result/exit status |
-| `pnpm typecheck` | Actual type-check result; no ignored errors |
-| `pnpm test:unit` | Meaningful executed component tests, counts and outcome |
-| `pnpm build` | Successful build of the actual root project |
-| `pnpm start` | Built app serves the expected page; ready process/HTTP evidence, not a fictional exit code |
-| `pnpm test:e2e` | Actual root app tested in Chromium desktop/mobile viewport projects |
-| Visual review | Capture paths, dimensions, observed results; distinguish captured from inspected |
-| Source/scope review | Preserved rules/spec/progress, lowercase package/root app, no future features/secrets |
-| Cleanup review | Exact newly created temp path cleaned only with permission, or location reported |
-| Diff check | Review actual changes; `git diff --check` when Git exists |
+| Basic code/README/docs | Link/cross-reference check, relevant unit tests where applicable, lint/typecheck and PR diff |
+| User-facing Web page or critical flow | Accessibility/keyboard checks, mobile and desktop Playwright, hydration/log inspection |
+| Server Actions/API input | Zod negative cases; unauthorized, malformed and cross-owner direct requests |
+| Auth, OTP, callbacks, staff AAL2 | Positive and negative Auth/OTP paths, anti-enumeration, correct environment mapping, real controlled mailbox if email changes |
+| RLS, schema, grants, RPCs | Forward migration tracking; pgTAP; direct `anon` / `authenticated` / owner / staff / `service_role` negatives on disposable DB |
+| Media/Storage | Ownership, privacy, derivative/cache invalidation, content-type and size limits, race/idempotency tests |
+| Moderation and background jobs | Strict Vault/service-only authorization, missing/invalid worker secret denial, replay/lease/idempotency and fail-closed behavior |
+| Email / provider integrations | Distinguish source template test, hosted configuration hash, real inbox delivery and token redemption |
+| Production release | Audited exact commit, hosted config/migration state, rollback, operator acceptance, post-deploy errors |
 
-A long-running web server has startup/readiness evidence and an intentional shutdown, not a normal immediate 'exit 0'. Configure a test-owned local server/port, verify the expected app, avoid stale builds/unrelated servers, and stop only processes this run created. Prefer browser tests against the fresh production build for the final pass; development-server checks alone do not demonstrate production startup.
+Common commands (select rather than falsely claiming all were executed):
 
-The implementation must supply these scripts or approved/documented equivalents. They do not exist in the starter pack yet. Do not execute nonexistent scripts and claim the platform was tested. Verify that no Supabase credentials or Docker are needed by the scaffold.
+```powershell
+corepack pnpm lint
+corepack pnpm typecheck
+corepack pnpm test:unit
+corepack pnpm test:security
+corepack pnpm build
+corepack pnpm test:e2e
+corepack pnpm supabase test db
+```
 
-## 1.2-1.5 integration and security
+Use targeted Vitest paths for iterations and required broader suites for merges. Check GitHub Actions job names and conclusions against the **exact** head SHA. Compare the Vercel preview's source SHA with the PR. Inspect failure logs; do not weaken the tests to force green CI.
 
-Before database tests identify the disposable LOCAL target without printing credentials. Apply migrations in order, generate types from applied schema, test clean reset and upgrades as appropriate, and execute pgTAP/real-role integration tests. A new migration is not verified merely because its SQL parses or a secret client can access everything.
+## Local and hosted database safety
 
-Required negative cases cover anonymous/private access; cross-owner writes; protected columns; self-granted roles; missing staff MFA; stale-token suspension; invalid status transitions and re-review; storage ownership and unsafe media; hidden content and cached image paths; outsider conversations/subscriptions; block/idempotency/notification behavior; case-specific staff access; reporter privacy; append-only audits; and safe account deletion with shared history.
+Before any reset, SQL write, migration, trigger or fixture setup, positively prove the **local disposable host/port/project**. Fail closed if identity is ambiguous. A local `supabase db reset` is destructive by design; never assume the current CLI target is safe. Never use live Production identities or customer data as Test fixtures.
 
-Browser-test real local confirmed registration, seller submission, staff review, discovery/favourites, separate buyer/seller sessions, reports/support and sold status as each is implemented. Use synthetic fixtures in isolated local tests, never a hosted production reset or real messages as a shortcut.
+RLS evaluation requires a true unprivileged role context. A privileged `service_role` success does not demonstrate owner-only access. SQL/pgTAP fixtures must be isolated and rollback where required; check anonymous access, tenant isolation, staff MFA and function grants.
 
-## 1.6 release assessment
+Remote Test/Production writes require separate approval, backup and deployment verification; a PR merge is not a database deployment.
 
-Repeat end-to-end and security regressions on final code and stated targets. Record real recovery exercises for database records AND image bytes, failure injection, browser/device coverage, keyboard/accessibility observations, measured performance conditions and unresolved launch blockers. A written backup procedure is not an executed restore.
+## Mobile, accessibility and low bandwidth
 
-Do not declare production readiness from a successful build. A local code-ready result and a blocked public launch can both be true. Public deployment and external checks require separate authorization.
+Test Android-sized viewport, slow connections and image/payload fallback in addition to desktop. Avoid unverified claims of hardware/device coverage; browser viewport emulation is **not** a real Android/iOS release test. Native builds must be verified in Android Studio or Antigravity/Xcode respectively when the change affects those clients.
 
-## Durable evidence
+## Reporting the result
 
-Record date/time, milestone/plan revision, working-tree/commit identity, exact command and directory, target/environment/browser, real exit status or service readiness, PASS/FAIL/BLOCKED/NOT RUN, relevant test counts, short outcome and sanitized evidence path.
+Use unambiguous status for each claim: **PASS**, **FAIL**, **BLOCKED**, **NOT RUN**, or **OPERATOR CONFIRMED**. Link commit/PR/test run and scope; record unsupported assumptions and the next safe step. A screenshot without inspection, a hosted config `200` without a real email, or a build without behavior verification cannot certify production acceptance.
 
-Keep bulky logs, videos, screenshots, traces and reports gitignored; never include secrets, session tokens or private content in reports. For synthetic local screenshots note their fixture status. If IDE restrictions block an ignored evidence path, request narrow permitted access or human inspection; do not disable protections globally.
-
-Use the native Walkthrough for presentation and `docs/PROGRESS.md` for durable results. Capturing a screenshot is not inspecting it; a nice artifact is not executable proof. Required unrun checks keep the milestone incomplete. Passing automatic checks makes it ready for human review, not automatically accepted.
-
-## Verification-only pass
-
-The supplied VERIFY prompts permit running existing checks and updating evidence/progress, not editing product code, installing tools or weakening tests. Report needed fixes so the user can authorize them. Generated build/report files and documented isolated test fixtures are expected by verification; source changes are not.
+See [WORKFLOW](WORKFLOW.md), [CONTRIBUTING](../CONTRIBUTING.md), [deployment guide](operations/deployment-guide.md) and the [current state](CURRENT_STATE.md).

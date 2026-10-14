@@ -1,5 +1,9 @@
 # Primary references and version-sensitive setup notes
 
+> [!NOTE]
+> **Dated starter-pack reference list (2026-09-13).** Version-sensitive tooling, Supabase behavior and Antigravity interfaces must be checked against current installed versions and official docs. This is **not** the active onboarding checklist; see [START_HERE](../START_HERE.md) and [current docs index](README.md).
+
+
 Prepared 2026-09-13. Antigravity rules/settings/plan documentation, create-next-app CLI/source, Playwright browser guidance, Next Image, Supabase SSR/RLS and database-testing pages were checked for this revision. Remaining links are implementation references to recheck when their milestone is authorized. Documentation and tool flags can change: inspect the installed compatible version rather than guessing.
 
 These references support tool behavior; the project's selected scope/approval policy is a design decision. Nothing here certifies an implemented application.

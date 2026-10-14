@@ -1,296 +1,77 @@
 # Contributing to FairSwap-Web
 
-Thank you for contributing to FairSwap-Web.
+This is the active contribution guide for the India-first FairSwap Web application, last reviewed **14 October 2026**. There are **no active Phase 1/Phase 2 or milestone-number prerequisites**. Prioritize by issue, risk, product value and actual verification.
 
-FairSwap is currently operated as a controlled-pilot product. Contributions should preserve the existing security, privacy, moderation, and release boundaries while keeping changes easy to review, test, and roll back.
+Read [CURRENT_STATE](docs/CURRENT_STATE.md), [WORKFLOW](docs/WORKFLOW.md), the relevant feature contract and [deployment guide](docs/operations/deployment-guide.md) before making security-sensitive changes.
 
-This guide explains the day-to-day GitHub contribution workflow. It complements, but does not replace, the project authorization and review contract in `docs/WORKFLOW.md`.
+## Branches and environments
 
-## 1. Sources of truth
+- `main`: **Production**, deployed at https://fairswap.in to Supabase `FairSwapProd`.
+- `staging`: shared **Test/integration**, deployed to the stable staging URL and Supabase `FairSwapTest`.
+- `feat/*`, `fix/*`, `security/*`, `docs/*`, `test/*`, `chore/*`: short-lived branches created from the latest staging branch. Delete after merge.
+- Production-only hotfixes can start from `main` with explicit approval. Reconcile the resulting main changes **back into staging** promptly, keeping staging-only work intact.
 
-Before changing code, review the documents relevant to your work:
+Staging may have more commits and files than main. **Zero commits behind main** is a useful reconciliation target; **identical file trees are not required**. Never force-reset either shared branch or merge development-only Test capture utilities into Production merely to equalize counts.
 
-- `FAIRSWAP_SPEC.md` — product requirements, architecture, anti-goals, and security constraints.
-- `.agents/rules/fairswap.md` — repository-specific operating rules.
-- `docs/WORKFLOW.md` — authorization, verification, review, and acceptance process.
-- `docs/ROADMAP.md` — phase boundaries and sequencing.
-- `docs/PROGRESS.md` — factual implementation and verification history.
-- `docs/milestones/` — milestone-level behavior and acceptance contracts.
+## Start a task safely
 
-If this guide conflicts with a higher-authority product, security, or authorization rule, follow the higher-authority rule and flag the conflict in the pull request.
-
-## 2. Branching model
-
-`main` is the production source-of-truth branch. `staging` is the long-lived shared integration and verification branch used before production promotion.
-
-For routine product work, start from the latest `staging` and use a short-lived branch. Merge accepted feature/fix work back into `staging` for shared verification, then promote an accepted release from `staging` to `main` through a separate production PR. Emergency production fixes may branch from `main`, but those fixes must be reconciled back into `staging` promptly so the branches do not diverge.
-
-Recommended prefixes:
-
-- `feat/<short-description>` — new product capability.
-- `fix/<short-description>` — bug or regression fix.
-- `chore/<short-description>` — infrastructure, tooling, dependency, or maintenance work.
-- `docs/<short-description>` — documentation-only work.
-- `test/<short-description>` — test-only work.
-- `security/<short-description>` — focused security hardening.
-
-Keep one logical change per branch. Delete the branch after the pull request is merged unless there is a specific reason to retain it.
-
-## 3. Start from current `staging`
-
-For routine feature, fix, test, documentation, and maintenance work, create the branch from current shared staging:
-
-```bash
-git checkout staging
-git pull --ff-only
-git checkout -b fix/example-change
+```powershell
+git fetch origin --prune
+git status
+git switch staging
+git pull --ff-only origin staging
+git switch -c docs/example-change
+corepack pnpm install --frozen-lockfile
 ```
 
-For an explicitly authorized emergency production hotfix, branch from `main`, promote the fix through review, and then reconcile the resulting `main` change back into `staging`.
+Check `git worktree list` and preserve local work before switching branches. Use an isolated worktree for concurrent agents or when your main checkout has changes. Do not force-push shared branches or clean unknown worktrees.
 
-Do not build new work on an old feature branch or on the historical `Phase1` branch.
+Create or link a GitHub issue for substantial changes. Write a concise scope and acceptance contract: desired behavior, affected web/mobile contracts, database impact, attack surface, Test/Prod boundaries, files, tests, rollback and rollout. A human-approved task authorizes **only** the reviewed scope; passing a CI gate does not authorize unrelated deployment or data access.
 
-## 4. Issues and scope
+## Local verification
 
-For non-trivial changes, use a GitHub issue to describe the problem, expected behavior, and acceptance criteria before implementation.
-
-Pull requests should reference the relevant issue when one exists.
-
-During the controlled pilot:
-
-- Regressions and bugs affecting existing behavior may enter the pilot fix queue.
-- Serious UX problems may be fixed when they block testing, safety, or user trust.
-- New feature requests should normally remain in the Public Beta / v1.0 backlog unless separately authorized.
-- Phase 2 work must not be introduced through an unrelated pilot fix.
-
-The FairSwap GitHub Project currently supports the fields `Status`, `Work Type`, `Priority`, `Area`, `Environment`, `Phase`, and `Severity`. Project automation may populate those fields from issue metadata; avoid inventing classifications that are not supported by the issue or maintainer decision.
-
-## 5. Development setup
-
-Use the repository-pinned package manager:
-
-```bash
-corepack pnpm install
-```
-
-For local Supabase work:
-
-```bash
-corepack pnpm supabase start
-corepack pnpm supabase db reset
-```
-
-Use only disposable/local test targets for destructive database operations unless a remote change has been explicitly authorized.
-
-## 6. Required verification
-
-Run checks that are relevant to the change before marking a pull request ready for review.
-
-Baseline checks:
-
-```bash
-corepack pnpm typecheck
+```powershell
 corepack pnpm lint
+corepack pnpm typecheck
 corepack pnpm test:unit
-```
-
-For changes affecting authentication, authorization, RLS, staff access, moderation, privacy, or security boundaries:
-
-```bash
 corepack pnpm test:security
-```
-
-For browser-visible behavior or critical user journeys:
-
-```bash
-corepack pnpm test:e2e
-```
-
-For runtime, dependency, configuration, routing, or deployment-sensitive changes:
-
-```bash
 corepack pnpm build
 ```
 
-Database changes should also run the relevant Supabase/pgTAP verification where applicable.
+Run `corepack pnpm test:e2e` for changed user journeys and `corepack pnpm supabase test db` for schema/RLS changes using a positively identified **disposable local** database. Prefer focused Vitest suites during iteration, then relevant regression suites. Do not invent test results, disable failing assertions or mistake mocks/build output for hosted acceptance.
 
-Do not weaken, skip, or delete a failing test merely to make a pull request pass. Fix the underlying behavior or explain the blocker.
+Test mobile-width/slow-network and accessibility behavior when changing customer UI. Verify English/Hindi wording where the relevant localization exists; do not falsely claim unshipped languages are supported. Optimize for low-end Android bandwidth even when building Web.
 
-## 7. Vercel Preview verification
+## Security and data boundaries
 
-Pull requests that affect the application should use the Vercel Preview deployment when available.
+- Enforce authorization in Supabase RLS, database constraints, and trusted server-side checks; never depend on client UI visibility for access control.
+- Validate untrusted inputs with Zod. For user requests use the request-scoped Supabase client; never put `service_role`/`sb_secret_`/management tokens into browser bundles or public environment variables.
+- Do not trust `user_metadata` for staff/owner permissions. Protect staff workflows with applicable role/status and TOTP/AAL2 checks. Preserve existing Vault-based moderation dispatch verification.
+- Keep private listing originals, derivatives, draft media and abuse evidence behind existing access controls. Audit public delivery and cache keys.
+- Keep user-facing emails neutral against account enumeration and resistant to phishing, fake payment links and impersonation. FairSwap item transactions do not use escrow or payment links from buyers.
+- For migrations: preserve historical applied files; introduce reviewed **forward** migrations with explicit GRANT/RLS checks and negative permission tests. A repo merge does not apply a hosted migration.
+- Scope experiments and Test-only non-delivery capture to `FairSwapTest`. Do not deploy those functions or use synthetic accounts in Production without separate explicit authorization.
+- Follow India's privacy, consumer and intermediary obligations as determined by current legal guidance; historical checklists do not constitute a fresh legal opinion.
 
-Before merge, verify the hosted behavior relevant to the change, especially for:
+Never commit `.env.local`, credentials, Supabase tokens, personal information, account reset links, screenshots of live secrets, production backups or temporary agent logs. Update `.env.example` with **placeholders only** when environment configuration changes.
 
-- authentication callbacks and cookies;
-- sign-up, sign-in, recovery, and MFA;
-- listing creation/editing and image upload;
-- staff/admin authorization;
-- moderation actions;
-- public discovery and listing visibility;
-- server routes that depend on Supabase connectivity;
-- environment-variable-dependent behavior.
+## Pull requests and releases
 
-A passing local test suite does not automatically prove hosted behavior is correct.
+Every PR must say what changed, why, its issue/acceptance criteria, excluded scope, relevant file/API/migration impacts, security/privacy concerns, evidence (commands + outcomes), rollback plan and deployment dependencies.
 
-Do not merge a deployment-sensitive change while its required preview/deployment check is failing unless the failure is understood, documented, and explicitly accepted.
+1. Branch from `staging` and make a reviewable, isolated change.
+2. Open a PR to `staging`; require applicable GitHub Actions jobs and Vercel Preview checks. Test against the *correct* Supabase project.
+3. Merge after review and required checks. Retire the temporary branch when local worktrees are clear.
+4. For Production, select only **approved, tested changes**. A staging-to-main PR is appropriate only when **all** included staging changes are approved. Otherwise create a **focused release branch from main** with the accepted changes.
+5. Record a release decision, Production checks and rollback path. Deploying code in Vercel is **separate** from Supabase migrations, Auth templates, secrets, functions or email-provider settings. Reconcile Production hotfix/release history back to staging.
+6. Do not mark an issue completed until the required environment-specific behavior is verified and documented.
 
-## 8. Database and Supabase changes
+**Repository permissions:** Regardless of whether GitHub currently enforces branch protection, use PR review and CI as policy. Do not push directly to `main`; configure branch rulesets/required checks where supported.
 
-Treat schema, RLS, functions, grants, storage policies, and authentication configuration as security-sensitive changes.
+## Documentation ownership
 
-When adding a database change:
+Update the **active** docs in the same PR whenever behavior, commands, security posture or release gates change: [README](README.md), [current state](docs/CURRENT_STATE.md), [roadmap](docs/ROADMAP.md), [workflow](docs/WORKFLOW.md), and affected [operations runbooks](docs/README.md#operations-and-compliance).
 
-- Add a new ordered migration under `supabase/migrations/`.
-- Do not rewrite an already-applied migration to change production/staging history.
-- Keep RLS enabled and fail closed by default.
-- Review table, column, schema, and function grants explicitly.
-- Add or update security tests for permission changes.
-- Preserve the two-layer RPC/security architecture where applicable.
-- Verify anonymous, authenticated, owner, staff, and service-role boundaries as relevant.
-- Avoid production-specific identifiers or secrets in migration files.
+Historical plans, starter prompts, acceptance evidence, migration history, signed-off legal decisions and incident drills remain preserved as **historical records**. Do not rewrite their past claims as if they describe today. Add a correction or new dated record and link to current evidence.
 
-Any destructive or remote migration requires explicit deployment authorization in addition to code review.
-
-## 9. Secrets and environment variables
-
-Never commit real secrets.
-
-Do not commit:
-
-- `.env.local`;
-- Supabase service-role/secret keys;
-- database passwords or connection strings;
-- SMTP credentials;
-- Vercel tokens;
-- GitHub tokens;
-- private signing/JWT secrets;
-- production-only credentials or recovery material.
-
-Document new variables in `.env.example` using safe placeholders and clearly identify whether they are public or server-only.
-
-Values prefixed with `NEXT_PUBLIC_` are exposed to browser code and must never contain secrets.
-
-## 10. Media and file-upload changes
-
-FairSwap listing media has privacy and moderation requirements.
-
-Changes to upload or delivery behavior must preserve, as applicable:
-
-- server-mediated upload validation;
-- original-media privacy;
-- derivative generation;
-- content-type and image validation;
-- listing ownership checks;
-- moderation visibility rules;
-- active/public listing restrictions;
-- safe deletion and orphan handling.
-
-Add focused tests whenever a media trust boundary changes.
-
-## 11. Authentication and admin changes
-
-Staff/admin behavior is security-sensitive.
-
-Changes must preserve the distinction between:
-
-- ordinary authenticated users;
-- staff roles;
-- administrator permissions;
-- AAL2/TOTP requirements for staff workflows.
-
-Normal users must not be offered staff-only MFA enrollment as a path to gaining admin access, and they must not receive admin data or content.
-
-Authorization must be enforced server-side. UI hiding alone is not an access-control mechanism.
-
-## 12. Pull request expectations
-
-A pull request should be small enough to review and should explain:
-
-- what problem it solves;
-- what changed;
-- what is intentionally out of scope;
-- the linked issue, if applicable;
-- tests/checks actually run;
-- hosted/preview verification performed, if applicable;
-- database or environment changes required;
-- security/privacy impact;
-- known limitations or follow-up work.
-
-Do not claim a check passed if it was not run.
-
-Keep generated output, local test artifacts, credentials, and temporary debugging files out of the commit unless they are intentionally required repository assets.
-
-## 13. Review and merge
-
-Routine contribution flow:
-
-1. Branch from current `staging` for routine work.
-2. Make one focused change.
-3. Add/update tests and documentation.
-4. Run relevant local verification.
-5. Open a pull request to `staging`.
-6. Use the Vercel Preview/shared staging environment for hosted verification when applicable.
-7. Address review findings.
-8. Merge into `staging` only after required checks and review are satisfied.
-9. Delete the merged short-lived branch.
-10. When a staging release is explicitly approved for production, open a separate `staging` -> `main` release PR and verify the production promotion independently.
-11. If a production-only hotfix lands on `main`, reconcile `main` back into `staging` before starting dependent work.
-
-The maintainer decides the merge method based on the change and repository history.
-
-Direct pushes to `main` should be avoided for routine work even if repository permissions technically allow them.
-
-## 14. Production changes are separate
-
-Merging code does not automatically authorize a production-side change.
-
-The following require explicit operational authorization and verification:
-
-- production Supabase migrations;
-- production environment-variable or secret changes;
-- production Auth/SMTP changes;
-- DNS/domain changes;
-- storage-policy changes against production;
-- user/staff bootstrap or account mutation in production;
-- public-launch or pilot-expansion decisions.
-
-Keep production actions auditable and separate from ordinary source-code review.
-
-## 15. Controlled-pilot priorities
-
-Until the controlled pilot is completed, prefer:
-
-1. security and authorization correctness;
-2. data/privacy integrity;
-3. reliable core buyer/seller/moderation flows;
-4. pilot-blocking bug fixes;
-5. observability and operational safety;
-6. non-blocking UX improvements;
-7. new features only when separately prioritized.
-
-Avoid unrelated refactors during a critical pilot fix unless they are necessary for correctness or safety.
-
-## 16. Documentation responsibility
-
-Update documentation when behavior, configuration, operational procedures, or known readiness state changes.
-
-Relevant locations include:
-
-- `README.md`;
-- `docs/PROGRESS.md`;
-- `docs/ROADMAP.md`;
-- `docs/operations/`;
-- milestone documents and tests.
-
-Keep readiness claims evidence-based. Distinguish local verification, hosted-preview verification, staging verification, and production verification.
-
-## 17. Security reporting
-
-Do not publish live credentials, tokens, private user data, exploit details against the production environment, or other sensitive operational material in a public issue or pull request description.
-
-For security-sensitive findings, contact the repository owner/maintainer through an appropriate private channel and create only the minimum safe tracking record needed in GitHub.
-
----
-
-By contributing to FairSwap-Web, you are expected to preserve the product boundaries and verification discipline that protect buyers, sellers, staff, and marketplace data.
+Escalate private vulnerabilities securely to the maintainer. Never publish exploit paths, credentials, private user data or sensitive incident details in a public issue.

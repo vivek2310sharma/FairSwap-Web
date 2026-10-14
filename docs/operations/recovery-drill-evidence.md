@@ -1,5 +1,9 @@
 # FairSwap — Disaster Recovery Drill Evidence & History (Milestone 1.6)
 
+> [!NOTE]
+> **Historical drill evidence.** Original branch names, milestone tags and timestamps below identify the original exercise and must not be confused with current `main` / `staging` deployment targets. For current recovery posture consult [backup and restore](backup-restore-runbook.md) and [CURRENT_STATE](../CURRENT_STATE.md).
+
+
 This document provides durable, non-secret operational evidence for disaster recovery verification drills conducted for **FairSwap** (a peer-to-peer local classifieds platform).
 
 > [!IMPORTANT]

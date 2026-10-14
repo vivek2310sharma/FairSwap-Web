@@ -1,5 +1,8 @@
 # FairSwap - safe scaffold and prerequisite procedure
 
+> [!IMPORTANT]
+> **Retired historical procedure (14 October 2026).** This was the original one-time scaffolding guide. Current developer setup is [START_HERE](../START_HERE.md); do not recreate the Next.js app, reinstall global tooling, or send legacy milestone prompts.
+
 > [!NOTE]
 > **Historical Initial Scaffolding Notice**:
 > This document records the original safe scaffolding procedure executed during Milestone 1.1 initialization on **2026-09-13**.

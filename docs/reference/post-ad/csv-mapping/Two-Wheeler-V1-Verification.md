@@ -1,5 +1,9 @@
 # Motorcycle/Scooter draft V1 — Test verification, 2026-10-09
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Dated evidence/decision contract, **not current release authorization**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../../CURRENT_STATE.md), [roadmap](../../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 **Correction notice, 2026-10-10:** the historical PGlite rejection assertions were unreliable. See “Three source findings corrected” below for corrected rejection evidence, saved-reference loading, the applied corrective migration and current results. Separately recorded live API/photo evidence remains intact.
 
 The approved V1 draft implementation is connected to the existing seller form in FairSwapTest `wpppxlnbzqynvhpeuavd`. Four ordinary owner-created drafts were saved, reloaded and updated under their acknowledged IDs. Submission/publication remain disabled in the UI and database. The isolated sample preview remains separate.

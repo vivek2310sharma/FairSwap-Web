@@ -1,7 +1,11 @@
 # FairSwap — Grievance Handling Runbook
 
+> [!IMPORTANT]
+> **India-first grievance operations:** This runbook's compliance/legal discussions are dated to September 2026 and are not a substitute for current Indian-law review. The public grievance route is recorded as deployed; separate delivery/legal-applicability checks may remain outstanding. See [current state](../CURRENT_STATE.md) and [operations readiness](public-beta-operations-readiness.md) before asserting full readiness.
+
+
 **Issue:** #37 — Publish Grievance Officer details  
-**Repository status:** READY FOR REVIEW / EXTERNAL VERIFICATION INCOMPLETE  
+**Original authoring status (2026-09-19):** READY FOR REVIEW / EXTERNAL VERIFICATION INCOMPLETE — retained as a dated record; this wording is not the current deployment status of the public `/grievance` page.  
 **Reviewed against public legal sources:** 2026-09-19
 
 This runbook defines FairSwap's internal handling process for grievances received through the published grievance channel. It complements the public `/grievance` page and does not replace legal advice or the classification/applicability decisions tracked in issue #38.

@@ -1,5 +1,9 @@
 # Post Ad owner-only source candidate review
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Dated evidence/decision contract, **not current release authorization**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../CURRENT_STATE.md), [roadmap](../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 Date: 2026-10-11. Task: POST-AD-SOURCE-REVIEW-02.
 
 **BLOCKED — candidate-local dependencies are unavailable.** Extraction and source integrity checks passed, but mandatory candidate regression, lint and type validation did not complete. This is not approval for commit, integration or public release.

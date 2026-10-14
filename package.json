@@ -16,7 +16,8 @@
     "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "location:import": "tsx scripts/import-india-postal-data.ts",
     "preview:post-ad": "node tools/post-ad-preview/verify-imports.mjs && next dev tools/post-ad-preview --webpack --hostname 127.0.0.1 --port 4317",
-    "typecheck:post-ad-preview": "tsc --noEmit -p tools/post-ad-preview/tsconfig.json"
+    "typecheck:post-ad-preview": "tsc --noEmit -p tools/post-ad-preview/tsconfig.json",
+    "docs:check": "node tools/check-docs.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

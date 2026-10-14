@@ -1,5 +1,9 @@
 # Implementation Plan: Issues #80 & #82 — Email-First Authentication Redesign
 
+> [!IMPORTANT]
+> **Historical implementation plan / dated scope.** Revision states and old approval/branch references below describe a prior task, not permission to run commands against today's repository. Start with [current state](../CURRENT_STATE.md), [roadmap](../ROADMAP.md), [contributing](../../CONTRIBUTING.md), and an explicitly scoped current issue. Preserve this original evidence; never use obsolete milestone prompts to re-scaffold, overwrite, migrate or deploy.
+
+
 - **Milestone / Issues**: Issue #80 (Remove Google Authentication) & Issue #82 (Email-First Login with Password or Email OTP)
 - **Plan Revision**: `r3`
 - **Status**: `PROPOSED`

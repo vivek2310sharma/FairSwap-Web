@@ -1,5 +1,9 @@
 # FairSwap — Public Beta Operations Readiness Checklist (Issue #41)
 
+> [!NOTE]
+> **Dated operational readiness record:** Original evidence and owner risk acceptance are from September 2026. This checklist does not automatically certify a later or wider public launch. Before a new release or legal/compliance decision, verify live providers, migration state, operator coverage and remaining actions against [CURRENT_STATE](../CURRENT_STATE.md).
+
+
 This document is the authoritative operations readiness checklist and evidence entry point for **Public Beta Launch** under GitHub Issue **#41**. It consolidates operational baselines, establishes the monitoring matrix, tracks unresolved blockers, and links to all supporting runbooks using repository-relative links.
 
 ---
@@ -12,7 +16,7 @@ This document is the authoritative operations readiness checklist and evidence e
 | **Incident Response & Statutory Protocols** | [`./incident-response-runbook.md`](./incident-response-runbook.md) | **Updated** (P0–P3, CERT-In 6h clock, DPDP May 2027) |
 | **Backup, PITR & Disaster Recovery** | [`./backup-restore-runbook.md`](./backup-restore-runbook.md) | **Updated** (Staging recovery verified; FairSwapProd backup gap verified and owner risk accepted) |
 | **Recovery Drill Evidence & History** | [`./recovery-drill-evidence.md`](./recovery-drill-evidence.md) | **Updated** (Staging Point 16 drill preserved) |
-| **Deployment, Quality Gates & Rollback** | [`./deployment-guide.md`](./deployment-guide.md) | **Updated** (Migrations 1–21; Vercel Instant Rollback) |
+| **Deployment, Quality Gates & Rollback** | [`./deployment-guide.md`](./deployment-guide.md) | **Updated** (Tracked forward migrations; Vercel rollback (historical readiness matrix; re-audit current migration history before release)) |
 | **Tabletop Incident Simulation** | [`./tabletop-simulation-2026-09-19.md`](./tabletop-simulation-2026-09-19.md) | **Executed & Recorded** (Credential leak & 5xx procedure walkthrough) |
 
 ---

@@ -1,5 +1,9 @@
 # Cars draft V1 verification — FairSwapTest
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Dated evidence/decision contract, **not current release authorization**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../../CURRENT_STATE.md), [roadmap](../../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 CARS DRAFT V1 VERIFIED. The actual Post Ad flow created, reloaded and updated four marked synthetic Cars drafts at the same IDs. This milestone is Test-only and draft-only; stop here.
 
 Preview: http://127.0.0.1:4318/account/listings/new?macro=vehicles

@@ -1,5 +1,9 @@
 # FairSwap v4 - instruction-pack validation
 
+> [!IMPORTANT]
+> **Historical starter-pack validation only (2026-09-13).** These checks describe a one-time instruction package, not the current Next.js application, CI, Supabase security or live release. The root `MANIFEST.sha256` also belongs to that historical snapshot and is **not a valid checksum manifest for today's repository**. See [current docs](docs/README.md).
+
+
 Validated on 2026-09-13 in the artifact-generation environment. These checks apply to the delivered instruction files, not a built FairSwap website.
 
 ## Executed checks
