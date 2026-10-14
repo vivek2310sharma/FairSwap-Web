@@ -1,3 +1,8 @@
+[ARCHIVED FAIRSWAP STARTER PROMPT - DO NOT EXECUTE]
+Originally used in the September 2026 milestone-based starter flow. This prompt is retained only for historical traceability. FairSwap-Web is an operating application: use README.md, START_HERE.md, CONTRIBUTING.md and docs/WORKFLOW.md instead. No 'Phase 1'/'Phase 2' command or proposed milestone transition in this file grants current authorization.
+
+---
+
 We are starting FairSwap.in in this already-open FairSwap folder using Antigravity. It is an India-focused classifieds marketplace built with Next.js and Supabase. Buyers and sellers arrange item payment and exchange independently.
 
 I authorize PLAN ONLY for Milestone 1.1. Do not create application code, scaffold, install packages or browsers, initialize Git, connect Supabase, or begin any later milestone.
