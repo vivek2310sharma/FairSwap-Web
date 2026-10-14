@@ -1,8 +1,12 @@
 # FairSwap password-recovery email branding — issue #142
 
+> [!IMPORTANT]
+> **COMPLETED:** Issue #142 passed Test and Production acceptance on 2026-10-14. The audit/apply/rollback commands below are for **future separately authorized changes and incidents**, not an outstanding rollout. See the signed-off acceptance record at the end of this document.
+
+
 ## Objective and existing behavior
 
-The hosted password-recovery email still uses the old simple design. The code in supabase/templates/recovery_email.html now matches the responsive emerald email shell used by signup (#126) and sign-in OTP (#111). The subject remains "Reset your FairSwap Password".
+Before issue #142, the hosted password-recovery email used the old simple design. On 14 October 2026, the new responsive emerald email shell was deployed to FairSwapTest and FairSwapProd; the operator confirmed actual Production inbox delivery, reset-link redemption, password change and subsequent sign-in. The checked-in template matches the brand used by signup (#126) and sign-in OTP (#111). The subject remains "Reset your FairSwap Password".
 
 The verification link MUST remain:
     {{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password

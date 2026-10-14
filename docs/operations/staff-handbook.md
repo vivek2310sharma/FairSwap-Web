@@ -1,4 +1,4 @@
-# FairSwap — Staff Operational Handbook (Milestone 1.6)
+# FairSwap — Staff Operational Handbook
 
 This handbook provides standard operating procedures, role boundaries, and moderation workflows for FairSwap staff members (Administrators, Moderators, Support Agents, and Content Editors).
 

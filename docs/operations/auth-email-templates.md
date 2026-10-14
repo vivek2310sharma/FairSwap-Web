@@ -1,8 +1,12 @@
 # Authentication email templates: issues #126 and #111
 
+> [!NOTE]
+> **Current release status (2026-10-14):** signup confirmation (#126), sign-in OTP (#111) and recovery (#142) are branded and have separate hosted Test/Production acceptance evidence. This file records #126/#111 implementation and deployment; see [password recovery](password-recovery-email.md) for its own completed rollout. Do not execute the historical update commands as if a release is still pending.
+
+
 ## Scope
 
-FairSwap's **Supabase Auth** owns signup confirmation and email sign-in OTP delivery. It uses Resend SMTP in production; these emails do **not** pass through the listing notification outbox. This change updates only the local Supabase Auth confirmation and magic-link/OTP templates and their matching subject lines. Signup, OTP verification, password recovery, staff MFA, and callback handlers are unchanged.
+FairSwap's **Supabase Auth** owns signup confirmation and email sign-in OTP delivery. It uses Resend SMTP in production; these emails do **not** pass through the listing notification outbox. This section records the original #126/#111 rollout of confirmation and magic-link/OTP HTML and matching subjects. The later #142 rollout **separately** branded password recovery; neither change rewrote signup/sign-in handlers, staff MFA, callback logic, or shared email-token expiry.
 
 | Email | Versioned source | Supabase Dashboard template | Subject |
 | --- | --- | --- | --- |
