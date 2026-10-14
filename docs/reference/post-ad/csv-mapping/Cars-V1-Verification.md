@@ -18,7 +18,7 @@ The existing controlled form retains the editing object. The component shows a c
 
 Known battery/range controls require a complete valid powertrain declaration. Unsupported/missing options and incomplete Other detail cannot enable them. Existing numeric answers remain visible and unchanged while disabled; completing the powertrain answer re-enables them. The original confirmed state-change clearing and cancellation behaviour remain intact. No effects or reference-refresh defaults overwrite saved answers.
 
-Evidence: [focused component/helper/validator/test/note diff](../../../../artifacts/evidence/cars-declaration-fix/review.patch), [check manifest](../../../../artifacts/evidence/cars-declaration-fix/manifest.json), [browser screenshot](../../../../artifacts/evidence/cars-declaration-fix/browser.jpg).
+Evidence: focused component/helper/validator/test/note diff (`artifacts/evidence/cars-declaration-fix/review.patch`), check manifest (`artifacts/evidence/cars-declaration-fix/manifest.json`), browser screenshot (`artifacts/evidence/cars-declaration-fix/browser.jpg`).
 
 - Failing before: real CarAnswerField plus existing validateCarAnswers, 25 component cases, **13 failed / 12 passed**. The initial sandbox test startup failure was not counted as a regression result.
 - Passing after: the same 25 component cases plus 14 contract/four server tests passed (43 tests). Four additional placeholder/dependency interaction regressions bring component coverage to **29 passing tests**. The final disjoint 11-file affected run passed **144 tests** total; earlier overlapping runs are not added again.
@@ -37,7 +37,7 @@ The 202-row category CSV and 578-row car CSV are unchanged. Category SHA-256: `9
 
 The catalogue supplies only brand, model, body_type, segment and status. Raw values, source row/order and provenance are preserved. It supplies no manufacturer fuel, transmission, variant, model year, battery/range, or classic certification. The completed source audit was reused.
 
-[Source-to-ID mapping](../../../../artifacts/evidence/cars-v1/source-to-id.json) contains all 578 source rows and real database identities, all nine category IDs and exact field/provenance arrays, snapshot and persisted contract identity. [Compatibility policy](../../../../artifacts/evidence/cars-v1/compatibility-policy.json) explicitly separates source facts from FairSwap policy.
+Source-to-ID mapping (`artifacts/evidence/cars-v1/source-to-id.json`) contains all 578 source rows and real database identities, all nine category IDs and exact field/provenance arrays, snapshot and persisted contract identity. Compatibility policy (`artifacts/evidence/cars-v1/compatibility-policy.json`) explicitly separates source facts from FairSwap policy.
 
 FairSwap mappings distinguish exact body matches, deliberate combined body groups, independent luxury segment grouping, unresolved powertrain/classic classification and incompatibility. Station Wagon/Pickup remain unresolved on ordinary body paths. Electric/Hybrid and Vintage/Classic selection does not certify powertrain or classic status. on_sale/discontinued are eligible subject to compatibility; import_only also derives review required. Unknown future lifecycle values fail with a controlled error. Exact known brand/model pairs cannot bypass catalogue checks using Not listed.
 
@@ -62,7 +62,7 @@ Installed Supabase CLI 2.117.0 generated these new filenames:
 
 Migration history was checked live: 43 before, 45 after; latest is 20261010064519. Only these two migrations were dry-run and applied, against the verified FairSwapTest reference. No baseline replay, resets, seeds, role/Vault changes or history repair. Complete SQL was inspected and tested in isolation before application. The second migration enables exactly nine Test draft categories after prerequisite checks. Review/publication remains blocked in UI and deployed database guards.
 
-[Exact SQL copies, focused patches and manifest](../../../../artifacts/evidence/cars-v1/README.txt):
+Exact SQL copies, focused patches and manifest (`artifacts/evidence/cars-v1/README.txt`):
 - 22-file runtime/test patch relative to the saved reviewed two-wheeler close-out/correction content, rather than an invented Cars-only Git baseline.
 - CLI-generated database type diff: 265 additions for new Cars objects, no changes to existing definitions. Generated into a temporary candidate, inspected, then replaced after successful generation.
 - Deployed function bodies, grants, triggers and constraints are recorded in deployed-contract.json.
@@ -81,7 +81,7 @@ All four were created through the actual UI, reloaded and saved at the same IDs,
 | fdfb46df-5bea-43d6-b3f0-53fee24fce31 | Coupe & Convertible / McLaren 570S | Grouped catalogue, import_only, review true; unknown fuel, bounded Other transmission; ₹10 lakh negotiable |
 | 71617b66-0ad7-42cc-8b61-f63295cd66a6 | Vintage & Classic / synthetic Not listed | Separate bounded seller brand/model text, null canonical IDs, review true; common condition good, unknown year, known zero km; free |
 
-Titles are marked SYNTHETIC CAR V1 and have an “updated” suffix. No fifth Cars draft was created. [Final fixture/preservation evidence](../../../../artifacts/evidence/cars-v1/preservation-and-fixtures.json) excludes credentials and private location fields.
+Titles are marked SYNTHETIC CAR V1 and have an “updated” suffix. No fifth Cars draft was created. Final fixture/preservation evidence (`artifacts/evidence/cars-v1/preservation-and-fixtures.json`) excludes credentials and private location fields.
 
 Direct API checks used the existing approved owner and ordinary non-owner browser sessions, through the application's normal authenticated client. No token/password export or new accounts. The temporary probe route was removed afterward.
 
@@ -103,7 +103,7 @@ Exactly one synthetic photo was uploaded through the existing uploader:
 
 Commands used the installed dependencies. No dependency upgrade.
 
-[Exact focused test commands and counts](../../../../artifacts/evidence/cars-v1/check-results.json) records both disjoint Vitest file lists and final check results.
+Exact focused test commands and counts (`artifacts/evidence/cars-v1/check-results.json`) records both disjoint Vitest file lists and final check results.
 
 | Check / command | Final result |
 | --- | --- |

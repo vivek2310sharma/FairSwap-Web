@@ -1,5 +1,8 @@
 # FairSwap — Operational Ownership Matrix (Public Beta Readiness)
 
+> [!WARNING]
+> **Security-control correction (GitHub read-only audit 2026-10-14):** The Branches API reports `protected: false` for `main` and `staging`. The rulesets API returned HTTP 403 with a plan-upgrade message, and detailed branch-protection calls returned HTTP 403 due to integration permissions. **Do not claim required PR/CI checks are technically enforced from this evidence.** Treat PR review/CI as policy until the owner verifies supported protection/ruleset controls in GitHub Settings; no repository access settings were changed.
+
 This matrix establishes the small-team operational and incident response ownership model for **FairSwap** (a peer-to-peer local classifieds platform). It reflects actual operational realities rather than theoretical enterprise staffing.
 
 FairSwap is currently operated solely by **Vivek Kumar**. On 2026-09-19, the Platform Owner explicitly accepted the operational risk of continuing without a backup production owner for the current launch posture. This records risk acceptance; it does **not** create redundant staffing or emergency access.
@@ -33,7 +36,7 @@ Access to production systems follows the principle of least privilege with manda
 
 | Platform / Resource | Administrative Role | Access Scope & Expectations | MFA Requirement | Access Holder(s) |
 |---|---|---|---|---|
-| **GitHub** (`vivek2310sharma/FairSwap-Web`) | Repository Owner / Admin | Branch protections (`main`, `staging`), PR reviews, CI/CD secrets management | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
+| **GitHub** (`vivek2310sharma/FairSwap-Web`) | Repository Owner / Admin | PR/CI review by policy; branch metadata `protected: false`, effective rulesets **not independently verified** (API 403); CI/CD secrets management | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
 | **Vercel** (`fair-swap`) | Team Owner / Admin | Staging/Production deployments, environment variable injection, Instant Rollback | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
 | **Supabase** (`FairSwapProd`) | Project Owner / Admin | Database settings, backups, connection pooling, Storage policies, Auth settings | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
 | **DNS / Domain Registrar** (`fairswap.in`) | Account Holder | DNS records (A, CNAME, ALIAS), TLS certificate verification, CAA/DNSSEC records | Mandatory 2FA | Vivek Kumar (Primary)<br>None — owner risk accepted |
@@ -52,6 +55,7 @@ Access to production systems follows the principle of least privilege with manda
 For the current owner-accepted launch posture:
 1. [x] Primary production owner recorded: Vivek Kumar.
 2. [x] No backup production owner is designated; the Platform Owner explicitly accepted this residual risk on 2026-09-19 under #41.
-3. [ ] If a backup owner is added later, complete emergency access testing across GitHub, Vercel, Supabase, DNS, and Email before relying on that person operationally.
-4. [ ] Emergency notification channels beyond the currently verified e-mail/Slack paths may be added and tested outside Git as operational needs evolve.
-5. [ ] The statutory Grievance Officer details on customer-facing routes (`/contact`, `/terms`, `/grievance`) are verified accurate.
+3. [ ] Review GitHub plan and permissions; where available, configure and independently verify enforced `main`/`staging` PR checks/rulesets. Branch metadata reported `protected: false`; the ruleset/protection detail APIs were inaccessible (403) on 2026-10-14.
+4. [ ] If a backup owner is added later, complete emergency access testing across GitHub, Vercel, Supabase, DNS, and Email before relying on that person operationally.
+5. [ ] Emergency notification channels beyond the currently verified e-mail/Slack paths may be added and tested outside Git as operational needs evolve.
+6. [ ] Reverify statutory Grievance Officer details on customer-facing routes (`/contact`, `/terms`, `/grievance`) and current compliance applicability before any expanded public launch.

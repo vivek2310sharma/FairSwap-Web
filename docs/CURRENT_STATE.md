@@ -33,6 +33,8 @@ Do not run automated migrations, `config push`, bulk notification tests, or priv
 | Moderation dispatch | The same Vault-verified moderation Edge worker source was inspected in Test, Production and `main` on 2026-10-14; server-only verification RPC denied `anon` and ordinary `authenticated` in Test |
 | Auth email design | Branded signup confirmation (#126), six-digit OTP (#111) and recovery (#142); recovery real-inbox and password reset accepted in Test and Production 2026-10-14 |
 | Post Ad work | Existing Goods flows plus ongoing category and owner-draft development; S1 non-delivering email capture exists in staging source only, and is **not deployed to FairSwapProd** |
+| India postal provenance | Read-only 2026-10-14 audit: **both hosted projects** hold **165,620** `data.gov.in`-labelled rows spanning **19,586** PINs; `source_updated_at` is NULL. See [postal runbook](india-postal-data.md) for original September mirror provenance and limits of this evidence. |
+| GitHub branch safeguards | As inspected 2026-10-14, both branches report `protected: false`; ruleset/protection details were **not independently accessible** (HTTP 403). PR+CI review is team policy, not proven to be an enforced merge restriction; see [owner matrix](operations/operational-owner-matrix.md). |
 
 A passing CI status and a working Vercel deployment do not establish **wider public-launch certification**. See [operations readiness](operations/public-beta-operations-readiness.md), [grievances](operations/grievance-handling-runbook.md), [backup/restore](operations/backup-restore-runbook.md) and [incident response](operations/incident-response-runbook.md) for recorded decisions and residual risk.
 

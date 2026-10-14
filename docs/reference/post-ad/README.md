@@ -1,5 +1,8 @@
 # Post Ad — design, Test evidence and release prerequisites
 
+> [!IMPORTANT]
+> **Historical evidence availability:** A number of dated verification records refer to files under `artifacts/evidence/` that were created in local or Antigravity worktrees and are **not tracked in Git**. These references are now shown as plain paths rather than broken GitHub download links. Their presence in a report is not proof that the evidence bytes are available in this repository. Retrieve and verify original artifacts from the operator's local/archived evidence storage before relying on them in a release decision.
+
 **Reference archive / active integration evidence (reviewed 2026-10-14).** These files preserve original acceptance results, blocked reviews and proposed contracts. They are **not** blanket permissions to enable categories, trigger emails, or release to Production.
 
 Use [CURRENT_STATE](../../CURRENT_STATE.md) and [ROADMAP](../../ROADMAP.md) for current priorities, and confirm implementation status in the actual GitHub branch and live environment.
