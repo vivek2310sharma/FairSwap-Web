@@ -48,11 +48,11 @@ enable_signup = true
 enable_confirmations = true
 double_confirm_changes = true
 otp_length = 6
-otp_expiry = 3600
+otp_expiry = 600
 max_frequency = "1m"
 
 [auth.email.template.confirmation]
-subject = "Confirm your FairSwap Account"
+subject = "Confirm your FairSwap email address"
 content_path = "./supabase/templates/confirm_email.html"
 
 [auth.email.template.recovery]
@@ -60,7 +60,7 @@ subject = "Reset your FairSwap Password"
 content_path = "./supabase/templates/recovery_email.html"
 
 [auth.email.template.magic_link]
-subject = "Your FairSwap Sign-in Code"
+subject = "Your FairSwap sign-in code"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.mfa.totp]
