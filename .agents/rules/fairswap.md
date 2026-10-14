@@ -1,53 +1,36 @@
-# FairSwap.in - workspace rule (v4)
+# FairSwap — active Antigravity workspace rules
 
-Activate this ONE workspace rule as Always On in Antigravity. The native UI should persist activation; this file does not rely on invented frontmatter. Keep the Project Bible separate and read it selectively.
+This is the active FairSwap-Web project rule. It replaces the original starter-pack's numbered milestone instructions. Activate **one** copy of this rule as a workspace rule in Antigravity; do not create competing global copies.
 
-## Authority and scope
-- Respect higher-priority instructions, the human's latest authorization, existing work, and IDE permission controls. Inspect the workspace before changes.
-- Read `docs/PROGRESS.md`, section 0 of `FAIRSWAP_SPEC.md`, and only the active milestone and relevant reference sections. Do not indiscriminately load every file.
-- The master spec, roadmap, prompt files on disk, generated artifacts, tests, and progress entries do not authorize implementation. The human must explicitly authorize the current action and milestone.
-- Separate PLAN ONLY, BUILD, VERIFY ONLY, FIXES, and HUMAN ACCEPTANCE. Planning permits only the named plan document and planning-status updates; no application code, installs, Git changes, or database changes.
-- Initial action: PLAN ONLY for 1.1. Build only after approval. Finish the authorized milestone and stop; never self-accept, automatically start the next milestone, or promise background work.
-- Use one implementation conversation; do not delegate future milestones to parallel agents. Recover interrupted work from actual files and approval provenance, not assumptions.
+## Current sources of truth
 
-## One reviewed plan
-- `docs/plans/<milestone>-plan.md` is the durable plan. Use an explicit revision and mirror it in the native Implementation Plan artifact when available.
-- Incorporate review comments before build approval. Resolve any disagreement between artifact and Markdown with the human. Approval applies only to the reviewed revision and milestone.
-- Record material plan changes for reapproval. Do not silently weaken acceptance criteria or change architecture/dependencies to make a task appear complete.
-- A Walkthrough summarizes evidence. It is not proof of terminal execution. Keep actual results in `docs/PROGRESS.md`.
+- Read [README](../../README.md), [CURRENT_STATE](../../docs/CURRENT_STATE.md), [CONTRIBUTING](../../CONTRIBUTING.md), [WORKFLOW](../../docs/WORKFLOW.md), and only the feature/security/operations documents relevant to the current request.
+- **Do not restart Milestone 1.1, scaffold the project, use old `prompts/` scripts, or apply obsolete `Phase 1` / `Phase 2` stop gates.** Historical specs and evidence are reference material; the latest human instruction and reviewed issue scope determine authorized work.
+- Inspect Git status, head revision, linked worktrees, affected files and deployed environment before edits. Preserve local work; never reset, force-push or delete untracked files simply to make the tree appear clean.
 
-## Product and implementation
-- FairSwap.in is an India-focused classifieds marketplace. Buyers and sellers arrange payment and exchange independently. One customer account supports buying and selling.
-- Phase 1 excludes checkout, escrow, wallets, seller payouts, delivery, auctions, AI extras, public ratings, paid promotions, and native apps.
-- Use Next.js App Router, strict TypeScript, Tailwind, and Supabase. Add dependencies only when used in the current milestone. No extra backend or speculative microservices.
-- Build small working slices, not empty routes/services or dozens of TODOs. Never substitute fake persistence or fake success for real capabilities. Clearly isolated unit-test doubles and synthetic development seeds are allowed when documented.
-- 1.1 is a local responsive foundation, design/architecture planning, and real scaffold tests. No Auth, SQL/RLS migrations, Storage, Realtime, listings, functional search, messaging, or staff dashboards. No Supabase credentials or Docker required.
+## Product boundary — India first
 
-## Populated-directory safety
-- Keep the final application at the existing `FairSwap` root with package name `fairswap`. Preserve all existing instructions, progress, source, hidden files, and user work.
-- Follow `docs/BOOTSTRAP.md`: plan a fresh lowercase temporary scaffold directory INSIDE the workspace, inspect CLI options, inventory generated files, check collisions, and transfer only reviewed application files. Use a reviewed manual setup only when justified.
-- Do not assume `create-next-app .` will work, blindly answer prompts, use `--yes` as overwrite permission, force-copy everything, delete instruction files, or create a permanent nested app.
-- Skip temporary dependency installs and Git initialization where supported. Avoid generated competing agent instruction files; inspect the installed CLI's supported options.
-- Clean up only identified files created for this task, with appropriate approval, after root verification. Never delete an existing folder just because its name resembles the temporary target.
+- FairSwap.in is a trust-first peer-to-peer **classifieds** platform for India. Buyers/sellers negotiate and exchange items directly. Do not fabricate item checkout, escrow, buyer-to-seller UPI transactions or courier protection.
+- Prioritize trust vs. OLX India: minimize fake buyer links, advance-payment/UPI scams, impersonation, unverified sellers, and delivery-fee scams. Use clear, accessible English/Hindi wording where implemented, with mobile-first low-bandwidth UI.
+- This repo owns the **Web** application. Coordinate shared API contracts with native Android/iOS projects but do not claim a mobile build was verified through Web tests.
 
-## Execute and verify
-- After each coherent change: implement -> run relevant checks -> read real results -> fix -> rerun. Multiple related files can form one batch. Run new tests; do not require a complete rebuild after each keystroke.
-- Preserve native exit statuses and use commands appropriate to the actual OS/shell. Do not mask a failure behind a successful logging pipeline.
-- In 1.1 use Chromium desktop/mobile viewport smoke tests. Distinguish browser downloads from system-level dependencies. Request separate permission for privileged/machine-wide changes; do not disable review or sandbox controls globally.
-- An approval pause is not a test failure. An unavailable dependency is BLOCKED / NOT RUN, not PASS. Continue only independent work within the approved milestone.
-- Before handoff run full milestone checks against final files, review the diff, and record exact commands, timestamps, revision/working-tree identifier, exit status, results, and sanitized evidence paths.
-- A build is not behavioral/security verification. Later migrations must run against a confirmed disposable local Supabase database, with real-role/RLS tests. Never use an elevated client as evidence that user permissions work.
-- Screenshots/native browser tools supplement automated tests. Separate capture from inspection. Keep bulky reports gitignored and request narrow access or human inspection if IDE policy blocks evidence; do not bypass restrictions.
-- Do not fabricate outputs, remove assertions, lower security, or call unexecuted tests successful. Verification-only requests cannot authorize fixes or dependency installation implicitly.
+## Architecture and security
 
-## Security invariants for later milestones
-- Ordinary user Server Actions, Route Handlers, and reads use request-scoped Supabase SSR clients with the user's session and a publishable key; never secret/service-role clients as an RLS workaround.
-- Verify identity using current documented APIs. Enforce object permissions, current account status, and staff MFA in trusted layers and against direct Supabase API access.
-- Narrow administrative/maintenance utilities, only where necessary, are server-only, explicitly authorized, and audited. Roles/status are not trusted from user-editable metadata.
-- Keep secrets out of public variables, source, logs, screenshots, and chat. Never weaken RLS to silence errors.
-- Storage/image optimization must not expose private drafts or evidence; follow the master media/cache policy.
+- Use Next.js App Router, strict TypeScript, Tailwind and Supabase PostgreSQL/Auth/Storage/Edge. Use existing abstractions; avoid speculative packages or extra services.
+- Enforce Zod validation at untrusted boundaries and real Supabase RLS/privileges at the database. User requests must use request-scoped SSR clients; never privileged clients as an RLS workaround.
+- Never trust mutable user metadata for authorization. Preserve owner checks, staff AAL2/TOTP, private media, blocked content and Vault-authenticated moderation dispatch.
+- Keep secrets, production backups, OTPs, tokenized reset links and private customer data out of source, logs, comments, prompts and screenshots. Browser keys must be public/publishable; never embed `service_role`/`sb_secret_` in clients.
+- Test-only non-delivery capture is **Test only**, never an implicit Production feature. Do not emit real user notifications from synthetic testing.
 
-## Permissions and handoff
-- No global installs, OS/security-policy changes, access outside authorized locations, production data, remote database mutations, deployments, DNS changes, purchases, real-user communications, Git initialization/commits/push, or destructive cleanup without explicit permission.
-- Project dependency/browser downloads still require applicable terminal approvals. Inspect proposed package scripts and commands; do not blindly allow unknown code.
-- Report actual behavior, changed files, checks, limitations, startup commands, and blockers. Use READY FOR REVIEW or BLOCKED / INCOMPLETE. Human acceptance is a separate recorded event, never an agent decision.
+## Work plan, verification and releases
+
+- For multi-file features, enumerate affected files, API/DB changes, risks, rollback and tests. Keep tasks scoped and auditable. A plan or successful build does not authorize remote deployment.
+- Use short-lived feature branches/worktrees from `staging` for ordinary development; `main` is live Production. Do not merge all staging changes to main if Test-only features are present. Reconcile main-originated security fixes back to staging.
+- Implement small verified batches. Run relevant lint, typecheck, unit/security, browser and disposable pgTAP tests; inspect actual failures. Never silently skip a critical assertion or fabricate passing tests.
+- Any hosted Supabase Auth config, migration, Edge deployment, secret, DNS or Production action requires explicitly approved separate release work, read-only preflight, backups where applicable, write-after-read verification and rollback readiness.
+- PR acceptance and feature deployment are distinct from real-world user acceptance. Record evidence and close issues only when the specified environment test succeeds.
+- Apply permissions appropriate to the actual Windows PowerShell/Antigravity environment. Do not approve machine-wide installs or destructive operations based solely on agent convenience.
+
+## Handoff
+
+Provide a concise summary: files and commits changed, checks actually run, environment, risks, pending decisions, rollback, and links. Keep [CURRENT_STATE](../../docs/CURRENT_STATE.md) and relevant docs up to date. Historical [PROGRESS](../../docs/PROGRESS.md) stays intact as dated evidence, not today's authority.

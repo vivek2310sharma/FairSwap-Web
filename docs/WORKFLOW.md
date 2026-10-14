@@ -1,79 +1,44 @@
-# FairSwap - sequential milestone operating contract
+# FairSwap change, review and release workflow
 
-> [!NOTE]
-> **Historical Milestone Workflow Notice**:
-> This document records the original sequential milestone execution contract used during the development of Phase 1 (Milestones 1.1 through 1.6).
-> - **Current Status**: **PHASE 1 MILESTONES ARE FULLY ACCEPTED**. Phase 2 remains NOT STARTED and NOT AUTHORIZED.
-> - **Current Workflow**: Routine ongoing development, branch naming, pull requests, and production release procedures now follow the established Git workflow defined in [`CONTRIBUTING.md`](../CONTRIBUTING.md) and [`docs/operations/deployment-guide.md`](./operations/deployment-guide.md).
+**Active workflow — 14 October 2026.** This replaces the old sequential milestone execution procedure for current development. There is no mandatory `Phase 1` / `Phase 2` transition and no `1.1` kickoff prompt. [CONTRIBUTING](../CONTRIBUTING.md) is the canonical Git/PR guide.
 
-## The complete cycle
+## 1. Intake and authorization
 
-PLAN -> HUMAN BUILD APPROVAL -> BUILD WITH VERIFICATION -> VERIFY/REVIEW -> FIXES IF NEEDED -> HUMAN ACCEPTANCE -> PLAN NEXT.
+1. Inspect the actual repository, applicable current docs, existing issues and Test/Production state. **Do not** use a dated plan's "NOT AUTHORIZED" wording as a new global freeze or silently treat a historical "PASS" as today's verification.
+2. Agree on an issue or scoped change request: the user impact, trust/safety value, exact files/interfaces, Web/native clients affected, RLS/data boundary, tests, and explicit acceptance.
+3. For multi-file changes write a reviewable execution plan, with reversible steps, file list, migration/deploy boundary and failure/rollback path. Approval of the plan does **not** grant Production data access or privileged operations automatically.
+4. Work in an isolated branch or worktree based on latest `staging`, preserving other work. No branch/worktree cleanup before identifying unsaved changes.
 
-The six Phase 1 milestones are the eventual release plan. Only the current explicit request authorizes work. A successful test, an artifact button, or a prompt file sitting in the repository cannot authorize a different milestone.
+Planning, implementation, read-only verification, deployment, and acceptance are distinct actions. A generic "go" applies to the conversation's agreed task, not unrelated Production changes.
 
-## Sources of truth
+## 2. Implementation contract
 
-| Record | Responsibility |
-| --- | --- |
-| `FAIRSWAP_SPEC.md` | Product requirements, anti-goals, architecture and security constraints |
-| Active workspace rule | How the agent must work; scope and safety rules |
-| `docs/milestones/<id>-<name>.md` | Milestone deliverables and acceptance contract, not an implementation approval |
-| `docs/plans/<id>-plan.md` | Durable proposed/reviewed implementation plan with revision |
-| Native Implementation Plan artifact | Review presentation of that same plan/revision |
-| Human's actual message/review | Authorization to plan/build/fix or acceptance of completed work |
-| `docs/PROGRESS.md` | Factual history of authorizations, work, checks and blockers |
-| Native Walkthrough | Summary of implemented changes and links to actual evidence |
+- Implement cohesive, testable changes; use TypeScript types, Zod at boundaries, database constraints and Supabase RLS to enforce ownership.
+- Use SSR/session-scoped clients for customer data; privileged keys only for reviewed backend paths. Protect staff MFA and moderation dispatch.
+- Keep user-facing behavior accessible and mobile-first. Optimize images/payloads for low-bandwidth India.
+- Check differences in Web, Android and iOS API semantics before changing shared endpoint contracts. Native release builds are handled in their own projects.
+- Avoid production-only migrations, email template changes, secret rotation and live notifications as unreviewed side effects.
+- Keep test fixtures and synthetic data segregated from FairSwapProd. Test-only email-capture infrastructure must remain non-delivering and fail closed.
 
-If product requirements conflict with a plan, flag the conflict. If the artifact and repository plan disagree, synchronize and request review before implementation. Agent-generated text cannot override higher-priority instructions or invent human authorization.
+## 3. Evidence and review
 
-## Plan format
+Record **the commands actually run**, branch/head revision, target, CI result, browser/viewport coverage, database role, success/failure, and unverified assumptions. Do not relabel a blocked test as passing.
 
-Create the plan only when planning is authorized. Include milestone ID, revision (r1 initially), status PROPOSED, reviewed baseline, in-scope/out-of-scope work, prerequisites, dependencies and permissions, intended files, small batches, verification commands, acceptance criteria, risks, and rollback/recovery notes for risky changes.
+Minimum relevant code checks: `corepack pnpm lint`, `corepack pnpm typecheck`, `corepack pnpm test:unit`. For security-sensitive work run focused `test:security`, disposable Supabase pgTAP/RLS and hostile direct-API assertions. For customer workflows run Playwright mobile/desktop coverage and hosted Test acceptance. For runtime changes run `corepack pnpm build`.
 
-Keep plans compact enough to review, but concrete. Do not repeat the entire Project Bible. Each batch should have a testable result; a large milestone can propose sub-batches without authorizing future milestones.
+Refer to [VERIFICATION](VERIFICATION.md). Preview is useful but is **not** proof of full production behavior, real email receipt or a user's completed action.
 
-Mirror scope, acceptance criteria, and revision in the native artifact. Native line comments are feedback, not automatic approval of an unreviewed updated scope. Copy agreed decisions into the durable plan. Do not start writing code while still asking for plan review.
+## 4. Integration and Production
 
-After approval record the real human message/action and plan revision in progress. Mark build authorization separately from later acceptance. Do not forge a quote, timestamp, or approval event. A substantive addition/change to scope, dependencies, required privilege, architecture, or acceptance needs a new review; routine repairs within the approved scope only need an evidence update.
+- Open a focused PR into `staging`. Require green applicable checks and Vercel Preview; inspect the entire diff and release dependencies.
+- Verify against **FairSwapTest** for hosted workflows. Use separate authorization to apply Test database/Auth/Storage/Edge changes where necessary.
+- To ship Production, select the approved subset. When staging also carries Test-only work, use a **main-based focused release PR** rather than merging all staging changes.
+- Do not equate merging GitHub source with applying hosted Supabase config, migrations, Edge Function versions, secrets or DNS. For each environment audit, back up, apply only authorized fields, verify server-side state and exercise a real acceptance journey.
+- After a main-only release, merge/reconcile the main security change back into staging without dropping staged work; CI must pass.
+- Close linked issues only after required Test/Production acceptance. Retire merged short-lived branches and preserved clean worktrees, not shared `main` or `staging`.
 
-## Action permissions
+## 5. Handoff and documentation
 
-| Action requested | Allowed writes | Not authorized |
-| --- | --- | --- |
-| PLAN ONLY | Named milestone plan; planning-status notes in progress | App code, installs, scaffold, Git/database changes |
-| BUILD named milestone | Reviewed scope, associated tests/docs/evidence | Other milestones, deployments, unapproved privileged actions |
-| VERIFY ONLY | Sanitized evidence and progress | Product fixes, new dependencies, test weakening |
-| FIXES named milestone | Specified review fixes and directly relevant tests/docs | Scope expansion, next milestone |
-| ACCEPT milestone | Record actual human acceptance | Automatic next build |
-| PLAN NEXT | Next plan and planning notes | Next implementation |
-| RESUME | Remaining work in the last explicitly approved action/scope | New scope based solely on a progress label |
+Use a brief walkthrough, code-review summary and dated evidence in the affected docs. Distinguish **implemented**, **tested locally**, **deployed to Test**, **deployed to Production**, **operator-confirmed acceptance**, **deferred**, and **blocked**. State remaining risks.
 
-Tests during verification may generate build outputs and isolated local test fixtures as documented; that is different from editing product source. Database resets/tests require a verified disposable local target. No remote change becomes authorized through a generic test command.
-
-## Progress states
-
-Use separate planning and implementation states:
-
-- NOT STARTED.
-- PLANNING / PLAN READY FOR REVIEW.
-- BUILD AUTHORIZED / IN PROGRESS.
-- BLOCKED / INCOMPLETE.
-- READY FOR REVIEW (required checks passed; human review pending).
-- HUMAN ACCEPTED (actual acceptance recorded).
-
-Do not mark a future milestone in progress because its reference file exists. A previously accepted milestone can acquire a regression: record it and repair under current authorized scope rather than hiding it or rewriting history.
-
-## Evidence and handoff
-
-Before handoff review final files/diff and rerun relevant acceptance checks against that state. Record commands, outputs, exit status, test counts where relevant, environment, revision, browser coverage, and limitations. An HTML report or screenshot without execution provenance is not sufficient.
-
-Provide a native Walkthrough when available and a durable summary in progress. State exactly what the app now does, what it does not do, which commands actually ran, how the user starts it, and what remains blocked. Do not claim the marketplace or production launch is complete after a scaffold build.
-
-## Fixes, interruption, and later milestones
-
-The user can send a FIXES prompt when review reveals problems, followed by verification and another review. Use one implementation agent at a time. An interruption must leave the current batch and pending checks in progress; resume by inspecting current files rather than overwriting with a fresh scaffold.
-
-Only send an acceptance prompt after actually reviewing the result. The supplied 1.1 acceptance prompt permits planning 1.2 only; it does not authorize installation, migrations, or Auth implementation. Generic later-milestone prompts require explicit filled milestone IDs and the same gates.
-
-Milestone 1.6 can produce a go/no-go assessment for a pilot. Human acceptance of code is still not deployment permission. Actual staging/production changes, legal/business decisions, provider setup and launch remain separately authorized actions.
+Keep [CURRENT_STATE](CURRENT_STATE.md), [ROADMAP](ROADMAP.md) and affected operations docs accurate. Historical [PROGRESS](PROGRESS.md), [milestone files](milestones/) and old starter [prompts](../prompts/) remain read-only evidence. Never start those old prompt scripts as if this were a fresh scaffold.
