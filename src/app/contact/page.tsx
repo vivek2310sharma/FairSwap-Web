@@ -1,6 +1,7 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
+import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { Mail, Clock, AlertTriangle, ShieldCheck, Scale } from "lucide-react";
 
 export const metadata = {
@@ -32,6 +33,25 @@ export default function ContactPage() {
         </div>
 
         <div className="mt-8 space-y-6">
+          {/* Public support must remain accessible without authentication. */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Mail className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              Public Help &amp; Email Support
+            </h2>
+            <p className="mt-2 text-sm text-muted leading-relaxed">
+              If you cannot sign up or sign in, visit the{" "}
+              <a href={HELP_CENTRE_URL} className="font-medium text-brand-link underline hover:text-brand-hover">
+                Help Centre
+              </a>{" "}
+              for public guidance. You can also email{" "}
+              <a href="mailto:contact@fairswap.in" className="font-medium text-brand-link underline hover:text-brand-hover">
+                contact@fairswap.in
+              </a>{" "}
+              without an account. Never send passwords, OTPs or payment details.
+            </p>
+          </div>
+
           {/* Formal Grievance Redressal Card */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">

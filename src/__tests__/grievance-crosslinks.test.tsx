@@ -3,7 +3,8 @@ import { describe, it, expect } from "vitest";
 import TermsPage from "@/app/terms/page";
 import PrivacyPage from "@/app/privacy/page";
 import SafetyPage from "@/app/safety/page";
-import HelpPage from "@/app/help/page";
+import GrievancePage from "@/app/grievance/page";
+import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import ContactPage from "@/app/contact/page";
 
 describe("Grievance Redressal cross-links on legal and help pages", () => {
@@ -31,13 +32,10 @@ describe("Grievance Redressal cross-links on legal and help pages", () => {
     expect(match).toHaveAttribute("href", "/grievance");
   });
 
-  it("Help page links to /grievance and grievance@fairswap.in", () => {
-    render(<HelpPage />);
-    const grievanceLinks = screen.getAllByRole("link", { name: "Grievance Redressal" });
-    const match = grievanceLinks.find((l) => l.getAttribute("href") === "/grievance");
-    expect(match).toBeDefined();
-    expect(match).toHaveAttribute("href", "/grievance");
-
+  it("Grievance page retains its statutory email and links to the public Help Centre", () => {
+    render(<GrievancePage />);
+    const helpLinks = screen.getAllByRole("link", { name: "Help Centre" });
+    expect(helpLinks.some((link) => link.getAttribute("href") === HELP_CENTRE_URL)).toBe(true);
     const emailLink = screen.getByRole("link", { name: "grievance@fairswap.in" });
     expect(emailLink).toHaveAttribute("href", "mailto:grievance@fairswap.in");
   });

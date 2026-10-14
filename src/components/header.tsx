@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Menu, X, Search, Heart, PlusCircle, User, MessageSquare, Bell, LifeBuoy } from "lucide-react";
 import { NotificationBell } from "@/components/communication/NotificationBell";
+import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 const navLinks = [
   { label: "How It Works", href: "#how-it-works" },
@@ -41,6 +42,12 @@ export function Header() {
               {link.label}
             </a>
           ))}
+          <a
+            href={HELP_CENTRE_URL}
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          >
+            Help Centre
+          </a>
           <Link
             href="/search"
             className="flex items-center gap-1.5 text-sm font-medium text-brand-link hover:underline"
@@ -159,13 +166,21 @@ export function Header() {
               <Bell className="h-4 w-4" aria-hidden="true" />
               Notifications
             </Link>
+            <a
+              href={HELP_CENTRE_URL}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+            >
+              <LifeBuoy className="h-4 w-4" aria-hidden="true" />
+              Help Centre
+            </a>
             <Link
               href="/account/support"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
             >
               <LifeBuoy className="h-4 w-4" aria-hidden="true" />
-              Help & Support
+              Support Tickets
             </Link>
             <Link
               href="/account"

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -57,9 +58,9 @@ export function Footer() {
             </h3>
             <ul className="mt-3 space-y-2 text-xs text-muted">
               <li>
-                <Link href="/help" className="hover:text-foreground">
-                  Help Center &amp; FAQ
-                </Link>
+                <a href={HELP_CENTRE_URL} className="hover:text-foreground">
+                  Help Centre
+                </a>
               </li>
               <li>
                 <Link href="/safety" className="hover:text-foreground">

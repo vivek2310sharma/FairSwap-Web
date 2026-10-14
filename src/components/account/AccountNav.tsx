@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -12,6 +13,7 @@ import {
   Shield,
   Lock,
   LifeBuoy,
+  BookOpen,
 } from "lucide-react";
 
 const accountNavItems = [
@@ -23,7 +25,7 @@ const accountNavItems = [
   { label: "Profile", href: "/account/profile", icon: UserCircle, exact: false },
   { label: "Security", href: "/account/security", icon: Shield, exact: false },
   { label: "Privacy", href: "/account/privacy", icon: Lock, exact: false },
-  { label: "Support", href: "/account/support", icon: LifeBuoy, exact: false },
+  { label: "Support Tickets", href: "/account/support", icon: LifeBuoy, exact: false },
 ] as const;
 
 function isActive(pathname: string, href: string, exact: boolean): boolean {
@@ -69,6 +71,15 @@ export function AccountNav() {
               </li>
             );
           })}
+          <li className="flex-shrink-0">
+            <a
+              href={HELP_CENTRE_URL}
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap text-muted hover:bg-surface hover:text-foreground"
+            >
+              <BookOpen className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+              Help Centre
+            </a>
+          </li>
         </ul>
       </div>
     </nav>
