@@ -6,7 +6,7 @@ import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
 
 export const metadata = {
   title: "Terms of Service — FairSwap",
-  description: "Terms of Service governing the use of the FairSwap local classifieds platform.",
+  description: "Terms governing FairSwap classifieds and optional paid listing promotion services in India.",
 };
 
 export default function TermsPage() {
@@ -37,7 +37,7 @@ export default function TermsPage() {
           </div>
           <span className="hidden sm:inline text-border">•</span>
           <div>
-            <span>Last Updated: {LEGAL_POLICY.lastUpdated}</span>
+            <span>Last Updated: 14 October 2026 (paid-services clarification)</span>
           </div>
           <span className="hidden sm:inline text-border">•</span>
           <div className="flex items-center gap-1">
@@ -58,7 +58,7 @@ export default function TermsPage() {
               The platform enables registered sellers to publish advertisements for items they wish to sell, exchange, or give away, and enables buyers to discover local advertisements and initiate communication.
             </p>
             <p className="mt-2">
-              FairSwap operates strictly as a classifieds listing, search, and communication directory. FairSwap is not a retail store, auctioneer, payment processor, escrow service, shipping agent, or logistics provider.
+              FairSwap operates a classifieds listing, discovery, and communication service. It is not the buyer or seller of user-listed items, a buyer-to-seller payment intermediary, an escrow provider, a shipping agent, or a logistics provider. Separately, when optional paid promotion features become available, FairSwap may sell its own digital advertising services to sellers.
             </p>
           </section>
 
@@ -111,13 +111,39 @@ export default function TermsPage() {
             <ul className="mt-2 list-disc pl-5 space-y-1">
               <li>Provides online discovery, search, and communication tools for peer-to-peer classified advertisements.</li>
               <li>Is not the buyer, seller, or owner of any goods or services advertised on the platform.</li>
-              <li>Does not process payments, collect purchase funds, provide escrow, settle transactions, or issue payouts.</li>
+              <li>Does not collect purchase payments for items listed by users, provide escrow, settle buyer-to-seller transactions, or issue seller payouts. Fees for optional FairSwap promotion services, when available, are separate from the price of any listed item.</li>
               <li>Does not pack, ship, deliver, warehouse, or insure any physical goods.</li>
               <li>Does not provide buyer protection guarantees, seller protection programmes, or item return handling.</li>
               <li>Is not a party to, broker of, or guarantor of any contract, agreement, or exchange arranged between buyers and sellers.</li>
             </ul>
             <p className="mt-2">
               All arrangements—including price negotiation, physical inspection, payment method, handover time, and location—are made directly and independently between buyers and sellers.
+            </p>
+          </section>
+
+
+          {/* 4A. Optional paid promotions are a separate merchant service. */}
+          <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <h2 className="text-lg font-semibold text-foreground">
+              4A. Optional Plus/Premium Listing Promotions &amp; Service Payments
+            </h2>
+            <p className="mt-3">
+              Standard classifieds participation is separate from any optional Plus or Premium listing promotion. When these upgrades are launched, a seller may choose a paid digital advertising service to increase the visibility of an eligible listing within FairSwap. A paid upgrade is not a purchase of the advertised item and is never mandatory for a standard listing unless an explicit, separately disclosed category rule applies.
+            </p>
+            <p className="mt-2">
+              Before any payment is requested, FairSwap will display the available package, specific promotional benefits, duration, price in Indian rupees, applicable taxes, and total payable amount. No recurring charge or automatic renewal applies unless explicitly offered and separately authorised. If checkout is not available, selecting or enquiring about a plan does not create a payment obligation.
+            </p>
+            <p className="mt-2">
+              Every listing remains subject to the same content and safety moderation, regardless of promotion tier. Any paid promotion becomes active only after the listing is approved, payment is independently confirmed by the payment provider, and the purchased benefit is enabled. An upgrade does not verify a seller, endorse an item, bypass moderation, guarantee search rank at all times, or guarantee enquiries, sales, or buyer safety.
+            </p>
+            <p className="mt-2">
+              When online checkout is enabled, payment for FairSwap&apos;s own promotional services may be collected by an authorised third-party payment gateway. FairSwap does not ask sellers to pay a personal UPI ID, respond to a payment request from another user, or pay an advance delivery or courier fee to activate an upgrade. For cancellations, failed or duplicate charges, rejected listings, and non-delivery of a purchased promotion, please read our{" "}
+              <Link href="/refund-policy" className="font-medium text-brand-link underline hover:text-brand-hover">
+                Refund &amp; Cancellation Policy
+              </Link>.
+            </p>
+            <p className="mt-2 text-xs">
+              These optional-payment provisions apply when a paid service is actually offered and accepted at checkout; they do not imply that payment collection is currently live.
             </p>
           </section>
 
@@ -243,7 +269,7 @@ export default function TermsPage() {
               11. Offline Transactions &amp; Personal Safety
             </h2>
             <p className="mt-3">
-              Because FairSwap does not handle payments or delivery, in-person meetings and transactions carry inherent risks. You agree to exercise care, diligence, and sound judgment:
+              Because FairSwap does not handle payments or delivery for items advertised by users, in-person meetings and transactions carry inherent risks. You agree to exercise care, diligence, and sound judgment:
             </p>
             <ul className="mt-2 list-disc pl-5 space-y-1">
               <li>Inspect physical items thoroughly in person before making any payment or completing an exchange.</li>
