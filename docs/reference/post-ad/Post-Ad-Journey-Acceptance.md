@@ -1,5 +1,9 @@
 # Post Ad combined journey acceptance
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Dated evidence/decision contract, **not current release authorization**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../CURRENT_STATE.md), [roadmap](../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 POST AD DRAFT JOURNEY ACCEPTED — remaining Test draft acceptance checks completed on 10 October 2026. Native confirmations are operator-confirmed; owner reads and catalogue hydration are automated browser observations. This is not readiness for public posting.
 
 Checked 10 October 2026 on existing branch `codex/post-ad-a0`. Application: http://127.0.0.1:4318/account/listings/new. Existing approved ordinary owner session only; FairSwapTest project `wpppxlnbzqynvhpeuavd`. The existing Test launcher and runtime gate were inspected; configured public/staging project aliases matched, gated forms rendered, and no credentials were printed. See [runtime targeting](../../../artifacts/evidence/post-ad-journey/runtime-target.json).

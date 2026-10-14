@@ -1,5 +1,9 @@
 # Issue #118 — FairSwapTest non-delivery containment
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Dated evidence/decision contract, **not current release authorization**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../CURRENT_STATE.md), [roadmap](../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 **Status:** CODE REVIEW ONLY; **NO HOSTED DEPLOYMENT, AUTH CREATION, TEST SUBMISSION OR VAULT CHANGE AUTHORIZED.**
 **Target:** FairSwapTest `wpppxlnbzqynvhpeuavd`. **Never deploy** this S1 capture function to FairSwapProd `kriuhwppxgxsyyrbjsau`.
 
