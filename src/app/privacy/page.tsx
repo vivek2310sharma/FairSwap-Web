@@ -37,7 +37,7 @@ export default function PrivacyPage() {
           </div>
           <span className="hidden sm:inline text-border">•</span>
           <div>
-            <span>Last Updated: {LEGAL_POLICY.lastUpdated}</span>
+            <span>Last Updated: 14 October 2026 (payment disclosure)</span>
           </div>
           <span className="hidden sm:inline text-border">•</span>
           <div className="flex items-center gap-1">
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
               3. Categories of Personal Data We Process
             </h2>
             <p className="mt-3">
-              We process personal data across the following verified platform categories:
+              We process personal data across the following platform categories. The payment-related category below applies only if a seller uses a paid promotion after checkout is enabled:
             </p>
             <div className="mt-4 space-y-4">
               <div className="border-l-2 border-brand-500 pl-4">
@@ -131,6 +131,12 @@ export default function PrivacyPage() {
                   For service security and operational integrity, our systems process technical metadata such as request correlation IDs, authentication security events, error diagnostic logs, and security audit entries. FairSwap applies centralized redaction and sanitisation controls to operational logs to reduce exposure of credentials, authentication tokens, secrets, and other sensitive values. We do not collect precise GPS tracking data or government identity documents.
                 </p>
               </div>
+              <div className="border-l-2 border-brand-500 pl-4">
+                <h3 className="text-sm font-semibold text-foreground">H. Optional Paid-Promotion &amp; Billing Information (when available)</h3>
+                <p className="mt-1 text-xs">
+                  If a seller purchases a Plus or Premium promotional service, FairSwap may process the selected package, amount, tax details, payment order and transaction references, payment confirmation status, billing contact details needed for a receipt, and refund/support records. An authorised payment gateway processes payment credentials and authorisation using its own secure systems; FairSwap does not require users to disclose card PINs, UPI PINs, OTPs, or full card credentials to FairSwap support. This paragraph describes a planned checkout data flow and does not imply that paid checkout is currently active.
+                </p>
+              </div>
             </div>
           </section>
 
@@ -151,6 +157,7 @@ export default function PrivacyPage() {
               <li>To respond to user support inquiries, appeals, and formal grievances.</li>
               <li>To fulfill voluntary platform privacy controls, including data export and account deletion workflows.</li>
               <li>To diagnose technical errors, optimize platform reliability, and ensure system resilience.</li>
+              <li>When optional paid promotions are enabled, to calculate charges, confirm payments, activate purchased visibility services, provide receipts, resolve charge disputes, and issue eligible refunds.</li>
               <li>To comply with valid legal obligations, statutory orders, or lawful authority requests under Indian law.</li>
             </ul>
           </section>
@@ -169,6 +176,9 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <strong className="text-foreground">Database, Auth &amp; Object Storage:</strong> Supabase Inc. provides managed PostgreSQL database hosting, GoTrue authentication services, and secure object storage for listing media.
+              </li>
+              <li>
+                <strong className="text-foreground">Payment Services (only when enabled):</strong> An authorised Indian payment gateway, such as PhonePe Payment Gateway if approved and integrated, may process checkout and share payment status and limited transaction information needed to fulfil or refund an optional promotional purchase. The payment provider&apos;s own privacy and security notices also apply to its processing.
               </li>
             </ul>
             <p className="mt-3">
@@ -209,6 +219,9 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <strong className="text-foreground">Account Deletion Workflow:</strong> When an account-deletion request is fulfilled, FairSwap removes or anonymises account information according to the platform deletion workflow, deletes the authentication identity and associated private media where applicable, and may retain limited historical, moderation, security, grievance, audit, or legally required records.
+              </li>
+              <li>
+                <strong className="text-foreground">Payment Records:</strong> If checkout is introduced, transaction, billing, refund, and tax-related records may be kept for the period necessary to administer purchases, handle disputes, prevent fraud, and meet applicable recordkeeping obligations, including where an account is later deleted.
               </li>
               <li>
                 <strong className="text-foreground">Legal &amp; Security Exceptions:</strong> Certain records—such as immutable security audit logs, moderation enforcement actions, record of consent, and dispute or grievance documentation—are retained where required for fraud prevention, system security, or compliance with applicable Indian law.
