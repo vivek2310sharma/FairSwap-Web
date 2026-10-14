@@ -6,11 +6,12 @@
  * reference evidence artifacts stored outside Git. See docs/README.md.
  */
 import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ACTIVE = [
+const ACTIVE_GATES = [
   "README.md",
   "CONTRIBUTING.md",
   "START_HERE.md",
@@ -27,24 +28,35 @@ const BANNED = [
   /\byour next step is the planning-only kickoff\b/i,
 ];
 const problems = [];
+// Audit every committed Markdown file, including source READMEs and dated archives.
+// Only the canonical active guides are checked for retired starter phase gates.
+const MARKDOWN_FILES = execFileSync("git", ["ls-files", "-z"], {
+  cwd: root,
+  encoding: "utf8",
+  maxBuffer: 5 * 1024 * 1024,
+}).split("\0").filter((name) => /\.mdx?$/i.test(name));
+if (!MARKDOWN_FILES.length) problems.push("no tracked Markdown documents found");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-for (const file of ACTIVE) {
+for (const file of MARKDOWN_FILES) {
   const source = path.join(root, file);
   if (!fs.existsSync(source)) {
     problems.push(file + ": missing active document");
     continue;
   }
   const content = read(file);
-  const chunks = content.split(/(`{3,})/); // fence delimiters
-  // Match Markdown link destinations outside fenced examples.
-  let fenced = false;
-  for (const chunk of chunks) {
-    if (/^`{3,}$/.test(chunk)) {
-      fenced = !fenced;
+  // Match destinations outside Markdown code fences; preserve dated local-only
+  // evidence *paths* (not clickable links) without inventing missing files.
+  let fenceCharacter = null;
+  for (const chunk of content.split("\n")) {
+    const marker = chunk.trimStart().match(/^(`{3,}|~{3,})/);
+    if (marker) {
+      const markerCharacter = marker[1][0];
+      if (fenceCharacter === null) fenceCharacter = markerCharacter;
+      else if (fenceCharacter === markerCharacter) fenceCharacter = null;
       continue;
     }
-    if (fenced) continue;
+    if (fenceCharacter !== null) continue;
     const pattern = /\[[^\]\n]+\]\((<[^>\n]+>|[^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
     for (const [, destination] of chunk.matchAll(pattern)) {
       let dest = destination.replace(/^<|>$/g, "");
@@ -65,8 +77,10 @@ for (const file of ACTIVE) {
       }
     }
   }
-  for (const rule of BANNED) {
-    if (rule.test(content)) problems.push(file + ": retired milestone gate still present (" + rule.source + ")");
+  if (ACTIVE_GATES.includes(file)) {
+    for (const rule of BANNED) {
+      if (rule.test(content)) problems.push(file + ": retired milestone gate still present (" + rule.source + ")");
+    }
   }
 }
 
@@ -75,5 +89,5 @@ if (problems.length) {
   process.stderr.write("Documentation validation failed: " + problems.length + " issue(s).\n");
   process.exitCode = 1;
 } else {
-  process.stdout.write("docs:check PASS — " + ACTIVE.length + " active documents have valid local links and no retired milestone gates.\n");
+  process.stdout.write("docs:check PASS — " + MARKDOWN_FILES.length + " tracked Markdown documents have valid local links; " + ACTIVE_GATES.length + " active guides have no retired milestone gates.\n");
 }

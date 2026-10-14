@@ -29,7 +29,7 @@ The staging/main code branches may differ intentionally. Changes on staging shou
 - **Buyer utility:** More accurate search, saved discovery, localized category fields, accessible low-data listing pages, clearer seller identity and safe meetup education.
 - **Seller utility:** Faster owner drafts/editing, reliable media uploads on mid/low-end phones, status explanations and safer buyer conversations.
 - **Localization and mobile:** Expand English/Hindi UX deliberately, then prioritized Indian languages. Keep Web API contracts aligned with separate Android and iOS codebases.
-- **Operational resilience:** Revisit backup/PITR, more than one trained production operator, alert coverage, privacy and grievance procedures using actual risk/owner decisions.
+- **Operational resilience:** Revisit backup/PITR, more than one trained production operator, alert coverage, privacy and grievance procedures using actual risk/owner decisions. **GitHub `main` and `staging` branch protection was not enforced at the 2026-10-14 audit**; set required PR/status checks and verify effective rulesets before relying on CI as an unbypassable release gate.
 - **Potential paid platform features:** Evaluate UPI for FairSwap **service fees** only with approved product/legal design. Do not infer item checkout, escrow, wallet or buyer-to-seller payments from this idea.
 
 Rank candidates using current issues and customer evidence, not an inherited `Phase 2` plan or an obsolete milestone checklist.
