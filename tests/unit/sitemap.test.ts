@@ -53,6 +53,13 @@ vi.mock("@/lib/supabase/service", () => ({
 }));
 
 describe("Point 9B-R7 — Sitemap Active-Listing Remediation Tests", () => {
+  it("does not index the legacy /help redirect as a duplicate FAQ", async () => {
+    const routes = await sitemap();
+    expect(routes.some((route) => new URL(route.url).pathname === "/help")).toBe(false);
+    expect(routes.some((route) => new URL(route.url).pathname === "/safety")).toBe(true);
+    expect(routes.some((route) => new URL(route.url).pathname === "/grievance")).toBe(true);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockCategoriesSelect.mockResolvedValue({

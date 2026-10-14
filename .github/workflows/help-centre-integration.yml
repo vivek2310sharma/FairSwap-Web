@@ -1,0 +1,54 @@
+name: Help Centre Integration Checks
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  help-centre-validation:
+    name: Lint, Typecheck, Regression, Build and Browser Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sbp_local_anon_key_for_testing
+      SUPABASE_SECRET_KEY: sb_secret_ci_placeholder_not_real
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Help Centre unit and compatibility regression tests
+        run: |
+          pnpm exec vitest run \
+            src/__tests__/header.test.tsx \
+            src/__tests__/footer.test.tsx \
+            src/__tests__/account-navigation.test.tsx \
+            src/__tests__/grievance-crosslinks.test.tsx \
+            src/__tests__/help-centre-redirect.test.ts \
+            src/__tests__/public-help-access.test.tsx \
+            tests/unit/sitemap.test.ts
+      - name: Production build with disposable placeholder configuration
+        run: pnpm build
+      - name: Install Chromium for desktop and mobile checks
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Public Help Centre browser regressions
+        run: pnpm exec playwright test e2e/help-centre.spec.ts
