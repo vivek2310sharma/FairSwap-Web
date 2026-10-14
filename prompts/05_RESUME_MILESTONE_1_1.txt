@@ -1,3 +1,8 @@
+[ARCHIVED FAIRSWAP STARTER PROMPT - DO NOT EXECUTE]
+Originally used in the September 2026 milestone-based starter flow. This prompt is retained only for historical traceability. FairSwap-Web is an operating application: use README.md, START_HERE.md, CONTRIBUTING.md and docs/WORKFLOW.md instead. No 'Phase 1'/'Phase 2' command or proposed milestone transition in this file grants current authorization.
+
+---
+
 Resume only the previously authorized Milestone 1.1 action. Do not start over, overwrite progress, or advance to 1.2.
 
 Read the active rule, docs/PROGRESS.md, actual 1.1 plan and milestone contract. Inspect current code/diff, unfinished temporary scaffolding and existing evidence. Identify the last explicit human authorization and reviewed plan revision. If it was PLAN ONLY, finish planning and stop; do not infer BUILD from files that happen to exist. If authorization is missing or ambiguous, request the specific clarification rather than inventing approval.

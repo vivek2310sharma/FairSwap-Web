@@ -1,3 +1,8 @@
+[ARCHIVED FAIRSWAP STARTER PROMPT - DO NOT EXECUTE]
+Originally used in the September 2026 milestone-based starter flow. This prompt is retained only for historical traceability. FairSwap-Web is an operating application: use README.md, START_HERE.md, CONTRIBUTING.md and docs/WORKFLOW.md instead. No 'Phase 1'/'Phase 2' command or proposed milestone transition in this file grants current authorization.
+
+---
+
 I have reviewed Milestone [COMPLETED_MILESTONE] and its evidence, and I accept that completed scope. Record this human acceptance with the actual reviewed plan revision.
 
 I authorize PLAN ONLY for Milestone [NEXT_MILESTONE]. Do not implement it yet. These IDs must be explicit valid adjacent milestones in docs/ROADMAP.md; if placeholders remain or they do not match current progress, stop and ask rather than choosing automatically.

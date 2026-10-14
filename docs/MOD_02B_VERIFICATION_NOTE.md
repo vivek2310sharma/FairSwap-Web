@@ -1,5 +1,9 @@
 # MOD-02B Verification & Implementation Note: Review-Generation Integrity, Remediations, and Bounded Acceptance
 
+> [!NOTE]
+> **Dated MOD-02B implementation evidence.** Counts of migrations, status labels and branch references below describe the original review context, not the current repository or live database totals. For current operations read [CURRENT_STATE](CURRENT_STATE.md) and inspect tracked migrations.
+
+
 ## 1. Summary of Implemented Source, Remediations, and Test Changes
 
 The branch contains **39 migration files** in total: 36 baseline migrations (1 through 36) and three MOD-02B forward migrations.

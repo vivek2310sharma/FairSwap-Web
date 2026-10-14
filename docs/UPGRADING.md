@@ -1,5 +1,8 @@
 # Safely upgrading the FairSwap starter to v4
 
+> [!IMPORTANT]
+> **Retired historical procedure (14 October 2026).** This was a one-time v3→v4 instruction-pack upgrade guide. It is **not** a dependency upgrade procedure for the current application; consult [START_HERE](../START_HERE.md), [CONTRIBUTING](../CONTRIBUTING.md), and the package lockfile.
+
 > [!NOTE]
 > **Historical Starter-Pack Upgrade Notice**:
 > This document records the original starter-pack upgrade procedure (from v3 to v4) used prior to Milestone 1.1 execution on **2026-09-13**.

@@ -1,8 +1,11 @@
-# FairSwap.in - implementation progress
+# FairSwap — historical implementation and approval ledger
+
+> [!IMPORTANT]
+> **Historical / append-only evidence, not current authorization.** The snapshot below contains the original milestone/phase approvals and statuses through the earlier project setup. Those statements, including any 'Phase 2 NOT AUTHORIZED' line, do **not** restrict present issue-based work. Current scope, active branches and release state are in [CURRENT_STATE](CURRENT_STATE.md), [CONTRIBUTING](../CONTRIBUTING.md) and [WORKFLOW](WORKFLOW.md). Preserve the dated record below rather than rewriting its past.
 
 Starter pack: v4.0 (2026-09-13).
 
-## Current authorization
+## Historical authorization snapshot (not current instructions)
 
 - Authorized milestone/action: **Controlled Production Pilot Baseline established and verified** (2026-09-18, tag `prod-pilot-baseline-2026-09-18` at commit `a81b0a5e3c77172e9f691462cac0cecb21a86723`); current authorized work is documentation alignment for the production/staging operating model.
 - Current plan revision: Milestone 1.6 (r4 APPROVED & VERIFIED) + Hosted Phase 1 Baseline + Controlled Production Pilot Baseline.

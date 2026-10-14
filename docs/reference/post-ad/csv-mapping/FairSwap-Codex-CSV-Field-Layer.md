@@ -1,5 +1,9 @@
 # BUILD: CSV-backed category/field contract and existing preview
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Original agent instruction draft, **not an active instruction to execute**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../../CURRENT_STATE.md), [roadmap](../../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 Work in FairSwap-Web on the current `codex/post-ad-a0` branch. Preserve all existing Goods, retention, session-recovery, migration, reference and preview work.
 
 This build converts the supplied CSVs into a reusable, source-traceable category/field layer and demonstrates it in the EXISTING preview. It is not another infrastructure or general planning task. Do not modify a database or activate new posting categories.

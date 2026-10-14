@@ -1,3 +1,8 @@
+[ARCHIVED FAIRSWAP STARTER PROMPT - DO NOT EXECUTE]
+Originally used in the September 2026 milestone-based starter flow. This prompt is retained only for historical traceability. FairSwap-Web is an operating application: use README.md, START_HERE.md, CONTRIBUTING.md and docs/WORKFLOW.md instead. No 'Phase 1'/'Phase 2' command or proposed milestone transition in this file grants current authorization.
+
+---
+
 Verify the current Milestone 1.1 implementation only. This is VERIFY ONLY, not permission for new features, source/test/configuration fixes, new dependencies, or Milestone 1.2.
 
 Read the active rule, actual reviewed 1.1 plan, milestone acceptance criteria, docs/VERIFICATION.md and current progress. Inspect current files and diff; do not trust a prior summary as proof.

@@ -1,5 +1,9 @@
 # Post Ad submission and Admin-review decision contract
 
+> [!NOTE]
+> **Historical Post Ad reference (recorded October 2026):** Dated evidence/decision contract, **not current release authorization**. Original branch names, internal step labels (including any 'Phase 1') and outcomes are preserved for audit context. Use [current state](../../CURRENT_STATE.md), [roadmap](../../ROADMAP.md) and a fresh issue-specific approval before editing source, migrating, testing against hosted Supabase or deploying.
+
+
 10 October 2026 · Web branch codex/post-ad-a0 · FairSwapTest wpppxlnbzqynvhpeuavd only. Definition for a future implementation; no submission/publication gate is enabled by this document. The [accepted draft journey](Post-Ad-Journey-Acceptance.md) is reused without re-audit. Scope: existing Goods/legacy, nine Motorcycle/Scooter paths, nine Cars paths, ten monthly rental/PG paths.
 
 **A = Already implemented/approved**, with source ID below. **R = Recommended decision**, not approved. **P = Requires product approval**. A draft validator or pure evaluator is not an enabled submission contract.

@@ -157,7 +157,7 @@ Pursuant to the **Directions under sub-section (6) of section 70B of the Informa
      WHERE state = 'idle in transaction'
        AND state_change < current_timestamp - INTERVAL '5 minutes';
      ```
-* **Fallback & Recovery**: FairSwap has **no automatic database failover** in Phase 1 / Public Beta. If the hosted primary is unrecoverable, follow `docs/operations/backup-restore-runbook.md` under human authorization.
+* **Fallback & Recovery**: FairSwap has **no verified automatic database failover** for its current controlled pilot. If the hosted primary is unrecoverable, follow `docs/operations/backup-restore-runbook.md` under human authorization.
 
 ---
 

@@ -1,4 +1,8 @@
-# FairSwap — Deployment Guide (Public Beta Readiness)
+# FairSwap — Web deployment, environments and rollback
+
+> [!NOTE]
+> **Active release topology (reviewed 2026-10-14):** `main` is Production and `staging` is Test/integration. Promote only reviewed changes; if staging includes Test-only code, use a focused `main`-based release. The old phase/milestone naming is not a deployment gate. This runbook documents operational controls, but does not authorize remote schema, Auth, Edge, DNS or secret changes. See [current state](../CURRENT_STATE.md) and [contributing](../../CONTRIBUTING.md).
+
 
 This guide documents the architecture, configuration, secrets management, database migration protocols, and deployment procedures for **FairSwap** (a peer-to-peer local classifieds platform) across local development, staging, and production environments.
 
@@ -17,7 +21,7 @@ FairSwap is a Next.js (App Router) classifieds platform powered by Supabase (Pos
   * **Shared Staging**: `staging` -> stable Vercel Preview `https://fair-swap-git-staging-fairswap.vercel.app` -> Supabase `FairSwapTest` (`wpppxlnbzqynvhpeuavd`). The stable staging domain is explicitly shareable with testers; other previews remain protected by default.
   * **Feature Development**: short-lived feature/fix branches start from current `staging`, use Vercel Preview and `FairSwapTest`, then merge accepted work back into `staging` for shared verification before production promotion.
   * **Production Hotfixes**: an explicitly authorized urgent production fix may branch from `main`, but the resulting `main` change must be reconciled back into `staging` promptly.
-  * Long-lived milestone/history branches such as `Phase1`/`Phase2` are not part of the active deployment model.
+  * Only `main` and `staging` are permanent branches. Retire merged short-lived branches after checking linked local worktrees.
 
 ---
 
