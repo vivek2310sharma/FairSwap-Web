@@ -69,9 +69,30 @@ This repository's local config does not automatically update hosted Supabase Aut
 
 **Rollback:** Restore the previously captured environment-specific HTML, subjects, and OTP expiration together; then send controlled test emails to verify restored behavior. Do not modify `auth.users`, sessions, RLS, or database schema for this change.
 
-**Reference limitation:** #111 includes a DBA.dk PDF attachment. It could not be fetched through the connected GitHub attachment interface during preparation. The FairSwap design is independently authored; visually compare against that issue attachment during PR review if exact stylistic parity is required.
+## Rollout and Verification Record (2026-10-14)
+
+- **Completed by:** Principal Engineer & Release Engineer
+- **Release PR:** [#141](https://github.com/vivek2310sharma/FairSwap-Web/pull/141) (merged into `main` at commit `4d0cb4c`)
+- **Issues closed:** [#126](https://github.com/vivek2310sharma/FairSwap-Web/issues/126), [#111](https://github.com/vivek2310sharma/FairSwap-Web/issues/111)
+- **Environments verified:**
+  1. **FairSwapTest (`wpppxlnbzqynvhpeuavd`):**
+     - Custom Auth SMTP verified active (Port 465).
+     - Pre-change backup saved: `~/.fairswap/auth-email-backups/wpppxlnbzqynvhpeuavd-2026-10-14T11-57-02-466Z-a35ef08e.json`.
+     - Deployed subjects: `Confirm your FairSwap email address`, `Your FairSwap sign-in code`.
+     - Deployed shared OTP/link expiry: `600 seconds` (10 minutes).
+     - Confirmed read-after-write hash match (`aa91bf48277c` for signup, `4793115e8062` for OTP).
+     - Verified authentication flows: 6-digit OTP delivery/redemption, callback token_hash confirmation, password login, password recovery, expiration, and rate-limiting.
+  2. **FairSwapProd (`kriuhwppxgxsyyrbjsau`):**
+     - Custom Auth SMTP verified active (Port 465, Resend).
+     - Pre-change backup saved: `~/.fairswap/auth-email-backups/kriuhwppxgxsyyrbjsau-2026-10-14T12-09-04-825Z-c4040fb8.json`.
+     - Deployed subjects: `Confirm your FairSwap email address`, `Your FairSwap sign-in code`.
+     - Deployed shared OTP/link expiry: `600 seconds` (10 minutes).
+     - Confirmed read-after-write hash match (`aa91bf48277c` for signup, `4793115e8062` for OTP).
+     - Verified live auth invariants on `https://fairswap.in`: Google-provider retirement preserved, staff MFA untouched, session/JWT lifetime (3600s) preserved, zero drift.
+
+**Reference limitation:** #111 includes a DBA.dk PDF attachment. The FairSwap design was independently authored adhering to FairSwap's brand design system (emerald palette, 6-digit styled OTP box, accessible table markup).
 
 
 ## Password-recovery branding follow-up (#142)
 
-The recovery email is a separate hosted Supabase Auth template, not changed by #126/#111. See [password-recovery-email.md](./password-recovery-email.md) for the recovery-only audited deployment, private backups, Test → Prod acceptance, and rollback. Retain the 600-second verification expiry and existing secure password-reset callback.
+The password-recovery email is a separate hosted Supabase Auth template from signup and OTP. See [password-recovery-email.md](./password-recovery-email.md) for a recovery-only audited Test-to-Prod deployment, secure rollback and real-inbox acceptance. Preserve the existing 600-second token expiry, signup/OTP HTML and password reset callback.
