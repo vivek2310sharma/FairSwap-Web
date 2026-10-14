@@ -6,6 +6,7 @@ import { signUpAction, type AuthActionResult } from "../actions";
 import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
 import { AuthCloseLink } from "@/components/auth/AuthCloseLink";
 import { PasswordInput } from "@/components/auth/PasswordInput";
+import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 export default function SignUpPage() {
   const [state, formAction, isPending] = useActionState<AuthActionResult | null, FormData>(
@@ -127,6 +128,12 @@ export default function SignUpPage() {
             {isPending ? "Creating account..." : "Sign Up"}
           </button>
         </form>
+        <p className="mt-6 border-t border-gray-100 pt-4 text-center text-sm text-gray-600">
+          Need help creating an account?{" "}
+          <a href={HELP_CENTRE_URL} className="font-semibold text-emerald-700 underline hover:text-emerald-800">
+            Visit the Help Centre
+          </a>
+        </p>
       </div>
     </main>
   );
