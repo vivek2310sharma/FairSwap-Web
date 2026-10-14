@@ -81,3 +81,29 @@ Close #142 only after both FairSwapTest and FairSwapProd pass a real recovery em
 Management API reference:
 https://supabase.com/docs/reference/api/v1-get-auth-service-config
 https://supabase.com/docs/reference/api/v1-update-auth-service-config
+
+## Completed release and acceptance record - 2026-10-14
+
+**Issue:** [#142](https://github.com/vivek2310sharma/FairSwap-Web/issues/142). **Release:** [PR #143](https://github.com/vivek2310sharma/FairSwap-Web/pull/143) to staging, then focused [PR #144](https://github.com/vivek2310sharma/FairSwap-Web/pull/144) to main at commit `1b01745dda7c0a7da3c833584a6b9408bf674735`. GitHub CI passed; Vercel production deployed successfully.
+
+**Scope:** Supabase Auth recovery HTML and recovery subject only. Other email templates, token expiry, SMTP, site URL, and JWT settings were not intentionally changed.
+
+| Verification (Antigravity authenticated Management API report) | FairSwapTest | FairSwapProd |
+| --- | --- | --- |
+| Project ref | `wpppxlnbzqynvhpeuavd` | `kriuhwppxgxsyyrbjsau` |
+| Hosted recovery HTML SHA256 prefix | `0dbcb028d5a6` | `0dbcb028d5a6` |
+| Subject | `Reset your FairSwap Password` | `Reset your FairSwap Password` |
+| Shared email verification expiry | 600 seconds | 600 seconds |
+| JWT expiry | 3600 seconds | 3600 seconds |
+| Configuration integrity | Read-after-write match; protected fields unchanged | Read-after-write match; protected fields unchanged |
+
+**Real-inbox acceptance (operator-confirmed):**
+
+- FairSwapTest: successful live password-recovery email and reset flow confirmed before production rollout.
+- FairSwapProd: successful live test confirmed on 2026-10-14, covering all five checks: receipt of redesigned branded email; correct subject and 10-minute wording; successful reset-link navigation; password change; sign-out and successful sign-in with new password.
+
+**Evidence boundary:** Live inbox/password tests are operator attestations, not tests independently performed by ChatGPT. Hosted configuration checks are from Antigravity's authenticated audit; no credentials, account identifiers, OTPs or active recovery URLs were saved here.
+
+**Recovery-only rollback backups** remain outside Git in protected `~/.fairswap/auth-email-backups/` on the operator's machine. FairSwapTest original: `wpppxlnbzqynvhpeuavd-recovery-2026-10-14T13-41-54-780Z-5acbcd58.json`. FairSwapProd original: `kriuhwppxgxsyyrbjsau-recovery-2026-10-14T13-41-55-681Z-25e63f83.json`; Production pre-write: `kriuhwppxgxsyyrbjsau-recovery-2026-10-14T14-07-12-179Z-25e63f83.json`. Backup contents must never be committed.
+
+**Result:** #142 acceptance criteria met in both environments. This record does not assert that unrelated signup or OTP flows were retested.
