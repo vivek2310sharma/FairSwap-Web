@@ -91,3 +91,8 @@ This repository's local config does not automatically update hosted Supabase Aut
      - Verified live auth invariants on `https://fairswap.in`: Google-provider retirement preserved, staff MFA untouched, session/JWT lifetime (3600s) preserved, zero drift.
 
 **Reference limitation:** #111 includes a DBA.dk PDF attachment. The FairSwap design was independently authored adhering to FairSwap's brand design system (emerald palette, 6-digit styled OTP box, accessible table markup).
+
+
+## Password-recovery branding follow-up (#142)
+
+The password-recovery email is a separate hosted Supabase Auth template from signup and OTP. See [password-recovery-email.md](./password-recovery-email.md) for a recovery-only audited Test-to-Prod deployment, secure rollback and real-inbox acceptance. Preserve the existing 600-second token expiry, signup/OTP HTML and password reset callback.

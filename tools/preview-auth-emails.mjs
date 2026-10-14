@@ -10,6 +10,7 @@ mkdirSync(outDir, { recursive: true });
 for (const [file, title] of [
   ["confirm_email.html", "Signup confirmation"],
   ["magic_link.html", "One-time sign-in code"],
+  ["recovery_email.html", "Password recovery"],
 ]) {
   const source = readFileSync(path.join(repoRoot, "supabase", "templates", file), "utf8");
   const preview = source

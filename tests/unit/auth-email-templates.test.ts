@@ -10,9 +10,10 @@ const parse = (html: string) => new DOMParser().parseFromString(html, "text/html
 
 const signupHtml = readTemplate("confirm_email.html");
 const otpHtml = readTemplate("magic_link.html");
+const recoveryHtml = readTemplate("recovery_email.html");
 const config = readFileSync(path.join(root, "supabase", "config.toml"), "utf8");
 
-describe("Supabase Auth email templates (#126, #111)", () => {
+describe("Supabase Auth email templates (#126, #111, #142)", () => {
   it("keeps signup email confirmation tied to the existing secure callback", () => {
     const doc = parse(signupHtml);
     const href = doc.getElementById("confirm-email-link")?.getAttribute("href");
@@ -22,6 +23,21 @@ describe("Supabase Auth email templates (#126, #111)", () => {
     );
     expect(signupHtml.match(/{{ \.TokenHash }}/g)).toHaveLength(1);
     expect(signupHtml).not.toContain("{{ .Token }}");
+  });
+
+  it("retains the existing secure password recovery callback contract", () => {
+    const doc = parse(recoveryHtml);
+    const href = doc.getElementById("recovery-email-link")?.getAttribute("href");
+
+    expect(href).toBe(
+      "{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password"
+    );
+    expect(recoveryHtml.match(/{{ \.TokenHash }}/g)).toHaveLength(1);
+    expect(recoveryHtml).not.toContain("{{ .Token }}");
+    expect(recoveryHtml).not.toContain("{{ .ConfirmationURL }}");
+    expect(doc.querySelectorAll("a")).toHaveLength(1);
+    expect(doc.getElementById("recovery-email-link")?.textContent).toContain("Reset password");
+    expect(recoveryHtml).toContain("Never share this reset link");
   });
 
   it("renders exactly one Supabase 6-digit OTP placeholder, not a magic login link", () => {
@@ -41,6 +57,7 @@ describe("Supabase Auth email templates (#126, #111)", () => {
   it.each([
     ["signup", signupHtml],
     ["one-time code", otpHtml],
+    ["password recovery", recoveryHtml],
   ])("keeps the %s message accessible and email-client friendly", (_name, html) => {
     const doc = parse(html);
     expect(doc.documentElement.lang).toBe("en");
@@ -60,8 +77,11 @@ describe("Supabase Auth email templates (#126, #111)", () => {
     expect(config).toMatch(/^jwt_expiry = 3600$/m);
     expect(config).toContain('content_path = "./supabase/templates/confirm_email.html"');
     expect(config).toContain('content_path = "./supabase/templates/magic_link.html"');
+    expect(config).toContain('content_path = "./supabase/templates/recovery_email.html"');
+    expect(config).toContain('subject = "Reset your FairSwap Password"');
     expect(signupHtml).toContain("10 minutes");
     expect(otpHtml).toContain("10 minutes");
+    expect(recoveryHtml).toContain("10 minutes");
     expect(otpHtml).not.toContain("60 minutes");
   });
 });
