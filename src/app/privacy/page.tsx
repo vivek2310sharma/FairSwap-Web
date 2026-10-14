@@ -178,7 +178,7 @@ export default function PrivacyPage() {
                 <strong className="text-foreground">Database, Auth &amp; Object Storage:</strong> Supabase Inc. provides managed PostgreSQL database hosting, GoTrue authentication services, and secure object storage for listing media.
               </li>
               <li>
-                <strong className="text-foreground">Payment Services (only when enabled):</strong> An authorised Indian payment gateway, such as PhonePe Payment Gateway if approved and integrated, may process checkout and share payment status and limited transaction information needed to fulfil or refund an optional promotional purchase. The payment provider's own privacy and security notices also apply to its processing.
+                <strong className="text-foreground">Payment Services (only when enabled):</strong> An authorised Indian payment gateway, such as PhonePe Payment Gateway if approved and integrated, may process checkout and share payment status and limited transaction information needed to fulfil or refund an optional promotional purchase. The payment provider&apos;s own privacy and security notices also apply to its processing.
               </li>
             </ul>
             <p className="mt-3">
