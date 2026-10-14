@@ -1,5 +1,9 @@
 # MOD-03A-R2: Submission-Triggered Automatic Moderation Architecture & Implementation
 
+> [!IMPORTANT]
+> **Security update (14 October 2026):** The deployed and checked-in moderation worker uses service-only Supabase Vault token verification; earlier designs or environment-secret assumptions in this report are historical. Refer to [CURRENT_STATE](CURRENT_STATE.md), the current `supabase/functions/process-listing-moderation/index.ts` and [Vault migration](../supabase/migrations/20261013235311_moderation_vault_dispatch_auth.sql) before making security changes.
+
+
 ## 1. System Overview & Product Policy
 FairSwap MOD-03A implements server-authoritative, submission-triggered automatic moderation for classified listings.
 The system executes a limited heuristic text evaluator (`prototype_v0.1.1`) upon seller submission.

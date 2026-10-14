@@ -1,5 +1,9 @@
 # FairSwap.in — Architecture and Foundation Design (Milestone 1.1)
 
+> [!NOTE]
+> **Historical architectural concept (2026-09-13).** Milestone numbers, planned routes and unreleased capabilities are preserved for provenance, not a live product inventory or current execution gate. Start with [CURRENT_STATE](CURRENT_STATE.md) and [ROADMAP](ROADMAP.md).
+
+
 Document version: 1.0 (2026-09-13)  
 Milestone status: 1.1 Foundation (Historical Architectural Design)
 
