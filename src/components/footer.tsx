@@ -120,13 +120,10 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Development notice and copyright */}
-        <div className="mt-8 border-t border-border/60 pt-6 flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
+        {/* Copyright */}
+        <div className="mt-8 border-t border-border/60 pt-6 text-center sm:text-left">
           <p className="text-xs text-muted">
             &copy; {currentYear} FairSwap.
-          </p>
-          <p className="text-xs text-muted">
-            Currently operating as a controlled production pilot.
           </p>
         </div>
       </div>
