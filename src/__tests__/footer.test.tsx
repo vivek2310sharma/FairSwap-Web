@@ -50,7 +50,7 @@ describe("Footer component", () => {
     expect(help[0]).toHaveAttribute("href", HELP_CENTRE_URL);
     expect(help[0]).not.toHaveAttribute("target", "_blank");
     expect(screen.getByRole("link", { name: "In-Person Safety Tips" })).toHaveAttribute("href", "/safety");
-    expect(screen.getByRole("link", { name: "Contact Guidance" })).toHaveAttribute("href", "/contact");
+    expect(screen.getByRole("link", { name: "Contact Us" })).toHaveAttribute("href", "https://help.fairswap.in/en/contact");
   });
 
   it("renders a link to the Grievance Redressal page", () => {
@@ -58,5 +58,10 @@ describe("Footer component", () => {
     const grievanceLink = screen.getByRole("link", { name: "Grievance Redressal" });
     expect(grievanceLink).toBeInTheDocument();
     expect(grievanceLink).toHaveAttribute("href", "/grievance");
+  });
+  it("exposes official customer support email and phone publicly", () => {
+    render(<Footer />);
+    expect(screen.getByRole("link", { name: "support@fairswap.in" })).toHaveAttribute("href", "mailto:support@fairswap.in");
+    expect(screen.getByRole("link", { name: "+91 8826599917" })).toHaveAttribute("href", "tel:+918826599917");
   });
 });

@@ -20,8 +20,8 @@ export default function ContactPage() {
             <span>Controlled Production Pilot Notice</span>
           </div>
           <p className="mt-1 text-xs">
-            FairSwap is currently operating as a controlled production pilot. FairSwap does not operate a telephone
-            call center or live phone helpline. Please use the appropriate digital channels below.
+            FairSwap is currently operating as a controlled production pilot. For platform support, use the
+            email address, phone contact, or support tickets below. FairSwap does not provide emergency assistance.
           </p>
         </div>
 
@@ -45,10 +45,29 @@ export default function ContactPage() {
                 Help Centre
               </a>{" "}
               for public guidance. You can also email{" "}
-              <a href="mailto:contact@fairswap.in" className="font-medium text-brand-link underline hover:text-brand-hover">
-                contact@fairswap.in
+              <a href="mailto:support@fairswap.in" className="font-medium text-brand-link underline hover:text-brand-hover">
+                support@fairswap.in
               </a>{" "}
               without an account. Never send passwords, OTPs or payment details.
+            </p>
+          </div>
+
+          {/* Public business support number: calls only; not emergency assistance. */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Mail className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              Phone Contact
+            </h2>
+            <p className="mt-2 text-sm text-muted leading-relaxed">
+              For FairSwap platform-related questions, you may call{" "}
+              <a href="tel:+918826599917" className="font-medium text-brand-link underline hover:text-brand-hover">
+                +91 8826599917
+              </a>.
+              You can also use the{" "}
+              <a href="https://help.fairswap.in/en/contact" className="font-medium text-brand-link underline hover:text-brand-hover">
+                Help Centre contact page
+              </a>{" "}
+              to find support options.
             </p>
           </div>
 

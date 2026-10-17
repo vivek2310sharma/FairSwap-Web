@@ -68,9 +68,19 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-foreground">
-                  Contact Guidance
-                </Link>
+                <a href="https://help.fairswap.in/en/contact" className="hover:text-foreground">
+                  Contact Us
+                </a>
+              </li>
+              <li>
+                <a href="mailto:support@fairswap.in" className="hover:text-foreground">
+                  support@fairswap.in
+                </a>
+              </li>
+              <li>
+                <a href="tel:+918826599917" className="hover:text-foreground">
+                  +91 8826599917
+                </a>
               </li>
             </ul>
           </div>
