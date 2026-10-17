@@ -19,8 +19,8 @@ export default function ContactPage() {
             <span>Controlled Production Pilot Notice</span>
           </div>
           <p className="mt-1 text-xs">
-            FairSwap is currently operating as a controlled production pilot. FairSwap does not operate a telephone
-            call center or live phone helpline. Please use the appropriate digital channels below.
+            FairSwap is currently operating as a controlled production pilot. For platform support, use the
+            email address, phone contact, or support tickets below. FairSwap does not provide emergency assistance.
           </p>
         </div>
 
@@ -32,6 +32,42 @@ export default function ContactPage() {
         </div>
 
         <div className="mt-8 space-y-6">
+          {/* Public merchant support contacts are accessible without an account. */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <Mail className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              Customer Support
+            </h2>
+            <p className="mt-2 text-sm text-muted leading-relaxed">
+              Contact FairSwap about accounts, advertisements, or platform-related questions:
+            </p>
+            <dl className="mt-3 space-y-3 text-sm">
+              <div>
+                <dt className="font-medium text-foreground">Support email</dt>
+                <dd>
+                  <a href="mailto:support@fairswap.in" className="text-brand-link underline hover:text-brand-hover">
+                    support@fairswap.in
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-foreground">Phone contact (calls)</dt>
+                <dd>
+                  <a href="tel:+918826599917" className="text-brand-link underline hover:text-brand-hover">
+                    +91 8826599917
+                  </a>
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-sm text-muted leading-relaxed">
+              See the{" "}
+              <a href="https://help.fairswap.in/en/contact" className="font-medium text-brand-link underline hover:text-brand-hover">
+                Help Centre contact page
+              </a>{" "}
+              for more ways to get help. Never share passwords, OTPs or payment PINs.
+            </p>
+          </div>
+
           {/* Formal Grievance Redressal Card */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">

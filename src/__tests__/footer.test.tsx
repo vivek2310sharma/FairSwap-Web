@@ -48,4 +48,12 @@ describe("Footer component", () => {
     expect(grievanceLink).toBeInTheDocument();
     expect(grievanceLink).toHaveAttribute("href", "/grievance");
   });
+
+  it("exposes PhonePe-verifiable support contacts and the canonical Help Centre contact link", () => {
+    render(<Footer />);
+    expect(screen.getByRole("link", { name: "Help Centre" })).toHaveAttribute("href", "https://help.fairswap.in/en");
+    expect(screen.getByRole("link", { name: "Contact Us" })).toHaveAttribute("href", "https://help.fairswap.in/en/contact");
+    expect(screen.getByRole("link", { name: "support@fairswap.in" })).toHaveAttribute("href", "mailto:support@fairswap.in");
+    expect(screen.getByRole("link", { name: "+91 8826599917" })).toHaveAttribute("href", "tel:+918826599917");
+  });
 });

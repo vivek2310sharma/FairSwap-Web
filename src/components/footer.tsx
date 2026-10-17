@@ -57,9 +57,9 @@ export function Footer() {
             </h3>
             <ul className="mt-3 space-y-2 text-xs text-muted">
               <li>
-                <Link href="/help" className="hover:text-foreground">
-                  Help Center &amp; FAQ
-                </Link>
+                <a href="https://help.fairswap.in/en" className="hover:text-foreground">
+                  Help Centre
+                </a>
               </li>
               <li>
                 <Link href="/safety" className="hover:text-foreground">
@@ -67,9 +67,19 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-foreground">
-                  Contact Guidance
-                </Link>
+                <a href="https://help.fairswap.in/en/contact" className="hover:text-foreground">
+                  Contact Us
+                </a>
+              </li>
+              <li>
+                <a href="mailto:support@fairswap.in" className="hover:text-foreground">
+                  support@fairswap.in
+                </a>
+              </li>
+              <li>
+                <a href="tel:+918826599917" className="hover:text-foreground">
+                  +91 8826599917
+                </a>
               </li>
             </ul>
           </div>
