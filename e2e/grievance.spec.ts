@@ -55,13 +55,13 @@ test.describe("FairSwap Grievance Redressal E2E Tests", () => {
     // 7. Safety guidance
     await expect(page.getByText("Safety and Urgent Concerns")).toBeVisible();
 
-    // 8. Footer link and controlled pilot notice
+    // 8. Footer grievance link without a pilot notice
     const footer = page.getByRole("contentinfo");
     await expect(footer).toBeVisible();
     const footerGrievanceLink = footer.getByRole("link", { name: "Grievance Redressal" });
     await expect(footerGrievanceLink).toBeVisible();
     await expect(footerGrievanceLink).toHaveAttribute("href", "/grievance");
-    await expect(footer).toContainText("Currently operating as a controlled production pilot.");
+    await expect(footer).not.toContainText("Currently operating as a controlled production pilot.");
 
     // 9. Zero console or page errors
     expect(consoleErrors).toEqual([]);
@@ -94,6 +94,7 @@ test.describe("FairSwap Grievance Redressal E2E Tests", () => {
     page,
   }) => {
     await page.goto("/contact");
+    await expect(page.getByText("Controlled Production Pilot Notice")).toHaveCount(0);
     await expect(page.getByText("Vivek Kumar")).toBeVisible();
     await expect(page.getByText("Grievance Officer — FairSwap")).toBeVisible();
 

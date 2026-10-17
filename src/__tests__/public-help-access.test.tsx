@@ -9,9 +9,9 @@ describe("Public assistance remains separate from account workflows", () => {
     render(<ContactPage />);
     const main = within(screen.getByRole("main"));
     expect(main.getByRole("link", { name: "Help Centre" })).toHaveAttribute("href", HELP_CENTRE_URL);
-    expect(main.getByRole("link", { name: "contact@fairswap.in" })).toHaveAttribute(
+    expect(main.getByRole("link", { name: "support@fairswap.in" })).toHaveAttribute(
       "href",
-      "mailto:contact@fairswap.in",
+      "mailto:support@fairswap.in",
     );
     expect(main.getByRole("link", { name: "Support Tickets" })).toHaveAttribute("href", "/account/support");
     expect(main.getByRole("link", { name: "Grievance Redressal Portal" })).toHaveAttribute("href", "/grievance");

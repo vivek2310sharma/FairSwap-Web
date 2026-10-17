@@ -2,7 +2,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
-import { Mail, Clock, AlertTriangle, ShieldCheck, Scale } from "lucide-react";
+import { Mail, Clock, ShieldCheck, Scale } from "lucide-react";
 
 export const metadata = {
   title: "Contact Guidance — FairSwap",
@@ -14,17 +14,6 @@ export default function ContactPage() {
     <>
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-200">
-          <div className="flex items-center gap-2 font-semibold">
-            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            <span>Controlled Production Pilot Notice</span>
-          </div>
-          <p className="mt-1 text-xs">
-            FairSwap is currently operating as a controlled production pilot. For platform support, use the
-            email address, phone contact, or support tickets below. FairSwap does not provide emergency assistance.
-          </p>
-        </div>
-
         <div className="flex items-center gap-3">
           <Mail className="h-7 w-7 text-brand-600" aria-hidden="true" />
           <h1 className="text-3xl font-bold tracking-tight text-foreground">

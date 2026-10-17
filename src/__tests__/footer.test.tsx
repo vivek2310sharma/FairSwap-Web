@@ -32,15 +32,13 @@ describe("Footer component", () => {
     );
   });
 
-  it("displays the copyright and controlled production pilot notice", () => {
+  it("displays the copyright without a pilot notice", () => {
     render(<Footer />);
     const currentYear = new Date().getFullYear();
     expect(
       screen.getByText(new RegExp(`© ${currentYear} FairSwap\\.`))
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Currently operating as a controlled production pilot.")
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/controlled production pilot/i)).not.toBeInTheDocument();
   });
 
   it("links once to the Help Centre in the same tab while keeping internal contact and safety pages", () => {
