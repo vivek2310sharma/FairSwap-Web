@@ -3,10 +3,10 @@ import {z} from 'zod';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {Database,Json} from '@/types/database';
 import {draftListingSchema} from '@/types/listing';
-import {isVerifiedPropertyTestEnvironment} from '../test-runtime';
+import {isVerifiedPropertyTestEnvironment,isVerifiedExperimentalProductionEnvironment} from '../test-runtime';
 import {loadSavedCategoryContext} from '../saved-category-context';
 import {propertyV1,propertyFinancialSchema,validatePropertyDraft} from './contract';
-export const isPropertyEnabled=()=>isVerifiedPropertyTestEnvironment(process.env);
+export const isPropertyEnabled=()=>isVerifiedPropertyTestEnvironment(process.env)||isVerifiedExperimentalProductionEnvironment(process.env,'property');
 export interface PropertyReference {id:string;name:string;is_active:boolean;new_listing_enabled:boolean;version_id:string;path:string[];fields:string[];basis:string|null;display_order:number}
 export interface PropertyReferences {categories:PropertyReference[];error?:string}
 export type PropertyContext=Database['public']['Tables']['listing_property_contexts']['Row'];
