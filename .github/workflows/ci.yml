@@ -52,6 +52,9 @@ jobs:
           pnpm vitest run tests/unit/auth-email-templates.test.ts tests/unit/sign-in-actions.test.ts tests/auth/callback.test.ts tests/unit/extract-otp.test.ts
           node --test tools/sync-supabase-auth-emails.test.mjs tools/sync-supabase-recovery-email.test.mjs
 
+      - name: Verify dormant Production family gates
+        run: pnpm vitest run tests/unit/production-category-gates.test.ts
+
       - name: Run Moderation Unit Tests
         run: |
           if compgen -G "src/__tests__/moderation-*.test.ts*" > /dev/null; then
