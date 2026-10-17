@@ -3,13 +3,19 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database";
 import { draftListingSchema } from "@/types/listing";
-import { isVerifiedTwoWheelerTestEnvironment, isVerifiedCarsTestEnvironment } from "../test-runtime";
+import { isVerifiedTwoWheelerTestEnvironment, isVerifiedCarsTestEnvironment, isVerifiedExperimentalProductionEnvironment } from "../test-runtime";
 import { carsV1, validateCarAnswers } from "../cars/contract";
 import { resolutionSchema, validateVehicleAnswers, twoWheelerV1, type ModelResolution } from "./contract";
 import { loadSavedCategoryContext } from '../saved-category-context';
 
-export function isTwoWheelerEnabled() { return isVerifiedTwoWheelerTestEnvironment(process.env); }
-export function isCarsEnabled() { return isVerifiedCarsTestEnvironment(process.env); }
+export function isTwoWheelerEnabled() {
+  return isVerifiedTwoWheelerTestEnvironment(process.env) ||
+    isVerifiedExperimentalProductionEnvironment(process.env, "two-wheelers");
+}
+export function isCarsEnabled() {
+  return isVerifiedCarsTestEnvironment(process.env) ||
+    isVerifiedExperimentalProductionEnvironment(process.env, "cars");
+}
 export type VehicleContext = Database["public"]["Tables"]["listing_vehicle_contexts"]["Row"];
 export interface VehicleReference {
   family?: "cars";
