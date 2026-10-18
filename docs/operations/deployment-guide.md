@@ -1,5 +1,7 @@
 # FairSwap — Web deployment, environments and rollback
 
+> **Point 1 legacy Supabase deployment FREEZE (owner-approved 18 October 2026):** Do not use the historical Web/Windows/Mac `supabase db push`, Edge deploy or hosted Auth `apply`/`rollback` instructions below. The two Web Auth Management API tools reject writes on both branches ([staging #169](https://github.com/vivek2310sharma/FairSwap-Web/pull/169), [main #170](https://github.com/vivek2310sharma/FairSwap-Web/pull/170)); read-only `audit` remains available. All four former personal CLI tokens were declared **unused**, but **revocation is not yet verified**, so direct CLI writes remain possible until revoked. Do not revoke normal Web runtime keys. Backend hosted release authority remains ungranted. See [Backend #15](https://github.com/vivek2310sharma/FairSwap-Backend/issues/15).
+
 > [!NOTE]
 > **Active release topology (reviewed 2026-10-14):** `main` is Production and `staging` is Test/integration. Promote only reviewed changes; if staging includes Test-only code, use a focused `main`-based release. The old phase/milestone naming is not a deployment gate. This runbook documents operational controls, but does not authorize remote schema, Auth, Edge, DNS or secret changes. See [current state](../CURRENT_STATE.md) and [contributing](../../CONTRIBUTING.md).
 
