@@ -12,7 +12,7 @@ export async function RecentListingsSection() {
     if (data?.items) {
       listings = data.items.slice(0, 8);
     }
-  } catch (error) {
+  } catch {
     // fail gracefully
   }
 
