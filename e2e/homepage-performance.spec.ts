@@ -13,13 +13,11 @@ test.describe("Homepage Performance & SSR Optimization", () => {
 
     await page.goto("/");
 
-    // Verify that at least one listing card is fully rendered from the server.
-    // Instead of relying on the heading (which could just be the skeleton), we verify a real element.
-    // Real listing cards are rendered with heading links. We will wait for at least one to be attached.
-    // Note: Due to test database variations, recent listings might be empty, so we must allow for that state too,
-    // or seed a listing explicitly. If the section is empty, "Recent Verified Listings" won't be rendered.
-
     // We expect the network fetch to /api/listings/recent NOT to be called.
+    // This strictly ensures we've removed the client-side fetch from the homepage loading process.
+    // Because we cannot guarantee a populated test database fixture with approved listings here,
+    // we only verify the absence of the client-side API call and the successful rendering
+    // of the rest of the homepage (e.g. the search bar).
     expect(recentListingsApiCalled).toBe(false);
 
     // Verify the hero search bar exists to confirm the page has successfully loaded

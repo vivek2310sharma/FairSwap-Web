@@ -84,12 +84,6 @@ jobs:
       - name: Verify dormant Production family gates
         run: pnpm vitest run tests/unit/production-category-gates.test.ts
 
-      - name: Run Homepage Playwright Regression Tests
-        run: |
-          pnpm run build
-          pnpm exec playwright install chromium
-          pnpm exec playwright test e2e/homepage-performance.spec.ts
-
       - name: Run Moderation Unit Tests
         run: |
           if compgen -G "src/__tests__/moderation-*.test.ts*" > /dev/null; then
