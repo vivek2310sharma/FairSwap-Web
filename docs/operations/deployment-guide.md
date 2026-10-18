@@ -1,5 +1,8 @@
 # FairSwap — Web deployment, environments and rollback
 
+> **Backend source handoff (18 October 2026):** Shared Supabase migrations and pgTAP source now live in [FairSwap-Backend](https://github.com/vivek2310sharma/FairSwap-Backend) and are loaded into Web CI from a pinned read-only checkout. Web continues to own Next.js APIs and Vercel delivery. **DO NOT** execute the older `supabase db push` or Edge deploy examples below from Web to Production: the current FairSwapProd ledger contains 52 approved versions, not Backend's raw 58 historic migration files, and manual backend release authority has not yet transferred. See [Backend source handoff](BACKEND_SOURCE_HANDOFF.md). This is a scoped source cleanup, not a new Supabase release.
+
+
 > [!NOTE]
 > **Active release topology (reviewed 2026-10-14):** `main` is Production and `staging` is Test/integration. Promote only reviewed changes; if staging includes Test-only code, use a focused `main`-based release. The old phase/milestone naming is not a deployment gate. This runbook documents operational controls, but does not authorize remote schema, Auth, Edge, DNS or secret changes. See [current state](../CURRENT_STATE.md) and [contributing](../../CONTRIBUTING.md).
 

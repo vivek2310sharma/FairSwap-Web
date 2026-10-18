@@ -56,3 +56,8 @@ next-env.d.ts
 # supabase cli local state
 /supabase/.temp/
 /supabase/.branches/
+
+# Backend-owned source is materialized only into disposable CI / local workspaces.
+/.fairswap-backend-ci-source/
+/supabase/migrations/*.sql
+/supabase/tests/*.sql
