@@ -20,6 +20,16 @@ const TEST_GIT_BLOBS = Object.freeze({
   'supabase/tests/schema_security.test.sql': 'b0816a46135daf42daf6d61656d80909be9092f9',
   'supabase/tests/seller_listing_category_context.test.sql': '90c3d7a7235c172136eeabaf3b87fb378fd2c524'
 });
+// Backend-owned code is temporarily mirrored in Web for local tests/Edge imports.
+// Fail CI if either side drifts from the independently reviewed pinned Git blobs.
+const MIRRORED_CODE_GIT_BLOBS = Object.freeze({
+  'supabase/functions/_shared/email-outbox-worker.ts': 'ee176f43f992d73d412aa9b9e3a1333b09561fcb',
+  'supabase/functions/_shared/listing-moderation-worker.ts': '764af1986305bc763d2a53c9909727528a4b2b4e',
+  'src/lib/moderation/checker.ts': 'dd8655bf58bc1d6ca0b47c48ee0104d81629eb2c',
+  'src/lib/moderation/contract.ts': 'e14984a5f4bdcc36c4e4ab42c309e46c2dc828ca',
+  'src/lib/moderation/rules.ts': 'aefb6cafca49a34321ee8f66bfca8f16ea8690c7',
+  'src/lib/moderation/target-guard.ts': '77f8e94aaf3d65643d3b0401088c743c5ec9683c'
+});
 const web = fileURLToPath(new URL('../../', import.meta.url));
 const stop = message => { throw Error('STOP - Backend snapshot rejected: ' + message); };
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
@@ -65,6 +75,13 @@ function main() {
   });
   if (tests.length !== 10 || JSON.stringify(sqlNames(source,'supabase/tests')) !== JSON.stringify(tests.map(x=>x.path.split('/').at(-1)).sort())) stop('source pgTAP inventory drift');
   if (!read(source,'supabase/config.toml').equals(read(web,'supabase/config.toml'))) stop('Web local config differs from Backend');
+  for (const [path, expected] of Object.entries(MIRRORED_CODE_GIT_BLOBS)) {
+    const backendBytes = read(source, path);
+    const webBytes = read(web, path);
+    if (blobSha(backendBytes) !== expected) stop('pinned Backend mirrored code drift: ' + path);
+    if (blobSha(webBytes) !== expected || !webBytes.equals(backendBytes)) stop('Web mirrored code drift: ' + path);
+  }
+
   const files = [...migrations,...tests], approved = new Set(files.map(x=>x.path));
   for (const folder of ['supabase/migrations','supabase/tests']) {
     for (const name of sqlNames(web,folder)) if (!approved.has(folder+'/'+name)) stop('unapproved Web SQL file '+folder+'/'+name);
