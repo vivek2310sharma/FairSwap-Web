@@ -24,6 +24,9 @@ Only the verified SQL and pgTAP files are materialized into local Web paths. The
 
 ## Merge / ownership gates
 
+**GitHub App setup reported complete by the repository owner (18 October 2026).** Web Actions variable and secret were configured through the GitHub UI; their values are not stored or inspected here. This is **not yet a successful private checkout**. A controlled CI run against the pinned commit must prove that the read-only installation token works before this draft can merge.
+
+
 1. Privately configure and independently verify the GitHub App's read-only cross-repo checkout and the exact pin.
 2. Run Web staging CI (typecheck, unit, local Post Ad / MOD, pgTAP, RLS, PG17) and the Vercel Preview. No skipped checks; verify the Web Goods listing submission remains intact.
 3. Prove all 68 duplicate SQL/test files are absent from Web Git yet available transiently for CI; the immutable Backend originals and 58-file manifest remain unchanged.
