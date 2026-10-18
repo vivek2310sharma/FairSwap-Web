@@ -1,5 +1,7 @@
 # FairSwap password-recovery email branding — issue #142
 
+> **Point 1 legacy Supabase deployment FREEZE (owner-approved 18 October 2026):** Do not use the historical Web/Windows/Mac `supabase db push`, Edge deploy or hosted Auth `apply`/`rollback` instructions below. The two Web Auth Management API tools reject writes on both branches ([staging #169](https://github.com/vivek2310sharma/FairSwap-Web/pull/169), [main #170](https://github.com/vivek2310sharma/FairSwap-Web/pull/170)); read-only `audit` remains available. All four former personal CLI tokens were declared **unused**, but **revocation is not yet verified**, so direct CLI writes remain possible until revoked. Do not revoke normal Web runtime keys. Backend hosted release authority remains ungranted. See [Backend #15](https://github.com/vivek2310sharma/FairSwap-Backend/issues/15).
+
 > [!IMPORTANT]
 > **COMPLETED:** Issue #142 passed Test and Production acceptance on 2026-10-14. The audit/apply/rollback commands below are for **future separately authorized changes and incidents**, not an outstanding rollout. See the signed-off acceptance record at the end of this document.
 
