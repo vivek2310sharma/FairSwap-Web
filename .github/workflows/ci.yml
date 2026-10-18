@@ -86,6 +86,7 @@ jobs:
 
       - name: Run Homepage Playwright Regression Tests
         run: |
+          pnpm run build
           pnpm exec playwright install chromium
           pnpm exec playwright test e2e/homepage-performance.spec.ts
 
