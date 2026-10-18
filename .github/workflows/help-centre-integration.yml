@@ -52,3 +52,5 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: Public Help Centre browser regressions
         run: pnpm exec playwright test e2e/help-centre.spec.ts
+      - name: Run Homepage Playwright Regression Tests
+        run: pnpm exec playwright test e2e/homepage-performance.spec.ts
