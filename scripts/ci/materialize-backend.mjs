@@ -23,6 +23,13 @@ const TEST_GIT_BLOBS = Object.freeze({
 // Backend-owned code is temporarily mirrored in Web for local tests/Edge imports.
 // Fail CI if either side drifts from the independently reviewed pinned Git blobs.
 const MIRRORED_CODE_GIT_BLOBS = Object.freeze({
+  'supabase/functions/process-email-outbox/index.ts': '624de9c5fa7217d9f775dc57d1f3b984860b95b5',
+  'supabase/functions/process-listing-moderation/index.ts': '0a47295de371abd1a7ddee3621d91265da5de684',
+  'supabase/functions/process-email-outbox/deno.json': '3315f15a8206229e7b93de14dca0f6aef6ccfc9c',
+  'supabase/functions/process-listing-moderation/deno.json': '02ee4fe44c8a381ace70a5578a752f213f4c55df',
+  'supabase/templates/confirm_email.html': '38dd9b867ba412714d99631aabddeff998aea351',
+  'supabase/templates/recovery_email.html': '31669f5f8aec0c8b6ca197d8e379f73c5f32016b',
+  'supabase/templates/magic_link.html': 'e1eb956b616c17ad9e37e872007025f1b8cd8b61',
   'supabase/functions/_shared/email-outbox-worker.ts': 'ee176f43f992d73d412aa9b9e3a1333b09561fcb',
   'supabase/functions/_shared/listing-moderation-worker.ts': '764af1986305bc763d2a53c9909727528a4b2b4e',
   'src/lib/moderation/checker.ts': 'dd8655bf58bc1d6ca0b47c48ee0104d81629eb2c',
