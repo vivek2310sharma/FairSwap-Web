@@ -1,5 +1,7 @@
 # FairSwap — Web deployment, environments and rollback
 
+> **Point 1 legacy Supabase deployment FREEZE (owner-approved 18 October 2026):** Do not use the historical Web/Windows/Mac `supabase db push`, Edge deploy or hosted Auth `apply`/`rollback` instructions below. The two Web Auth Management API tools reject writes on both branches ([staging #169](https://github.com/vivek2310sharma/FairSwap-Web/pull/169), [main #170](https://github.com/vivek2310sharma/FairSwap-Web/pull/170)); read-only `audit` remains available. All four former personal CLI tokens were declared **unused**, but **revocation is not yet verified**, so direct CLI writes remain possible until revoked. Do not revoke normal Web runtime keys. Backend hosted release authority remains ungranted. See [Backend #15](https://github.com/vivek2310sharma/FairSwap-Backend/issues/15).
+
 > **Backend source handoff (18 October 2026):** Shared Supabase migrations and pgTAP source now live in [FairSwap-Backend](https://github.com/vivek2310sharma/FairSwap-Backend) and are loaded into Web CI from a pinned read-only checkout. Web continues to own Next.js APIs and Vercel delivery. **DO NOT** execute the older `supabase db push` or Edge deploy examples below from Web to Production: the current FairSwapProd ledger contains 52 approved versions, not Backend's raw 58 historic migration files, and manual backend release authority has not yet transferred. See [Backend source handoff](BACKEND_SOURCE_HANDOFF.md). This is a scoped source cleanup, not a new Supabase release.
 
 

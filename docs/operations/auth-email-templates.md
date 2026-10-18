@@ -1,5 +1,7 @@
 # Authentication email templates: issues #126 and #111
 
+> **Point 1 legacy Supabase deployment FREEZE (owner-approved 18 October 2026):** Do not use the historical Web/Windows/Mac `supabase db push`, Edge deploy or hosted Auth `apply`/`rollback` instructions below. The two Web Auth Management API tools reject writes on both branches ([staging #169](https://github.com/vivek2310sharma/FairSwap-Web/pull/169), [main #170](https://github.com/vivek2310sharma/FairSwap-Web/pull/170)); read-only `audit` remains available. All four former personal CLI tokens were declared **unused**, but **revocation is not yet verified**, so direct CLI writes remain possible until revoked. Do not revoke normal Web runtime keys. Backend hosted release authority remains ungranted. See [Backend #15](https://github.com/vivek2310sharma/FairSwap-Backend/issues/15).
+
 > [!NOTE]
 > **Current release status (2026-10-14):** signup confirmation (#126), sign-in OTP (#111) and recovery (#142) are branded and have separate hosted Test/Production acceptance evidence. This file records #126/#111 implementation and deployment; see [password recovery](password-recovery-email.md) for its own completed rollout. Do not execute the historical update commands as if a release is still pending.
 
