@@ -9,6 +9,15 @@ vi.mock("@/lib/discovery/queries", () => ({
   searchPublicListings: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+  })),
+}));
+
 // We use vitest's support for rendering async server components when returning their await result
 const renderServerComponent = async (Component: () => Promise<React.ReactElement | null>) => {
   const jsx = await Component();
