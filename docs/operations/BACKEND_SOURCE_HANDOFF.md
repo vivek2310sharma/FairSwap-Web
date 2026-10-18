@@ -1,6 +1,8 @@
 # Private Backend source for Web CI (Stage 1: 68 duplicate SQL files)
 
-This change is **draft-only and cannot merge until acceptance checks pass**. It prepares removal of 58 duplicated migration SQL files and 10 duplicated pgTAP files from FairSwap-Web. It does **not** remove runtime imports, Web application/server actions, Auth, media routes, the staging-only S1 capture worker, or manual recovery tools.
+> **Current status (18 October 2026):** The 68 duplicate SQL files have been removed from Web `staging` and `main` under merged PRs #159 and #160. Read-only private Backend checkout and CI validation passed; see [Backend cutover checkpoint](https://github.com/vivek2310sharma/FairSwap-Backend/blob/main/docs/operations/BACKEND_ONLY_RELEASE_CUTOVER.md). This guide preserves the earlier draft acceptance requirements as historical evidence. **Hosted deployment authority has not transferred**; no new remote deploy is authorized.
+
+The original draft prepared removal of 58 duplicated migration SQL files and 10 duplicated pgTAP files from FairSwap-Web. It does **not** remove runtime imports, Web application/server actions, Auth, media routes, the staging-only S1 capture worker, or manual recovery tools.
 
 ## Trusted cross-repository source
 
