@@ -143,6 +143,11 @@ export async function run(args = process.argv.slice(2), token = process.env.SUPA
   if (!ref || !["audit", "apply", "rollback"].includes(command)) {
     throw new Error("Usage: audit|apply|rollback --env test|prod [--confirm APPLY-TEST|APPLY-PROD|ROLLBACK-TEST|ROLLBACK-PROD] [--backup /absolute/path] [--test-mails-verified]");
   }
+  // Point 1 owner-approved retirement: never PATCH hosted Supabase Auth from Web.
+  // This guard precedes token reads and Management API requests; --confirm cannot override it.
+  if (command !== "audit") {
+    throw new Error("FROZEN: legacy Web Supabase Auth apply/rollback is disabled. Use the separately approved Backend-only release process after access cutover.");
+  }
   if (!token) throw new Error("Set SUPABASE_ACCESS_TOKEN securely (Supabase Management API PAT required)");
   const hostedSettings = await authConfig(ref, token);
   const smtpConfigured = typeof hostedSettings.smtp_host === "string" && hostedSettings.smtp_host.trim().length > 0;
