@@ -73,6 +73,9 @@ jobs:
       - name: Run Typecheck
         run: pnpm run typecheck
 
+      - name: Run Homepage Performance Unit Tests
+        run: pnpm vitest run src/__tests__/recent-listings.test.tsx
+
       - name: Run Auth Email Template Contract Tests
         run: |
           pnpm vitest run tests/unit/auth-email-templates.test.ts tests/unit/sign-in-actions.test.ts tests/auth/callback.test.ts tests/unit/extract-otp.test.ts
@@ -80,6 +83,11 @@ jobs:
 
       - name: Verify dormant Production family gates
         run: pnpm vitest run tests/unit/production-category-gates.test.ts
+
+      - name: Run Homepage Playwright Regression Tests
+        run: |
+          pnpm exec playwright install chromium
+          pnpm exec playwright test e2e/homepage-performance.spec.ts
 
       - name: Run Moderation Unit Tests
         run: |
