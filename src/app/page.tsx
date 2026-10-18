@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
+import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
 import Link from "next/link";
 import {
   ShoppingBag,
@@ -69,7 +71,9 @@ export default function HomePage() {
         </section>
 
         {/* Recent Approved Listings */}
-        <RecentListingsSection />
+        <Suspense fallback={<RecentListingsSkeleton />}>
+          <RecentListingsSection />
+        </Suspense>
 
         {/* How it works */}
         <section id="how-it-works" className="border-y border-border bg-surface">
