@@ -28,7 +28,7 @@ export default function GrievancePage() {
       <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/60 dark:text-brand-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-action-600 dark:bg-brand-950/60 dark:text-brand-400">
             <Scale className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
@@ -119,7 +119,7 @@ export default function GrievancePage() {
               {categories.map((cat) => (
                 <div key={cat.title} className="rounded-lg border border-border/60 bg-surface/30 p-3.5">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <FileText className="h-4 w-4 text-brand-600 shrink-0" aria-hidden="true" />
+                    <FileText className="h-4 w-4 text-action-600 shrink-0" aria-hidden="true" />
                     <span>{cat.title}</span>
                   </h3>
                   <p className="mt-1 text-xs text-muted leading-relaxed">

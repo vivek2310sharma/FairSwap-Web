@@ -54,7 +54,7 @@ export function FavouriteButton({
       onClick={handleToggle}
       disabled={isPending}
       aria-label={isFavourited ? "Remove from favourites" : "Save to favourites"}
-      className={`inline-flex items-center gap-1.5 rounded-full p-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+      className={`inline-flex items-center gap-1.5 rounded-full p-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-action-500 focus:ring-offset-2 ${
         isFavourited
           ? "bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950 dark:text-rose-400"
           : "bg-surface/80 text-muted hover:bg-surface hover:text-foreground backdrop-blur-xs"

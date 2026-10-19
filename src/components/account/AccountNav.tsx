@@ -60,7 +60,7 @@ export function AccountNav() {
                     transition-colors whitespace-nowrap
                     ${
                       active
-                        ? "bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
+                        ? "bg-brand-50 text-brand-900 dark:bg-brand-900/30 dark:text-brand-300"
                         : "text-muted hover:bg-surface hover:text-foreground"
                     }
                   `}

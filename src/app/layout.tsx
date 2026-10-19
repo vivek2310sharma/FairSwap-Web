@@ -15,6 +15,21 @@ export const metadata: Metadata = {
   robots: isProductionSite
     ? { index: true, follow: true }
     : { index: false, follow: false },
+  icons: {
+    icon: [
+      { url: '/icon.png', sizes: '32x32', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }
+    ]
+  },
+  openGraph: {
+    images: [{ url: '/brand/og_image.png', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: ['/brand/og_image.png'],
+  }
 };
 
 export default function RootLayout({
