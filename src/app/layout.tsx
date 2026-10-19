@@ -24,11 +24,11 @@ export const metadata: Metadata = {
     ]
   },
   openGraph: {
-    images: [{ url: '/brand/FairSwap_Web_Logo_Transparent.png', width: 1200, height: 630 }],
+    images: [{ url: '/brand/og_image.png', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
-    images: ['/brand/FairSwap_Web_Logo_Transparent.png'],
+    images: ['/brand/og_image.png'],
   }
 };
 

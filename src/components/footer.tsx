@@ -12,16 +12,16 @@ export function Footer() {
           {/* Brand & Mission */}
           <div>
             <Link href="/" className="inline-block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
-              <Image
+              <div className="rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5"><Image
                 src="/brand/FairSwap_Web_Logo_Transparent.png"
                 alt="FairSwap.in"
                 width={120}
                 height={32}
                 className="h-8 w-auto object-contain"
                 priority
-              />
+              /></div>
             </Link>
-            <p className="mt-3 text-xs text-brand-900 font-medium italic">
+            <p className="mt-3 text-xs text-brand-900 dark:text-brand-300 font-medium italic">
               Give. Get. Grow Together.
             </p>
             <p className="mt-2 text-xs text-muted leading-relaxed">

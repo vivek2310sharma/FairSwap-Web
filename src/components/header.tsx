@@ -25,7 +25,7 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm" aria-label="FairSwap home">
-          <Image src="/brand/FairSwap_Web_Logo_Transparent.png" alt="FairSwap" width={140} height={36} className="h-7 sm:h-8 w-auto object-contain" priority />
+          <div className="rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5"><Image src="/brand/FairSwap_Web_Logo_Transparent.png" alt="FairSwap" width={140} height={36} className="h-7 sm:h-8 w-auto object-contain" priority /></div>
         </Link>
 
         {/* Desktop navigation */}

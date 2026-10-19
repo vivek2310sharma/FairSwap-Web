@@ -21,7 +21,8 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
     // 1. Brand wordmark
     const brand = page.getByRole("link", { name: /fairswap home/i });
     await expect(brand).toBeVisible();
-    // // // // // // // // // await expect(brand).toContainText("FairSwap.in"); // Text replaced by image // Disabled because text wordmark was replaced with image // Disabled because text wordmark was replaced with image // Disabled because text wordmark was replaced with image
+    // // // // // // // // await expect(brand.locator('img')).toBeVisible();
+    await expect(brand.locator('img')).toHaveAttribute('alt', 'FairSwap'); // Disabled because text wordmark was replaced with image // Disabled because text wordmark was replaced with image // Disabled because text wordmark was replaced with image
 
     // 2. Development notice
     const devNotice = page.getByRole("status");
