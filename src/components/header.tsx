@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, X, Search, Heart, PlusCircle, User, MessageSquare, Bell, LifeBuoy } from "lucide-react";
 import { NotificationBell } from "@/components/communication/NotificationBell";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
@@ -23,12 +24,8 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xs">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Wordmark */}
-        <Link href="/" className="flex items-center gap-2" aria-label="FairSwap home">
-          <span className="text-xl font-bold tracking-tight sm:text-2xl">
-            <span className="text-brand-link">Fair</span>
-            <span className="text-foreground">Swap</span>
-            <span className="text-sm font-normal text-muted">.in</span>
-          </span>
+        <Link href="/" className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm" aria-label="FairSwap home">
+          <Image src="/brand/FairSwap_Web_Logo_Transparent.png" alt="FairSwap" width={140} height={36} className="h-7 sm:h-8 w-auto object-contain" priority />
         </Link>
 
         {/* Desktop navigation */}
