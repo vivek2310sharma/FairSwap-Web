@@ -7,9 +7,10 @@ import { FavouriteButton } from "./FavouriteButton";
 interface ListingCardProps {
   listing: PublicListingCard;
   isFavourited?: boolean;
+  searchContext?: string;
 }
 
-export function ListingCard({ listing, isFavourited = false }: ListingCardProps) {
+export function ListingCard({ listing, isFavourited = false, searchContext }: ListingCardProps) {
   const formattedPrice =
     listing.price_type === "free"
       ? "Free"
@@ -73,7 +74,7 @@ export function ListingCard({ listing, isFavourited = false }: ListingCardProps)
         </div>
 
         <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold text-foreground group-hover:text-brand-600">
-          <Link href={`/listings/${listing.slug}`} className="focus:outline-hidden">
+          <Link href={`/listings/${listing.slug}${searchContext ? `?ctx=${encodeURIComponent(searchContext)}` : ""}`} className="focus:outline-hidden">
             <span className="absolute inset-0" aria-hidden="true" />
             {listing.title}
           </Link>

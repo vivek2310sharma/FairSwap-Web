@@ -19,15 +19,15 @@ describe("Header component", () => {
 
     expect(screen.getByRole("link", { name: "How It Works" })).toHaveAttribute(
       "href",
-      "#how-it-works"
+      "/#how-it-works"
     );
     expect(screen.getByRole("link", { name: "Categories" })).toHaveAttribute(
       "href",
-      "#categories"
+      "/#categories"
     );
     expect(screen.getByRole("link", { name: "Safety" })).toHaveAttribute(
       "href",
-      "#safety"
+      "/#safety"
     );
   });
 

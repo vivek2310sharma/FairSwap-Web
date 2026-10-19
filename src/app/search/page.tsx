@@ -140,6 +140,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         key={listing.id}
                         listing={listing}
                         isFavourited={userFavSet.has(listing.id)}
+                        searchContext={new URLSearchParams(flatParams as Record<string, string>).toString()}
                       />
                     ))}
                   </div>

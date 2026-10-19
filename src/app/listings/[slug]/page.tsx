@@ -31,6 +31,7 @@ import {
 
 interface ListingDetailPageProps {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ ctx?: string }>;
 }
 
 export async function generateMetadata({
@@ -71,8 +72,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function ListingDetailPage({ params }: ListingDetailPageProps) {
+export default async function ListingDetailPage({ params, searchParams }: ListingDetailPageProps) {
   const { slug } = await params;
+  const resolvedParams = searchParams ? await searchParams : {};
   const { listing, redirectSlug, isOwnerOrStaffPreview } =
     await getPublicListingBySlugOrId(slug);
 
@@ -180,10 +182,35 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Breadcrumb Navigation */}
           <div className="mb-6 flex items-center gap-2 text-xs text-muted">
-            <Link href="/search" className="hover:text-foreground inline-flex items-center gap-1">
-              <ArrowLeft className="h-3 w-3" aria-hidden="true" />
-              Back to search
-            </Link>
+            {(() => {
+              const safeKeys = ["q", "category", "city", "locality", "price_min", "price_max", "condition", "sort", "page"];
+              let backHref = "/search";
+
+              if (typeof resolvedParams.ctx === 'string') {
+                try {
+                  const sp = new URLSearchParams(resolvedParams.ctx);
+                  const safeSp = new URLSearchParams();
+                  for (const [key, value] of sp.entries()) {
+                    if (safeKeys.includes(key) && value.length < 200) {
+                      safeSp.append(key, value);
+                    }
+                  }
+                  const qs = safeSp.toString();
+                  if (qs) {
+                    backHref = `/search?${qs}`;
+                  }
+                } catch (e) {
+                  // Ignore parsing errors, fallback to /search
+                }
+              }
+
+              return (
+                <Link href={backHref} className="hover:text-foreground inline-flex items-center gap-1">
+                  <ArrowLeft className="h-3 w-3" aria-hidden="true" />
+                  Back to search
+                </Link>
+              );
+            })()}
             <span>/</span>
             {listing.category && (
               <>
