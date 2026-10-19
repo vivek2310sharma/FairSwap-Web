@@ -10,7 +10,7 @@ const SERVICE_KEY =
 
 export async function seedNavigationListings() {
   if (typeof globalThis.WebSocket === "undefined") {
-    globalThis.WebSocket = require("ws");
+    globalThis.WebSocket = (await import("ws")).default;
   }
   validateLocalTestEnvironment({ supabaseUrl: SUPABASE_URL });
 
@@ -18,7 +18,9 @@ export async function seedNavigationListings() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const sellerEmail = `e2e_nav_seed_${Date.now()}@fairswap.local`;
+  // Use worker ID to avoid conflicts when tests are run in parallel
+  const workerId = process.env.TEST_WORKER_INDEX ?? "0";
+  const sellerEmail = `e2e_nav_seed_w${workerId}_${Date.now()}@fairswap.local`;
   const { data: created, error: createErr } = await supabase.auth.admin.createUser({
     email: sellerEmail,
     password: "TestPassword123!",
@@ -50,7 +52,7 @@ export async function seedNavigationListings() {
 
   const { data: listing, error: listingErr } = await supabase.from("listings").insert({
     seller_id: userId,
-    title: "C++ & 100% 👍 Developer Laptop",
+    title: `C++ & 100% 👍 Developer Laptop ${process.env.TEST_WORKER_INDEX ?? "0"}`,
     description: "High quality test listing for navigation e2e.",
     category_id: cat.id,
     city_id: city.id,
@@ -78,7 +80,7 @@ export async function seedNavigationListings() {
   // Verify the anonymous `search_public_listings` RPC returns the seeded listing
   const anonClient = createClient(SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0");
   const { data: searchResult, error: searchErr } = await anonClient.rpc("search_public_listings", {
-      query: "Developer Laptop",
+      query: `Developer Laptop ${process.env.TEST_WORKER_INDEX ?? "0"}`,
       category_slug: null,
       city_id: null,
       locality_id: null,
@@ -90,8 +92,8 @@ export async function seedNavigationListings() {
       per_page: 12,
   });
 
-  if (searchErr || !searchResult || searchResult.items.length === 0) {
-      throw new Error("Failed to verify seeded listing using search_public_listings RPC.");
+  if (searchErr || !searchResult || !searchResult.items.some((item: any) => item.id === listingId)) {
+      throw new Error(`Failed to verify seeded listing ${listingId} using search_public_listings RPC.`);
   }
 
   return { userId, listingId };
@@ -99,7 +101,7 @@ export async function seedNavigationListings() {
 
 export async function cleanupNavigationListings() {
   if (typeof globalThis.WebSocket === "undefined") {
-    globalThis.WebSocket = require("ws");
+    globalThis.WebSocket = (await import("ws")).default;
   }
     validateLocalTestEnvironment({ supabaseUrl: SUPABASE_URL });
 

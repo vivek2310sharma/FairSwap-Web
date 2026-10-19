@@ -21,6 +21,12 @@ test.describe('Navigation Regression Tests', () => {
     // Wait for Next.js to hydrate
     await page.waitForLoadState('networkidle');
 
+    // If mobile, open the menu first
+    const isMobile = await page.evaluate(() => window.innerWidth < 768);
+    if (isMobile) {
+      await page.getByRole('button', { name: 'Open menu' }).click();
+    }
+
     // Click How It Works
     await page.getByRole('link', { name: 'How It Works' }).click();
 
@@ -93,10 +99,18 @@ test.describe('Navigation Regression Tests', () => {
     await expect(filtersSearchInput).toHaveValue('laptop');
   });
 
-  test('malformed context parameter gracefully falls back', async ({ page }) => {
-    await page.goto('/listings/some-fake-listing-slug?ctx=invalid-percent-encoding-%ZZ%YY');
-    const title = await page.title();
-    expect(title).toBeDefined();
+  test("malformed context parameter gracefully falls back", async ({ page }) => {
+    await page.goto("/search");
+    await page.waitForLoadState("networkidle");
+    const firstListing = page.getByRole("link", { name: /Developer Laptop/i }).first();
+    await expect(firstListing).toBeVisible();
+    const firstListingHref = await firstListing.getAttribute("href");
+    const basePath = firstListingHref?.split("?")[0];
+    await page.goto(`${basePath}?ctx=invalid-percent-encoding-%ZZ%YY`);
+    const backLink = page.locator("a").filter({ hasText: "Back to search" }).first();
+    await expect(backLink).toBeVisible();
+    const href = await backLink.getAttribute("href");
+    expect(href).toBe("/search?");
   });
 
   test('excessively long context parameter values are ignored', async ({ page }) => {

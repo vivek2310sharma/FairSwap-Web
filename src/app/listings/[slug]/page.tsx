@@ -188,11 +188,16 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
 
               if (typeof resolvedParams.ctx === 'string') {
                 try {
+                  if (resolvedParams.ctx.length > 2000) {
+                     throw new Error('Context string too long');
+                  }
                   const sp = new URLSearchParams(resolvedParams.ctx);
                   const safeSp = new URLSearchParams();
+                  const addedKeys = new Set<string>();
                   for (const [key, value] of sp.entries()) {
-                    if (safeKeys.includes(key) && value.length < 200) {
+                    if (safeKeys.includes(key) && value.length < 200 && !addedKeys.has(key)) {
                       safeSp.append(key, value);
+                      addedKeys.add(key);
                     }
                   }
                   const qs = safeSp.toString();

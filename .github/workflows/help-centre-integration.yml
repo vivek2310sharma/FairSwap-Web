@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - name: Mint short-lived Backend Contents-read token
         id: backend-token
@@ -68,6 +68,13 @@ jobs:
       - name: Start Disposable Local Supabase
         run: supabase start -x studio,analytics,logflare,supavisor
 
+      - name: Export Supabase keys to ENV before build
+        run: |
+          STATUS_JSON=$(supabase status -o json)
+          echo "SUPABASE_SECRET_KEY=$(echo "$STATUS_JSON" | jq -r '.SERVICE_ROLE_KEY // empty')" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // empty')" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // empty')" >> $GITHUB_ENV
+
       - name: Lint
         run: pnpm lint
       - name: Typecheck
@@ -90,12 +97,6 @@ jobs:
         run: pnpm exec playwright test e2e/help-centre.spec.ts
       - name: Run Homepage Playwright Regression Tests
         run: pnpm exec playwright test e2e/homepage-performance.spec.ts
-
-      - name: Export Supabase keys to ENV
-        run: |
-          STATUS_JSON=$(supabase status -o json)
-          echo "SUPABASE_SECRET_KEY=$(echo "$STATUS_JSON" | jq -r '.SERVICE_ROLE_KEY // empty')" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // empty')" >> $GITHUB_ENV
 
       - name: Run Navigation Regression Tests
         env:
