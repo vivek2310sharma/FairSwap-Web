@@ -47,7 +47,7 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-xs hover:bg-brand-500 focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-action-600 px-5 py-3 text-sm font-semibold text-white shadow-xs hover:bg-brand-500 focus:outline-hidden focus:ring-2 focus:ring-action-500"
       >
         <MessageSquare className="h-4 w-4" aria-hidden="true" />
         <span>Contact Seller</span>
@@ -71,7 +71,7 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-brand-600 dark:bg-brand-950">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-100 text-action-600 dark:bg-brand-950">
                 <MessageSquare className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
@@ -102,7 +102,7 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
                   maxLength={2000}
                   required
                   placeholder="Ask about condition, price, or pickup availability..."
-                  className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-xs text-foreground placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+                  className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-xs text-foreground placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-action-500"
                 />
                 <div className="mt-1 flex justify-end text-[10px] text-muted">
                   <span>{message.length} / 2000</span>
@@ -125,7 +125,7 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
                 <button
                   type="submit"
                   disabled={isSending || !message.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-500 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-500 disabled:opacity-50"
                 >
                   <Send className="h-3.5 w-3.5" />
                   <span>{isSending ? "Sending..." : "Send Message"}</span>

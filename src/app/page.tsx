@@ -61,7 +61,7 @@ export default function HomePage() {
               />
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-500"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-500"
               >
                 <span>Search</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -102,7 +102,7 @@ export default function HomePage() {
                 <div key={step.title} className="text-center">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900">
                     <step.icon
-                      className="h-6 w-6 text-brand-600"
+                      className="h-6 w-6 text-action-600"
                       aria-hidden="true"
                     />
                   </div>

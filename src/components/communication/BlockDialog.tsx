@@ -98,7 +98,7 @@ export function BlockDialog({
               onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Unresponsive, rude, or scam attempt"
               maxLength={500}
-              className="mt-1 block w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs text-foreground placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+              className="mt-1 block w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs text-foreground placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-action-500"
             />
           </div>
 

@@ -198,7 +198,7 @@ export function ChatThread({
       {/* Thread Header */}
       <div className="flex items-center justify-between border-b border-border p-4 shrink-0 bg-card">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-900 dark:bg-brand-950 dark:text-brand-300">
             {counterpartyName.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -217,7 +217,7 @@ export function ChatThread({
             {conversation.listing && (
               <Link
                 href={`/listings/${conversation.listing.slug || conversation.listing.id}`}
-                className="inline-flex items-center gap-1 text-xs text-muted hover:text-brand-600 truncate max-w-xs sm:max-w-md"
+                className="inline-flex items-center gap-1 text-xs text-muted hover:text-action-600 truncate max-w-xs sm:max-w-md"
               >
                 <span>Re: {conversation.listing.title}</span>
                 <ExternalLink className="h-3 w-3 shrink-0" />
@@ -295,7 +295,7 @@ export function ChatThread({
                   <div
                     className={`rounded-2xl px-4 py-2.5 text-xs leading-relaxed ${
                       isSelf
-                        ? "bg-brand-600 text-white rounded-br-xs"
+                        ? "bg-action-600 text-white rounded-br-xs"
                         : "bg-surface border border-border text-foreground rounded-bl-xs"
                     }`}
                   >
@@ -358,13 +358,13 @@ export function ChatThread({
               rows={2}
               maxLength={2000}
               placeholder="Type your message... (Enter to send, Shift+Enter for newline)"
-              className="flex-1 resize-none rounded-xl border border-border bg-surface p-2.5 text-xs text-foreground placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+              className="flex-1 resize-none rounded-xl border border-border bg-surface p-2.5 text-xs text-foreground placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-action-500"
             />
             <button
               type="submit"
               aria-label="Send message"
               disabled={isSending || !inputText.trim()}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600 text-white shadow-xs hover:bg-brand-500 disabled:opacity-40"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-action-600 text-white shadow-xs hover:bg-brand-500 disabled:opacity-40"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
             </button>

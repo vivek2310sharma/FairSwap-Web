@@ -79,7 +79,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
     it("displays version and last updated date", () => {
       render(<TermsPage />);
       expect(screen.getByText(`Version: ${LEGAL_POLICY.termsVersion}`)).toBeInTheDocument();
-      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.lastUpdated}`)).toBeInTheDocument();
+      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.termsLastUpdated}`)).toBeInTheDocument();
     });
   });
 
@@ -156,7 +156,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
     it("displays version and last updated date", () => {
       render(<PrivacyPage />);
       expect(screen.getByText(`Version: ${LEGAL_POLICY.privacyVersion}`)).toBeInTheDocument();
-      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.lastUpdated}`)).toBeInTheDocument();
+      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.privacyLastUpdated}`)).toBeInTheDocument();
     });
   });
 
@@ -171,7 +171,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
       ).toBeInTheDocument();
       expect(screen.queryByText(/Marketplace standards/i)).not.toBeInTheDocument();
       expect(screen.getByText(`Version: ${LEGAL_POLICY.acceptableUseVersion}`)).toBeInTheDocument();
-      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.lastUpdated}`)).toBeInTheDocument();
+      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.acceptableUseLastUpdated}`)).toBeInTheDocument();
     });
 
     it("covers prohibited conduct including fraud, scams, harassment, and evasion", () => {

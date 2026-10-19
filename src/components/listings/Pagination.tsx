@@ -102,7 +102,7 @@ export function Pagination({
                 aria-current={isCurrent ? "page" : undefined}
                 className={`min-w-8 rounded-lg px-2.5 py-1.5 text-center text-xs font-medium transition-colors ${
                   isCurrent
-                    ? "bg-brand-600 font-semibold text-white"
+                    ? "bg-action-600 font-semibold text-white"
                     : "border border-border text-foreground hover:bg-surface"
                 }`}
               >
