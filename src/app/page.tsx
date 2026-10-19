@@ -2,6 +2,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ShoppingBag,
   Search,
@@ -32,11 +33,10 @@ export default function HomePage() {
       <main className="flex-1">
         {/* Hero section with Search */}
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            Buy &amp; sell locally on{" "}
-            <span className="text-brand-link">FairSwap</span>
-            <span className="text-muted">.in</span>
-          </h1>
+          <h1 className="sr-only">Buy &amp; sell locally on FairSwap.in</h1>
+          <div className="flex flex-col items-center justify-center rounded-xl bg-transparent dark:bg-white/90 p-4">
+            <Image src="/brand/logo with tagline for web.png" alt="FairSwap - Give. Get. Grow Together." width={400} height={120} className="mx-auto max-w-full h-auto max-h-24 sm:max-h-32 object-contain drop-shadow-sm" priority />
+          </div>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
             India&apos;s classifieds marketplace for your city. Find great deals
             on electronics, furniture, books, and more from people near you.
@@ -59,7 +59,7 @@ export default function HomePage() {
               />
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-500"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700"
               >
                 <span>Search</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -98,7 +98,7 @@ export default function HomePage() {
                 <div key={step.title} className="text-center">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900">
                     <step.icon
-                      className="h-6 w-6 text-brand-600"
+                      className="h-6 w-6 text-action-600"
                       aria-hidden="true"
                     />
                   </div>

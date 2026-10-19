@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/60 dark:text-brand-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-action-600 dark:bg-brand-950/60 dark:text-brand-400">
             <ShieldCheck className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
         {/* Version & Status Metadata */}
         <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 text-xs text-muted">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <Clock className="h-4 w-4 text-brand-600" aria-hidden="true" />
+            <Clock className="h-4 w-4 text-action-600" aria-hidden="true" />
             <span>Version: {LEGAL_POLICY.privacyVersion}</span>
           </div>
           <span className="hidden sm:inline text-border">•</span>

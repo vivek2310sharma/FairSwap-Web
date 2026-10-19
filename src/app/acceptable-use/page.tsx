@@ -33,7 +33,7 @@ export default function AcceptableUsePage() {
         {/* Version & Status Metadata */}
         <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4 text-xs text-muted">
           <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <Clock className="h-4 w-4 text-brand-600" aria-hidden="true" />
+            <Clock className="h-4 w-4 text-action-600" aria-hidden="true" />
             <span>Version: {LEGAL_POLICY.acceptableUseVersion}</span>
           </div>
           <span className="hidden sm:inline text-border">•</span>
@@ -190,7 +190,7 @@ export default function AcceptableUsePage() {
           {/* 5. Reporting & Safety */}
           <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Flag className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Flag className="h-5 w-5 text-action-600" aria-hidden="true" />
               <span>5. Reporting Violations &amp; Safety</span>
             </div>
             <p className="mt-3">

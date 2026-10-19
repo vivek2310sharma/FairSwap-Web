@@ -101,7 +101,7 @@ export function SearchFilters({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search items, titles, brands..."
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
           />
           <button
             type="submit"
@@ -122,7 +122,7 @@ export function SearchFilters({
           id="filter-category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
         >
           <option value="">All Categories</option>
           {categories.map((c) => (
@@ -145,7 +145,7 @@ export function SearchFilters({
             setCity(e.target.value);
             setLocality(""); // reset locality when district changes
           }}
-          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
         >
           <option value="">All Districts</option>
           {cities.map((ci) => (
@@ -169,7 +169,7 @@ export function SearchFilters({
             id="filter-locality"
             value={locality}
             onChange={(e) => setLocality(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
           >
             <option value="">All Areas in District</option>
             {filteredLocalities.map((loc) => (
@@ -190,7 +190,7 @@ export function SearchFilters({
           id="filter-condition"
           value={condition}
           onChange={(e) => setCondition(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
         >
           <option value="">Any Condition</option>
           <option value="new">Brand New</option>
@@ -215,7 +215,7 @@ export function SearchFilters({
             placeholder="Min ₹"
             value={priceMin}
             onChange={(e) => setPriceMin(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
             aria-label="Minimum price in rupees"
           />
           <input
@@ -226,7 +226,7 @@ export function SearchFilters({
             placeholder="Max ₹"
             value={priceMax}
             onChange={(e) => setPriceMax(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
             aria-label="Maximum price in rupees"
           />
         </div>
@@ -241,7 +241,7 @@ export function SearchFilters({
           id="filter-sort"
           value={sort}
           onChange={(e) => setSort(e.target.value)}
-          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
         >
           <option value="newest">Newest First</option>
           <option value="relevance">Most Relevant</option>
@@ -255,7 +255,7 @@ export function SearchFilters({
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
+          className="w-full rounded-lg bg-action-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700 focus:outline-none focus:ring-2 focus:ring-action-500 disabled:opacity-50"
         >
           {isPending ? "Applying..." : "Apply Filters"}
         </button>
@@ -289,7 +289,7 @@ export function SearchFilters({
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
           Filter &amp; Sort
           {hasActiveFilters && (
-            <span className="h-2 w-2 rounded-full bg-brand-600" aria-label="Active filters" />
+            <span className="h-2 w-2 rounded-full bg-action-600" aria-label="Active filters" />
           )}
         </button>
       </div>

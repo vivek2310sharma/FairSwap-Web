@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -9,10 +10,12 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
           {/* Brand & Mission */}
           <div>
-            <p className="text-base font-bold text-foreground">
-              <span className="text-brand-link">Fair</span>Swap
-              <span className="text-muted">.in</span>
-            </p>
+            <Link href="/" className="inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm" aria-label="FairSwap home">
+              <span className="inline-block rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5">
+                <Image src="/brand/FairSwap_Web_Logo_Transparent.png" alt="FairSwap.in" width={120} height={32} className="h-8 w-auto object-contain" />
+              </span>
+            </Link>
+            <p className="mt-3 text-xs text-brand-900 dark:text-brand-300 font-medium italic">Give. Get. Grow Together.</p>
             <p className="mt-2 text-xs text-muted leading-relaxed">
               India&apos;s local classifieds marketplace
             </p>
@@ -33,17 +36,17 @@ export function Footer() {
             </h3>
             <ul className="mt-3 space-y-2 text-xs text-muted">
               <li>
-                <Link href="/search" className="hover:text-foreground">
+                <Link href="/search" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Browse All Listings
                 </Link>
               </li>
               <li>
-                <Link href="/account/favourites" className="hover:text-foreground">
+                <Link href="/account/favourites" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Saved Favourites
                 </Link>
               </li>
               <li>
-                <Link href="/account/listings/new" className="hover:text-foreground">
+                <Link href="/account/listings/new" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Post an Advertisement
                 </Link>
               </li>
@@ -57,27 +60,27 @@ export function Footer() {
             </h3>
             <ul className="mt-3 space-y-2 text-xs text-muted">
               <li>
-                <a href="https://help.fairswap.in/en" className="hover:text-foreground">
+                <a href="https://help.fairswap.in/en" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Help Centre
                 </a>
               </li>
               <li>
-                <Link href="/safety" className="hover:text-foreground">
+                <Link href="/safety" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   In-Person Safety Tips
                 </Link>
               </li>
               <li>
-                <a href="https://help.fairswap.in/en/contact" className="hover:text-foreground">
+                <a href="https://help.fairswap.in/en/contact" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Contact Us
                 </a>
               </li>
               <li>
-                <a href="mailto:support@fairswap.in" className="hover:text-foreground">
+                <a href="mailto:support@fairswap.in" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   support@fairswap.in
                 </a>
               </li>
               <li>
-                <a href="tel:+918826599917" className="hover:text-foreground">
+                <a href="tel:+918826599917" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   +91 8826599917
                 </a>
               </li>
@@ -91,22 +94,22 @@ export function Footer() {
             </h3>
             <ul className="mt-3 space-y-2 text-xs text-muted">
               <li>
-                <Link href="/terms" className="hover:text-foreground">
+                <Link href="/terms" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-foreground">
+                <Link href="/privacy" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/acceptable-use" className="hover:text-foreground">
+                <Link href="/acceptable-use" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Acceptable Use
                 </Link>
               </li>
               <li>
-                <Link href="/grievance" className="hover:text-foreground">
+                <Link href="/grievance" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Grievance Redressal
                 </Link>
               </li>
