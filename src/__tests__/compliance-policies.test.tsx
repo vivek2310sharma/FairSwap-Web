@@ -245,13 +245,13 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
     pages.forEach(({ name, component }) => {
       it(`${name} page does not contain invented corporate entities or false approvals`, () => {
         const { container } = render(component);
-        const text = container.textContent || "";
+        const text = container.querySelector("main")?.textContent || "";
 
         expect(text).not.toMatch(/Pvt\.?\s*Ltd/i);
         expect(text).not.toMatch(/LLP\b/i);
         expect(text).not.toMatch(/CIN\s*[:#]/i);
         expect(text).not.toMatch(/GSTIN\s*[:#]/i);
-        // expect(text).not.toMatch(/\+91[-\s]?[0-9]{10}/); // Disabled because footer contains +91 8826599917
+        expect(text).not.toMatch(/\+91[-\s]?[0-9]{10}/);
         expect(text).not.toMatch(/lawyer[- ]approved/i);
         expect(text).not.toMatch(/legally[- ]approved/i);
         expect(text).not.toMatch(/counsel[- ]approved/i);

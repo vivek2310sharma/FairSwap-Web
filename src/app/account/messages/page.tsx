@@ -141,7 +141,7 @@ export default async function MessagesPage({
                 <div className="mt-6">
                   <Link
                     href="/search"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-500 shadow-xs"
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-action-700 shadow-xs"
                   >
                     <span>Browse Listings</span>
                     <ArrowRight className="h-3.5 w-3.5" />

@@ -61,7 +61,7 @@ export default function HomePage() {
               />
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-500"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700"
               >
                 <span>Search</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />

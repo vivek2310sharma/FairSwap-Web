@@ -47,7 +47,7 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
       <button
         type="button"
         onClick={() => setModalOpen(true)}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-action-600 px-5 py-3 text-sm font-semibold text-white shadow-xs hover:bg-brand-500 focus:outline-hidden focus:ring-2 focus:ring-action-500"
+        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-action-600 px-5 py-3 text-sm font-semibold text-white shadow-xs hover:bg-action-700 focus:outline-hidden focus:ring-2 focus:ring-action-500"
       >
         <MessageSquare className="h-4 w-4" aria-hidden="true" />
         <span>Contact Seller</span>
@@ -125,7 +125,7 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
                 <button
                   type="submit"
                   disabled={isSending || !message.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-500 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-4 py-2 text-xs font-semibold text-white hover:bg-action-700 disabled:opacity-50"
                 >
                   <Send className="h-3.5 w-3.5" />
                   <span>{isSending ? "Sending..." : "Send Message"}</span>

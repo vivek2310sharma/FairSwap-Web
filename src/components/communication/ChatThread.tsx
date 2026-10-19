@@ -364,7 +364,7 @@ export function ChatThread({
               type="submit"
               aria-label="Send message"
               disabled={isSending || !inputText.trim()}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-action-600 text-white shadow-xs hover:bg-brand-500 disabled:opacity-40"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-action-600 text-white shadow-xs hover:bg-action-700 disabled:opacity-40"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
             </button>

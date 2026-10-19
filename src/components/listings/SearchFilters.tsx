@@ -255,7 +255,7 @@ export function SearchFilters({
         <button
           type="submit"
           disabled={isPending}
-          className="w-full rounded-lg bg-action-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-action-500 disabled:opacity-50"
+          className="w-full rounded-lg bg-action-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700 focus:outline-none focus:ring-2 focus:ring-action-500 disabled:opacity-50"
         >
           {isPending ? "Applying..." : "Apply Filters"}
         </button>
