@@ -77,7 +77,7 @@ export default async function SellerProfilePage({ params }: SellerPageProps) {
           <div className="rounded-2xl border border-border bg-card p-6 shadow-xs sm:p-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-5">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 text-brand-700 font-bold text-2xl dark:bg-brand-950 dark:text-brand-300 shadow-xs">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 text-brand-900 font-bold text-2xl dark:bg-brand-950 dark:text-brand-300 shadow-xs">
                   {profile.display_name?.charAt(0).toUpperCase() || <User className="h-8 w-8" />}
                 </div>
                 <div>

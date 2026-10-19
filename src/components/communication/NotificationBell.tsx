@@ -93,11 +93,11 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ""}`}
-        className="relative rounded-full p-2 text-muted hover:bg-surface hover:text-foreground focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+        className="relative rounded-full p-2 text-muted hover:bg-surface hover:text-foreground focus:outline-hidden focus:ring-2 focus:ring-action-500"
       >
         <Bell className="h-5 w-5" aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white">
+          <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-action-600 text-[10px] font-bold text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}

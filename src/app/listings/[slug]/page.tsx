@@ -253,7 +253,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
 
                 <div className="mt-4 flex flex-wrap items-center gap-y-2 gap-x-4 text-xs text-muted border-t border-border/60 pt-4">
                   <div className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5 text-brand-600" aria-hidden="true" />
+                    <MapPin className="h-3.5 w-3.5 text-action-600" aria-hidden="true" />
                     <span>
                       {listing.locality?.name
                         ? `${listing.locality.name}, ${listing.city?.name}`
@@ -267,7 +267,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                   </div>
 
                   {listing.condition && (
-                    <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
+                    <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-900 dark:bg-brand-950 dark:text-brand-300">
                       {conditionLabels[listing.condition] || listing.condition}
                     </span>
                   )}
@@ -331,14 +331,14 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
                 </h2>
 
                 <div className="mt-4 flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-bold text-lg dark:bg-brand-950 dark:text-brand-300">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-900 font-bold text-lg dark:bg-brand-950 dark:text-brand-300">
                     {listing.seller.display_name?.charAt(0).toUpperCase() || <User className="h-6 w-6" />}
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-foreground">
                       <Link
                         href={`/seller/${listing.seller.id}`}
-                        className="hover:text-brand-600 focus:outline-hidden"
+                        className="hover:text-action-600 focus:outline-hidden"
                       >
                         {listing.seller.display_name}
                       </Link>

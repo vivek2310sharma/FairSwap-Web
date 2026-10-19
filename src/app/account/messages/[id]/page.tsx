@@ -119,7 +119,7 @@ export default async function ConversationPage({
           <div className="mb-4 flex items-center justify-between">
             <Link
               href="/account/messages"
-              className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-500 dark:text-brand-400"
+              className="inline-flex items-center gap-1 text-sm font-medium text-action-600 hover:text-brand-500 dark:text-brand-400"
             >
               <ChevronLeft className="h-4 w-4" />
               Back to Inbox

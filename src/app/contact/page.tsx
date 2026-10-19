@@ -25,7 +25,7 @@ export default function ContactPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Mail className="h-7 w-7 text-brand-600" aria-hidden="true" />
+          <Mail className="h-7 w-7 text-action-600" aria-hidden="true" />
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Contact Guidance
           </h1>
@@ -35,7 +35,7 @@ export default function ContactPage() {
           {/* Public merchant support contacts are accessible without an account. */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Mail className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Mail className="h-5 w-5 text-action-600" aria-hidden="true" />
               Customer Support
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
@@ -71,7 +71,7 @@ export default function ContactPage() {
           {/* Formal Grievance Redressal Card */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Scale className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Scale className="h-5 w-5 text-action-600" aria-hidden="true" />
               Formal Grievance Redressal
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
@@ -102,7 +102,7 @@ export default function ContactPage() {
           {/* Account Support & Appeals */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Clock className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Clock className="h-5 w-5 text-action-600" aria-hidden="true" />
               Account Support &amp; Moderation Appeals
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">

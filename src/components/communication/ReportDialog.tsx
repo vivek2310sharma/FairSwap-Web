@@ -127,7 +127,7 @@ export function ReportDialog({
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 required
-                className="mt-1 block w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs text-foreground focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+                className="mt-1 block w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs text-foreground focus:outline-hidden focus:ring-2 focus:ring-action-500"
               >
                 <option value="">Select a reason...</option>
                 {presetReasons.map((r) => (
@@ -149,7 +149,7 @@ export function ReportDialog({
                 rows={3}
                 maxLength={2000}
                 placeholder="Provide any context that will help our team investigate..."
-                className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-xs text-foreground placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-brand-500"
+                className="mt-1 block w-full rounded-xl border border-border bg-surface p-3 text-xs text-foreground placeholder:text-muted focus:outline-hidden focus:ring-2 focus:ring-action-500"
               />
             </div>
 
@@ -169,7 +169,7 @@ export function ReportDialog({
               <button
                 type="submit"
                 disabled={isSubmitting || !reason}
-                className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-500 disabled:opacity-50"
+                className="rounded-xl bg-action-600 px-4 py-2 text-xs font-semibold text-white hover:bg-action-700 disabled:opacity-50"
               >
                 {isSubmitting ? "Submitting..." : "Submit Report"}
               </button>

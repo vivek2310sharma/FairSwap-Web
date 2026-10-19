@@ -21,15 +21,15 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
     // 1. Brand wordmark
     const brand = page.getByRole("link", { name: /fairswap home/i });
     await expect(brand).toBeVisible();
-    await expect(brand).toContainText("FairSwap.in");
+    const brandImg = brand.locator('img');
+    await expect(brandImg).toBeVisible();
+    await expect(brandImg).toHaveAttribute('alt', 'FairSwap');
 
-    // 2. Development notice
-    const devNotice = page.getByRole("status");
-    await expect(devNotice).toBeVisible();
-    await expect(devNotice).toContainText("Development Foundation");
-    await expect(devNotice).toContainText(
-      "Accounts, listings, and communication are not connected yet."
-    );
+    // Check that the image loads successfully
+    const isImageLoaded = await brandImg.evaluate((img) => (img as HTMLImageElement).naturalWidth > 0);
+    expect(isImageLoaded).toBe(true);
+
+
 
     // 3. Main landmarks
     await expect(page.getByRole("banner")).toBeVisible();
