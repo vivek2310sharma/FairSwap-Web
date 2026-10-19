@@ -9,6 +9,9 @@ const SERVICE_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU";
 
 export async function seedNavigationListings() {
+  if (typeof globalThis.WebSocket === "undefined") {
+    globalThis.WebSocket = require("ws");
+  }
   validateLocalTestEnvironment({ supabaseUrl: SUPABASE_URL });
 
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -95,6 +98,9 @@ export async function seedNavigationListings() {
 }
 
 export async function cleanupNavigationListings() {
+  if (typeof globalThis.WebSocket === "undefined") {
+    globalThis.WebSocket = require("ws");
+  }
     validateLocalTestEnvironment({ supabaseUrl: SUPABASE_URL });
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
