@@ -4,6 +4,7 @@ import { Footer } from "@/components/footer";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
 import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ShoppingBag,
   Search,
@@ -35,9 +36,8 @@ export default function HomePage() {
         {/* Hero section with Search */}
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-            Buy &amp; sell locally on{" "}
-            <span className="text-brand-link">FairSwap</span>
-            <span className="text-muted">.in</span>
+            <span className="sr-only">Buy &amp; sell locally on FairSwap.in</span>
+            <Image src="/brand/logo with tagline for web.png" alt="FairSwap - Give. Get. Grow Together." width={400} height={120} className="mx-auto w-auto h-24 sm:h-32 object-contain drop-shadow-sm" priority />
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
             India&apos;s classifieds marketplace for your city. Find great deals
