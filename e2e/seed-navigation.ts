@@ -105,5 +105,5 @@ export async function cleanupNavigationListings() {
         await supabase.from("listings").delete().eq("seller_id", userId);
     }
 
-    await testUserRegistry.cleanupTrackedUsers(supabase as any, { supabaseUrl: SUPABASE_URL });
+    await testUserRegistry.cleanupTrackedUsers(supabase, { supabaseUrl: SUPABASE_URL });
 }

@@ -199,7 +199,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                   if (qs) {
                     backHref = `/search?${qs}`;
                   }
-                } catch (e) {
+                } catch {
                   // Ignore parsing errors, fallback to /search
                 }
               }
