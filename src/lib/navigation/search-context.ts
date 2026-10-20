@@ -1,4 +1,4 @@
-import { SearchFilters } from "@/types/listing";
+import { SearchFilters, searchFiltersSchema } from "@/types/listing";
 
 export function serializeSearchFilters(filters: SearchFilters): string {
   // Convert the numeric/optional fields to strings explicitly to avoid Record<string, string> cast errors
@@ -24,21 +24,36 @@ export function getBackToSearchHref(ctxParam?: string): string {
   if (ctxParam.length > 2000) return "/search";
 
   try {
-    const searchParams = new URLSearchParams(ctxParam);
+    const rawParams = new URLSearchParams(ctxParam);
+    const flatParams: Record<string, string> = {};
 
-    // Safely rebuild to avoid weird duplicate parameters
-    const safeParams = new URLSearchParams();
-
-    // Whitelist allowed keys to prevent injection
-    const allowedKeys = ['q', 'category', 'city', 'locality', 'condition', 'sort', 'page', 'price_min', 'price_max'];
-
-    for (const [key, value] of searchParams.entries()) {
-      if (allowedKeys.includes(key)) {
-        safeParams.set(key, value);
+    // Deduplicate keys by taking only the first one
+    for (const [key, value] of rawParams.entries()) {
+      if (!(key in flatParams) && value !== undefined && value !== "undefined") {
+        flatParams[key] = value;
       }
     }
 
-    const queryString = safeParams.toString();
+    // Validate with Zod
+    const parsed = searchFiltersSchema.safeParse(flatParams);
+    if (!parsed.success) {
+      return "/search";
+    }
+
+    const validParams = new URLSearchParams();
+    const data = parsed.data;
+
+    if (data.q) validParams.set("q", data.q);
+    if (data.category) validParams.set("category", data.category);
+    if (data.city) validParams.set("city", data.city);
+    if (data.locality) validParams.set("locality", data.locality);
+    if (data.condition) validParams.set("condition", data.condition);
+    if (data.sort) validParams.set("sort", data.sort);
+    if (data.page !== undefined && data.page !== null) validParams.set("page", data.page.toString());
+    if (data.price_min !== undefined && data.price_min !== null) validParams.set("price_min", data.price_min.toString());
+    if (data.price_max !== undefined && data.price_max !== null) validParams.set("price_max", data.price_max.toString());
+
+    const queryString = validParams.toString();
     return queryString ? `/search?${queryString}` : "/search";
   } catch (e) {
     return "/search";
