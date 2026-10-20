@@ -93,7 +93,7 @@ export default async function FavouritesPage() {
               <div className="mt-6">
                 <Link
                   href="/search"
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-brand-500"
+                  className="inline-flex items-center gap-2 rounded-lg bg-action-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-action-700"
                 >
                   <Search className="h-3.5 w-3.5" aria-hidden="true" />
                   Explore Classifieds

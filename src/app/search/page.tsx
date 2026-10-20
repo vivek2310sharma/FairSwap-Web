@@ -162,7 +162,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                   <div className="mt-6 flex flex-wrap justify-center gap-3">
                     <Link
                       href="/search"
-                      className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-brand-500"
+                      className="rounded-lg bg-action-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-action-700"
                     >
                       Clear All Filters
                     </Link>

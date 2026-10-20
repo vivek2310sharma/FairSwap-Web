@@ -73,7 +73,7 @@ export function ListingCard({ listing, isFavourited = false, searchContext }: Li
           )}
         </div>
 
-        <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold text-foreground group-hover:text-brand-600">
+        <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold text-foreground group-hover:text-action-600">
           <Link href={`/listings/${listing.slug}${searchContext ? `?ctx=${encodeURIComponent(searchContext)}` : ""}`} className="focus:outline-hidden">
             <span className="absolute inset-0" aria-hidden="true" />
             {listing.title}

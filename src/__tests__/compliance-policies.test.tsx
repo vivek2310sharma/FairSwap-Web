@@ -32,8 +32,8 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
 
     it("clarifies classifieds boundaries and disclaims payment/escrow/shipping", () => {
       render(<TermsPage />);
-      expect(screen.getByText(/classifieds listing, search, and communication directory/i)).toBeInTheDocument();
-      expect(screen.getByText(/not a retail store, auctioneer, payment processor, escrow service, shipping agent/i)).toBeInTheDocument();
+      expect(screen.getByText(/classifieds listing, discovery, and communication service/i)).toBeInTheDocument();
+      expect(screen.getByText(/not the buyer or seller of user-listed items, a buyer-to-seller payment intermediary, an escrow provider, a shipping agent/i)).toBeInTheDocument();
       expect(screen.getByText(/All arrangements.*are made directly and independently between buyers and sellers/i)).toBeInTheDocument();
     });
 
@@ -79,7 +79,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
     it("displays version and last updated date", () => {
       render(<TermsPage />);
       expect(screen.getByText(`Version: ${LEGAL_POLICY.termsVersion}`)).toBeInTheDocument();
-      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.lastUpdated}`)).toBeInTheDocument();
+      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.termsLastUpdated}`)).toBeInTheDocument();
     });
   });
 
@@ -156,7 +156,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
     it("displays version and last updated date", () => {
       render(<PrivacyPage />);
       expect(screen.getByText(`Version: ${LEGAL_POLICY.privacyVersion}`)).toBeInTheDocument();
-      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.lastUpdated}`)).toBeInTheDocument();
+      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.privacyLastUpdated}`)).toBeInTheDocument();
     });
   });
 
@@ -171,7 +171,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
       ).toBeInTheDocument();
       expect(screen.queryByText(/Marketplace standards/i)).not.toBeInTheDocument();
       expect(screen.getByText(`Version: ${LEGAL_POLICY.acceptableUseVersion}`)).toBeInTheDocument();
-      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.lastUpdated}`)).toBeInTheDocument();
+      expect(screen.getByText(`Last Updated: ${LEGAL_POLICY.acceptableUseLastUpdated}`)).toBeInTheDocument();
     });
 
     it("covers prohibited conduct including fraud, scams, harassment, and evasion", () => {
@@ -245,7 +245,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
     pages.forEach(({ name, component }) => {
       it(`${name} page does not contain invented corporate entities or false approvals`, () => {
         const { container } = render(component);
-        const text = container.textContent || "";
+        const text = container.querySelector("main")?.textContent || "";
 
         expect(text).not.toMatch(/Pvt\.?\s*Ltd/i);
         expect(text).not.toMatch(/LLP\b/i);

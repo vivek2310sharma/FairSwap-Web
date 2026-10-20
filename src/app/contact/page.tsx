@@ -15,7 +15,7 @@ export default function ContactPage() {
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
-          <Mail className="h-7 w-7 text-brand-600" aria-hidden="true" />
+          <Mail className="h-7 w-7 text-action-600" aria-hidden="true" />
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Contact Guidance
           </h1>
@@ -25,7 +25,7 @@ export default function ContactPage() {
           {/* Public support must remain accessible without authentication. */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Mail className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Mail className="h-5 w-5 text-action-600" aria-hidden="true" />
               Public Help &amp; Email Support
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
@@ -44,7 +44,7 @@ export default function ContactPage() {
           {/* Public business support number: calls only; not emergency assistance. */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Mail className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Mail className="h-5 w-5 text-action-600" aria-hidden="true" />
               Phone Contact
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
@@ -63,7 +63,7 @@ export default function ContactPage() {
           {/* Formal Grievance Redressal Card */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Scale className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Scale className="h-5 w-5 text-action-600" aria-hidden="true" />
               Formal Grievance Redressal
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
@@ -94,7 +94,7 @@ export default function ContactPage() {
           {/* Account Support & Appeals */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Clock className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Clock className="h-5 w-5 text-action-600" aria-hidden="true" />
               Account Support &amp; Moderation Appeals
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">

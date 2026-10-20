@@ -43,7 +43,7 @@
 *   **`src/components/listings/SearchFilters.tsx`**: Syncs state on Back/Forward navigation using a `prevFilters` check.
 *   **`src/app/page.tsx`**: Replaced standard `<form>` with `<Form from="next/form">`.
 *   **`src/components/header.tsx`**: Updated fragment links to use `<Link href="/#how-it-works">`.
-*   **`e2e/navigation.spec.ts`**: Added regression tests covering edge cases (C++, 100%, malformed context, overly long context).
+*   **`e2e/navigation.spec.ts`**: (Tests removed per instruction, preserving only the production implementation).
 
 ## 5. Security & Performance Verification
 

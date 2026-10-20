@@ -13,7 +13,7 @@ describe("Footer component", () => {
   it("displays the FairSwap brand name and tagline", () => {
     render(<Footer />);
     expect(screen.getByText("India's local classifieds marketplace")).toBeInTheDocument();
-    expect(screen.getByText("Swap")).toBeInTheDocument();
+    expect(screen.getByAltText("FairSwap.in")).toBeInTheDocument();
   });
 
   it("links to FairSwap's public launch record securely", () => {

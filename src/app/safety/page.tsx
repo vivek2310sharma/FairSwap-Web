@@ -31,7 +31,7 @@ export default function SafetyPage() {
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <MapPin className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <MapPin className="h-5 w-5 text-action-600" aria-hidden="true" />
               Meet in Public Spaces
             </div>
             <p className="mt-2 text-sm text-muted leading-relaxed">
@@ -42,7 +42,7 @@ export default function SafetyPage() {
 
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Eye className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Eye className="h-5 w-5 text-action-600" aria-hidden="true" />
               Inspect Before Exchanging
             </div>
             <p className="mt-2 text-sm text-muted leading-relaxed">
@@ -53,7 +53,7 @@ export default function SafetyPage() {
 
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <CreditCard className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <CreditCard className="h-5 w-5 text-action-600" aria-hidden="true" />
               No Advance Payments
             </div>
             <p className="mt-2 text-sm text-muted leading-relaxed">
@@ -65,7 +65,7 @@ export default function SafetyPage() {
 
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Users className="h-5 w-5 text-brand-600" aria-hidden="true" />
+              <Users className="h-5 w-5 text-action-600" aria-hidden="true" />
               Bring a Friend
             </div>
             <p className="mt-2 text-sm text-muted leading-relaxed">

@@ -9,7 +9,7 @@ describe("Header component", () => {
     const homeLink = screen.getByRole("link", { name: /fairswap home/i });
     expect(homeLink).toBeInTheDocument();
     expect(homeLink).toHaveAttribute("href", "/");
-    expect(homeLink).toHaveTextContent("FairSwap.in");
+    expect(screen.getByAltText("FairSwap")).toBeInTheDocument();
   });
 
   it("renders desktop navigation landmark and links", () => {
