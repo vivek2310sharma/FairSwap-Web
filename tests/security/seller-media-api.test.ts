@@ -207,6 +207,86 @@ let orderCalled = false;
     const unavailable=await postUploadMedia(new NextRequest(`http://localhost/api/listings/${listingId}/media`,{method:'POST'}),{params:Promise.resolve({id:listingId})});expect(unavailable.status).toBe(503);expect(mockServiceStorage.from).not.toHaveBeenCalled();
   });
 
+
+  it("B2a: creates the original and all three derivatives without Storage upsert", async () => {
+    const imageBuf = await sharp({
+      create: { width: 50, height: 50, channels: 3, background: { r: 200, g: 100, b: 50 } },
+    }).jpeg().toBuffer();
+
+    const file = new File([new Uint8Array(imageBuf)], "photo.jpg", { type: "image/jpeg" });
+    file.arrayBuffer = async () => Uint8Array.from(imageBuf).buffer;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const buckets = [
+      "listing-originals",
+      "listing-derivatives",
+      "listing-derivatives",
+      "listing-derivatives",
+    ];
+    const uploads: Array<{ bucket: string; path: string; upsert: boolean | undefined }> = [];
+
+    for (const bucket of buckets) {
+      mockServiceStorage.from.mockReturnValueOnce({
+        upload: vi.fn(async (path: string, _bytes: unknown, options: { upsert?: boolean }) => {
+          uploads.push({ bucket, path, upsert: options.upsert });
+          return { data: { path }, error: null };
+        }),
+        remove: vi.fn().mockResolvedValue({ data: null, error: null }),
+      });
+    }
+
+    const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`, {
+      method: "POST",
+    });
+    req.formData = async () => formData;
+
+    const res = await postUploadMedia(req, { params: Promise.resolve({ id: listingId }) });
+
+    expect(res.status).toBe(201);
+    expect(uploads).toHaveLength(4);
+    expect(uploads.map((item) => item.bucket)).toEqual(buckets);
+    expect(uploads.every((item) => item.upsert === false)).toBe(true);
+    expect(uploads.every((item) => item.path.startsWith(`${listingId}/${mediaId2}/`))).toBe(true);
+  });
+
+  it("B2a: an existing original Storage key is never removed after create-only collision", async () => {
+    const imageBuf = await sharp({
+      create: { width: 50, height: 50, channels: 3, background: { r: 200, g: 100, b: 50 } },
+    }).jpeg().toBuffer();
+
+    const file = new File([new Uint8Array(imageBuf)], "photo.jpg", { type: "image/jpeg" });
+    file.arrayBuffer = async () => Uint8Array.from(imageBuf).buffer;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const upload = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: "Asset Already Exists" },
+    });
+    const remove = vi.fn().mockResolvedValue({ data: null, error: null });
+    mockServiceStorage.from.mockReturnValueOnce({ upload, remove });
+
+    const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`, {
+      method: "POST",
+    });
+    req.formData = async () => formData;
+
+    const res = await postUploadMedia(req, { params: Promise.resolve({ id: listingId }) });
+
+    expect(res.status).toBe(500);
+    expect((await res.json()).code).toBe("MEDIA_UPLOAD_FAILED");
+    expect(upload).toHaveBeenCalledWith(
+      `${listingId}/${mediaId2}/original.jpg`,
+      expect.anything(),
+      expect.objectContaining({ upsert: false })
+    );
+    // A failed write may mean the key already belongs to another object.
+    // Never issue a compensating Storage remove for that key.
+    expect(mockServiceStorage.from).toHaveBeenCalledTimes(1);
+    expect(remove).not.toHaveBeenCalled();
+  });
+
   describe("A. Owner Media Snapshot GET (/api/listings/[id]/media)", () => {
     it("returns safe snapshot for authenticated listing owner", async () => {
       const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media`, {
