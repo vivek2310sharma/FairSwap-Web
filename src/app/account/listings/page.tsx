@@ -5,6 +5,7 @@ import { ListingStatus } from "@/types/listing";
 import { transitionListingAction, submitListingAction } from "./actions";
 import { ModerationStatusBadge } from "./ModerationStatusBadge";
 import { ShareButton } from "@/components/listings/ShareButton";
+import { ListingThumbnail } from "./ListingThumbnail";
 import {isPropertyEnabled} from '@/lib/listings/property/server';
 import {propertyFinancialSchema,propertyRentSummary,isPropertyRentalCategory} from '@/lib/listings/property/contract';
 import {twoWheelerV1} from '@/lib/listings/two-wheeler/contract';
@@ -217,51 +218,58 @@ export default async function ListingsDashboardPage() {
                 className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-300"
               >
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                  <div className="space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-bold text-gray-900">{listing.title}</h2>
-                      {listing.status === "pending_review" && !propertyDraft && !vehicleDraft ? (
-                        <ModerationStatusBadge
-                          listingId={listing.id}
-                          initialStatus={listing.status}
-                        />
-                      ) : (
-                        getStatusBadge(listing.status,propertyDraft||vehicleDraft)
+                  <div className="flex items-start gap-4 min-w-0 flex-1">
+                    <ListingThumbnail
+                      listingId={listing.id}
+                      coverPhotoId={listing.cover_photo_id}
+                      title={listing.title}
+                    />
+                    <div className="space-y-1.5 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg font-bold text-gray-900">{listing.title}</h2>
+                        {listing.status === "pending_review" && !propertyDraft && !vehicleDraft ? (
+                          <ModerationStatusBadge
+                            listingId={listing.id}
+                            initialStatus={listing.status}
+                          />
+                        ) : (
+                          getStatusBadge(listing.status,propertyDraft||vehicleDraft)
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                        <span className="font-semibold text-gray-900 text-sm">{priceDisplay}</span>
+                        <span>•</span>
+                        <span>{categoryName || "Uncategorized"}</span>
+                        <span>•</span>
+                        <span>{cityName || "No city"}</span>
+                        <span>•</span>
+                        <span>
+                          Updated {new Date(listing.updated_at).toLocaleDateString("en-IN")}
+                        </span>
+                      </div>
+
+                      {listing.status === "rejected" && listing.rejection_reason && (
+                        <div className="mt-2 rounded-md bg-red-50 p-2.5 text-xs text-red-700 border border-red-200">
+                          <span className="font-semibold">Rejection reason:</span>{" "}
+                          {listing.rejection_reason}
+                          <p className="mt-1 text-gray-600">
+                            Editing this listing will return it to draft so you can update and resubmit.
+                          </p>
+                        </div>
+                      )}
+
+                      {listing.status === "removed" && listing.removal_reason && (
+                        <div className="mt-2 rounded-md bg-stone-100 p-2.5 text-xs text-stone-700 border border-stone-200">
+                          <span className="font-semibold">Removed by staff:</span>{" "}
+                          {listing.removal_reason}
+                        </div>
                       )}
                     </div>
-
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                      <span className="font-semibold text-gray-900 text-sm">{priceDisplay}</span>
-                      <span>•</span>
-                      <span>{categoryName || "Uncategorized"}</span>
-                      <span>•</span>
-                      <span>{cityName || "No city"}</span>
-                      <span>•</span>
-                      <span>
-                        Updated {new Date(listing.updated_at).toLocaleDateString("en-IN")}
-                      </span>
-                    </div>
-
-                    {listing.status === "rejected" && listing.rejection_reason && (
-                      <div className="mt-2 rounded-md bg-red-50 p-2.5 text-xs text-red-700 border border-red-200">
-                        <span className="font-semibold">Rejection reason:</span>{" "}
-                        {listing.rejection_reason}
-                        <p className="mt-1 text-gray-600">
-                          Editing this listing will return it to draft so you can update and resubmit.
-                        </p>
-                      </div>
-                    )}
-
-                    {listing.status === "removed" && listing.removal_reason && (
-                      <div className="mt-2 rounded-md bg-stone-100 p-2.5 text-xs text-stone-700 border border-stone-200">
-                        <span className="font-semibold">Removed by staff:</span>{" "}
-                        {listing.removal_reason}
-                      </div>
-                    )}
                   </div>
 
                   {/* Actions according to lifecycle matrix */}
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:self-start">
                     <Link
                       href={`/account/listings/${listing.id}/edit`}
                       className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
