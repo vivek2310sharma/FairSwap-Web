@@ -26,7 +26,8 @@ export default async function AccountPage() {
     .eq("user_id", userData.user.id)
     .single<UserAccount>();
 
-  const accountStatus = account?.account_status || "active";
+  const accountStatus = account?.account_status;
+  const isActive = accountStatus === "active";
   const isSuspended = accountStatus === "suspended";
   const isDeletionPending = accountStatus === "deletion_pending";
   const isDeleted = accountStatus === "deleted";
@@ -77,7 +78,7 @@ export default async function AccountPage() {
             <span aria-hidden="true">⚠️</span> Account Deletion Pending
           </div>
           <p className="mt-1">
-            Your request to delete this account is being processed. Marketplace actions and profile updates are disabled.
+            Your request to delete this account is being processed.
           </p>
         </div>
       )}
@@ -91,7 +92,7 @@ export default async function AccountPage() {
             <span aria-hidden="true">⚠️</span> Account Closed
           </div>
           <p className="mt-1">
-            This account has been permanently closed. Marketplace actions and profile updates are disabled.
+            This account has been permanently closed.
           </p>
         </div>
       )}
@@ -190,19 +191,26 @@ export default async function AccountPage() {
             </div>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4 text-xs dark:border-stone-800">
-            {isRestricted ? (
+            <Link
+              href="/account/settings"
+              className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+            >
+              Manage Settings →
+            </Link>
+            <span className="text-gray-300 dark:text-stone-700">•</span>
+            {isActive ? (
               <Link
                 href="/account/profile"
                 className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
               >
-                View Profile →
+                Edit Profile →
               </Link>
             ) : (
               <Link
                 href="/account/profile"
                 className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
               >
-                Edit Profile →
+                View Profile →
               </Link>
             )}
             <span className="text-gray-300 dark:text-stone-700">•</span>
