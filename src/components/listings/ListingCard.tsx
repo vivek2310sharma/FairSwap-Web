@@ -46,7 +46,7 @@ export function ListingCard({
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all hover:border-brand-300 hover:shadow-md dark:hover:border-brand-700">
       {/* Thumbnail Container */}
-      <div className="relative aspect-4/3 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+      <div className="relative z-10 aspect-4/3 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <Link href={listingHref} tabIndex={-1} aria-hidden="true" className="block h-full w-full focus:outline-hidden">
           {coverUrl ? (
             <Image
@@ -88,7 +88,7 @@ export function ListingCard({
       </div>
 
       {/* Card Content */}
-      <div className={`flex flex-1 flex-col ${isCompact ? "p-2.5 sm:p-4" : "p-4"}`}>
+      <div className={`relative z-0 flex flex-1 flex-col ${isCompact ? "p-2.5 sm:p-4" : "p-4"}`}>
         <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
           <span className={`font-bold text-foreground ${isCompact ? "text-base sm:text-lg" : "text-lg"}`}>
             {formattedPrice}

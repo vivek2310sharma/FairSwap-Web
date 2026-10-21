@@ -76,6 +76,15 @@ jobs:
       - name: Run Listing Card & Homepage Performance Unit Tests
         run: pnpm vitest run src/__tests__/recent-listings.test.tsx src/__tests__/listing-card.test.tsx
 
+      - name: Install Playwright Chromium Browser
+        run: pnpm exec playwright install chromium
+
+      - name: Build Application for E2E
+        run: pnpm run build
+
+      - name: Run Mobile Search Grid E2E Tests
+        run: pnpm test:e2e e2e/mobile-search-grid.spec.ts
+
       - name: Run Auth Email Template Contract Tests
         run: |
           pnpm vitest run tests/unit/auth-email-templates.test.ts tests/unit/sign-in-actions.test.ts tests/auth/callback.test.ts tests/unit/extract-otp.test.ts
