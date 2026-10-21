@@ -100,6 +100,15 @@ function inside(width: number, height: number, maxEdge: number): [number, number
 function notAborted(signal?: AbortSignal) {
   requireImage(!signal?.aborted, "TIMEOUT");
 }
+function isByteView(value: unknown): value is Uint8Array {
+  // Buffer and browser Uint8Array may be created in different JS realms
+  // (e.g. Node under Vitest's jsdom). ArrayBuffer.isView is realm-safe;
+  // reject DataView and other typed-array element widths.
+  return Buffer.isBuffer(value) || (
+    ArrayBuffer.isView(value) &&
+    Object.prototype.toString.call(value) === "[object Uint8Array]"
+  );
+}
 async function inspectWebp(bytes: Buffer, width: number, height: number) {
   requireImage(bytes.length > 0 && bytes.length <= MAX_BYTES && detectFormat(bytes) === "webp", "UNSUPPORTED_MEDIA");
   const meta = await sharp(bytes, { limitInputPixels: MAX_PIXELS, failOn: "error" }).metadata();
@@ -153,7 +162,7 @@ export async function prepareV2ImageObjects(
     const parsed = IdentitySchema.safeParse(untrustedIdentity);
     requireImage(parsed.success, "SEAL_INVALID");
     const identity = parsed.data;
-    requireImage(untrustedSource instanceof Uint8Array && untrustedSource.byteLength > 0 &&
+    requireImage(isByteView(untrustedSource) && untrustedSource.byteLength > 0 &&
       untrustedSource.byteLength <= MAX_BYTES, "UNSUPPORTED_MEDIA");
     notAborted(signal);
     const source = Buffer.from(untrustedSource);
