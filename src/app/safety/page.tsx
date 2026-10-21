@@ -3,6 +3,7 @@ import { Footer } from "@/components/footer";
 import Link from "next/link";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { ShieldAlert, Users, Eye, CreditCard, MapPin } from "lucide-react";
+import { IndiaSafetyCard } from "@/components/listings/IndiaSafetyAdvice";
 
 export const metadata = {
   title: "Safety Advice & Guidelines — FairSwap",
@@ -27,6 +28,8 @@ export default function SafetyPage() {
             </p>
           </div>
         </div>
+
+        <div className="mt-8"><IndiaSafetyCard /></div>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-6">
