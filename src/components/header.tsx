@@ -7,9 +7,9 @@ import { Menu, X, Search, Heart, PlusCircle, User, MessageSquare, Bell, LifeBuoy
 import { NotificationBell } from "@/components/communication/NotificationBell";
 
 const navLinks = [
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Categories", href: "#categories" },
-  { label: "Safety", href: "#safety" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Categories", href: "/#categories" },
+  { label: "Safety", href: "/#safety" },
 ];
 
 export function Header() {
@@ -32,13 +32,13 @@ export function Header() {
         {/* Desktop navigation */}
         <nav className="hidden items-center gap-6 lg:flex" aria-label="Main navigation">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="text-sm font-medium text-muted transition-colors hover:text-foreground"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
           <Link
             href="/search"
@@ -109,14 +109,14 @@ export function Header() {
         >
           <div className="space-y-2 px-4 py-3">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className="block rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
             <Link
               href="/search"

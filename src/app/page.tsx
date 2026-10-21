@@ -2,6 +2,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
 import Link from "next/link";
+import Form from "next/form";
 import Image from "next/image";
 import {
   ShoppingBag,
@@ -44,9 +45,8 @@ export default function HomePage() {
 
           {/* Quick Search Bar */}
           <div className="mx-auto mt-8 max-w-2xl">
-            <form
+            <Form
               action="/search"
-              method="GET"
               className="flex items-center rounded-2xl border border-border bg-background p-2 shadow-sm focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500"
             >
               <Search className="ml-3 h-5 w-5 text-muted" aria-hidden="true" />
@@ -64,7 +64,7 @@ export default function HomePage() {
                 <span>Search</span>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
-            </form>
+            </Form>
           </div>
         </section>
 

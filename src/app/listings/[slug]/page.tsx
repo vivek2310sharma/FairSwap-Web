@@ -12,6 +12,7 @@ import {
   getSellerPublicListings,
 } from "@/lib/discovery/queries";
 import { createClient } from "@/lib/supabase/server";
+import { getBackToSearchHref } from "@/lib/navigation/search-context";
 import {z} from 'zod';
 import {loadOwnerReadiness} from '@/lib/listings/readiness-server';
 import {reviewableField,reviewPacketSchema} from '@/lib/listings/submission-readiness';
@@ -30,6 +31,7 @@ import {
 
 interface ListingDetailPageProps {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export async function generateMetadata({
@@ -70,8 +72,10 @@ export async function generateMetadata({
   };
 }
 
-export default async function ListingDetailPage({ params }: ListingDetailPageProps) {
+export default async function ListingDetailPage({ params, searchParams }: ListingDetailPageProps) {
   const { slug } = await params;
+  const ctxParam = searchParams ? (await searchParams).ctx : undefined;
+  const backHref = getBackToSearchHref(ctxParam);
   const { listing, redirectSlug, isOwnerOrStaffPreview } =
     await getPublicListingBySlugOrId(slug);
 
@@ -179,7 +183,7 @@ export default async function ListingDetailPage({ params }: ListingDetailPagePro
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           {/* Breadcrumb Navigation */}
           <div className="mb-6 flex items-center gap-2 text-xs text-muted">
-            <Link href="/search" className="hover:text-foreground inline-flex items-center gap-1">
+            <Link href={backHref} className="hover:text-foreground inline-flex items-center gap-1">
               <ArrowLeft className="h-3 w-3" aria-hidden="true" />
               Back to search
             </Link>
