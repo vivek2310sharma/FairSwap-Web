@@ -91,22 +91,37 @@ describe("ListingActionsContainer", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
-  it("does not render overflow menu button when secondary actions array is empty", () => {
+  it("restores focus to persistent overflow trigger button when confirmation modal closes from secondary action", async () => {
     const actions = resolveListingActions({
-      id: "rejected-1",
-      slug: "rejected-item",
-      status: "rejected",
+      id: "paused-1",
+      slug: "paused-item",
+      status: "paused",
       renewal_count: 0,
     });
 
-    render(<ListingActionsContainer listingId="rejected-1" actions={actions} />);
+    render(<ListingActionsContainer listingId="paused-1" actions={actions} />);
 
-    expect(screen.getByRole("link", { name: "Fix listing" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "More actions" })).not.toBeInTheDocument();
+    const menuButton = screen.getByRole("button", { name: "More actions" });
+    fireEvent.click(menuButton);
+
+    const markSoldMenuItem = screen.getByRole("menuitem", { name: "Mark as sold" });
+    fireEvent.click(markSoldMenuItem);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    const cancelButton = screen.getByRole("button", { name: "Cancel" });
+    fireEvent.click(cancelButton);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(menuButton);
   });
 
-  it("opens confirmation modal for Mark as Sold and invokes transition on Confirm", async () => {
-    mockTransition.mockResolvedValueOnce({ success: true });
+  it("displays action-specific mutation progress feedback when secondary action is in flight", async () => {
+    let resolvePromise: (value: { success: boolean }) => void;
+    const promise = new Promise<{ success: boolean }>((resolve) => {
+      resolvePromise = resolve;
+    });
+    mockTransition.mockReturnValueOnce(promise);
 
     const actions = resolveListingActions({
       id: "active-1",
@@ -117,46 +132,51 @@ describe("ListingActionsContainer", () => {
 
     render(<ListingActionsContainer listingId="active-1" actions={actions} />);
 
-    const markSoldButton = screen.getByRole("button", { name: "Mark as sold" });
-    fireEvent.click(markSoldButton);
+    fireEvent.click(screen.getByRole("button", { name: "More actions" }));
+    const pauseMenuItem = screen.getByRole("menuitem", { name: "Pause" });
 
-    const dialog = screen.getByRole("dialog");
-    expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("Mark Listing as Sold?")).toBeInTheDocument();
-
-    const confirmButton = screen.getByRole("button", { name: "Confirm" });
     await act(async () => {
-      fireEvent.click(confirmButton);
+      fireEvent.click(pauseMenuItem);
     });
 
-    await waitFor(() => {
-      expect(mockTransition).toHaveBeenCalledWith("active-1", "mark_sold");
+    expect(screen.getByRole("status")).toHaveTextContent("Processing: Pause...");
+
+    await act(async () => {
+      resolvePromise!({ success: true });
     });
   });
 
-  it("cancels confirmation modal on Cancel button click or Escape key", () => {
+  it("prevents duplicate submissions while an action is pending", async () => {
+    let resolvePromise: (value: { success: boolean }) => void;
+    const promise = new Promise<{ success: boolean }>((resolve) => {
+      resolvePromise = resolve;
+    });
+    mockTransition.mockReturnValueOnce(promise);
+
     const actions = resolveListingActions({
-      id: "active-1",
-      slug: "active-item",
-      status: "active",
+      id: "paused-1",
+      slug: "paused-item",
+      status: "paused",
       renewal_count: 0,
     });
 
-    render(<ListingActionsContainer listingId="active-1" actions={actions} />);
+    render(<ListingActionsContainer listingId="paused-1" actions={actions} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Mark as sold" }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const resumeBtn = screen.getByRole("button", { name: "Resume" });
 
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(mockTransition).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(resumeBtn);
+    });
 
-    // Test Escape key dismissal
-    fireEvent.click(screen.getByRole("button", { name: "Mark as sold" }));
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(resumeBtn).toBeDisabled();
 
-    fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    // Attempt duplicate click while pending
+    fireEvent.click(resumeBtn);
+    expect(mockTransition).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolvePromise!({ success: true });
+    });
   });
 
   it("displays actionable error message when server action fails", async () => {

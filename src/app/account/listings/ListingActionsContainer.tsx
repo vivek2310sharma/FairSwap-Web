@@ -18,7 +18,7 @@ export function ListingActionsContainer({
 }: ListingActionsContainerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<ListingAction | null>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [focusedMenuIndex, setFocusedMenuIndex] = useState<number>(0);
@@ -163,7 +163,8 @@ export function ListingActionsContainer({
     }
 
     if (action.requiresConfirmation && !activeConfirmationAction) {
-      lastFocusedTriggerRef.current = triggerElement || (document.activeElement as HTMLElement);
+      // If menu was open, focus restores to persistent ⋯ menu button because menuitem unmounts
+      lastFocusedTriggerRef.current = menuOpen ? menuButtonRef.current : triggerElement || (document.activeElement as HTMLElement);
       setActiveConfirmationAction(action);
       setMenuOpen(false);
       return;
@@ -174,7 +175,7 @@ export function ListingActionsContainer({
     }
     setMenuOpen(false);
 
-    setPendingActionId(action.id);
+    setPendingAction(action);
 
     startTransition(async () => {
       try {
@@ -197,14 +198,15 @@ export function ListingActionsContainer({
       } catch {
         setErrorMessage("An unexpected error occurred. Please try again.");
       } finally {
-        setPendingActionId(null);
+        setPendingAction(null);
       }
     });
   }
 
   const primary = actions.primary;
   const secondary = actions.secondary;
-  const isPrimaryPending = isPending && pendingActionId === primary.id;
+  const isPrimaryPending = isPending && pendingAction?.id === primary.id;
+  const isSecondaryPending = isPending && pendingAction && pendingAction.id !== primary.id;
 
   return (
     <div className="flex flex-col items-end gap-2 sm:items-center sm:flex-row sm:gap-2">
@@ -215,6 +217,18 @@ export function ListingActionsContainer({
         >
           <AlertCircle className="h-4 w-4 shrink-0 text-red-600" aria-hidden="true" />
           <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Action-specific secondary mutation progress feedback when overflow menu is closed */}
+      {isSecondaryPending && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 border border-emerald-200"
+        >
+          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" aria-hidden="true" />
+          <span>Processing: {pendingAction.label}...</span>
         </div>
       )}
 
@@ -266,7 +280,7 @@ export function ListingActionsContainer({
                 className="absolute right-0 z-30 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none"
               >
                 {secondary.map((sec, idx) => {
-                  const isSecPending = isPending && pendingActionId === sec.id;
+                  const isSecPending = isPending && pendingAction?.id === sec.id;
                   if (sec.type === "link" && sec.href) {
                     return (
                       <Link

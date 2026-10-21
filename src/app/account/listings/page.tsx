@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ListingStatus } from "@/types/listing";
 import { ModerationStatusBadge } from "./ModerationStatusBadge";
+import { ShareButton } from "@/components/listings/ShareButton";
 import { isPropertyEnabled } from "@/lib/listings/property/server";
 import {
   propertyFinancialSchema,
@@ -79,6 +80,7 @@ export default async function ListingsDashboardPage() {
       rejection_reason,
       removal_reason,
       cover_photo_id,
+      expires_at,
       created_at,
       updated_at,
       categories(name,slug),
@@ -162,6 +164,27 @@ export default async function ListingsDashboardPage() {
   const contextLookupFailed =
     !!propertyResult?.error || motorcycleContexts.failed || carContexts.failed;
 
+  const activeListingIds = (listings ?? [])
+    .filter((l) => l.status === "active")
+    .map((l) => l.id);
+
+  const visibilityChecks = await Promise.all(
+    activeListingIds.map(async (id) => {
+      try {
+        const { data } = await supabase.rpc("is_listing_publicly_visible", {
+          listing_id: id,
+        });
+        return [id, !!data] as const;
+      } catch {
+        return [id, false] as const;
+      }
+    })
+  );
+
+  const publicListingIds = new Set(
+    visibilityChecks.filter(([, isVis]) => isVis).map(([id]) => id)
+  );
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="flex flex-col justify-between gap-4 border-b border-gray-200 pb-6 sm:flex-row sm:items-center">
@@ -244,6 +267,8 @@ export default async function ListingsDashboardPage() {
             const cityName = Array.isArray(listing.cities)
               ? listing.cities[0]?.name
               : (listing.cities as { name?: string } | null)?.name;
+
+            const isPublic = publicListingIds.has(listing.id);
 
             const actions = resolveListingActions({
               id: listing.id,
@@ -339,7 +364,16 @@ export default async function ListingsDashboardPage() {
                   </div>
 
                   {/* Actions according to simplified single primary + overflow menu contract */}
-                  <div className="shrink-0">
+                  <div className="shrink-0 flex items-center gap-2">
+                    {listing.status === "active" && isPublic && (
+                      <ShareButton
+                        slug={listing.slug}
+                        title={listing.title}
+                        price_type={listing.price_type}
+                        price_paise={listing.price_paise}
+                        variant="inline"
+                      />
+                    )}
                     <ListingActionsContainer
                       listingId={listing.id}
                       actions={actions}
