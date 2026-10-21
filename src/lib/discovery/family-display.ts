@@ -3,7 +3,7 @@ import { twoWheelerV1, validateVehicleAnswers } from "@/lib/listings/two-wheeler
 import { carsV1, validateCarAnswers } from "@/lib/listings/cars/contract";
 import { propertyV1, propertyFinancialSchema, validatePropertyDraft } from "@/lib/listings/property/contract";
 
-import { publicFamilyForSlug, type PublicFamily } from "./category-family";
+import type { PublicFamily } from "./category-family";
 export { publicFamilyForSlug } from "./category-family";
 
 export interface PublicFamilyDisplay {
