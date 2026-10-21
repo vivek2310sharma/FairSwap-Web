@@ -20,7 +20,7 @@ export default function ContactPage() {
           </div>
           <p className="mt-1 text-xs">
             FairSwap is currently operating as a controlled production pilot. For platform support, use the
-            email address, phone contact, or support tickets below. FairSwap does not provide emergency assistance.
+            email address, WhatsApp support, or support tickets below. FairSwap does not provide emergency assistance.
           </p>
         </div>
 
@@ -51,10 +51,10 @@ export default function ContactPage() {
                 </dd>
               </div>
               <div>
-                <dt className="font-medium text-foreground">Phone contact (calls)</dt>
+                <dt className="font-medium text-foreground">WhatsApp support (messages)</dt>
                 <dd>
-                  <a href="tel:+918826599917" className="text-brand-link underline hover:text-brand-hover">
-                    +91 8826599917
+                  <a href="https://wa.me/917877966996" target="_blank" rel="noopener noreferrer" className="text-brand-link underline hover:text-brand-hover">
+                    +91 7877966996
                   </a>
                 </dd>
               </div>

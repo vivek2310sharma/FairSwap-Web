@@ -7,14 +7,14 @@ export interface TrustStripItem {
 
 export interface TrustStripContent {
   heading: string;
-  subheading?: string;
+  subheading: string;
   ctaText: string;
   items: TrustStripItem[];
 }
 
 export const trustStripEn: TrustStripContent = {
   heading: "Stay Safe on FairSwap",
-  subheading: "Recognize common Indian marketplace scams and protect yourself.",
+  subheading: "Peer-to-peer safety guidance for Indian marketplace buyers and sellers.",
   ctaText: "Read Safety Guidelines →",
   items: [
     {
@@ -49,7 +49,7 @@ export const trustStripEn: TrustStripContent = {
 
 export const trustStripHi: TrustStripContent = {
   heading: "FairSwap पर सुरक्षित रहें",
-  subheading: "भारतीय मार्केटप्लेस के आम घोटालों को पहचानें और खुद को सुरक्षित रखें।",
+  subheading: "भारतीय मार्केटप्लेस खरीदारों और विक्रेताओं के लिए सुरक्षा मार्गदर्शन।",
   ctaText: "सुरक्षा दिशानिर्देश पढ़ें →",
   items: [
     {

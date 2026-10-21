@@ -19,14 +19,6 @@ export function Footer() {
             <p className="mt-2 text-xs text-muted leading-relaxed">
               India&apos;s local classifieds marketplace
             </p>
-            <a
-              href="https://websitelaunches.com/site/fairswap.in"
-              target="_blank"
-              rel="noopener noreferrer external"
-              className="mt-2 inline-block text-xs text-muted underline underline-offset-2 hover:text-foreground"
-            >
-              View FairSwap&apos;s public launch record
-            </a>
           </div>
 
           {/* Discovery Links */}
@@ -80,8 +72,8 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="tel:+918826599917" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
-                  +91 8826599917
+                <a href="https://wa.me/917877966996" target="_blank" rel="noopener noreferrer" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
+                  WhatsApp Support: +91 7877966996
                 </a>
               </li>
             </ul>

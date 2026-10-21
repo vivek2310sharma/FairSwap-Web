@@ -7,6 +7,7 @@ import { PhotoGallery } from "@/components/listings/PhotoGallery";
 import { FavouriteButton } from "@/components/listings/FavouriteButton";
 import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
 import { ListingCard } from "@/components/listings/ListingCard";
+import { ShareButton } from "@/components/listings/ShareButton";
 import {
   getPublicListingBySlugOrId,
   getSellerPublicListings,
@@ -54,20 +55,37 @@ export async function generateMetadata({
     ? `${siteUrl}/api/listings/${listing.id}/media/${firstPhoto.id}/large`
     : undefined;
 
+  const formattedPrice =
+    listing.price_type === "free"
+      ? "Free"
+      : listing.price_paise !== null && listing.price_paise !== undefined
+      ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
+      : "Price on request";
+
+  const descriptionText = `${formattedPrice} • ${
+    listing.description?.slice(0, 140) ||
+    `Find ${listing.title} available for sale in ${listing.city?.name || "India"} on FairSwap.`
+  }`;
+
   return {
     title: `${listing.title} — FairSwap`,
-    description:
-      listing.description?.slice(0, 160) ||
-      `Find ${listing.title} available for sale in ${listing.city?.name || "India"} on FairSwap.`,
+    description: descriptionText,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: listing.title,
-      description: listing.description || "",
+      title: `${listing.title} — FairSwap`,
+      description: descriptionText,
       url: canonicalUrl,
+      siteName: "FairSwap",
       type: "website",
-      images: photoUrl ? [{ url: photoUrl }] : [],
+      images: photoUrl ? [{ url: photoUrl, alt: listing.title }] : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${listing.title} — FairSwap`,
+      description: descriptionText,
+      images: photoUrl ? [photoUrl] : [],
     },
   };
 }
@@ -248,6 +266,14 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                       initialIsFavourited={isFavourited}
                       showText={true}
                     />
+                    {!isOwnerOrStaffPreview && listing.status === "active" && (
+                      <ShareButton
+                        slug={listing.slug}
+                        title={listing.title}
+                        formattedPrice={formattedPrice}
+                        variant="inline"
+                      />
+                    )}
                   </div>
                 </div>
 
