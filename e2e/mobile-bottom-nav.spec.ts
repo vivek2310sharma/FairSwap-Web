@@ -40,14 +40,36 @@ test.describe("HDR-01: Mobile Bottom Navigation", () => {
       await expect(chatsLink).toBeVisible();
       await expect(accountLink).toBeVisible();
 
-      // Check minimum touch target bounding box height >= 44px
-      const sellBox = await sellLink.boundingBox();
-      expect(sellBox).not.toBeNull();
-      if (sellBox) {
-        expect(sellBox.height).toBeGreaterThanOrEqual(44);
+      // Verify touch targets for all 5 links are at least 44x44 CSS pixels
+      for (const link of [homeLink, searchLink, sellLink, chatsLink, accountLink]) {
+        const box = await link.boundingBox();
+        expect(box).not.toBeNull();
+        if (box) {
+          expect(box.width).toBeGreaterThanOrEqual(44);
+          expect(box.height).toBeGreaterThanOrEqual(44);
+        }
       }
     });
   }
+
+  test("safe-area spacer height matches fixed navigation height", async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    await page.goto("/");
+
+    const bottomNav = page.getByRole("navigation", { name: "Mobile bottom navigation" });
+    const navBox = await bottomNav.boundingBox();
+    expect(navBox).not.toBeNull();
+
+    const spacerHeight = await page.evaluate(() => {
+      const spacer = document.querySelector('div[aria-hidden="true"].pointer-events-none');
+      return spacer ? spacer.getBoundingClientRect().height : 0;
+    });
+
+    expect(spacerHeight).toBeGreaterThan(0);
+    if (navBox) {
+      expect(spacerHeight).toBeCloseTo(navBox.height, 0);
+    }
+  });
 
   test("hides bottom navigation at 640px and above (tablet/desktop breakpoints)", async ({
     page,
@@ -65,6 +87,38 @@ test.describe("HDR-01: Mobile Bottom Navigation", () => {
       const bottomNav = page.getByRole("navigation", { name: "Mobile bottom navigation" });
       await expect(bottomNav).not.toBeVisible();
     }
+  });
+
+  test.describe("Modal and Drawer stacking (z-index layering)", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.setViewportSize({ width: 360, height: 640 });
+    });
+
+    test("mobile search filter drawer appears above bottom navigation and blocks click-through", async ({
+      page,
+    }) => {
+      await page.goto("/search");
+      const bottomNav = page.getByRole("navigation", { name: "Mobile bottom navigation" });
+      await expect(bottomNav).toBeVisible();
+
+      // Open mobile filter drawer
+      const filterBtn = page.getByRole("button", { name: /filter/i }).first();
+      await expect(filterBtn).toBeVisible();
+      await filterBtn.click();
+
+      // Verify filter drawer / dialog backdrop is visible
+      const filterDrawer = page.locator("aside, div").filter({ hasText: "Filter Listings" }).first();
+      await expect(filterDrawer).toBeVisible();
+
+      // Check z-index stacking context: filter backdrop (z-50) vs bottom nav (z-40)
+      const isDrawerOnTop = await page.evaluate(() => {
+        const nav = document.querySelector('nav[aria-label="Mobile bottom navigation"]');
+        const elementAtBottomPoint = document.elementFromPoint(180, 620);
+        return nav !== null && elementAtBottomPoint !== null && !nav.contains(elementAtBottomPoint);
+      });
+
+      expect(isDrawerOnTop).toBe(true);
+    });
   });
 
   test.describe("Route awareness and active state indicators", () => {
@@ -121,6 +175,19 @@ test.describe("HDR-01: Mobile Bottom Navigation", () => {
 
       await homeLink.focus();
       await expect(homeLink).toBeFocused();
+
+      // Verify computed focus outline style
+      const outlineInfo = await homeLink.evaluate((el) => {
+        const style = window.getComputedStyle(el);
+        return {
+          outlineStyle: style.outlineStyle,
+          outlineWidth: style.outlineWidth,
+          outlineColor: style.outlineColor,
+        };
+      });
+
+      expect(outlineInfo.outlineStyle).toBe("solid");
+      expect(parseInt(outlineInfo.outlineWidth, 10)).toBeGreaterThanOrEqual(1);
     });
   });
 });

@@ -90,10 +90,11 @@ describe("MobileBottomNav Component", () => {
 
     const nav = screen.getByRole("navigation", { name: "Mobile bottom navigation" });
     expect(nav).toBeInTheDocument();
+    expect(nav.className).toContain("z-40");
 
     const homeLink = screen.getByRole("link", { name: "Home" });
     const searchLink = screen.getByRole("link", { name: "Search" });
-    const sellLink = screen.getByRole("aria-label" in screen ? "link" : "link", { name: /Sell/i });
+    const sellLink = screen.getByRole("link", { name: /Sell/i });
     const chatsLink = screen.getByRole("link", { name: "Chats" });
     const accountLink = screen.getByRole("link", { name: "Account" });
 
@@ -106,6 +107,20 @@ describe("MobileBottomNav Component", () => {
     expect(sellLink).toHaveAttribute("href", "/account/listings/new");
     expect(chatsLink).toHaveAttribute("href", "/account/messages");
     expect(accountLink).toHaveAttribute("href", "/account");
+
+    // Verify touch target CSS classes (>= 44px min width/height)
+    for (const link of [homeLink, searchLink, sellLink, chatsLink, accountLink]) {
+      expect(link.className).toContain("min-h-[44px]");
+      expect(link.className).toContain("min-w-[44px]");
+    }
+  });
+
+  it("renders safe-area spacer with full navigation height calculation", () => {
+    mockUsePathname.mockReturnValue("/");
+    const { container } = render(<MobileBottomNav />);
+    const spacer = container.querySelector('div[aria-hidden="true"]');
+    expect(spacer).not.toBeNull();
+    expect(spacer?.className).toContain("h-[calc(4rem+1px+env(safe-area-inset-bottom,0px))]");
   });
 
   it("highlights Search when on /search", () => {

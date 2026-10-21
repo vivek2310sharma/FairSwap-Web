@@ -76,12 +76,12 @@ export function MobileBottomNav() {
     <>
       {/* Spacer in document flow on mobile to prevent content overlap */}
       <div
-        className="h-16 pb-[env(safe-area-inset-bottom)] sm:hidden shrink-0 pointer-events-none"
+        className="h-[calc(4rem+1px+env(safe-area-inset-bottom,0px))] sm:hidden shrink-0 pointer-events-none"
         aria-hidden="true"
       />
       <nav
         aria-label="Mobile bottom navigation"
-        className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-surface/95 backdrop-blur-xs pb-[env(safe-area-inset-bottom)] sm:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface/95 backdrop-blur-xs pb-[env(safe-area-inset-bottom)] sm:hidden"
       >
         <ul className="grid h-16 grid-cols-5 items-center px-1" role="list">
           {navItems.map((item) => {
