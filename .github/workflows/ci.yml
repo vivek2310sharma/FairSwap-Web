@@ -76,6 +76,9 @@ jobs:
       - name: Run Homepage Performance Unit Tests
         run: pnpm vitest run src/__tests__/recent-listings.test.tsx
 
+      - name: Run LIST-03 WhatsApp Sharing Unit Tests
+        run: pnpm vitest run tests/unit/share.test.tsx
+
       - name: Run Auth Email Template Contract Tests
         run: |
           pnpm vitest run tests/unit/auth-email-templates.test.ts tests/unit/sign-in-actions.test.ts tests/auth/callback.test.ts tests/unit/extract-otp.test.ts
@@ -155,7 +158,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Start Disposable Local Supabase
-        run: supabase start -x studio,analytics,logflare,supavisor
+        run: |
+          supabase stop || true
+          supabase start -x studio,analytics,logflare,supavisor
 
       - name: Run Schema & Media Invalidation pgTAP Tests
         run: |
