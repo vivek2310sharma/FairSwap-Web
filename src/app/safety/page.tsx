@@ -29,7 +29,7 @@ export default function SafetyPage() {
           </div>
         </div>
 
-        <div className="mt-8"><IndiaSafetyCard helpCentreHref={HELP_CENTRE_URL} /></div>
+        <div className="mt-8"><IndiaSafetyCard /></div>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-6">
