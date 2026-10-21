@@ -46,30 +46,32 @@ export function ListingCard({
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all hover:border-brand-300 hover:shadow-md dark:hover:border-brand-700">
       {/* Thumbnail Container */}
-      <div className="relative z-10 aspect-4/3 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-        {coverUrl ? (
-          <Image
-            src={coverUrl}
-            alt={listing.title}
-            fill
-            sizes={
-              isCompact
-                ? "(max-width: 360px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            }
-            className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
-            unoptimized={true}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted">
-            <Tag className="h-10 w-10 stroke-1 opacity-50" aria-hidden="true" />
-          </div>
-        )}
+      <div className="relative aspect-4/3 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+        <Link href={listingHref} tabIndex={-1} aria-hidden="true" className="block h-full w-full focus:outline-hidden">
+          {coverUrl ? (
+            <Image
+              src={coverUrl}
+              alt={listing.title}
+              fill
+              sizes={
+                isCompact
+                  ? "(max-width: 360px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              }
+              className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+              unoptimized={true}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-muted">
+              <Tag className="h-10 w-10 stroke-1 opacity-50" aria-hidden="true" />
+            </div>
+          )}
+        </Link>
 
         {/* Condition Tag */}
         {listing.condition && (
           <span
-            className={`absolute rounded-md bg-black/60 font-medium text-white backdrop-blur-xs truncate max-w-[calc(100%-3.25rem)] ${
+            className={`absolute rounded-md bg-black/60 font-medium text-white backdrop-blur-xs truncate max-w-[calc(100%-3.25rem)] pointer-events-none ${
               isCompact
                 ? "top-1.5 left-1.5 px-1.5 py-0.5 text-[10px] sm:top-2 sm:left-2 sm:px-2 sm:text-xs"
                 : "top-2 left-2 px-2 py-0.5 text-xs"
@@ -80,13 +82,13 @@ export function ListingCard({
         )}
 
         {/* Favourite Button */}
-        <div className={`absolute z-30 ${isCompact ? "top-1.5 right-1.5 sm:top-2 sm:right-2" : "top-2 right-2"}`}>
+        <div className={`absolute z-20 ${isCompact ? "top-1.5 right-1.5 sm:top-2 sm:right-2" : "top-2 right-2"}`}>
           <FavouriteButton listingId={listing.id} initialIsFavourited={isFavourited} />
         </div>
       </div>
 
       {/* Card Content */}
-      <div className={`relative z-0 flex flex-1 flex-col ${isCompact ? "p-2.5 sm:p-4" : "p-4"}`}>
+      <div className={`flex flex-1 flex-col ${isCompact ? "p-2.5 sm:p-4" : "p-4"}`}>
         <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
           <span className={`font-bold text-foreground ${isCompact ? "text-base sm:text-lg" : "text-lg"}`}>
             {formattedPrice}
