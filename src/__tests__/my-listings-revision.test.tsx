@@ -44,6 +44,11 @@ const mockData = vi.hoisted(() => ({
   ] as ListingRow[],
 }));
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  redirect: vi.fn(),
+}));
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: {
