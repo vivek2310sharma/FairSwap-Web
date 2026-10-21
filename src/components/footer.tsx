@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -11,19 +10,12 @@ export function Footer() {
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
           {/* Brand & Mission */}
           <div>
-            <Link href="/" className="inline-block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
-              <div className="rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5"><Image
-                src="/brand/FairSwap_Web_Logo_Transparent.png"
-                alt="FairSwap.in"
-                width={120}
-                height={32}
-                className="h-8 w-auto object-contain"
-                priority
-              /></div>
+            <Link href="/" className="inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm" aria-label="FairSwap home">
+              <span className="inline-block rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5">
+                <Image src="/brand/FairSwap_Web_Logo_Transparent.png" alt="FairSwap.in" width={120} height={32} className="h-8 w-auto object-contain" />
+              </span>
             </Link>
-            <p className="mt-3 text-xs text-brand-900 dark:text-brand-300 font-medium italic">
-              Give. Get. Grow Together.
-            </p>
+            <p className="mt-3 text-xs text-brand-900 dark:text-brand-300 font-medium italic">Give. Get. Grow Together.</p>
             <p className="mt-2 text-xs text-muted leading-relaxed">
               India&apos;s local classifieds marketplace
             </p>
@@ -60,7 +52,7 @@ export function Footer() {
             </h3>
             <ul className="mt-3 space-y-2 text-xs text-muted">
               <li>
-                <a href={HELP_CENTRE_URL} className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
+                <a href="https://help.fairswap.in/en" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Help Centre
                 </a>
               </li>
@@ -80,12 +72,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a
-                  href="https://wa.me/917877966996"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm"
-                >
+                <a href="https://wa.me/917877966996" target="_blank" rel="noopener noreferrer" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   WhatsApp Support: +91 7877966996
                 </a>
               </li>
@@ -101,11 +88,6 @@ export function Footer() {
               <li>
                 <Link href="/terms" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="/refund-policy" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
-                  Refund &amp; Cancellation Policy
                 </Link>
               </li>
               <li>
@@ -127,10 +109,13 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="mt-8 border-t border-border/60 pt-6 text-center sm:text-left">
+        {/* Development notice and copyright */}
+        <div className="mt-8 border-t border-border/60 pt-6 flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
           <p className="text-xs text-muted">
             &copy; {currentYear} FairSwap.
+          </p>
+          <p className="text-xs text-muted">
+            Currently operating as a controlled production pilot.
           </p>
         </div>
       </div>

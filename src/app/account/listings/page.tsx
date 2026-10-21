@@ -43,7 +43,7 @@ function getStatusBadge(status: ListingStatus, testFamily=false) {
         styles[status] || styles.draft
       }`}
     >
-      {testFamily&&status==='pending_review'?'Review — Not Live':labels[status] || status}
+      {testFamily&&status==='pending_review'?'Test Review — Not Live':labels[status] || status}
     </span>
   );
 }
@@ -245,8 +245,8 @@ export default async function ListingsDashboardPage() {
                       {(propertyDraft||vehicleDraft)&&listing.status==='pending_review'?'View saved details':'Edit'}
                     </Link>
 
-                    {listing.status==='draft'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">{isVerifiedSubmissionTestEnvironment(process.env)?'Open the saved draft to check Test submission availability. Approval and publication remain disabled.':'Draft only. This category is not yet open for submission or publication.'}</p>}
-                    {listing.status==='pending_review'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">Automated review can finish while this category is not publicly live. Saved details and photos are read-only; approval and publication remain disabled.</p>}
+                    {listing.status==='draft'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">{isVerifiedSubmissionTestEnvironment(process.env)?'Open the saved draft to check Test submission availability. Approval and publication remain disabled.':'Test draft only. Submission and publication are unavailable.'}</p>}
+                    {listing.status==='pending_review'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">This category is still in testing. Your submitted listing remains private, even when its automated checks finish. Approval and public publication are not available yet; saved details and photos are read-only.</p>}
                     {listing.status==='draft'&&unresolvedFamily&&<p role="status" className="text-sm text-amber-800">{contextLookupFailed?'Category references could not be loaded. Submission is unavailable. Try again later.':'Category information is unavailable. Submission is unavailable until this draft’s category is verified.'}</p>}
                     {listing.status === "draft" && !propertyDraft && !vehicleDraft && !unresolvedFamily && (
                       <form action={onSubmitListing.bind(null, listing.id)}>

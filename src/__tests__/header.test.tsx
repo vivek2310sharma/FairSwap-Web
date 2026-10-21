@@ -1,7 +1,6 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 import { Header } from "@/components/header";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 describe("Header component", () => {
   it("renders the FairSwap wordmark with link to home", () => {
@@ -27,30 +26,8 @@ describe("Header component", () => {
     );
     expect(screen.getByRole("link", { name: "Safety" })).toHaveAttribute(
       "href",
-      "/safety"
+      "/#safety"
     );
-  });
-
-  it("provides exactly one same-tab public Help Centre link in desktop navigation", () => {
-    render(<Header />);
-    const navigation = screen.getByRole("navigation", { name: "Main navigation" });
-    const links = within(navigation).getAllByRole("link", { name: "Help Centre" });
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute("href", HELP_CENTRE_URL);
-    expect(links[0]).not.toHaveAttribute("target", "_blank");
-  });
-
-  it("keeps public Help Centre and authenticated support tickets distinct on mobile", () => {
-    render(<Header />);
-    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
-    const mobile = screen.getByRole("navigation", { name: "Mobile navigation" });
-    const help = within(mobile).getByRole("link", { name: "Help Centre" });
-    const tickets = within(mobile).getByRole("link", { name: "Support Tickets" });
-    expect(help).toHaveAttribute("href", HELP_CENTRE_URL);
-    expect(help).not.toHaveAttribute("target", "_blank");
-    expect(tickets).toHaveAttribute("href", "/account/support");
-    fireEvent.click(help);
-    expect(screen.queryByRole("navigation", { name: "Mobile navigation" })).not.toBeInTheDocument();
   });
 
   it("toggles mobile menu on button click with proper aria attributes", () => {

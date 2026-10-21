@@ -1,7 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AccountNav } from "@/components/account/AccountNav";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 // Mock next/navigation
 const mockUsePathname = vi.fn();
@@ -42,17 +41,6 @@ describe("AccountNav component", () => {
     for (const label of expectedLabels) {
       expect(screen.getByRole("link", { name: new RegExp(label) })).toBeInTheDocument();
     }
-  });
-
-  it("offers public Help Centre without replacing private support tickets", () => {
-    mockUsePathname.mockReturnValue("/account/profile");
-    render(<AccountNav />);
-    const nav = screen.getByRole("navigation", { name: "Account navigation" });
-    const helpLinks = within(nav).getAllByRole("link", { name: "Help Centre" });
-    expect(helpLinks).toHaveLength(1);
-    expect(helpLinks[0]).toHaveAttribute("href", HELP_CENTRE_URL);
-    expect(helpLinks[0]).not.toHaveAttribute("target", "_blank");
-    expect(within(nav).getByRole("link", { name: "Support Tickets" })).toHaveAttribute("href", "/account/support");
   });
 
   it("does NOT expose policy-review as a navigation item", () => {

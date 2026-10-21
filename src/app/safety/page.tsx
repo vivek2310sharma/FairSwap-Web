@@ -1,8 +1,8 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { ShieldAlert, Users, Eye, CreditCard, MapPin } from "lucide-react";
+import { IndiaSafetyCard } from "@/components/listings/IndiaSafetyAdvice";
 
 export const metadata = {
   title: "Safety Advice & Guidelines — FairSwap",
@@ -75,13 +75,11 @@ export default function SafetyPage() {
           </div>
         </div>
 
+        <div className="mt-8">
+          <IndiaSafetyCard />
+        </div>
+
         <div className="mt-6 rounded-xl border border-border bg-card p-6">
-          <p className="mb-4 text-sm text-muted">
-            Looking for scam-prevention guidance? Browse the{" "}
-            <a href={HELP_CENTRE_URL} className="font-medium text-brand-link underline hover:text-brand-hover">
-              Help Centre
-            </a>.
-          </p>
           <h2 className="text-base font-semibold text-foreground">
             Reporting Suspicious Activity &amp; Grievances
           </h2>

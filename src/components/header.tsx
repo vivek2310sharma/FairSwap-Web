@@ -5,12 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu, X, Search, Heart, PlusCircle, User, MessageSquare, Bell, LifeBuoy } from "lucide-react";
 import { NotificationBell } from "@/components/communication/NotificationBell";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 const navLinks = [
   { label: "How It Works", href: "/#how-it-works" },
   { label: "Categories", href: "/#categories" },
-  { label: "Safety", href: "/safety" },
+  { label: "Safety", href: "/#safety" },
 ];
 
 export function Header() {
@@ -25,7 +24,9 @@ export function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm" aria-label="FairSwap home">
-          <div className="rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5"><Image src="/brand/FairSwap_Web_Logo_Transparent.png" alt="FairSwap" width={140} height={36} className="h-7 sm:h-8 w-auto object-contain" priority /></div>
+          <span className="rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5">
+            <Image src="/brand/FairSwap_Web_Logo_Transparent.png" alt="FairSwap" width={140} height={36} className="h-7 sm:h-8 w-auto object-contain" priority />
+          </span>
         </Link>
 
         {/* Desktop navigation */}
@@ -39,12 +40,6 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-          <a
-            href={HELP_CENTRE_URL}
-            className="text-sm font-medium text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-          >
-            Help Centre
-          </a>
           <Link
             href="/search"
             className="flex items-center gap-1.5 text-sm font-medium text-brand-link hover:underline"
@@ -163,21 +158,13 @@ export function Header() {
               <Bell className="h-4 w-4" aria-hidden="true" />
               Notifications
             </Link>
-            <a
-              href={HELP_CENTRE_URL}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
-            >
-              <LifeBuoy className="h-4 w-4" aria-hidden="true" />
-              Help Centre
-            </a>
             <Link
               href="/account/support"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
             >
               <LifeBuoy className="h-4 w-4" aria-hidden="true" />
-              Support Tickets
+              Help & Support
             </Link>
             <Link
               href="/account"
