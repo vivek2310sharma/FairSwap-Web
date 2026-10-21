@@ -135,7 +135,7 @@ export async function writeAndVerifyPreparedV2Bundle(
   const createdObjectIds: string[] = [];
   let stage: "validation" | "write" | "readback" = "validation";
   const fail = (code: Extract<V2WriteVerification, { ok: false }>["code"]): V2WriteVerification =>
-    { ok: false, code, createdObjectIds: [...createdObjectIds] };
+    ({ ok: false, code, createdObjectIds: [...createdObjectIds] });
 
   try {
     if (!strictPrepareCheck(bundle)) return fail("INVALID_PREPARATION");
