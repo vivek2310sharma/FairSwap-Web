@@ -59,7 +59,7 @@ describe("Footer component", () => {
     expect(supportLink).toHaveAttribute("target", "_blank");
     expect(supportLink).toHaveAttribute("rel", "noopener noreferrer");
     expect(main.queryByText(/8826599917/)).not.toBeInTheDocument();
-    expect(main.getByText(/controlled production pilot/i)).toBeInTheDocument();
+    expect(main.getByText("Controlled Production Pilot Notice")).toBeInTheDocument();
   });
 
 });
