@@ -27,7 +27,7 @@ describe("Header component", () => {
     );
     expect(screen.getByRole("link", { name: "Safety" })).toHaveAttribute(
       "href",
-      "/#safety"
+      "/safety"
     );
   });
 

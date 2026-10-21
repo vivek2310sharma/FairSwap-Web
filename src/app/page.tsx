@@ -76,7 +76,7 @@ export default function HomePage() {
         </Suspense>
 
         {/* How it works */}
-        <section id="how-it-works" className="border-y border-border bg-surface">
+        <section id="how-it-works" className="scroll-mt-16 border-y border-border bg-surface">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <h2 className="text-center text-2xl font-bold text-foreground">
               How It Works
@@ -117,7 +117,7 @@ export default function HomePage() {
         </section>
 
         {/* Browse Categories preview */}
-        <section id="categories" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <section id="categories" className="mx-auto max-w-7xl scroll-mt-16 px-4 py-12 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-foreground">
               Browse Categories
@@ -152,7 +152,7 @@ export default function HomePage() {
         </section>
 
         {/* Safety section */}
-        <section id="safety" className="border-t border-border bg-surface">
+        <section id="safety" className="scroll-mt-16 border-t border-border bg-surface">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-foreground">
