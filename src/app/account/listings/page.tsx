@@ -119,6 +119,27 @@ export default async function ListingsDashboardPage() {
   ]);
   const contextLookupFailed=!!propertyResult?.error||motorcycleContexts.failed||carContexts.failed;
 
+  const activeListingIds = (listings ?? [])
+    .filter((l) => l.status === "active")
+    .map((l) => l.id);
+
+  const visibilityChecks = await Promise.all(
+    activeListingIds.map(async (id) => {
+      try {
+        const { data } = await supabase.rpc("is_listing_publicly_visible", {
+          listing_id: id,
+        });
+        return [id, !!data] as const;
+      } catch {
+        return [id, false] as const;
+      }
+    })
+  );
+
+  const publicListingIds = new Set(
+    visibilityChecks.filter(([, isVis]) => isVis).map(([id]) => id)
+  );
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="flex flex-col justify-between gap-4 border-b border-gray-200 pb-6 sm:flex-row sm:items-center">
@@ -188,8 +209,7 @@ export default async function ListingsDashboardPage() {
               ? listing.cities[0]?.name
               : (listing.cities as { name?: string } | null)?.name;
 
-            const isNotExpired = !listing.expires_at || new Date(listing.expires_at) > new Date();
-            const isPublic = listing.status === "active" && isNotExpired && !propertyDraft && !vehicleDraft;
+            const isPublic = publicListingIds.has(listing.id);
 
             return (
               <div
