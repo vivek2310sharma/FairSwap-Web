@@ -73,8 +73,8 @@ jobs:
       - name: Run Typecheck
         run: pnpm run typecheck
 
-      - name: Run Homepage Performance Unit Tests
-        run: pnpm vitest run src/__tests__/recent-listings.test.tsx
+      - name: Run Listing Card & Homepage Performance Unit Tests
+        run: pnpm vitest run src/__tests__/recent-listings.test.tsx src/__tests__/listing-card.test.tsx
 
       - name: Run Auth Email Template Contract Tests
         run: |

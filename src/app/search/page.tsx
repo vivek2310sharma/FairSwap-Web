@@ -125,7 +125,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <div className="lg:col-span-3">
               {searchResult.items.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+                  <div
+                    data-testid="search-results-grid"
+                    className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-6 lg:grid-cols-3"
+                  >
                     {searchResult.items.map((listing) => (
                       <ListingCard
                         key={listing.id}

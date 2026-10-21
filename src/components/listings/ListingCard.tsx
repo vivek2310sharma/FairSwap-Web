@@ -46,7 +46,7 @@ export function ListingCard({
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all hover:border-brand-300 hover:shadow-md dark:hover:border-brand-700">
       {/* Thumbnail Container */}
-      <div className="relative aspect-4/3 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+      <div className="relative z-10 aspect-4/3 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         {coverUrl ? (
           <Image
             src={coverUrl}
@@ -80,13 +80,13 @@ export function ListingCard({
         )}
 
         {/* Favourite Button */}
-        <div className={`absolute ${isCompact ? "top-1.5 right-1.5 sm:top-2 sm:right-2" : "top-2 right-2"}`}>
+        <div className={`absolute z-30 ${isCompact ? "top-1.5 right-1.5 sm:top-2 sm:right-2" : "top-2 right-2"}`}>
           <FavouriteButton listingId={listing.id} initialIsFavourited={isFavourited} />
         </div>
       </div>
 
       {/* Card Content */}
-      <div className={`flex flex-1 flex-col ${isCompact ? "p-2.5 sm:p-4" : "p-4"}`}>
+      <div className={`relative z-0 flex flex-1 flex-col ${isCompact ? "p-2.5 sm:p-4" : "p-4"}`}>
         <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
           <span className={`font-bold text-foreground ${isCompact ? "text-base sm:text-lg" : "text-lg"}`}>
             {formattedPrice}
