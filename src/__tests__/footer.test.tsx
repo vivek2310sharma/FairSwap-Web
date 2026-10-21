@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import ContactPage from "@/app/contact/page";
 import { describe, it, expect } from "vitest";
 import { Footer } from "@/components/footer";
 
@@ -15,20 +16,10 @@ describe("Footer component", () => {
     expect(screen.getByAltText("FairSwap.in")).toBeInTheDocument();
   });
 
-  it("links to FairSwap's public launch record securely", () => {
+  it("does not render the public launch record link or its domain", () => {
     render(<Footer />);
-    const launchRecordLink = screen.getByRole("link", {
-      name: "View FairSwap's public launch record",
-    });
-
-    expect(launchRecordLink).toHaveAttribute(
-      "href",
-      "https://websitelaunches.com/site/fairswap.in"
-    );
-    expect(launchRecordLink).toHaveAttribute("target", "_blank");
-    expect(launchRecordLink.getAttribute("rel")?.split(/\s+/)).toEqual(
-      expect.arrayContaining(["noopener", "noreferrer", "external"])
-    );
+    expect(screen.queryByRole("link", { name: "View FairSwap's public launch record" })).not.toBeInTheDocument();
+    expect(screen.getByRole("contentinfo").innerHTML).not.toContain("websitelaunches.com");
   });
 
   it("displays the copyright and controlled production pilot notice", () => {
@@ -49,11 +40,26 @@ describe("Footer component", () => {
     expect(grievanceLink).toHaveAttribute("href", "/grievance");
   });
 
-  it("exposes PhonePe-verifiable support contacts and the canonical Help Centre contact link", () => {
+  it("exposes WhatsApp support and the canonical Help Centre contact link", () => {
     render(<Footer />);
     expect(screen.getByRole("link", { name: "Help Centre" })).toHaveAttribute("href", "https://help.fairswap.in/en");
     expect(screen.getByRole("link", { name: "Contact Us" })).toHaveAttribute("href", "https://help.fairswap.in/en/contact");
     expect(screen.getByRole("link", { name: "support@fairswap.in" })).toHaveAttribute("href", "mailto:support@fairswap.in");
-    expect(screen.getByRole("link", { name: "+91 8826599917" })).toHaveAttribute("href", "tel:+918826599917");
+    const whatsappLink = screen.getByRole("link", { name: "WhatsApp Support: +91 7877966996" });
+    expect(whatsappLink).toHaveAttribute("href", "https://wa.me/917877966996");
+    expect(whatsappLink).toHaveAttribute("target", "_blank");
+    expect(whatsappLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.queryByText(/8826599917/)).not.toBeInTheDocument();
   });
+  it("exposes WhatsApp support on the public contact page without the old number", () => {
+    render(<ContactPage />);
+    const main = within(screen.getByRole("main"));
+    const supportLink = main.getByRole("link", { name: "+91 7877966996" });
+    expect(supportLink).toHaveAttribute("href", "https://wa.me/917877966996");
+    expect(supportLink).toHaveAttribute("target", "_blank");
+    expect(supportLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(main.queryByText(/8826599917/)).not.toBeInTheDocument();
+    expect(main.getByText("Controlled Production Pilot Notice")).toBeInTheDocument();
+  });
+
 });
