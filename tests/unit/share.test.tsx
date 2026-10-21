@@ -115,7 +115,7 @@ vi.mock("@/lib/supabase/server", () => ({
     auth: {
       getUser: async () => ({ data: { user: { id: "seller-123" } } }),
     },
-    from: (table: string) => {
+    from: () => {
       const q = {
         select: () => q,
         eq: () => q,
