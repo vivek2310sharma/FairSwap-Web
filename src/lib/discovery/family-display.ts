@@ -92,7 +92,7 @@ function humanValue(field: string, input: unknown): string | null {
   }
   if (typeof input === "number") {
     return Number.isFinite(input) && Math.abs(input) <= Number.MAX_SAFE_INTEGER
-      ? input.toLocaleString("en-IN", { maximumFractionDigits: 2 })
+      ? (field === "year" ? String(input) : input.toLocaleString("en-IN", { maximumFractionDigits: 2 }))
       : null;
   }
   if (!input || typeof input !== "object" || Array.isArray(input)) return null;
