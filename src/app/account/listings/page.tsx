@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ListingStatus } from "@/types/listing";
 import { transitionListingAction, submitListingAction } from "./actions";
 import { ModerationStatusBadge } from "./ModerationStatusBadge";
+import { ShareButton } from "@/components/listings/ShareButton";
 import {isPropertyEnabled} from '@/lib/listings/property/server';
 import {propertyFinancialSchema,propertyRentSummary,isPropertyRentalCategory} from '@/lib/listings/property/contract';
 import {twoWheelerV1} from '@/lib/listings/two-wheeler/contract';
@@ -261,6 +262,13 @@ export default async function ListingsDashboardPage() {
 
                     {listing.status === "active" && (
                       <>
+                        <ShareButton
+                          slug={listing.slug}
+                          title={listing.title}
+                          price_type={listing.price_type}
+                          price_paise={listing.price_paise}
+                          variant="inline"
+                        />
                         <form action={onTransitionListing.bind(null, listing.id, "pause")}>
                           <button
                             type="submit"
