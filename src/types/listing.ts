@@ -293,6 +293,8 @@ export function getEffectiveSort(q?: string, sortParam?: string): SearchSortOpti
   const hasKeyword = Boolean(q && q.trim().length > 0);
 
   if (!hasKeyword) {
+    // Relevance is not applicable without a keyword.
+    // If sortParam is 'relevance', normalize to 'newest'.
     if (sortParam === "price_asc" || sortParam === "price_desc" || sortParam === "newest") {
       return sortParam;
     }

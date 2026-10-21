@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { searchFiltersSchema, getEffectiveSort } from "@/types/listing";
+import { searchFiltersSchema } from "@/types/listing";
 
 export type ValidatedSearchFilters = z.output<typeof searchFiltersSchema>;
 
@@ -23,17 +23,12 @@ const SEARCH_FALLBACK = "/search";
 /** A canonical, bounded query string derived only from validated filters. */
 export function serializeSearchFilters(filters: ValidatedSearchFilters): string {
   const params = new URLSearchParams();
-  const effectiveSort = getEffectiveSort(filters.q, filters.sort);
 
   for (const key of SEARCH_KEYS) {
-    let value: unknown;
-    if (key === "sort") {
-      value = filters.sort !== undefined ? filters.sort : effectiveSort;
-    } else {
-      value = filters[key];
-    }
+    const value = filters[key];
 
-    // 0 is a valid price. Never stringify absent values as "undefined".
+    // Only serialize explicit params; omit undefined or empty string values.
+    // 0 is a valid price.
     if (value === undefined || value === "") continue;
 
     params.set(key, String(value));
