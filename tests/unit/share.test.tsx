@@ -366,7 +366,7 @@ describe("My Ads Dashboard Public Visibility & Lifecycle Actions (LIST-03)", () 
     render(await ListingsDashboardPage());
 
     const activeGoodsHeading = screen.getByRole("heading", { name: "Active Public Goods" });
-    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg")! as HTMLElement;
+    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg") as HTMLElement;
     expect(activeGoodsCard).toBeInTheDocument();
 
     expect(screen.getAllByRole("button", { name: "Mark as sold" })).toHaveLength(4);
@@ -384,25 +384,25 @@ describe("My Ads Dashboard Public Visibility & Lifecycle Actions (LIST-03)", () 
 
     // 1. Valid active public goods listing -> Share button shown
     const activeGoodsHeading = screen.getByRole("heading", { name: "Active Public Goods" });
-    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg")!;
+    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg") as HTMLElement;
     const whatsappLinksInGoodsCard = activeGoodsCard.querySelectorAll("a[href^='https://wa.me/']");
     expect(whatsappLinksInGoodsCard.length).toBe(1);
 
     // 2. Suspended seller's active listing -> Share button hidden
     const suspendedHeading = screen.getByRole("heading", { name: "Suspended Seller Active Listing" });
-    const suspendedCard = suspendedHeading.closest(".rounded-lg")!;
+    const suspendedCard = suspendedHeading.closest(".rounded-lg") as HTMLElement;
     const whatsappLinksInSuspendedCard = suspendedCard.querySelectorAll("a[href^='https://wa.me/']");
     expect(whatsappLinksInSuspendedCard.length).toBe(0);
 
     // 3. Expired active listing -> Share button hidden
     const expiredGoodsHeading = screen.getByRole("heading", { name: "Expired Active Listing" });
-    const expiredGoodsCard = expiredGoodsHeading.closest(".rounded-lg")!;
+    const expiredGoodsCard = expiredGoodsHeading.closest(".rounded-lg") as HTMLElement;
     const whatsappLinksInExpiredCard = expiredGoodsCard.querySelectorAll("a[href^='https://wa.me/']");
     expect(whatsappLinksInExpiredCard.length).toBe(0);
 
     // 4. Draft item -> Share button hidden
     const draftItemHeading = screen.getByRole("heading", { name: "Draft Item" });
-    const draftItemCard = draftItemHeading.closest(".rounded-lg")!;
+    const draftItemCard = draftItemHeading.closest(".rounded-lg") as HTMLElement;
     const whatsappLinksInDraftCard = draftItemCard.querySelectorAll("a[href^='https://wa.me/']");
     expect(whatsappLinksInDraftCard.length).toBe(0);
   });
