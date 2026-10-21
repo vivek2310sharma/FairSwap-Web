@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-auth";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { logger } from "@/lib/logger";
+import { planLegacyMediaStorageCleanup } from "@/lib/media/legacy-storage-cleanup";
 import {
   mediaApiError,
   mapRpcErrorToMediaError,
@@ -69,13 +70,14 @@ export async function DELETE(
     return mediaApiError("MEDIA_DELETE_FAILED");
   }
 
-  // Capture paths for subsequent Storage cleanup if media exists
-  const originalPath = mediaRow?.original_storage_path;
-  const derivativePaths = [
-    mediaRow?.thumbnail_storage_path,
-    mediaRow?.medium_storage_path,
-    mediaRow?.large_storage_path,
-  ].filter((p): p is string => Boolean(p));
+  // Only known legacy paths may be removed by this privileged route.
+  // V2 sealed/unknown paths are retired through a separate trusted workflow.
+  const cleanupPlan = planLegacyMediaStorageCleanup(listingId, mediaId, {
+    original_storage_path: mediaRow?.original_storage_path,
+    thumbnail_storage_path: mediaRow?.thumbnail_storage_path,
+    medium_storage_path: mediaRow?.medium_storage_path,
+    large_storage_path: mediaRow?.large_storage_path,
+  });
 
   // 4. Authenticated user-scoped RPC deletion (DB-first)
   const { data: deleteResult, error: rpcError } = await client.rpc("seller_delete_listing_media", {
@@ -93,23 +95,34 @@ export async function DELETE(
     deleteResult !== null &&
     (deleteResult as { deleted?: boolean }).deleted === true;
 
-  if (isDeleted) {
+  if (isDeleted && cleanupPlan.kind === "deferred") {
+    // DB deletion was committed under V1's review-invalidation rules.
+    // Never delete sealed or unfamiliar object keys from this legacy route.
+    logger.warn("media.storage_cleanup_deferred", {
+      operation: "delete_media_storage_cleanup",
+      listing_id: listingId,
+      media_id: mediaId,
+      stage: "sealed_or_unrecognized_path",
+    });
+  }
+
+  if (isDeleted && cleanupPlan.kind === "legacy") {
     try {
       let cleanupErrorOccurred = false;
 
-      if (originalPath) {
+      if (cleanupPlan.originals.length > 0) {
         const { error: origErr } = await serviceClient.storage
           .from("listing-originals")
-          .remove([originalPath]);
+          .remove(cleanupPlan.originals);
         if (origErr) {
           cleanupErrorOccurred = true;
         }
       }
 
-      if (derivativePaths.length > 0) {
+      if (cleanupPlan.derivatives.length > 0) {
         const { error: derivErr } = await serviceClient.storage
           .from("listing-derivatives")
-          .remove(derivativePaths);
+          .remove(cleanupPlan.derivatives);
         if (derivErr) {
           cleanupErrorOccurred = true;
         }
