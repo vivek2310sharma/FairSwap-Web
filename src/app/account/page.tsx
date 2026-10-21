@@ -119,7 +119,7 @@ export default async function AccountPage() {
               href="/account/listings"
               className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
             >
-              View My Listings &rarr;
+              View My Listings →
             </Link>
             <Link
               href="/account/favourites"
@@ -152,7 +152,7 @@ export default async function AccountPage() {
               href="/account/messages"
               className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
             >
-              View Inbox &rarr;
+              View Inbox →
             </Link>
             <Link
               href="/account/notifications"
@@ -195,14 +195,14 @@ export default async function AccountPage() {
                 href="/account/profile"
                 className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
               >
-                View Profile &rarr;
+                View Profile →
               </Link>
             ) : (
               <Link
                 href="/account/profile"
                 className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
               >
-                Edit Profile &rarr;
+                Edit Profile →
               </Link>
             )}
             <span className="text-gray-300 dark:text-stone-700">•</span>
@@ -210,7 +210,7 @@ export default async function AccountPage() {
               href="/account/security"
               className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
             >
-              Security Settings &rarr;
+              Security Settings →
             </Link>
             <span className="text-gray-300 dark:text-stone-700">•</span>
             <Link
@@ -250,7 +250,7 @@ export default async function AccountPage() {
               href="/account/support"
               className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
             >
-              {isRestricted ? "Submit Appeal" : "Support Tickets &rarr;"}
+              {isRestricted ? "Submit Appeal" : "Support Tickets →"}
             </Link>
             <a
               href={HELP_CENTRE_URL}

@@ -8,7 +8,7 @@ import { PrivacyOverviewSection } from "@/components/account/PrivacyOverviewSect
 
 export const metadata = {
   title: "Account Settings — FairSwap",
-  description: "Manage your public profile, security settings, and privacy preferences.",
+  description: "Manage your personal profile, security settings, and privacy preferences.",
 };
 
 export type SettingsTab = "profile" | "security" | "privacy";
@@ -50,7 +50,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     .eq("user_id", userData.user.id)
     .single<UserAccount>();
 
-  const accountStatus = account?.account_status || "active";
+  const accountStatus = account?.account_status;
   const isSuspended = accountStatus === "suspended";
 
   return (

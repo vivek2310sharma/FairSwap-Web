@@ -3,10 +3,10 @@ import ProfileForm from "@/app/account/profile/profile-form";
 
 interface ProfileSectionProps {
   profile: Profile | null;
-  accountStatus?: AccountStatus | string;
+  accountStatus?: AccountStatus | string | null;
 }
 
-export function ProfileSection({ profile, accountStatus = "active" }: ProfileSectionProps) {
+export function ProfileSection({ profile, accountStatus }: ProfileSectionProps) {
   const isActive = accountStatus === "active";
 
   const getAlertMessage = () => {
@@ -18,7 +18,7 @@ export function ProfileSection({ profile, accountStatus = "active" }: ProfileSec
       case "deleted":
         return "This account has been closed. Profile edits are disabled.";
       default:
-        return "Profile edits are disabled for this account.";
+        return "Account status unavailable. Profile edits are temporarily disabled.";
     }
   };
 

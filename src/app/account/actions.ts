@@ -74,6 +74,7 @@ export async function updateProfileAction(
 
   revalidatePath("/account");
   revalidatePath("/account/profile");
+  revalidatePath("/account/settings");
   return { success: true, message: "Profile updated successfully." };
 }
 
@@ -117,6 +118,7 @@ export async function submitPrivacyRequestAction(
   }
 
   revalidatePath("/account/privacy");
+  revalidatePath("/account/settings");
   return {
     success: true,
     message:
