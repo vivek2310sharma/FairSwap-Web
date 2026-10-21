@@ -204,7 +204,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByText("Terms Version:")).toBeNull();
   });
 
-  it("handles missing user_accounts record safely without error or fabricated state", async () => {
+  it("handles missing user_accounts record or query error safely with warning banner and View Profile link", async () => {
     const user = { id: "user-no-account-123", email: "noaccount@example.com" };
 
     mocks.getUser.mockResolvedValue({ data: { user } });
@@ -213,7 +213,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
         return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }) };
       }
       if (table === "user_accounts") {
-        return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: { message: "Not found" } }) }) }) };
+        return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: { message: "Query failed" } }) }) }) };
       }
       return {};
     });
@@ -222,7 +222,15 @@ describe("ACC-02 My Account Page UI Tests", () => {
 
     expect(screen.getByRole("heading", { name: "Account Security" })).toBeInTheDocument();
     expect(screen.getByText("noaccount@example.com")).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).toBeNull();
+
+    // Renders neutral warning banner for unavailable account status
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Account Information Unavailable");
+
+    // Profile card displays View Profile instead of Edit Profile
+    expect(screen.getByRole("link", { name: /View Profile/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Edit Profile/i })).toBeNull();
+
     expect(screen.queryByText("Status:")).toBeNull();
     expect(screen.queryByText("unknown")).toBeNull();
     expect(screen.queryByText("active")).toBeNull();
