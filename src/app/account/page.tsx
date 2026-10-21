@@ -18,13 +18,17 @@ export default async function AccountPage() {
     .eq("id", userData.user.id)
     .single<Profile>();
 
-  const { data: account } = await supabase
+  const { data: account, error: accountError } = await supabase
     .from("user_accounts")
     .select("*")
     .eq("user_id", userData.user.id)
     .single<UserAccount>();
 
-  const isSuspended = account?.account_status === "suspended";
+  const isAccountUnavailable = Boolean(accountError || !account);
+  const isSuspended = !isAccountUnavailable && account?.account_status === "suspended";
+  const isDeletionPending = !isAccountUnavailable && account?.account_status === "deletion_pending";
+  const isDeleted = !isAccountUnavailable && account?.account_status === "deleted";
+  const isActive = !isAccountUnavailable && account?.account_status === "active";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -45,6 +49,20 @@ export default async function AccountPage() {
         </form>
       </div>
 
+      {isAccountUnavailable && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          <div className="flex items-center gap-2 font-bold text-amber-900">
+            <span aria-hidden="true">⚠️</span> Account Information Unavailable
+          </div>
+          <p className="mt-1">
+            Unable to verify account status right now. Profile editing and marketplace actions may be limited.
+          </p>
+        </div>
+      )}
+
       {isSuspended && (
         <div
           role="alert"
@@ -56,6 +74,34 @@ export default async function AccountPage() {
           <p className="mt-1">
             Your account is currently suspended. Marketplace actions and profile updates are disabled.
             You retain access to your security overview and privacy/data rights.
+          </p>
+        </div>
+      )}
+
+      {isDeletionPending && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          <div className="flex items-center gap-2 font-bold text-amber-900">
+            <span aria-hidden="true">⏳</span> Account Deletion Pending
+          </div>
+          <p className="mt-1">
+            Your account deletion request is currently pending processing.
+          </p>
+        </div>
+      )}
+
+      {isDeleted && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800"
+        >
+          <div className="flex items-center gap-2 font-bold text-red-900">
+            <span aria-hidden="true">⚠️</span> Account Closed
+          </div>
+          <p className="mt-1">
+            This account has been closed. Marketplace actions and profile updates are disabled.
           </p>
         </div>
       )}
@@ -102,35 +148,21 @@ export default async function AccountPage() {
               href="/account/profile"
               className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
             >
-              Edit Profile &rarr;
+              {isActive ? "Edit Profile" : "View Profile"} &rarr;
             </Link>
           </div>
         </div>
 
         {/* Security Card */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900">Security & Status</h2>
-          <p className="mt-1 text-xs text-gray-500">Account status and credentials</p>
+          <h2 className="text-lg font-bold text-gray-900">Account Security</h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Manage your account security and sign-in details.
+          </p>
           <div className="mt-4 space-y-2 text-sm">
             <div>
               <span className="text-gray-500">Email: </span>
               <span className="font-semibold text-gray-900">{userData.user.email}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Status: </span>
-              <span
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  account?.account_status === "active"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {account?.account_status || "unknown"}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-500">Terms Version: </span>
-              <span className="text-xs text-gray-700">{account?.terms_version || "—"}</span>
             </div>
           </div>
           <div className="mt-6">
