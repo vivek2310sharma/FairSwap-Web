@@ -17,7 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { getBackToSearchHref } from "@/lib/navigation/search-context";
 import { loadPublicFamilyDisplays } from "@/lib/discovery/public-family-query";
-import { publicPriceFallback } from "@/lib/discovery/family-display";
+import { publicPriceFallback, publicFamilyForSlug } from "@/lib/discovery/family-display";
 import {z} from 'zod';
 import {loadOwnerReadiness} from '@/lib/listings/readiness-server';
 import {reviewableField,reviewPacketSchema} from '@/lib/listings/submission-readiness';
@@ -58,12 +58,7 @@ export async function generateMetadata({
     ? `${siteUrl}/api/listings/${listing.id}/media/${firstPhoto.id}/large`
     : undefined;
 
-  const formattedPrice =
-    listing.price_type === "free"
-      ? "Free"
-      : listing.price_paise !== null && listing.price_paise !== undefined
-      ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
-      : "Price on request";
+  const formattedPrice = publicPriceFallback(listing.category.slug, listing.price_type, listing.price_paise);
 
   const descriptionText = `${publicPriceFallback(listing.category?.slug, listing.price_type, listing.price_paise)} • ${
     listing.description?.slice(0, 140) ||
@@ -149,6 +144,9 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   let specifications: {field:string;label:string;value:string}[]=[];
   let specificationsUnavailable=!!assessment&&!packet;
   if(packet)specifications=packet.sellerAnswers;
+  else if(!assessment && publicFamilyForSlug(listing.category.slug)) {
+    specificationsUnavailable = true;
+  }
   else if(!assessment){
     // Goods/legacy definitions remain the source of public field membership.
     // Failed/invalid reads never fall back to raw stored keys or nested values.
