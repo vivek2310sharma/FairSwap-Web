@@ -3,7 +3,8 @@ import { twoWheelerV1, validateVehicleAnswers } from "@/lib/listings/two-wheeler
 import { carsV1, validateCarAnswers } from "@/lib/listings/cars/contract";
 import { propertyV1, propertyFinancialSchema, validatePropertyDraft } from "@/lib/listings/property/contract";
 
-export type PublicFamily = "two-wheelers" | "cars" | "property";
+import { publicFamilyForSlug, type PublicFamily } from "./category-family";
+export { publicFamilyForSlug } from "./category-family";
 
 export interface PublicFamilyDisplay {
   family: PublicFamily;
@@ -53,16 +54,6 @@ const labelMap: Record<string, string> = {
 };
 
 const allowedAnswerKeys = new Set(Object.keys(labelMap));
-const familyBySlug = new Map<string, PublicFamily>([
-  ...twoWheelerV1.paths.map(p => [p.slug, "two-wheelers"] as const),
-  ...carsV1.paths.map(p => [p.slug, "cars"] as const),
-  ...propertyV1.paths.map(p => [p.slug, "property"] as const),
-]);
-
-export function publicFamilyForSlug(slug: unknown): PublicFamily | null {
-  return typeof slug === "string" ? familyBySlug.get(slug) ?? null : null;
-}
-
 function formatPaise(value: number): string {
   // A whole-paise integer is authoritative; floating-point conversion is not.
   const paise = BigInt(value);
