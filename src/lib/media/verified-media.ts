@@ -1,3 +1,6 @@
+import "server-only";
+import { createHash } from "node:crypto";
+
 /**
  * FairSwap V2 same-project media delivery guard.
  * Does not serve from arbitrary signed URLs. The authenticated/visibility-
@@ -29,6 +32,13 @@ export type VerifiedSealedMediaResult =
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const HASH = /^[0-9a-f]{64}$/;
+function isByteView(value: unknown): value is Uint8Array {
+  // Works with Buffers and Uint8Arrays originating from different JS realms.
+  return Buffer.isBuffer(value) || (
+    ArrayBuffer.isView(value) &&
+    Object.prototype.toString.call(value) === "[object Uint8Array]"
+  );
+}
 function validEvidence(e: TrustedSealedObject): boolean {
   if (!e || !UUID.test(e.listingId) || !UUID.test(e.mediaId) || !UUID.test(e.assetVersion) ||
       !HASH.test(e.sha256) || !Number.isSafeInteger(e.byteLength) || e.byteLength <= 0 ||
@@ -54,13 +64,12 @@ export async function readVerifiedSealedMedia(
   let bytes: Uint8Array;
   try {bytes = await transport.download(evidence.bucket, evidence.key);}
   catch {return {ok:false, reason:"MISSING_BYTES"};}
-  if (!(bytes instanceof Uint8Array) || bytes.length !== evidence.byteLength || bytes.length > 5 * 1024 * 1024)
+  if (!isByteView(bytes) || bytes.byteLength !== evidence.byteLength || bytes.byteLength > 5 * 1024 * 1024)
     return {ok:false, reason:"TAMPERED"};
   // Snapshot the bytes before the first asynchronous hash operation; a mutable
   // transport buffer must not be able to change after we verified its digest.
   const independentBytes = Uint8Array.from(bytes);
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", independentBytes));
-  const actual = Array.from(digest).map(x=>x.toString(16).padStart(2,"0")).join("");
+  const actual = createHash("sha256").update(independentBytes).digest("hex");
   if (actual !== evidence.sha256) return {ok:false, reason:"TAMPERED"};
   return {ok:true, bytes: independentBytes, mimeType: evidence.mimeType, cacheControl:"private, no-store"};
 }
