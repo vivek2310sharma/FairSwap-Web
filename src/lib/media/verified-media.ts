@@ -43,6 +43,9 @@ function validEvidence(e: TrustedSealedObject): boolean {
   if (!e || !UUID.test(e.listingId) || !UUID.test(e.mediaId) || !UUID.test(e.assetVersion) ||
       !HASH.test(e.sha256) || !Number.isSafeInteger(e.byteLength) || e.byteLength <= 0 ||
       e.byteLength > 5 * 1024 * 1024) return false;
+  if (!["original", "canonical", "thumb", "medium", "large"].includes(e.variant)) return false;
+  if (e.variant === "original" &&
+      !["image/jpeg", "image/png", "image/webp"].includes(e.mimeType)) return false;
   const expectedBucket = e.variant === "original" || e.variant === "canonical"
     ? "listing-originals" : "listing-derivatives";
   const expectedMime = e.variant === "original"
