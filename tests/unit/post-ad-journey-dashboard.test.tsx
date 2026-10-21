@@ -3,7 +3,7 @@ import {cleanup,fireEvent,render,screen,within} from '@testing-library/react';
 import ListingsDashboardPage from '@/app/account/listings/page';
 
 type Category={name?:string;slug?:string};
-type Draft={id:string;category_id:string;title:string;status:string;revision:number;price_type:string;price_paise:number;updated_at:string;categories:Category|Category[]|null;cities:{name:string}};
+type Draft={id:string;category_id:string;title:string;status:string;revision:number;price_type:string;price_paise:number;updated_at:string;cover_photo_id?:string|null;categories:Category|Category[]|null;cities:{name:string}};
 
 const m=vi.hoisted(()=>({from:vi.fn(),select:vi.fn(),submit:vi.fn(),transition:vi.fn(),flags:{property:true,tw:true,cars:true},rows:[] as Draft[],contexts:{} as Record<string,{listing_id:string;category_id?:string;financial?:unknown}[]>,errors:{} as Record<string,boolean>,reads:[] as {table:string;column:string;ids:string[]}[]}));
 
@@ -15,12 +15,12 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }));
 
-vi.mock('@/lib/supabase/server',()=>({createClient:async()=>({auth:{getUser:async()=>({data:{user:{id:'owner'}}})},from:m.from})}));
+vi.mock('@/lib/supabase/server',()=>({createClient:async()=>({auth:{getUser:async()=>({data:{user:{id:'owner'}}})},from:m.from,rpc:async()=>({data:false,error:null})})}));
 vi.mock('@/app/account/listings/actions',()=>({submitListingAction:m.submit,transitionListingAction:m.transition}));
 vi.mock('@/lib/listings/property/server',()=>({isPropertyEnabled:()=>m.flags.property}));
 vi.mock('@/lib/listings/two-wheeler/server',()=>({isTwoWheelerEnabled:()=>m.flags.tw,isCarsEnabled:()=>m.flags.cars}));
 
-const rows:Draft[]=[['goods','Electronics','electronics'],['legacy','Bicycles & Sports','bicycles-sports'],['tw','Commuter Bikes','tw-commuter-bikes'],['car','Hatchback','car-hatchback'],['pg','Boys PG','rental-boys-pg']].map(([id,name,slug])=>({id,category_id:id+'-category',title:`Synthetic ${id}`,status:'draft',revision:1,price_type:'fixed',price_paise:123450,updated_at:'2026-10-10',categories:{name,slug},cities:{name:'Isolated city'}}));
+const rows:Draft[]=[['goods','Electronics','electronics'],['legacy','Bicycles & Sports','bicycles-sports'],['tw','Commuter Bikes','tw-commuter-bikes'],['car','Hatchback','car-hatchback'],['pg','Boys PG','rental-boys-pg']].map(([id,name,slug])=>({id,category_id:id+'-category',title:`Synthetic ${id}`,status:'draft',revision:1,price_type:'fixed',price_paise:123450,updated_at:'2026-10-10',cover_photo_id:'cover-'+id,categories:{name,slug},cities:{name:'Isolated city'}}));
 const financial={currency:'INR',period:'month',basis:'per_bed',rent:{state:'known',amount_paise:123450}};
 
 beforeEach(()=>{vi.clearAllMocks();m.flags={property:true,tw:true,cars:true};m.rows=structuredClone(rows);m.errors={};m.reads=[];m.contexts={listing_property_contexts:[{listing_id:'pg',category_id:'pg-category',financial}]};m.from.mockImplementation(table=>{const q={select:m.select.mockImplementation(()=>q),eq:vi.fn(()=>q),order:()=>q,limit:async()=>({data:m.rows,error:null}),in:async(column:string,ids:string[])=>{m.reads.push({table,column,ids});if(m.errors[table])return {data:null,error:{message:'Reference read failed'}};return {data:m.contexts[table]??[],error:null};}};return q;});});
