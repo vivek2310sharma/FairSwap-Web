@@ -34,7 +34,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(mocks.redirect).toHaveBeenCalledWith("/auth/sign-in?next=/account");
   });
 
-  it("renders active account without internal terms version or status badge, showing Edit Profile link", async () => {
+  it("renders active account without internal terms version or status badge, showing Edit Profile and Manage Settings links", async () => {
     const user = { id: "user-active-123", email: "customer@example.com" };
     const profile = { display_name: "John Doe", city: "Mumbai", state: "Maharashtra", bio: "Hello world" };
     const account = {
@@ -80,6 +80,10 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByText("2026-09-18")).toBeNull();
     expect(screen.queryByText("Status:")).toBeNull();
     expect(screen.queryByText("active")).toBeNull();
+
+    // Primary Manage Settings link exists
+    const settingsLink = screen.getByRole("link", { name: /Manage Settings/i });
+    expect(settingsLink).toHaveAttribute("href", "/account/settings");
 
     // Edit Profile link exists for active account
     const profileLink = screen.getByRole("link", { name: /Edit Profile/i });
@@ -234,5 +238,41 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByText("Status:")).toBeNull();
     expect(screen.queryByText("unknown")).toBeNull();
     expect(screen.queryByText("active")).toBeNull();
+  });
+
+  it("renders the streamlined four-card layout with primary Manage Settings link", async () => {
+    const user = { id: "user-4card-123", email: "user4card@example.com" };
+    const account = { user_id: "user-4card-123", account_status: "active" };
+
+    mocks.getUser.mockResolvedValue({ data: { user } });
+    mocks.from.mockImplementation((table: string) => {
+      if (table === "profiles") {
+        return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }) };
+      }
+      if (table === "user_accounts") {
+        return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: account, error: null }) }) }) };
+      }
+      return {};
+    });
+
+    render(await AccountPage());
+
+    // Card 1: My Listings & Favourites
+    expect(screen.getByRole("heading", { name: "My Listings" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /View My Listings/i })).toHaveAttribute("href", "/account/listings");
+    expect(screen.getByRole("link", { name: /Favourites/i })).toHaveAttribute("href", "/account/favourites");
+
+    // Card 2: Messages & Activity
+    expect(screen.getByRole("heading", { name: "Messages & Activity" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /View Inbox/i })).toHaveAttribute("href", "/account/messages");
+    expect(screen.getByRole("link", { name: /Notifications/i })).toHaveAttribute("href", "/account/notifications");
+
+    // Card 3: Account Security & Manage Settings
+    expect(screen.getByRole("heading", { name: "Account Security" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Manage Settings/i })).toHaveAttribute("href", "/account/settings");
+
+    // Card 4: Help & Support
+    expect(screen.getByRole("heading", { name: "Help & Support" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Support Tickets/i })).toHaveAttribute("href", "/account/support");
   });
 });
