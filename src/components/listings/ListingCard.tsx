@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Tag } from "lucide-react";
 import { PublicListingCard } from "@/types/listing";
+import { publicPriceFallback, type PublicFamilyDisplay } from "@/lib/discovery/family-display";
 import { FavouriteButton } from "./FavouriteButton";
 
 interface ListingCardProps {
@@ -9,6 +10,7 @@ interface ListingCardProps {
   isFavourited?: boolean;
   searchContext?: string;
   variant?: "default" | "compact";
+  familyDisplay?: PublicFamilyDisplay;
 }
 
 export function ListingCard({
@@ -16,18 +18,14 @@ export function ListingCard({
   isFavourited = false,
   searchContext,
   variant = "default",
+  familyDisplay,
 }: ListingCardProps) {
   const listingPath = `/listings/${listing.slug}`;
   const listingHref = searchContext
     ? listingPath + "?" + new URLSearchParams({ ctx: searchContext }).toString()
     : listingPath;
 
-  const formattedPrice =
-    listing.price_type === "free"
-      ? "Free"
-      : listing.price_paise !== null && listing.price_paise !== undefined
-      ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
-      : "Price on request";
+  const formattedPrice = familyDisplay?.priceLabel ?? publicPriceFallback(listing.category?.slug, listing.price_type, listing.price_paise);
 
   const conditionLabels: Record<string, string> = {
     new: "Brand New",
@@ -103,6 +101,12 @@ export function ListingCard({
             </span>
           )}
         </div>
+
+        {familyDisplay?.specifications.length ? (
+          <p className="mt-1 line-clamp-1 text-[11px] text-muted">
+            {familyDisplay.specifications.slice(0, 3).map(spec => `${spec.label}: ${spec.value}`).join(" · ")}
+          </p>
+        ) : null}
 
         <h3
           className={`line-clamp-2 font-semibold text-foreground group-hover:text-action-600 ${
