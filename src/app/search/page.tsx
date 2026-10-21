@@ -10,6 +10,7 @@ import {
   searchPublicListings,
 } from "@/lib/discovery/queries";
 import { searchFiltersSchema } from "@/types/listing";
+import { serializeSearchFilters } from "@/lib/navigation/search-context";
 import { createClient } from "@/lib/supabase/server";
 import { Metadata } from "next";
 import { SearchX } from "lucide-react";
@@ -56,19 +57,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   const parsed = searchFiltersSchema.safeParse(flatParams);
-  const filters = parsed.success
-    ? parsed.data
-    : {
-        q: "",
-        category: "",
-        city: "",
-        locality: "",
-        condition: undefined,
-        price_min: undefined,
-        price_max: undefined,
-        sort: "newest" as const,
-        page: 1,
-      };
+  const filters = parsed.success ? parsed.data : searchFiltersSchema.parse({});
+  const searchContext = serializeSearchFilters(filters);
 
   const [categories, cities, localities, searchResult] = await Promise.all([
     getPublicCategories(),
@@ -123,6 +113,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {/* Filter Sidebar */}
             <div className="lg:col-span-1">
               <SearchFilters
+                key={searchContext}
                 categories={categories}
                 cities={cities}
                 localities={localities}
@@ -140,6 +131,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                         key={listing.id}
                         listing={listing}
                         isFavourited={userFavSet.has(listing.id)}
+                        searchContext={searchContext}
                       />
                     ))}
                   </div>
