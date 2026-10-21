@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, act, within } from "@testing-library/react";
 import React from "react";
 import {
   formatListingPrice,
@@ -10,6 +10,11 @@ import {
 } from "@/lib/listings/share";
 import { ShareButton } from "@/components/listings/ShareButton";
 import ListingsDashboardPage from "@/app/account/listings/page";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  redirect: vi.fn(),
+}));
 
 type Draft = {
   id: string;
@@ -357,16 +362,29 @@ describe("ShareButton Component (LIST-03)", () => {
 describe("My Ads Dashboard Public Visibility & Lifecycle Actions (LIST-03)", () => {
   afterEach(cleanup);
 
-  it("preserves Pause, Mark Reserved, and Mark Sold buttons for ALL active listings including property and suspended seller listings", async () => {
+  it("preserves Pause, Mark reserved, and Mark as sold actions for ALL active listings, including property and suspended-seller listings", async () => {
     render(await ListingsDashboardPage());
 
-    const activeGoodsHeading = screen.getByRole("heading", { name: "Active Public Goods" });
-    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg")!;
-    expect(activeGoodsCard).toBeInTheDocument();
+    for (const title of [
+      "Active Public Goods",
+      "Active Property Flat",
+      "Suspended Seller Active Listing",
+      "Expired Active Listing",
+    ]) {
+      const heading = screen.getByRole("heading", { name: title });
+      const card = heading.closest(".rounded-lg");
+      expect(card).toBeInTheDocument();
+      const cardActions = within(card!);
 
-    expect(screen.getAllByRole("button", { name: "Pause" })).toHaveLength(4);
-    expect(screen.getAllByRole("button", { name: "Mark Reserved" })).toHaveLength(4);
-    expect(screen.getAllByRole("button", { name: "Mark Sold" })).toHaveLength(4);
+      // ADS-08 keeps the lifecycle actions but exposes one primary button
+      // and places the two secondary transitions in an accessible overflow menu.
+      expect(cardActions.getByRole("button", { name: "Mark as sold" })).toBeInTheDocument();
+      const overflow = cardActions.getByRole("button", { name: "More actions" });
+      fireEvent.click(overflow);
+      expect(cardActions.getByRole("menuitem", { name: "Pause" })).toBeInTheDocument();
+      expect(cardActions.getByRole("menuitem", { name: "Mark reserved" })).toBeInTheDocument();
+      fireEvent.click(overflow);
+    }
   });
 
   it("renders Share button ONLY for publicly visible active listings (using is_listing_publicly_visible RPC) and omits it for suspended sellers, expired or draft items", async () => {
