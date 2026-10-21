@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal, RotateCcw, Search } from "lucide-react";
 import { Category, City, Locality, SearchSortOption, getEffectiveSort } from "@/types/listing";
-import { publicFamilyForSlug } from "@/lib/discovery/family-display";
+import { publicFamilyForSlug } from "@/lib/discovery/category-family";
 
 interface SearchFiltersProps {
   categories: Category[];
