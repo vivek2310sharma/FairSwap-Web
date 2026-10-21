@@ -133,6 +133,7 @@ export async function writeAndVerifyPreparedV2Bundle(
   signal?: AbortSignal,
 ): Promise<V2WriteVerification> {
   const createdObjectIds: string[] = [];
+  let stage: "validation" | "write" | "readback" = "validation";
   const fail = (code: Extract<V2WriteVerification, { ok: false }>["code"]): V2WriteVerification =>
     { ok: false, code, createdObjectIds: [...createdObjectIds] };
 
@@ -140,6 +141,7 @@ export async function writeAndVerifyPreparedV2Bundle(
     if (!strictPrepareCheck(bundle)) return fail("INVALID_PREPARATION");
     if (signal?.aborted) return fail("CANCELLED");
 
+    stage = "write";
     for (const variant of VARIANTS) {
       const object = bundle.objects[variant];
       if (signal?.aborted) return fail("CANCELLED");
@@ -158,6 +160,7 @@ export async function writeAndVerifyPreparedV2Bundle(
       if (signal?.aborted) return fail("CANCELLED");
     }
 
+    stage = "readback";
     const verified: Array<{
       variant: V2Variant;
       objectId: string;
@@ -199,6 +202,8 @@ export async function writeAndVerifyPreparedV2Bundle(
     };
   } catch {
     // Never disclose Storage errors, path names, credentials, or internal URLs.
-    return fail(signal?.aborted ? "CANCELLED" : "READBACK_FAILED");
+    if (signal?.aborted) return fail("CANCELLED");
+    return fail(stage === "write" ? "WRITE_REJECTED" :
+      stage === "readback" ? "READBACK_FAILED" : "INVALID_PREPARATION");
   }
 }
