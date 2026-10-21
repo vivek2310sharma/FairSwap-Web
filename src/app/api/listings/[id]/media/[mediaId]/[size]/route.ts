@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-auth";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { mediaApiError } from "@/lib/media/api-contract";
+import { planLegacyMediaStorageCleanup } from "@/lib/media/legacy-storage-cleanup";
 
 /**
  * GET /api/listings/[id]/media/[mediaId]/[size]
@@ -14,7 +15,9 @@ import { mediaApiError } from "@/lib/media/api-contract";
  * 2. Private seller derivative:
  *    - Authorizes caller via cookie or Bearer (owner or active staff at AAL2).
  *    - Non-owners or unauthenticated callers receive 404 LISTING_NOT_FOUND.
- * 3. Native JSON mode (Accept: application/json):
+ * 3. V2 sealed or unexpected Storage paths: fail closed until trusted DB-
+ *    registered SHA-256 verification is wired into the serving route.
+ * 4. Native JSON mode (Accept: application/json):
  *    - Prevents Bearer tokens from being forwarded across redirects to storage origins.
  *    - Returns short-lived (60s) signed URL with Cache-Control: no-store.
  *    - Rejects 'original' requests in JSON mode (only thumb, medium, large permitted).
@@ -116,6 +119,14 @@ export async function GET(
       return mediaApiError("MEDIA_NOT_FOUND");
     }
 
+    // B2: an unverified signed URL would bypass exact-byte checks for sealed
+    // objects. Until the authoritative V2 registry and verified byte-serving
+    // transport are deployed, never sign sealed or unexpected media keys.
+    // Validate ALL four paths to reject mixed-version records as well.
+    if (planLegacyMediaStorageCleanup(listingId, mediaId, media).kind !== "legacy") {
+      return mediaApiError("MEDIA_NOT_FOUND");
+    }
+
     let bucket: string;
     let path: string | null = null;
     const expirySeconds = isAuthorizedStaff ? 300 : 60;
@@ -182,7 +193,7 @@ export async function GET(
   const { data: media, error: mediaError } = await serviceClient
     .from("listing_media")
     .select(
-      "id, listing_id, thumbnail_storage_path, medium_storage_path, large_storage_path, processing_status"
+      "id, listing_id, original_storage_path, thumbnail_storage_path, medium_storage_path, large_storage_path, processing_status"
     )
     .eq("id", mediaId)
     .eq("listing_id", listingId)
@@ -190,6 +201,13 @@ export async function GET(
     .maybeSingle();
 
   if (mediaError || !media) {
+    return mediaApiError("MEDIA_NOT_FOUND");
+  }
+
+  // Public redirects must never bypass V2 registered SHA-256 verification.
+  // Fail closed if ANY path is sealed/unfamiliar, including source originals
+  // on an otherwise legacy-looking set of derivatives.
+  if (planLegacyMediaStorageCleanup(listingId, mediaId, media).kind !== "legacy") {
     return mediaApiError("MEDIA_NOT_FOUND");
   }
 
