@@ -10,7 +10,7 @@ import { HELP_CENTRE_URL } from "@/lib/help-centre";
 const navLinks = [
   { label: "How It Works", href: "/#how-it-works" },
   { label: "Categories", href: "/#categories" },
-  { label: "Safety", href: "/#safety" },
+  { label: "Safety", href: "/safety" },
 ];
 
 export function Header() {
