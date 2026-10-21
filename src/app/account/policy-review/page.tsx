@@ -72,9 +72,17 @@ export default async function PolicyReviewPage({ searchParams }: PolicyReviewPag
               Browse Public Listings
             </Link>
           </div>
-          <div className="mt-6 border-t border-amber-200/60 pt-4 text-center">
-            <p className="text-xs text-gray-500 mb-2">Or you may sign out of your account:</p>
-            <form action={signOutAction}>
+          <div className="mt-6 border-t border-amber-200/60 pt-4 flex flex-col items-center gap-2 text-xs text-gray-500">
+            <p>You can still exercise your data rights or contact support:</p>
+            <div className="flex gap-4">
+              <Link href="/account/privacy" className="font-semibold text-emerald-700 hover:underline">
+                Privacy & Data Rights
+              </Link>
+              <Link href="/account/support" className="font-semibold text-emerald-700 hover:underline">
+                Support & Appeals
+              </Link>
+            </div>
+            <form action={signOutAction} className="mt-2">
               <button
                 type="submit"
                 className="text-sm font-medium text-gray-600 hover:text-gray-900 underline focus:outline-none"
