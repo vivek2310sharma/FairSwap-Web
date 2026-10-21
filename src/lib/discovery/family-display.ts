@@ -3,7 +3,7 @@ import { twoWheelerV1, validateVehicleAnswers } from "@/lib/listings/two-wheeler
 import { carsV1, validateCarAnswers } from "@/lib/listings/cars/contract";
 import { propertyV1, propertyFinancialSchema, validatePropertyDraft } from "@/lib/listings/property/contract";
 
-import type { PublicFamily } from "./category-family";
+import { publicFamilyForSlug, type PublicFamily } from "./category-family";
 export { publicFamilyForSlug } from "./category-family";
 
 export interface PublicFamilyDisplay {
@@ -57,8 +57,8 @@ const allowedAnswerKeys = new Set(Object.keys(labelMap));
 function formatPaise(value: number): string {
   // A whole-paise integer is authoritative; floating-point conversion is not.
   const paise = BigInt(value);
-  const whole = (paise / 100n).toLocaleString("en-IN");
-  const fraction = (paise % 100n).toString().padStart(2, "0");
+  const whole = (paise / BigInt(100)).toLocaleString("en-IN");
+  const fraction = (paise % BigInt(100)).toString().padStart(2, "0");
   return fraction === "00" ? whole : `${whole}.${fraction}`;
 }
 
