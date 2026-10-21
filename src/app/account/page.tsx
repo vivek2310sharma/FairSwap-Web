@@ -26,7 +26,11 @@ export default async function AccountPage() {
     .eq("user_id", userData.user.id)
     .single<UserAccount>();
 
-  const isSuspended = account?.account_status === "suspended";
+  const accountStatus = account?.account_status || "active";
+  const isSuspended = accountStatus === "suspended";
+  const isDeletionPending = accountStatus === "deletion_pending";
+  const isDeleted = accountStatus === "deleted";
+  const isRestricted = isSuspended || isDeletionPending || isDeleted;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -48,7 +52,7 @@ export default async function AccountPage() {
         </form>
       </div>
 
-      {/* Account Suspended Notice */}
+      {/* Account Status Alert Notice */}
       {isSuspended && (
         <div
           role="alert"
@@ -60,6 +64,34 @@ export default async function AccountPage() {
           <p className="mt-1">
             Your account is currently suspended. Marketplace actions and profile updates are disabled.
             You retain access to your security overview, support appeals, and privacy rights.
+          </p>
+        </div>
+      )}
+
+      {isDeletionPending && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-200">
+            <span aria-hidden="true">⚠️</span> Account Deletion Pending
+          </div>
+          <p className="mt-1">
+            Your request to delete this account is being processed. Marketplace actions and profile updates are disabled.
+          </p>
+        </div>
+      )}
+
+      {isDeleted && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
+        >
+          <div className="flex items-center gap-2 font-bold text-red-900 dark:text-red-200">
+            <span aria-hidden="true">⚠️</span> Account Closed
+          </div>
+          <p className="mt-1">
+            This account has been permanently closed. Marketplace actions and profile updates are disabled.
           </p>
         </div>
       )}
@@ -132,7 +164,7 @@ export default async function AccountPage() {
           </div>
         </div>
 
-        {/* Card 3: Account Settings */}
+        {/* Card 3: Account Security */}
         <div className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900">
           <div>
             <div className="flex items-center gap-3">
@@ -140,27 +172,45 @@ export default async function AccountPage() {
                 <Settings className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-stone-100">Account Settings</h2>
-                <p className="text-xs text-gray-600 dark:text-stone-400">Profile, credentials & privacy</p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-stone-100">Account Security</h2>
+                <p className="text-xs text-gray-600 dark:text-stone-400">Manage your account security and sign-in details.</p>
               </div>
             </div>
             <div className="mt-4 space-y-1.5 text-xs text-gray-600 dark:text-stone-300">
               <div>
-                <span className="font-medium text-gray-500 dark:text-stone-400">Name: </span>
-                <span className="font-semibold text-gray-900 dark:text-stone-100">{profile?.display_name || "—"}</span>
-              </div>
-              <div>
                 <span className="font-medium text-gray-500 dark:text-stone-400">Email: </span>
-                <span className="text-gray-800 dark:text-stone-200">{userData.user.email}</span>
+                <span className="font-semibold text-gray-900 dark:text-stone-100">{userData.user.email}</span>
               </div>
+              {profile?.display_name && (
+                <div>
+                  <span className="font-medium text-gray-500 dark:text-stone-400">Name: </span>
+                  <span className="text-gray-800 dark:text-stone-200">{profile.display_name}</span>
+                </div>
+              )}
             </div>
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-4 text-xs dark:border-stone-800">
+            {isRestricted ? (
+              <Link
+                href="/account/profile"
+                className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+              >
+                View Profile &rarr;
+              </Link>
+            ) : (
+              <Link
+                href="/account/profile"
+                className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+              >
+                Edit Profile &rarr;
+              </Link>
+            )}
+            <span className="text-gray-300 dark:text-stone-700">•</span>
             <Link
-              href="/account/settings"
+              href="/account/security"
               className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
             >
-              Manage Settings &rarr;
+              Security Settings &rarr;
             </Link>
             <span className="text-gray-300 dark:text-stone-700">•</span>
             <Link
@@ -181,14 +231,16 @@ export default async function AccountPage() {
                 <LifeBuoy className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-stone-100">Help & Support</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-stone-100">
+                  {isRestricted ? "Appeals & Inquiries" : "Help & Support"}
+                </h2>
                 <p className="text-xs text-gray-600 dark:text-stone-400">
-                  {isSuspended ? "Appeals & Inquiries" : "Customer assistance & safety"}
+                  {isRestricted ? "Moderation appeals & safety" : "Customer assistance & safety"}
                 </p>
               </div>
             </div>
             <p className="mt-4 text-sm text-gray-600 dark:text-stone-300">
-              {isSuspended
+              {isRestricted
                 ? "Submit a formal moderation appeal to the FairSwap review team."
                 : "Get help with fraud reporting, listing queries, or platform safety."}
             </p>
@@ -198,7 +250,7 @@ export default async function AccountPage() {
               href="/account/support"
               className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
             >
-              {isSuspended ? "Submit Appeal &rarr;" : "Support Tickets &rarr;"}
+              {isRestricted ? "Submit Appeal" : "Support Tickets &rarr;"}
             </Link>
             <a
               href={HELP_CENTRE_URL}

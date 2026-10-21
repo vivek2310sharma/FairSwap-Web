@@ -11,19 +11,31 @@ export const metadata = {
   description: "Manage your public profile, security settings, and privacy preferences.",
 };
 
+export type SettingsTab = "profile" | "security" | "privacy";
+
+export function parseTab(tabParam: string | string[] | undefined): SettingsTab {
+  const rawTab = Array.isArray(tabParam) ? tabParam[0] : tabParam;
+  if (!rawTab) return "profile";
+  const normalized = rawTab.toLowerCase().trim();
+  if (normalized === "security") return "security";
+  if (normalized === "privacy") return "privacy";
+  return "profile";
+}
+
 interface SettingsPageProps {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string | string[] }>;
 }
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const resolvedSearchParams = await searchParams;
-  const activeTab = (resolvedSearchParams?.tab || "profile").toLowerCase();
+  const activeTab = parseTab(resolvedSearchParams?.tab);
 
   const supabase = await createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError || !userData.user) {
-    redirect(`/auth/sign-in?next=/account/settings${resolvedSearchParams?.tab ? `?tab=${resolvedSearchParams.tab}` : ""}`);
+    const nextPath = `/account/settings${activeTab !== "profile" ? `?tab=${activeTab}` : ""}`;
+    redirect(`/auth/sign-in?next=${encodeURIComponent(nextPath)}`);
   }
 
   const { data: profile } = await supabase
@@ -38,7 +50,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     .eq("user_id", userData.user.id)
     .single<UserAccount>();
 
-  const isSuspended = account?.account_status === "suspended";
+  const accountStatus = account?.account_status || "active";
+  const isSuspended = accountStatus === "suspended";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -101,7 +114,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         ) : activeTab === "privacy" ? (
           <PrivacyOverviewSection />
         ) : (
-          <ProfileSection profile={profile} isSuspended={isSuspended} />
+          <ProfileSection profile={profile} accountStatus={accountStatus} />
         )}
       </div>
     </div>

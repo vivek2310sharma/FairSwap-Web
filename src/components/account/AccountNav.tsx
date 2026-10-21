@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import {
   LayoutDashboard,
   ShoppingBag,
@@ -10,7 +9,6 @@ import {
   MessageSquare,
   Bell,
   Settings,
-  BookOpen,
 } from "lucide-react";
 
 const accountNavItems = [
@@ -75,15 +73,6 @@ export function AccountNav() {
               </li>
             );
           })}
-          <li className="flex-shrink-0">
-            <a
-              href={HELP_CENTRE_URL}
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap text-muted hover:bg-surface hover:text-foreground min-h-[44px] sm:min-h-[38px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-            >
-              <BookOpen className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-              Help Centre
-            </a>
-          </li>
         </ul>
       </div>
     </nav>

@@ -203,7 +203,6 @@ export default async function ListingsDashboardPage() {
                       ) : (
                         getStatusBadge(listing.status,propertyDraft||vehicleDraft)
                       )}
-                      <span className="text-xs text-gray-400">Rev {listing.revision}</span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">

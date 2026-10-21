@@ -1,7 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AccountNav } from "@/components/account/AccountNav";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 // Mock next/navigation
 const mockUsePathname = vi.fn();
@@ -23,7 +22,7 @@ describe("AccountNav component", () => {
     expect(nav).toBeInTheDocument();
   });
 
-  it("renders exactly the six primary navigation items plus Help Centre", () => {
+  it("renders exactly the six primary navigation items without Help Centre", () => {
     mockUsePathname.mockReturnValue("/account");
     render(<AccountNav />);
 
@@ -42,17 +41,8 @@ describe("AccountNav component", () => {
 
     const nav = screen.getByRole("navigation", { name: "Account navigation" });
     const links = within(nav).getAllByRole("link");
-    expect(links).toHaveLength(7); // 6 internal destinations + Help Centre
-  });
-
-  it("offers public Help Centre link", () => {
-    mockUsePathname.mockReturnValue("/account/settings");
-    render(<AccountNav />);
-    const nav = screen.getByRole("navigation", { name: "Account navigation" });
-    const helpLinks = within(nav).getAllByRole("link", { name: "Help Centre" });
-    expect(helpLinks).toHaveLength(1);
-    expect(helpLinks[0]).toHaveAttribute("href", HELP_CENTRE_URL);
-    expect(helpLinks[0]).not.toHaveAttribute("target", "_blank");
+    expect(links).toHaveLength(6);
+    expect(screen.queryByRole("link", { name: /Help Centre/i })).toBeNull();
   });
 
   it("does NOT expose policy-review as a navigation item", () => {
@@ -109,6 +99,27 @@ describe("AccountNav component", () => {
       expect(settingsLink).toHaveAttribute("aria-current", "page");
       unmount();
     }
+  });
+
+  // --- Active state: My Listings nested routes ---
+
+  it("marks My Listings as active on /account/listings/new and /account/listings/123/edit", () => {
+    for (const route of ["/account/listings/new", "/account/listings/item-123/edit"]) {
+      mockUsePathname.mockReturnValue(route);
+      const { unmount } = render(<AccountNav />);
+      const listingsLink = screen.getByRole("link", { name: /My Listings/ });
+      expect(listingsLink).toHaveAttribute("aria-current", "page");
+      unmount();
+    }
+  });
+
+  // --- Active state: Messages nested routes ---
+
+  it("marks Messages as active on /account/messages/chat-123", () => {
+    mockUsePathname.mockReturnValue("/account/messages/chat-123");
+    render(<AccountNav />);
+    const messagesLink = screen.getByRole("link", { name: /Messages/ });
+    expect(messagesLink).toHaveAttribute("aria-current", "page");
   });
 
   // --- Active state: Notifications ---
