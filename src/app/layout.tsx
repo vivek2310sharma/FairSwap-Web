@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
@@ -39,7 +40,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <MobileBottomNav />
+      </body>
     </html>
   );
 }
