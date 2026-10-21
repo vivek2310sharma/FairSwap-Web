@@ -23,6 +23,7 @@ vi.mock("../app/account/listings/actions", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: vi.fn(),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
 vi.mock("next/link", () => ({

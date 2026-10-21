@@ -88,6 +88,9 @@ jobs:
       - name: Run LIST-03 WhatsApp Sharing Unit Tests
         run: pnpm vitest run tests/unit/share.test.tsx
 
+      - name: Run ADS-08 My Listings Regression Unit Tests
+        run: pnpm vitest run tests/unit/action-matrix.test.ts tests/unit/listing-actions-container.test.tsx tests/unit/post-ad-journey-dashboard.test.tsx src/__tests__/my-listings-revision.test.tsx
+
       - name: Run Auth Email Template Contract Tests
         run: |
           pnpm vitest run tests/unit/auth-email-templates.test.ts tests/unit/sign-in-actions.test.ts tests/auth/callback.test.ts tests/unit/extract-otp.test.ts
