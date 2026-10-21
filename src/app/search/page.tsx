@@ -141,6 +141,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                       <ListingCard
                         key={listing.id}
                         listing={listing}
+                        familyDisplay={familyDisplays.get(listing.id)}
                         isFavourited={userFavSet.has(listing.id)}
                         searchContext={searchContext}
                         variant="compact"
