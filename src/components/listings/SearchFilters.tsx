@@ -40,11 +40,15 @@ export function SearchFilters({
   const [priceMin, setPriceMin] = useState(initialFilters.price_min?.toString() || "");
   const [priceMax, setPriceMax] = useState(initialFilters.price_max?.toString() || "");
 
-  // Track if sort was explicitly provided in props or changed by user
+  // Track if sort was explicitly provided in props or changed by user.
+  // Note: sort="relevance" without a keyword is an invalid/implicit state and should not lock as explicit sort.
+  const hasInitialKeyword = Boolean(initialFilters.q && initialFilters.q.trim().length > 0);
   const initialEffectiveSort = getEffectiveSort(initialFilters.q, initialFilters.sort);
   const [sort, setSort] = useState<SearchSortOption>(initialEffectiveSort);
   const [isExplicitSort, setIsExplicitSort] = useState<boolean>(
-    initialFilters.sort !== undefined && initialFilters.sort !== ""
+    initialFilters.sort !== undefined &&
+      initialFilters.sort !== "" &&
+      !(initialFilters.sort === "relevance" && !hasInitialKeyword)
   );
 
   const handleQueryChange = (newQuery: string) => {

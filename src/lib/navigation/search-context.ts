@@ -23,13 +23,14 @@ const SEARCH_FALLBACK = "/search";
 /** A canonical, bounded query string derived only from validated filters. */
 export function serializeSearchFilters(filters: ValidatedSearchFilters): string {
   const params = new URLSearchParams();
+  const hasKeyword = Boolean(filters.q && filters.q.trim().length > 0);
 
   for (const key of SEARCH_KEYS) {
     const value = filters[key];
 
-    // Only serialize explicit params; omit undefined or empty string values.
-    // 0 is a valid price.
+    // Omit undefined, empty string, or invalid sort=relevance without keyword.
     if (value === undefined || value === "") continue;
+    if (key === "sort" && value === "relevance" && !hasKeyword) continue;
 
     params.set(key, String(value));
   }

@@ -1,6 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { SearchFilters } from "@/components/listings/SearchFilters";
 import { getEffectiveSort, searchFiltersSchema } from "@/types/listing";
 import { serializeSearchFilters, getBackToSearchHref } from "@/lib/navigation/search-context";
+
+// Mock Next.js useRouter
+const pushMock = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: pushMock,
+  }),
+}));
 
 describe("SRCH-02 Keyword Search Relevance & Default Sorting Matrix", () => {
   it("resolves /search to newest", () => {
@@ -86,27 +96,41 @@ describe("SRCH-02 Search Context Serialization & Preservation", () => {
   });
 });
 
-describe("SRCH-02 Full Workflow Regression Test: Browse -> Listing -> Back to Search -> Enter Keyword", () => {
-  it("preserves implicit default when returning from listing and entering a keyword", () => {
-    // 1. User arrives at /search (clean browse)
-    const initialRaw = searchFiltersSchema.parse({});
-    expect(initialRaw.sort).toBeUndefined();
-    expect(getEffectiveSort(initialRaw.q, initialRaw.sort)).toBe("newest");
+describe("SRCH-02 SearchFilters Component Interactivity & Edge Cases", () => {
+  it("normalizes sort=relevance without keyword so typing a keyword switches dropdown to relevance", () => {
+    pushMock.mockClear();
 
-    // 2. Search context serialized for listing card navigation from browse
-    const searchContext = serializeSearchFilters(initialRaw);
-    expect(searchContext).toBe("page=1"); // No sort= parameter injected!
+    // Render SearchFilters initialized with sort="relevance" without a keyword (e.g. invalid URL)
+    const rawFilters = searchFiltersSchema.parse({ sort: "relevance" });
 
-    // 3. User clicks listing card, then clicks Back to Search
-    const backHref = getBackToSearchHref(searchContext);
-    expect(backHref).toBe("/search?page=1");
+    render(
+      <SearchFilters
+        categories={[]}
+        cities={[]}
+        localities={[]}
+        initialFilters={rawFilters}
+      />
+    );
 
-    // 4. URL restored params parsed on /search
-    const restoredRaw = searchFiltersSchema.parse({ page: "1" });
-    expect(restoredRaw.sort).toBeUndefined(); // Still implicit!
+    const sortSelects = screen.getAllByLabelText("Sort By") as HTMLSelectElement[];
+    const desktopSortSelect = sortSelects[0];
+    const searchInputs = screen.getAllByPlaceholderText("Search items, titles, brands...") as HTMLInputElement[];
+    const desktopSearchInput = searchInputs[0];
 
-    // 5. User enters keyword 'iphone' while on restored browse page
-    const keywordEffectiveSort = getEffectiveSort("iphone", restoredRaw.sort);
-    expect(keywordEffectiveSort).toBe("relevance"); // Switches to relevance correctly!
+    // Effective sort without keyword should show "newest" in dropdown
+    expect(desktopSortSelect.value).toBe("newest");
+
+    // Type keyword "iphone"
+    fireEvent.change(desktopSearchInput, { target: { value: "iphone" } });
+
+    // Dropdown value should dynamically update to "relevance"
+    expect(desktopSortSelect.value).toBe("relevance");
+
+    // Submit search form
+    const submitButtons = screen.getAllByRole("button", { name: "Submit search" });
+    fireEvent.click(submitButtons[0]);
+
+    // Pushed URL should be /search?q=iphone&page=1 (not forcing sort=newest or locking explicit sort)
+    expect(pushMock).toHaveBeenCalledWith("/search?q=iphone&page=1");
   });
 });
