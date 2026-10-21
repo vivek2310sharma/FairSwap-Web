@@ -10,7 +10,6 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import pkg from "pg";
-import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 
 const { Client } = pkg;
@@ -49,6 +48,84 @@ const setupSql = [
   "FOR EACH ROW EXECUTE FUNCTION " + functionName + "();",
 ].join("\n");
 
+/**
+ * Use the raw local Storage HTTP API rather than a Supabase client constructor:
+ * current Web CI pins Node 20 (no native global WebSocket), and this probe must
+ * exercise the physical Storage API irrespective of JS SDK runtime constraints.
+ */
+function localStorageApi(apiUrl, serviceKey) {
+  const root = apiUrl.replace(/\/$/, "") + "/storage/v1/object";
+  const auth = {
+    apikey: serviceKey,
+    Authorization: "Bearer " + serviceKey,
+  };
+  const keyUrl = (path) => root + "/listing-originals/" +
+    path.split("/").map(encodeURIComponent).join("/");
+
+  const toResult = (response) => ({
+    error: response.ok ? null : { error: "HTTP_" + response.status },
+  });
+
+  return {
+    upload: async (path, bytes, { contentType, upsert }) => {
+      const headers = { ...auth, "Content-Type": contentType };
+      if (upsert) headers["x-upsert"] = "true";
+      const response = await fetch(keyUrl(path), {
+        method: "POST",
+        headers,
+        body: bytes,
+      });
+      return toResult(response);
+    },
+    update: async (path, bytes, { contentType }) => {
+      const response = await fetch(keyUrl(path), {
+        method: "PUT",
+        headers: { ...auth, "Content-Type": contentType },
+        body: bytes,
+      });
+      return toResult(response);
+    },
+    remove: async (paths) => {
+      const response = await fetch(root + "/listing-originals", {
+        method: "DELETE",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ prefixes: paths }),
+      });
+      return toResult(response);
+    },
+    download: async (path) => {
+      const response = await fetch(root + "/authenticated/listing-originals/" +
+        path.split("/").map(encodeURIComponent).join("/"), {
+        headers: auth,
+      });
+      return {
+        error: response.ok ? null : { error: "HTTP_" + response.status },
+        data: response.ok ? response : null,
+      };
+    },
+    createSignedUrl: async (path, expiresIn) => {
+      const response = await fetch(root + "/sign/listing-originals/" +
+        path.split("/").map(encodeURIComponent).join("/"), {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ expiresIn }),
+      });
+      if (!response.ok) return { error: { error: "HTTP_" + response.status }, data: null };
+      const json = await response.json();
+      const relative = json.signedURL ?? json.signedUrl;
+      if (typeof relative !== "string" || !relative) {
+        return { error: { error: "SIGNED_URL_MISSING" }, data: null };
+      }
+      const signedUrl = relative.startsWith("http")
+        ? relative
+        : apiUrl.replace(/\/$/, "") + (relative.startsWith("/storage/")
+          ? relative
+          : "/storage/v1" + (relative.startsWith("/") ? relative : "/" + relative));
+      return { data: { signedUrl }, error: null };
+    },
+  };
+}
+
 async function requireUpload(store, path, bytes, upsert, name) {
   const { error } = await store.upload(path, bytes, {
     contentType: "image/png",
@@ -76,10 +153,7 @@ async function main() {
   const status = JSON.parse(execFileSync("supabase", ["status", "-o", "json"], { encoding: "utf8" }));
   assertLocalOnly(status);
   const db = new Client({ connectionString: status.DB_URL });
-  const supabase = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const store = supabase.storage.from("listing-originals");
+  const store = localStorageApi(status.API_URL, status.SERVICE_ROLE_KEY);
   const listingId = randomUUID(), mediaId = randomUUID(), assetVersion = randomUUID();
   const base = listingId + "/" + mediaId + "/";
   const digest = "a".repeat(64);
