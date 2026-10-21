@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal, RotateCcw, Search } from "lucide-react";
 import { Category, City, Locality, SearchSortOption, getEffectiveSort } from "@/types/listing";
+import { publicFamilyForSlug } from "@/lib/discovery/family-display";
 
 interface SearchFiltersProps {
   categories: Category[];
@@ -170,10 +171,15 @@ export function SearchFilters({
           className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
         >
           <option value="">All Categories</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.slug}>
-              {c.name}
-            </option>
+          {[
+            { label: "Goods", items: categories.filter(c => !publicFamilyForSlug(c.slug)) },
+            { label: "Motorcycles & Scooters", items: categories.filter(c => publicFamilyForSlug(c.slug) === "two-wheelers") },
+            { label: "Cars", items: categories.filter(c => publicFamilyForSlug(c.slug) === "cars") },
+            { label: "Monthly Rentals, PG & Co-living", items: categories.filter(c => publicFamilyForSlug(c.slug) === "property") },
+          ].filter(group => group.items.length).map(group => (
+            <optgroup key={group.label} label={group.label}>
+              {group.items.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
+            </optgroup>
           ))}
         </select>
       </div>
