@@ -2,6 +2,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { SearchFilters } from "@/components/listings/SearchFilters";
+import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
 import { Pagination } from "@/components/listings/Pagination";
 import {
   getPublicCategories,
@@ -113,7 +114,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {/* Filter Sidebar */}
             <div className="lg:col-span-1">
               <SearchFilters
-                key={searchContext}
                 categories={categories}
                 cities={cities}
                 localities={localities}
@@ -123,6 +123,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             {/* Results Grid */}
             <div className="lg:col-span-3">
+              {/* Active Filter Chips */}
+              <ActiveFilterChips
+                filters={filters}
+                categories={categories}
+                cities={cities}
+                localities={localities}
+              />
+
               {searchResult.items.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
