@@ -9,6 +9,138 @@ import {
   buildWhatsAppShareLink,
 } from "@/lib/listings/share";
 import { ShareButton } from "@/components/listings/ShareButton";
+import ListingsDashboardPage from "@/app/account/listings/page";
+
+type Draft = {
+  id: string;
+  category_id: string;
+  slug: string;
+  title: string;
+  status: string;
+  revision: number;
+  price_type: string;
+  price_paise: number;
+  renewal_count: number;
+  rejection_reason: string | null;
+  removal_reason: string | null;
+  cover_photo_id: string | null;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+  categories: { name?: string; slug?: string } | null;
+  cities: { name: string } | null;
+};
+
+const mockListings: Draft[] = [
+  {
+    id: "active-goods",
+    category_id: "goods-cat",
+    slug: "active-goods-1",
+    title: "Active Public Goods",
+    status: "active",
+    revision: 1,
+    price_type: "fixed",
+    price_paise: 100000,
+    renewal_count: 0,
+    rejection_reason: null,
+    removal_reason: null,
+    cover_photo_id: null,
+    expires_at: new Date(Date.now() + 86400000).toISOString(),
+    created_at: "2026-10-01",
+    updated_at: "2026-10-01",
+    categories: { name: "Electronics", slug: "electronics" },
+    cities: { name: "Mumbai" },
+  },
+  {
+    id: "active-property",
+    category_id: "property-cat",
+    slug: "active-property-2",
+    title: "Active Property Flat",
+    status: "active",
+    revision: 1,
+    price_type: "fixed",
+    price_paise: 5000000,
+    renewal_count: 0,
+    rejection_reason: null,
+    removal_reason: null,
+    cover_photo_id: null,
+    expires_at: new Date(Date.now() + 86400000).toISOString(),
+    created_at: "2026-10-01",
+    updated_at: "2026-10-01",
+    categories: { name: "Apartments", slug: "rental-apartments" },
+    cities: { name: "Mumbai" },
+  },
+  {
+    id: "expired-goods",
+    category_id: "goods-cat",
+    slug: "expired-goods-3",
+    title: "Expired Active Listing",
+    status: "active",
+    revision: 1,
+    price_type: "fixed",
+    price_paise: 200000,
+    renewal_count: 0,
+    rejection_reason: null,
+    removal_reason: null,
+    cover_photo_id: null,
+    expires_at: new Date(Date.now() - 86400000).toISOString(), // Expired
+    created_at: "2026-09-01",
+    updated_at: "2026-09-01",
+    categories: { name: "Electronics", slug: "electronics" },
+    cities: { name: "Mumbai" },
+  },
+  {
+    id: "draft-item",
+    category_id: "goods-cat",
+    slug: "draft-item-4",
+    title: "Draft Item",
+    status: "draft",
+    revision: 1,
+    price_type: "fixed",
+    price_paise: 50000,
+    renewal_count: 0,
+    rejection_reason: null,
+    removal_reason: null,
+    cover_photo_id: null,
+    expires_at: null,
+    created_at: "2026-10-01",
+    updated_at: "2026-10-01",
+    categories: { name: "Electronics", slug: "electronics" },
+    cities: { name: "Mumbai" },
+  },
+];
+
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: async () => ({
+    auth: {
+      getUser: async () => ({ data: { user: { id: "seller-123" } } }),
+    },
+    from: (table: string) => {
+      const q = {
+        select: () => q,
+        eq: () => q,
+        order: () => q,
+        limit: async () => ({ data: mockListings, error: null }),
+        in: async () => ({ data: [], error: null }),
+      };
+      return q;
+    },
+  }),
+}));
+
+vi.mock("@/app/account/listings/actions", () => ({
+  submitListingAction: vi.fn(),
+  transitionListingAction: vi.fn(),
+}));
+
+vi.mock("@/lib/listings/property/server", () => ({
+  isPropertyEnabled: () => true,
+}));
+
+vi.mock("@/lib/listings/two-wheeler/server", () => ({
+  isTwoWheelerEnabled: () => true,
+  isCarsEnabled: () => true,
+}));
 
 describe("WhatsApp & Social Sharing Utilities (LIST-03)", () => {
   describe("formatListingPrice", () => {
@@ -193,5 +325,40 @@ describe("ShareButton Component (LIST-03)", () => {
     expect(statusElement).toHaveTextContent("Failed to copy");
     expect(statusElement).toHaveAttribute("aria-live", "polite");
     consoleSpy.mockRestore();
+  });
+});
+
+describe("My Ads Dashboard Public Visibility & Lifecycle Actions (LIST-03)", () => {
+  afterEach(cleanup);
+
+  it("preserves Pause, Mark Reserved, and Mark Sold buttons for ALL active listings including property", async () => {
+    render(await ListingsDashboardPage());
+
+    const activeGoodsHeading = screen.getByRole("heading", { name: "Active Public Goods" });
+    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg")!;
+    expect(activeGoodsCard).toBeInTheDocument();
+
+    expect(screen.getAllByRole("button", { name: "Pause" })).toHaveLength(3);
+    expect(screen.getAllByRole("button", { name: "Mark Reserved" })).toHaveLength(3);
+    expect(screen.getAllByRole("button", { name: "Mark Sold" })).toHaveLength(3);
+  });
+
+  it("renders Share button ONLY for publicly visible active listings and omits it for expired or draft items", async () => {
+    render(await ListingsDashboardPage());
+
+    const activeGoodsHeading = screen.getByRole("heading", { name: "Active Public Goods" });
+    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg")!;
+    const whatsappLinksInGoodsCard = activeGoodsCard.querySelectorAll("a[href^='https://wa.me/']");
+    expect(whatsappLinksInGoodsCard.length).toBe(1);
+
+    const expiredGoodsHeading = screen.getByRole("heading", { name: "Expired Active Listing" });
+    const expiredGoodsCard = expiredGoodsHeading.closest(".rounded-lg")!;
+    const whatsappLinksInExpiredCard = expiredGoodsCard.querySelectorAll("a[href^='https://wa.me/']");
+    expect(whatsappLinksInExpiredCard.length).toBe(0);
+
+    const draftItemHeading = screen.getByRole("heading", { name: "Draft Item" });
+    const draftItemCard = draftItemHeading.closest(".rounded-lg")!;
+    const whatsappLinksInDraftCard = draftItemCard.querySelectorAll("a[href^='https://wa.me/']");
+    expect(whatsappLinksInDraftCard.length).toBe(0);
   });
 });

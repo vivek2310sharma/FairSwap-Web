@@ -84,6 +84,7 @@ export default async function ListingsDashboardPage() {
       rejection_reason,
       removal_reason,
       cover_photo_id,
+      expires_at,
       created_at,
       updated_at,
       categories(name,slug),
@@ -187,6 +188,9 @@ export default async function ListingsDashboardPage() {
               ? listing.cities[0]?.name
               : (listing.cities as { name?: string } | null)?.name;
 
+            const isNotExpired = !listing.expires_at || new Date(listing.expires_at) > new Date();
+            const isPublic = listing.status === "active" && isNotExpired && !propertyDraft && !vehicleDraft;
+
             return (
               <div
                 key={listing.id}
@@ -260,15 +264,17 @@ export default async function ListingsDashboardPage() {
                       </form>
                     )}
 
-                    {listing.status === "active" && !propertyDraft && !vehicleDraft && (
+                    {listing.status === "active" && (
                       <>
-                        <ShareButton
-                          slug={listing.slug}
-                          title={listing.title}
-                          price_type={listing.price_type}
-                          price_paise={listing.price_paise}
-                          variant="inline"
-                        />
+                        {isPublic && (
+                          <ShareButton
+                            slug={listing.slug}
+                            title={listing.title}
+                            price_type={listing.price_type}
+                            price_paise={listing.price_paise}
+                            variant="inline"
+                          />
+                        )}
                         <form action={onTransitionListing.bind(null, listing.id, "pause")}>
                           <button
                             type="submit"
