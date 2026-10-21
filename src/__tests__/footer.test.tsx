@@ -16,20 +16,14 @@ describe("Footer component", () => {
     expect(screen.getByAltText("FairSwap.in")).toBeInTheDocument();
   });
 
-  it("links to FairSwap's public launch record securely", () => {
+  it("does not render the public launch record link or websitelaunches.com domain", () => {
     render(<Footer />);
-    const launchRecordLink = screen.getByRole("link", {
-      name: "View FairSwap's public launch record",
-    });
+    expect(
+      screen.queryByRole("link", { name: "View FairSwap's public launch record" })
+    ).not.toBeInTheDocument();
 
-    expect(launchRecordLink).toHaveAttribute(
-      "href",
-      "https://websitelaunches.com/site/fairswap.in"
-    );
-    expect(launchRecordLink).toHaveAttribute("target", "_blank");
-    expect(launchRecordLink.getAttribute("rel")?.split(/\s+/)).toEqual(
-      expect.arrayContaining(["noopener", "noreferrer", "external"])
-    );
+    const footer = screen.getByRole("contentinfo");
+    expect(footer.innerHTML).not.toContain("websitelaunches.com");
   });
 
   it("displays the copyright without a pilot notice", () => {
@@ -57,9 +51,18 @@ describe("Footer component", () => {
     expect(grievanceLink).toBeInTheDocument();
     expect(grievanceLink).toHaveAttribute("href", "/grievance");
   });
-  it("exposes official customer support email and phone publicly", () => {
+  it("exposes official customer support email and WhatsApp Business link publicly without previous phone number", () => {
     render(<Footer />);
     expect(screen.getByRole("link", { name: "support@fairswap.in" })).toHaveAttribute("href", "mailto:support@fairswap.in");
-    expect(screen.getByRole("link", { name: "+91 8826599917" })).toHaveAttribute("href", "tel:+918826599917");
+
+    const whatsappLink = screen.getByRole("link", { name: "WhatsApp Support: +91 7877966996" });
+    expect(whatsappLink).toHaveAttribute("href", "https://wa.me/917877966996");
+    expect(whatsappLink).toHaveAttribute("target", "_blank");
+    expect(whatsappLink.getAttribute("rel")?.split(/\s+/)).toEqual(
+      expect.arrayContaining(["noopener", "noreferrer"])
+    );
+
+    expect(screen.queryByRole("link", { name: "+91 8826599917" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/8826599917/)).not.toBeInTheDocument();
   });
 });

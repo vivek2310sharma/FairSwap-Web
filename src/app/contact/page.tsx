@@ -41,16 +41,21 @@ export default function ContactPage() {
             </p>
           </div>
 
-          {/* Public business support number: calls only; not emergency assistance. */}
+          {/* Public business WhatsApp support: messaging support; not emergency assistance. */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Mail className="h-5 w-5 text-action-600" aria-hidden="true" />
-              Phone Contact
+              WhatsApp Support
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              For FairSwap platform-related questions, you may call{" "}
-              <a href="tel:+918826599917" className="font-medium text-brand-link underline hover:text-brand-hover">
-                +91 8826599917
+              For FairSwap platform-related questions, you can reach our support team on WhatsApp at{" "}
+              <a
+                href="https://wa.me/917877966996"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-brand-link underline hover:text-brand-hover"
+              >
+                +91 7877966996
               </a>.
               You can also use the{" "}
               <a href="https://help.fairswap.in/en/contact" className="font-medium text-brand-link underline hover:text-brand-hover">
