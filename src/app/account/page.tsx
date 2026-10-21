@@ -26,6 +26,9 @@ export default async function AccountPage() {
     .single<UserAccount>();
 
   const isSuspended = account?.account_status === "suspended";
+  const isDeletionPending = account?.account_status === "deletion_pending";
+  const isDeleted = account?.account_status === "deleted";
+  const isRestricted = isSuspended || isDeletionPending || isDeleted;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -61,6 +64,34 @@ export default async function AccountPage() {
         </div>
       )}
 
+      {isDeletionPending && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          <div className="flex items-center gap-2 font-bold text-amber-900">
+            <span aria-hidden="true">⏳</span> Account Deletion Pending
+          </div>
+          <p className="mt-1">
+            Your account deletion request is currently pending processing.
+          </p>
+        </div>
+      )}
+
+      {isDeleted && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800"
+        >
+          <div className="flex items-center gap-2 font-bold text-red-900">
+            <span aria-hidden="true">⚠️</span> Account Closed
+          </div>
+          <p className="mt-1">
+            This account has been closed. Marketplace actions and profile updates are disabled.
+          </p>
+        </div>
+      )}
+
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Listings Card */}
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 shadow-sm">
@@ -78,6 +109,7 @@ export default async function AccountPage() {
             </Link>
           </div>
         </div>
+
         {/* Profile Card */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">Public Profile</h2>
@@ -103,35 +135,21 @@ export default async function AccountPage() {
               href="/account/profile"
               className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
             >
-              Edit Profile &rarr;
+              {isRestricted ? "View Profile" : "Edit Profile"} &rarr;
             </Link>
           </div>
         </div>
 
         {/* Security Card */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900">Security & Status</h2>
-          <p className="mt-1 text-xs text-gray-500">Account status and credentials</p>
+          <h2 className="text-lg font-bold text-gray-900">Account Security</h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Manage your account security and sign-in details.
+          </p>
           <div className="mt-4 space-y-2 text-sm">
             <div>
               <span className="text-gray-500">Email: </span>
               <span className="font-semibold text-gray-900">{userData.user.email}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Status: </span>
-              <span
-                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  account?.account_status === "active"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {account?.account_status || "unknown"}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-500">Terms Version: </span>
-              <span className="text-xs text-gray-700">{account?.terms_version || "—"}</span>
             </div>
           </div>
           <div className="mt-6">
