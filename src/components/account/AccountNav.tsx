@@ -9,10 +9,7 @@ import {
   Heart,
   MessageSquare,
   Bell,
-  UserCircle,
-  Shield,
-  Lock,
-  LifeBuoy,
+  Settings,
   BookOpen,
 } from "lucide-react";
 
@@ -22,15 +19,21 @@ const accountNavItems = [
   { label: "Favourites", href: "/account/favourites", icon: Heart, exact: false },
   { label: "Messages", href: "/account/messages", icon: MessageSquare, exact: false },
   { label: "Notifications", href: "/account/notifications", icon: Bell, exact: false },
-  { label: "Profile", href: "/account/profile", icon: UserCircle, exact: false },
-  { label: "Security", href: "/account/security", icon: Shield, exact: false },
-  { label: "Privacy", href: "/account/privacy", icon: Lock, exact: false },
-  { label: "Support Tickets", href: "/account/support", icon: LifeBuoy, exact: false },
+  { label: "Settings", href: "/account/settings", icon: Settings, exact: false },
 ] as const;
 
 function isActive(pathname: string, href: string, exact: boolean): boolean {
   if (exact) {
     return pathname === href;
+  }
+  if (href === "/account/settings") {
+    return (
+      pathname === "/account/settings" ||
+      pathname.startsWith("/account/settings/") ||
+      pathname.startsWith("/account/profile") ||
+      pathname.startsWith("/account/security") ||
+      pathname.startsWith("/account/privacy")
+    );
   }
   return pathname === href || pathname.startsWith(href + "/");
 }
@@ -45,7 +48,7 @@ export function AccountNav() {
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ul
-          className="flex gap-1 overflow-x-auto py-1 scrollbar-none"
+          className="flex gap-1 overflow-x-auto py-1.5 scrollbar-none"
           role="list"
         >
           {accountNavItems.map((item) => {
@@ -57,7 +60,8 @@ export function AccountNav() {
                   aria-current={active ? "page" : undefined}
                   className={`
                     inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium
-                    transition-colors whitespace-nowrap
+                    transition-colors whitespace-nowrap min-h-[44px] sm:min-h-[38px]
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
                     ${
                       active
                         ? "bg-brand-50 text-brand-900 dark:bg-brand-900/30 dark:text-brand-300"
@@ -74,7 +78,7 @@ export function AccountNav() {
           <li className="flex-shrink-0">
             <a
               href={HELP_CENTRE_URL}
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap text-muted hover:bg-surface hover:text-foreground"
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap text-muted hover:bg-surface hover:text-foreground min-h-[44px] sm:min-h-[38px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               <BookOpen className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
               Help Centre

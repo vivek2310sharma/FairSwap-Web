@@ -23,7 +23,7 @@ describe("AccountNav component", () => {
     expect(nav).toBeInTheDocument();
   });
 
-  it("renders all expected navigation sections", () => {
+  it("renders exactly the six primary navigation items plus Help Centre", () => {
     mockUsePathname.mockReturnValue("/account");
     render(<AccountNav />);
 
@@ -33,26 +33,26 @@ describe("AccountNav component", () => {
       "Favourites",
       "Messages",
       "Notifications",
-      "Profile",
-      "Security",
-      "Privacy",
-      "Support",
+      "Settings",
     ];
 
     for (const label of expectedLabels) {
       expect(screen.getByRole("link", { name: new RegExp(label) })).toBeInTheDocument();
     }
+
+    const nav = screen.getByRole("navigation", { name: "Account navigation" });
+    const links = within(nav).getAllByRole("link");
+    expect(links).toHaveLength(7); // 6 internal destinations + Help Centre
   });
 
-  it("offers public Help Centre without replacing private support tickets", () => {
-    mockUsePathname.mockReturnValue("/account/profile");
+  it("offers public Help Centre link", () => {
+    mockUsePathname.mockReturnValue("/account/settings");
     render(<AccountNav />);
     const nav = screen.getByRole("navigation", { name: "Account navigation" });
     const helpLinks = within(nav).getAllByRole("link", { name: "Help Centre" });
     expect(helpLinks).toHaveLength(1);
     expect(helpLinks[0]).toHaveAttribute("href", HELP_CENTRE_URL);
     expect(helpLinks[0]).not.toHaveAttribute("target", "_blank");
-    expect(within(nav).getByRole("link", { name: "Support Tickets" })).toHaveAttribute("href", "/account/support");
   });
 
   it("does NOT expose policy-review as a navigation item", () => {
@@ -67,21 +67,13 @@ describe("AccountNav component", () => {
     expect(hrefs).not.toContain("/account/policy-review");
   });
 
-  it("links Overview to /account", () => {
+  it("links Settings to /account/settings", () => {
     mockUsePathname.mockReturnValue("/account");
     render(<AccountNav />);
-    expect(screen.getByRole("link", { name: /Overview/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Settings/ })).toHaveAttribute(
       "href",
-      "/account"
+      "/account/settings"
     );
-  });
-
-  it("links My Listings to /account/listings", () => {
-    mockUsePathname.mockReturnValue("/account");
-    render(<AccountNav />);
-    expect(
-      screen.getByRole("link", { name: /My Listings/ })
-    ).toHaveAttribute("href", "/account/listings");
   });
 
   // --- Active state: exact match for Overview ---
@@ -100,60 +92,38 @@ describe("AccountNav component", () => {
     expect(overviewLink).not.toHaveAttribute("aria-current");
   });
 
-  it("does NOT mark Overview as active on /account/profile", () => {
-    mockUsePathname.mockReturnValue("/account/profile");
+  // --- Active state: Settings ---
+
+  it("marks Settings as active on /account/settings", () => {
+    mockUsePathname.mockReturnValue("/account/settings");
     render(<AccountNav />);
-    const overviewLink = screen.getByRole("link", { name: /Overview/ });
-    expect(overviewLink).not.toHaveAttribute("aria-current");
+    const settingsLink = screen.getByRole("link", { name: /Settings/ });
+    expect(settingsLink).toHaveAttribute("aria-current", "page");
   });
 
-  // --- Active state: Profile ---
-
-  it("marks Profile as active on /account/profile", () => {
-    mockUsePathname.mockReturnValue("/account/profile");
-    render(<AccountNav />);
-    const profileLink = screen.getByRole("link", { name: /Profile/ });
-    expect(profileLink).toHaveAttribute("aria-current", "page");
+  it("marks Settings as active on legacy routes /account/profile, /account/security, and /account/privacy", () => {
+    for (const route of ["/account/profile", "/account/security", "/account/privacy"]) {
+      mockUsePathname.mockReturnValue(route);
+      const { unmount } = render(<AccountNav />);
+      const settingsLink = screen.getByRole("link", { name: /Settings/ });
+      expect(settingsLink).toHaveAttribute("aria-current", "page");
+      unmount();
+    }
   });
 
-  // --- Active state: Security ---
+  // --- Active state: Notifications ---
 
-  it("marks Security as active on /account/security", () => {
-    mockUsePathname.mockReturnValue("/account/security");
+  it("marks Notifications as active on /account/notifications", () => {
+    mockUsePathname.mockReturnValue("/account/notifications");
     render(<AccountNav />);
-    const securityLink = screen.getByRole("link", { name: /Security/ });
-    expect(securityLink).toHaveAttribute("aria-current", "page");
-  });
-
-  // --- Active state: nested listing pages highlight My Listings ---
-
-  it("marks My Listings as active on /account/listings/new", () => {
-    mockUsePathname.mockReturnValue("/account/listings/new");
-    render(<AccountNav />);
-    const listingsLink = screen.getByRole("link", { name: /My Listings/ });
-    expect(listingsLink).toHaveAttribute("aria-current", "page");
-  });
-
-  it("marks My Listings as active on /account/listings/some-id/edit", () => {
-    mockUsePathname.mockReturnValue("/account/listings/some-id/edit");
-    render(<AccountNav />);
-    const listingsLink = screen.getByRole("link", { name: /My Listings/ });
-    expect(listingsLink).toHaveAttribute("aria-current", "page");
-  });
-
-  // --- Active state: nested message pages highlight Messages ---
-
-  it("marks Messages as active on /account/messages/some-id", () => {
-    mockUsePathname.mockReturnValue("/account/messages/some-id");
-    render(<AccountNav />);
-    const messagesLink = screen.getByRole("link", { name: /Messages/ });
-    expect(messagesLink).toHaveAttribute("aria-current", "page");
+    const notifLink = screen.getByRole("link", { name: /Notifications/ });
+    expect(notifLink).toHaveAttribute("aria-current", "page");
   });
 
   // --- Accessible semantics ---
 
   it("uses aria-current='page' for the active item only", () => {
-    mockUsePathname.mockReturnValue("/account/security");
+    mockUsePathname.mockReturnValue("/account/settings");
     render(<AccountNav />);
 
     const nav = screen.getByRole("navigation", {
@@ -165,17 +135,6 @@ describe("AccountNav component", () => {
       (link) => link.getAttribute("aria-current") === "page"
     );
     expect(activeLinks).toHaveLength(1);
-    expect(activeLinks[0]).toHaveTextContent(/Security/);
-  });
-
-  it("non-active links do not have aria-current", () => {
-    mockUsePathname.mockReturnValue("/account/security");
-    render(<AccountNav />);
-
-    const overviewLink = screen.getByRole("link", { name: /Overview/ });
-    expect(overviewLink).not.toHaveAttribute("aria-current");
-
-    const profileLink = screen.getByRole("link", { name: /Profile/ });
-    expect(profileLink).not.toHaveAttribute("aria-current");
+    expect(activeLinks[0]).toHaveTextContent(/Settings/);
   });
 });

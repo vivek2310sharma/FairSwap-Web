@@ -91,9 +91,21 @@ export function PolicyReviewForm({ nextTarget }: PolicyReviewFormProps) {
         </button>
       </form>
 
-      <div className="border-t border-gray-200 pt-4 text-center">
-        <p className="text-xs text-gray-500 mb-2">
-          If you do not agree with the updated Public Beta policies, you may sign out:
+      <div className="border-t border-gray-200 pt-4 text-center space-y-3">
+        <p className="text-xs text-gray-500">
+          Need to export your data or appeal an account restriction before accepting?
+        </p>
+        <div className="flex justify-center gap-4 text-xs">
+          <Link href="/account/privacy" className="font-semibold text-emerald-700 hover:underline">
+            Privacy & Data Rights
+          </Link>
+          <span className="text-gray-300">•</span>
+          <Link href="/account/support" className="font-semibold text-emerald-700 hover:underline">
+            Support & Appeals
+          </Link>
+        </div>
+        <p className="text-xs text-gray-500 pt-2">
+          Or you may sign out of FairSwap:
         </p>
         <form action={signOutAction}>
           <button

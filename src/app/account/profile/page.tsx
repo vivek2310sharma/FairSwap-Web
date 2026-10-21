@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { type Profile, type UserAccount } from "@/types/account";
-import ProfileForm from "./profile-form";
+import { ProfileSection } from "@/components/account/ProfileSection";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -28,28 +28,19 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <div className="mb-6 flex items-center justify-between border-b border-gray-200 pb-4">
+      <div className="mb-6 flex items-center justify-between border-b border-gray-200 pb-4 dark:border-stone-800">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Public Profile</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-stone-100">Edit Public Profile</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-stone-400">
             This information is visible to other buyers and sellers on FairSwap.
           </p>
         </div>
-        <Link href="/account" className="text-sm font-semibold text-emerald-600 hover:text-emerald-500">
-          &larr; Back to Account
+        <Link href="/account/settings?tab=profile" className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400">
+          &larr; Settings
         </Link>
       </div>
 
-      {isSuspended ? (
-        <div
-          role="alert"
-          className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800"
-        >
-          Your account is suspended. Profile edits are disabled.
-        </div>
-      ) : (
-        <ProfileForm profile={profile} />
-      )}
+      <ProfileSection profile={profile} isSuspended={isSuspended} />
     </div>
   );
 }
