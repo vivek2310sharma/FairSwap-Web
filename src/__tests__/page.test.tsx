@@ -19,7 +19,14 @@ describe("HomePage component", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders the How It Works section with 3 core steps", () => {
+  it("renders the Trust Strip section", () => {
+    render(<HomePage />);
+    expect(
+      screen.getByRole("heading", { level: 2, name: /stay safe on fairswap/i })
+    ).toBeInTheDocument();
+  });
+
+  it("renders the How It Works section with 3 core steps and updated Exchange text", () => {
     render(<HomePage />);
     expect(
       screen.getByRole("heading", { level: 2, name: /how it works/i })
@@ -27,6 +34,9 @@ describe("HomePage component", () => {
     expect(screen.getByRole("heading", { level: 3, name: "Browse" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Connect" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Exchange" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Meet in a public place, inspect the item, and agree on payment directly.")
+    ).toBeInTheDocument();
   });
 
   it("renders the Browse Categories preview section", () => {
