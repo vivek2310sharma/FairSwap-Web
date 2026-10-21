@@ -3,6 +3,7 @@ import { render, screen, fireEvent, cleanup, act } from "@testing-library/react"
 import React from "react";
 import {
   formatListingPrice,
+  buildListingCanonicalUrl,
   buildListingShareUrl,
   buildWhatsAppShareMessage,
   buildWhatsAppShareLink,
@@ -30,9 +31,18 @@ describe("WhatsApp & Social Sharing Utilities (LIST-03)", () => {
     });
   });
 
-  describe("buildListingShareUrl", () => {
-    it("generates valid URL with UTM parameters and site domain", () => {
-      const urlString = buildListingShareUrl("vintage-royal-enfield-123", "https://fairswap.in");
+  describe("buildListingCanonicalUrl & buildListingShareUrl", () => {
+    it("builds clean canonical URL without WhatsApp UTM parameters for Copy Link", () => {
+      const canonical = buildListingCanonicalUrl("vintage-royal-enfield-123", "https://fairswap.in");
+      const url = new URL(canonical);
+
+      expect(url.origin).toBe("https://fairswap.in");
+      expect(url.pathname).toBe("/listings/vintage-royal-enfield-123");
+      expect(url.searchParams.get("utm_source")).toBeNull();
+    });
+
+    it("generates valid URL with WhatsApp UTM parameters for social sharing", () => {
+      const urlString = buildListingShareUrl("vintage-royal-enfield-123", "https://fairswap.in", "whatsapp");
       const url = new URL(urlString);
 
       expect(url.origin).toBe("https://fairswap.in");
@@ -40,6 +50,17 @@ describe("WhatsApp & Social Sharing Utilities (LIST-03)", () => {
       expect(url.searchParams.get("utm_source")).toBe("whatsapp");
       expect(url.searchParams.get("utm_medium")).toBe("social");
       expect(url.searchParams.get("utm_campaign")).toBe("listing_share");
+    });
+
+    it("prioritizes NEXT_PUBLIC_SITE_URL environment variable over window.location if provided", () => {
+      const originalEnv = process.env.NEXT_PUBLIC_SITE_URL;
+      process.env.NEXT_PUBLIC_SITE_URL = "https://fairswap.in";
+      try {
+        const canonical = buildListingCanonicalUrl("iphone-15-pro");
+        expect(canonical.startsWith("https://fairswap.in/listings/iphone-15-pro")).toBe(true);
+      } finally {
+        process.env.NEXT_PUBLIC_SITE_URL = originalEnv;
+      }
     });
 
     it("encodes special characters in listing slug", () => {
@@ -87,7 +108,7 @@ describe("ShareButton Component (LIST-03)", () => {
 
   afterEach(cleanup);
 
-  it("renders WhatsApp share link and copy link button in default/inline variant", () => {
+  it("renders WhatsApp share link and copy link button in inline variant", () => {
     render(
       <ShareButton
         slug="samsung-galaxy-s23-789"
@@ -95,6 +116,7 @@ describe("ShareButton Component (LIST-03)", () => {
         price_type="fixed"
         price_paise={5000000}
         variant="inline"
+        siteUrl="https://fairswap.in"
       />
     );
 
@@ -102,12 +124,13 @@ describe("ShareButton Component (LIST-03)", () => {
     expect(whatsappLink).toBeInTheDocument();
     expect(whatsappLink).toHaveAttribute("target", "_blank");
     expect(whatsappLink.getAttribute("href")).toContain("https://wa.me/?text=");
+    expect(whatsappLink.getAttribute("href")).toContain("utm_source%3Dwhatsapp");
 
     const copyButton = screen.getByRole("button", { name: /copy listing link/i });
     expect(copyButton).toBeInTheDocument();
   });
 
-  it("copies link to clipboard when Copy Link button is clicked", async () => {
+  it("copies clean canonical link to clipboard without WhatsApp attribution and shows polite status feedback", async () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: {
@@ -122,6 +145,7 @@ describe("ShareButton Component (LIST-03)", () => {
         price_type="fixed"
         price_paise={5000000}
         variant="inline"
+        siteUrl="https://fairswap.in"
       />
     );
 
@@ -131,7 +155,43 @@ describe("ShareButton Component (LIST-03)", () => {
     });
 
     expect(writeTextMock).toHaveBeenCalledTimes(1);
-    expect(writeTextMock.mock.calls[0][0]).toContain("/listings/samsung-galaxy-s23-789");
-    expect(writeTextMock.mock.calls[0][0]).toContain("utm_source=whatsapp");
+    const copiedText = writeTextMock.mock.calls[0][0];
+    expect(copiedText).toBe("https://fairswap.in/listings/samsung-galaxy-s23-789");
+    expect(copiedText).not.toContain("utm_source=whatsapp");
+
+    const statusElement = screen.getByRole("status");
+    expect(statusElement).toHaveTextContent("Copied");
+    expect(statusElement).toHaveAttribute("aria-live", "polite");
+  });
+
+  it("handles clipboard API failure gracefully and displays error status", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const writeTextMock = vi.fn().mockRejectedValue(new Error("Clipboard denied"));
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: writeTextMock,
+      },
+    });
+
+    render(
+      <ShareButton
+        slug="samsung-galaxy-s23-789"
+        title="Samsung Galaxy S23"
+        price_type="fixed"
+        price_paise={5000000}
+        variant="inline"
+        siteUrl="https://fairswap.in"
+      />
+    );
+
+    const copyButton = screen.getByRole("button", { name: /copy listing link/i });
+    await act(async () => {
+      fireEvent.click(copyButton);
+    });
+
+    const statusElement = screen.getByRole("status");
+    expect(statusElement).toHaveTextContent("Failed to copy");
+    expect(statusElement).toHaveAttribute("aria-live", "polite");
+    consoleSpy.mockRestore();
   });
 });

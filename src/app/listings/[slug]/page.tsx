@@ -267,12 +267,14 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                       initialIsFavourited={isFavourited}
                       showText={true}
                     />
-                    <ShareButton
-                      slug={listing.slug}
-                      title={listing.title}
-                      formattedPrice={formattedPrice}
-                      variant="inline"
-                    />
+                    {!isOwnerOrStaffPreview && listing.status === "active" && (
+                      <ShareButton
+                        slug={listing.slug}
+                        title={listing.title}
+                        formattedPrice={formattedPrice}
+                        variant="inline"
+                      />
+                    )}
                   </div>
                 </div>
 

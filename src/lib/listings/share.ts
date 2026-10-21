@@ -24,18 +24,31 @@ export function getBaseSiteUrl(customSiteUrl?: string): string {
   if (customSiteUrl) {
     return customSiteUrl.replace(/\/+$/, "");
   }
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (envUrl && envUrl.trim().length > 0) {
+    return envUrl.trim().replace(/\/+$/, "");
+  }
   if (typeof window !== "undefined" && window.location?.origin) {
     return window.location.origin.replace(/\/+$/, "");
   }
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  return envUrl.replace(/\/+$/, "");
+  return "http://localhost:3000";
 }
 
-export function buildListingShareUrl(slug: string, customSiteUrl?: string): string {
+export function buildListingCanonicalUrl(slug: string, customSiteUrl?: string): string {
   const base = getBaseSiteUrl(customSiteUrl);
   const origin = base.startsWith("http://") || base.startsWith("https://") ? base : `https://${base}`;
   const url = new URL(`/listings/${encodeURIComponent(slug)}`, origin);
-  url.searchParams.set("utm_source", "whatsapp");
+  return url.toString();
+}
+
+export function buildListingShareUrl(
+  slug: string,
+  customSiteUrl?: string,
+  utmSource = "whatsapp"
+): string {
+  const urlString = buildListingCanonicalUrl(slug, customSiteUrl);
+  const url = new URL(urlString);
+  url.searchParams.set("utm_source", utmSource);
   url.searchParams.set("utm_medium", "social");
   url.searchParams.set("utm_campaign", "listing_share");
   return url.toString();
@@ -47,7 +60,7 @@ export function buildWhatsAppShareMessage(params: {
   slug: string;
   siteUrl?: string;
 }): string {
-  const url = buildListingShareUrl(params.slug, params.siteUrl);
+  const url = buildListingShareUrl(params.slug, params.siteUrl, "whatsapp");
   const priceText = params.price || "Price on request";
 
   return `Check out this listing on FairSwap!\n\n📦 ${params.title}\n💰 ${priceText}\n\n🔗 ${url}\n\nDiscover more on FairSwap.`;

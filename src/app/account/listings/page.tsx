@@ -260,7 +260,7 @@ export default async function ListingsDashboardPage() {
                       </form>
                     )}
 
-                    {listing.status === "active" && (
+                    {listing.status === "active" && !propertyDraft && !vehicleDraft && (
                       <>
                         <ShareButton
                           slug={listing.slug}

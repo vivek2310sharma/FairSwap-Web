@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Share2, Copy, Check, Link as LinkIcon } from "lucide-react";
 import {
   buildWhatsAppShareLink,
-  buildListingShareUrl,
+  buildListingCanonicalUrl,
   formatListingPrice,
   FormatPriceInput,
 } from "@/lib/listings/share";
@@ -15,6 +15,7 @@ interface ShareButtonProps extends FormatPriceInput {
   formattedPrice?: string;
   variant?: "full" | "icon" | "inline";
   className?: string;
+  siteUrl?: string;
 }
 
 export function WhatsAppIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -38,6 +39,7 @@ export function ShareButton({
   formattedPrice: customFormattedPrice,
   variant = "full",
   className = "",
+  siteUrl,
 }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -47,8 +49,8 @@ export function ShareButton({
     { price_type, price_paise },
     customFormattedPrice
   );
-  const whatsappUrl = buildWhatsAppShareLink({ title, price, slug });
-  const shareUrl = buildListingShareUrl(slug);
+  const whatsappUrl = buildWhatsAppShareLink({ title, price, slug, siteUrl });
+  const copyUrl = buildListingCanonicalUrl(slug, siteUrl);
 
   const handleCopyLink = async (e?: React.MouseEvent) => {
     if (e) {
@@ -59,11 +61,11 @@ export function ShareButton({
 
     try {
       if (navigator.clipboard && (window.isSecureContext !== false)) {
-        await navigator.clipboard.writeText(shareUrl);
+        await navigator.clipboard.writeText(copyUrl);
       } else {
         // Fallback for non-HTTPS or legacy environments
         const textArea = document.createElement("textarea");
-        textArea.value = shareUrl;
+        textArea.value = copyUrl;
         textArea.style.position = "fixed";
         textArea.style.left = "-999999px";
         textArea.style.top = "-999999px";
@@ -91,7 +93,7 @@ export function ShareButton({
         <button
           type="button"
           onClick={() => setShowMenu((prev) => !prev)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-xs hover:bg-white hover:text-emerald-600 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800/90 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-emerald-400"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-xs hover:bg-white hover:text-emerald-600 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800/90 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-emerald-400"
           aria-label="Share listing"
           aria-expanded={showMenu}
         >
@@ -111,7 +113,7 @@ export function ShareButton({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setShowMenu(false)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
+                className="flex w-full min-h-[44px] items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
               >
                 <WhatsAppIcon className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                 <span>Share on WhatsApp</span>
@@ -123,12 +125,12 @@ export function ShareButton({
                   handleCopyLink(e);
                   setShowMenu(false);
                 }}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60"
+                className="flex w-full min-h-[44px] items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60"
               >
                 {copied ? (
                   <>
                     <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
+                    <span className="text-emerald-600 dark:text-emerald-400" role="status" aria-live="polite">Copied!</span>
                   </>
                 ) : (
                   <>
@@ -146,12 +148,12 @@ export function ShareButton({
 
   if (variant === "inline") {
     return (
-      <div className={`flex items-center gap-2 ${className}`}>
+      <div className={`flex flex-wrap items-center gap-2 ${className}`}>
         <a
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/80"
+          className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/80"
           aria-label="Share listing on WhatsApp"
         >
           <WhatsAppIcon className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -161,16 +163,16 @@ export function ShareButton({
         <button
           type="button"
           onClick={handleCopyLink}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+          className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
           aria-label="Copy listing link"
         >
           {copied ? (
             <>
               <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-emerald-600 dark:text-emerald-400">Copied</span>
+              <span className="text-emerald-600 dark:text-emerald-400" role="status" aria-live="polite">Copied</span>
             </>
           ) : copyError ? (
-            <span className="text-red-600 dark:text-red-400">Failed to copy</span>
+            <span className="text-red-600 dark:text-red-400" role="status" aria-live="polite">Failed to copy</span>
           ) : (
             <>
               <LinkIcon className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
@@ -188,7 +190,7 @@ export function ShareButton({
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500"
+        className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-600 dark:hover:bg-emerald-500"
       >
         <WhatsAppIcon className="h-4 w-4" />
         <span>Share on WhatsApp</span>
@@ -197,15 +199,15 @@ export function ShareButton({
       <button
         type="button"
         onClick={handleCopyLink}
-        className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+        className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
       >
         {copied ? (
           <>
             <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-emerald-600 dark:text-emerald-400">Link Copied!</span>
+            <span className="text-emerald-600 dark:text-emerald-400" role="status" aria-live="polite">Link Copied!</span>
           </>
         ) : copyError ? (
-          <span className="text-red-600 dark:text-red-400">Copy Failed</span>
+          <span className="text-red-600 dark:text-red-400" role="status" aria-live="polite">Copy Failed</span>
         ) : (
           <>
             <Copy className="h-4 w-4 text-gray-500 dark:text-gray-400" />
