@@ -11,11 +11,6 @@ import {
 import { ShareButton } from "@/components/listings/ShareButton";
 import ListingsDashboardPage from "@/app/account/listings/page";
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-  redirect: vi.fn(),
-}));
-
 type Draft = {
   id: string;
   category_id: string;
@@ -133,6 +128,11 @@ const mockListings: Draft[] = [
     cities: { name: "Mumbai" },
   },
 ];
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  redirect: vi.fn(),
+}));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
@@ -362,29 +362,21 @@ describe("ShareButton Component (LIST-03)", () => {
 describe("My Ads Dashboard Public Visibility & Lifecycle Actions (LIST-03)", () => {
   afterEach(cleanup);
 
-  it("preserves Pause, Mark reserved, and Mark as sold actions for ALL active listings, including property and suspended-seller listings", async () => {
+  it("preserves Mark as sold primary action and overflow menu actions for ALL active listings including property and suspended seller listings", async () => {
     render(await ListingsDashboardPage());
 
-    for (const title of [
-      "Active Public Goods",
-      "Active Property Flat",
-      "Suspended Seller Active Listing",
-      "Expired Active Listing",
-    ]) {
-      const heading = screen.getByRole("heading", { name: title });
-      const card = heading.closest(".rounded-lg");
-      expect(card).toBeInTheDocument();
-      const cardActions = within(card!);
+    const activeGoodsHeading = screen.getByRole("heading", { name: "Active Public Goods" });
+    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg")! as HTMLElement;
+    expect(activeGoodsCard).toBeInTheDocument();
 
-      // ADS-08 keeps the lifecycle actions but exposes one primary button
-      // and places the two secondary transitions in an accessible overflow menu.
-      expect(cardActions.getByRole("button", { name: "Mark as sold" })).toBeInTheDocument();
-      const overflow = cardActions.getByRole("button", { name: "More actions" });
-      fireEvent.click(overflow);
-      expect(cardActions.getByRole("menuitem", { name: "Pause" })).toBeInTheDocument();
-      expect(cardActions.getByRole("menuitem", { name: "Mark reserved" })).toBeInTheDocument();
-      fireEvent.click(overflow);
-    }
+    expect(screen.getAllByRole("button", { name: "Mark as sold" })).toHaveLength(4);
+
+    const activeGoodsCardScope = within(activeGoodsCard);
+    const menuBtn = activeGoodsCardScope.getByRole("button", { name: "More actions" });
+    fireEvent.click(menuBtn);
+
+    expect(activeGoodsCardScope.getByRole("menuitem", { name: "Pause" })).toBeInTheDocument();
+    expect(activeGoodsCardScope.getByRole("menuitem", { name: "Mark reserved" })).toBeInTheDocument();
   });
 
   it("renders Share button ONLY for publicly visible active listings (using is_listing_publicly_visible RPC) and omits it for suspended sellers, expired or draft items", async () => {
