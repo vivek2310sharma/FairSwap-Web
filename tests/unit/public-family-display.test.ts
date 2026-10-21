@@ -22,7 +22,7 @@ describe("public Vehicle and Property display", () => {
       "fixed", 120000, { mode: "not_listed", brandText: "Honda", modelText: "Shine" });
     expect(valid?.specifications).toEqual(expect.arrayContaining([
       { field: "brand", label: "Brand", value: "Honda" },
-      { field: "year", label: "Manufacture year", value: "2,022" },
+      { field: "year", label: "Manufacture year", value: "2022" },
     ]));
     expect(makePublicVehicleDisplay("cars", "car-sedan",
       { private_address: "Hidden" }, "fixed", 120000,
