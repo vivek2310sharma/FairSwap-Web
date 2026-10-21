@@ -60,7 +60,7 @@ export async function generateMetadata({
 
   const formattedPrice = publicPriceFallback(listing.category.slug, listing.price_type, listing.price_paise);
 
-  const descriptionText = `${publicPriceFallback(listing.category?.slug, listing.price_type, listing.price_paise)} • ${
+  const descriptionText = `${formattedPrice} • ${
     listing.description?.slice(0, 140) ||
     `Find ${listing.title} available for sale in ${listing.city?.name || "India"} on FairSwap.`
   }`;
@@ -174,7 +174,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
       ? "Free"
       : listing.price_paise !== null && listing.price_paise !== undefined
       ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
-      : "Price on request";
+      : publicPriceFallback(listing.category.slug, listing.price_type, listing.price_paise));
 
   const conditionLabels: Record<string, string> = {
     new: "Brand New",
