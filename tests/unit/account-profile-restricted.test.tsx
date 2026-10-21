@@ -36,7 +36,7 @@ describe("Profile Page Account Status Restriction Tests", () => {
     await expect(ProfilePage()).rejects.toThrow("REDIRECT:/auth/sign-in?next=/account/profile");
   });
 
-  it("renders editable profile form for active user", async () => {
+  it("renders editable profile form and active subtitle for explicitly active user", async () => {
     const user = { id: "active-user-123" };
     const profile = { display_name: "Active User", city: "Delhi", state: "Delhi", bio: "Active bio" };
     const account = { account_status: "active" };
@@ -55,11 +55,12 @@ describe("Profile Page Account Status Restriction Tests", () => {
     render(await ProfilePage());
 
     expect(screen.getByRole("heading", { name: "Edit Public Profile" })).toBeInTheDocument();
+    expect(screen.getByText("This information is visible to other buyers and sellers on FairSwap.")).toBeInTheDocument();
     expect(screen.getByTestId("profile-form-editable")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("disables editing form and displays read-only view for suspended user", async () => {
+  it("disables editing form, shows restricted subtitle and read-only view for suspended user", async () => {
     const user = { id: "suspended-user-123" };
     const profile = { display_name: "Suspended User", city: "Mumbai", state: "Maharashtra", bio: "Suspended bio" };
     const account = { account_status: "suspended" };
@@ -78,12 +79,13 @@ describe("Profile Page Account Status Restriction Tests", () => {
     render(await ProfilePage());
 
     expect(screen.getByRole("heading", { name: "Public Profile" })).toBeInTheDocument();
+    expect(screen.getByText("Review your saved profile information. Editing is currently unavailable.")).toBeInTheDocument();
     expect(screen.queryByTestId("profile-form-editable")).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent("Your account is suspended. Profile edits are disabled.");
     expect(screen.getByText("Suspended User")).toBeInTheDocument();
   });
 
-  it("disables editing form and displays read-only view for deletion_pending user", async () => {
+  it("disables editing form and shows read-only view for deletion_pending user", async () => {
     const user = { id: "del-user-123" };
     const profile = { display_name: "Pending Del User", city: "Bengaluru", state: "Karnataka", bio: "Pending del bio" };
     const account = { account_status: "deletion_pending" };
@@ -102,12 +104,13 @@ describe("Profile Page Account Status Restriction Tests", () => {
     render(await ProfilePage());
 
     expect(screen.getByRole("heading", { name: "Public Profile" })).toBeInTheDocument();
+    expect(screen.getByText("Review your saved profile information. Editing is currently unavailable.")).toBeInTheDocument();
     expect(screen.queryByTestId("profile-form-editable")).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent("Your account deletion request is pending. Profile edits are disabled.");
     expect(screen.getByText("Pending Del User")).toBeInTheDocument();
   });
 
-  it("disables editing form and displays read-only view for deleted user", async () => {
+  it("disables editing form and shows read-only view for deleted user", async () => {
     const user = { id: "deleted-user-123" };
     const profile = { display_name: "Deleted User", city: "Kolkata", state: "West Bengal", bio: "Closed bio" };
     const account = { account_status: "deleted" };
@@ -126,8 +129,33 @@ describe("Profile Page Account Status Restriction Tests", () => {
     render(await ProfilePage());
 
     expect(screen.getByRole("heading", { name: "Public Profile" })).toBeInTheDocument();
+    expect(screen.getByText("Review your saved profile information. Editing is currently unavailable.")).toBeInTheDocument();
     expect(screen.queryByTestId("profile-form-editable")).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent("This account has been closed. Profile edits are disabled.");
     expect(screen.getByText("Deleted User")).toBeInTheDocument();
+  });
+
+  it("disables editing form, renders neutral warning banner, and read-only view on query failure or missing account", async () => {
+    const user = { id: "error-user-123" };
+    const profile = { display_name: "Fallback Profile User", city: "Pune", state: "Maharashtra", bio: "Fallback bio" };
+
+    mocks.getUser.mockResolvedValue({ data: { user } });
+    mocks.from.mockImplementation((table: string) => {
+      if (table === "profiles") {
+        return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: profile, error: null }) }) }) };
+      }
+      if (table === "user_accounts") {
+        return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: { message: "DB Error" } }) }) }) };
+      }
+      return {};
+    });
+
+    render(await ProfilePage());
+
+    expect(screen.getByRole("heading", { name: "Public Profile" })).toBeInTheDocument();
+    expect(screen.getByText("Review your saved profile information. Editing is currently unavailable.")).toBeInTheDocument();
+    expect(screen.queryByTestId("profile-form-editable")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("Account information is currently unavailable. Profile edits are disabled.");
+    expect(screen.getByText("Fallback Profile User")).toBeInTheDocument();
   });
 });

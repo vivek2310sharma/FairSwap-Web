@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, act, within } from "@testing-library/react";
 import React from "react";
 import {
   formatListingPrice,
@@ -128,6 +128,11 @@ const mockListings: Draft[] = [
     cities: { name: "Mumbai" },
   },
 ];
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  redirect: vi.fn(),
+}));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
@@ -357,16 +362,21 @@ describe("ShareButton Component (LIST-03)", () => {
 describe("My Ads Dashboard Public Visibility & Lifecycle Actions (LIST-03)", () => {
   afterEach(cleanup);
 
-  it("preserves Pause, Mark Reserved, and Mark Sold buttons for ALL active listings including property and suspended seller listings", async () => {
+  it("preserves Mark as sold primary action and overflow menu actions for ALL active listings including property and suspended seller listings", async () => {
     render(await ListingsDashboardPage());
 
     const activeGoodsHeading = screen.getByRole("heading", { name: "Active Public Goods" });
-    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg")!;
+    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg") as HTMLElement;
     expect(activeGoodsCard).toBeInTheDocument();
 
-    expect(screen.getAllByRole("button", { name: "Pause" })).toHaveLength(4);
-    expect(screen.getAllByRole("button", { name: "Mark Reserved" })).toHaveLength(4);
-    expect(screen.getAllByRole("button", { name: "Mark Sold" })).toHaveLength(4);
+    expect(screen.getAllByRole("button", { name: "Mark as sold" })).toHaveLength(4);
+
+    const activeGoodsCardScope = within(activeGoodsCard);
+    const menuBtn = activeGoodsCardScope.getByRole("button", { name: "More actions" });
+    fireEvent.click(menuBtn);
+
+    expect(activeGoodsCardScope.getByRole("menuitem", { name: "Pause" })).toBeInTheDocument();
+    expect(activeGoodsCardScope.getByRole("menuitem", { name: "Mark reserved" })).toBeInTheDocument();
   });
 
   it("renders Share button ONLY for publicly visible active listings (using is_listing_publicly_visible RPC) and omits it for suspended sellers, expired or draft items", async () => {
@@ -374,25 +384,25 @@ describe("My Ads Dashboard Public Visibility & Lifecycle Actions (LIST-03)", () 
 
     // 1. Valid active public goods listing -> Share button shown
     const activeGoodsHeading = screen.getByRole("heading", { name: "Active Public Goods" });
-    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg")!;
+    const activeGoodsCard = activeGoodsHeading.closest(".rounded-lg") as HTMLElement;
     const whatsappLinksInGoodsCard = activeGoodsCard.querySelectorAll("a[href^='https://wa.me/']");
     expect(whatsappLinksInGoodsCard.length).toBe(1);
 
     // 2. Suspended seller's active listing -> Share button hidden
     const suspendedHeading = screen.getByRole("heading", { name: "Suspended Seller Active Listing" });
-    const suspendedCard = suspendedHeading.closest(".rounded-lg")!;
+    const suspendedCard = suspendedHeading.closest(".rounded-lg") as HTMLElement;
     const whatsappLinksInSuspendedCard = suspendedCard.querySelectorAll("a[href^='https://wa.me/']");
     expect(whatsappLinksInSuspendedCard.length).toBe(0);
 
     // 3. Expired active listing -> Share button hidden
     const expiredGoodsHeading = screen.getByRole("heading", { name: "Expired Active Listing" });
-    const expiredGoodsCard = expiredGoodsHeading.closest(".rounded-lg")!;
+    const expiredGoodsCard = expiredGoodsHeading.closest(".rounded-lg") as HTMLElement;
     const whatsappLinksInExpiredCard = expiredGoodsCard.querySelectorAll("a[href^='https://wa.me/']");
     expect(whatsappLinksInExpiredCard.length).toBe(0);
 
     // 4. Draft item -> Share button hidden
     const draftItemHeading = screen.getByRole("heading", { name: "Draft Item" });
-    const draftItemCard = draftItemHeading.closest(".rounded-lg")!;
+    const draftItemCard = draftItemHeading.closest(".rounded-lg") as HTMLElement;
     const whatsappLinksInDraftCard = draftItemCard.querySelectorAll("a[href^='https://wa.me/']");
     expect(whatsappLinksInDraftCard.length).toBe(0);
   });

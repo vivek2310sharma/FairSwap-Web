@@ -76,6 +76,18 @@ jobs:
       - name: Run Homepage Performance Unit Tests
         run: pnpm vitest run src/__tests__/recent-listings.test.tsx
 
+      - name: Run SRCH-01 Listing Card Unit Tests
+        run: pnpm vitest run src/__tests__/listing-card.test.tsx
+
+      - name: Install Playwright Chromium for SRCH-01
+        run: pnpm exec playwright install chromium
+
+      - name: Build Application for SRCH-01 E2E
+        run: pnpm run build
+
+      - name: Run SRCH-01 Isolated Mobile Search E2E
+        run: pnpm exec playwright test --config=playwright.srch-01.config.ts
+
       - name: Run LIST-03 WhatsApp Sharing Unit Tests
         run: pnpm vitest run tests/unit/share.test.tsx
 
