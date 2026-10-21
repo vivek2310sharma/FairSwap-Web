@@ -11,6 +11,11 @@ interface ListingCardProps {
 }
 
 export function ListingCard({ listing, isFavourited = false, searchContext }: ListingCardProps) {
+  const listingPath = `/listings/${listing.slug}`;
+  const listingHref = searchContext
+    ? listingPath + "?" + new URLSearchParams({ ctx: searchContext }).toString()
+    : listingPath;
+
   const formattedPrice =
     listing.price_type === "free"
       ? "Free"
@@ -74,7 +79,7 @@ export function ListingCard({ listing, isFavourited = false, searchContext }: Li
         </div>
 
         <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold text-foreground group-hover:text-action-600">
-          <Link href={`/listings/${listing.slug}${searchContext ? `?ctx=${encodeURIComponent(searchContext)}` : ""}`} className="focus:outline-hidden">
+          <Link href={listingHref} className="focus:outline-hidden">
             <span className="absolute inset-0" aria-hidden="true" />
             {listing.title}
           </Link>

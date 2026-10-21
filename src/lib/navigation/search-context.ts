@@ -1,61 +1,72 @@
-import { SearchFilters, searchFiltersSchema } from "@/types/listing";
+import type { z } from "zod";
+import { searchFiltersSchema } from "@/types/listing";
 
-export function serializeSearchFilters(filters: SearchFilters): string {
-  // Convert the numeric/optional fields to strings explicitly to avoid Record<string, string> cast errors
+export type ValidatedSearchFilters = z.output<typeof searchFiltersSchema>;
+
+const SEARCH_KEYS = [
+  "q",
+  "category",
+  "city",
+  "locality",
+  "condition",
+  "price_min",
+  "price_max",
+  "sort",
+  "page",
+] as const;
+
+type SearchKey = (typeof SEARCH_KEYS)[number];
+
+const MAX_CONTEXT_LENGTH = 2000;
+const SEARCH_FALLBACK = "/search";
+
+/** A canonical, bounded query string derived only from validated filters. */
+export function serializeSearchFilters(filters: ValidatedSearchFilters): string {
   const params = new URLSearchParams();
 
-  if (filters.q) params.set("q", filters.q);
-  if (filters.category) params.set("category", filters.category);
-  if (filters.city) params.set("city", filters.city);
-  if (filters.locality) params.set("locality", filters.locality);
-  if (filters.condition) params.set("condition", filters.condition);
-  if (filters.sort) params.set("sort", filters.sort);
+  for (const key of SEARCH_KEYS) {
+    const value = filters[key];
 
-  // Convert numbers to strings
-  if (filters.page !== undefined && filters.page !== null) params.set("page", filters.page.toString());
-  if (filters.price_min !== undefined && filters.price_min !== null) params.set("price_min", filters.price_min.toString());
-  if (filters.price_max !== undefined && filters.price_max !== null) params.set("price_max", filters.price_max.toString());
+    // 0 is a valid price. Never stringify absent values as "undefined".
+    if (value === undefined || value === "") continue;
 
-  return params.toString();
+    params.set(key, String(value));
+  }
+
+  const query = params.toString();
+  return query.length < MAX_CONTEXT_LENGTH ? query : "";
 }
 
-export function getBackToSearchHref(ctxParam?: string): string {
-  if (!ctxParam) return "/search";
-  if (ctxParam.length > 2000) return "/search";
-
-  try {
-    const rawParams = new URLSearchParams(ctxParam);
-    const flatParams: Record<string, string> = {};
-
-    // Deduplicate keys by taking only the first one
-    for (const [key, value] of rawParams.entries()) {
-      if (!(key in flatParams) && value !== undefined && value !== "undefined") {
-        flatParams[key] = value;
-      }
-    }
-
-    // Validate with Zod
-    const parsed = searchFiltersSchema.safeParse(flatParams);
-    if (!parsed.success) {
-      return "/search";
-    }
-
-    const validParams = new URLSearchParams();
-    const data = parsed.data;
-
-    if (data.q) validParams.set("q", data.q);
-    if (data.category) validParams.set("category", data.category);
-    if (data.city) validParams.set("city", data.city);
-    if (data.locality) validParams.set("locality", data.locality);
-    if (data.condition) validParams.set("condition", data.condition);
-    if (data.sort) validParams.set("sort", data.sort);
-    if (data.page !== undefined && data.page !== null) validParams.set("page", data.page.toString());
-    if (data.price_min !== undefined && data.price_min !== null) validParams.set("price_min", data.price_min.toString());
-    if (data.price_max !== undefined && data.price_max !== null) validParams.set("price_max", data.price_max.toString());
-
-    const queryString = validParams.toString();
-    return queryString ? `/search?${queryString}` : "/search";
-  } catch (e) {
-    return "/search";
+/** ctx is the inner query-string value already unwrapped by Next.js. */
+export function getBackToSearchHref(ctxParam: unknown): string {
+  if (
+    typeof ctxParam !== "string" ||
+    ctxParam.length === 0 ||
+    ctxParam.length >= MAX_CONTEXT_LENGTH ||
+    /%(?![0-9a-fA-F]{2})/.test(ctxParam)
+  ) {
+    return SEARCH_FALLBACK;
   }
+
+  const params = new URLSearchParams(ctxParam);
+  const values: Partial<Record<SearchKey, string>> = {};
+
+  for (const key of SEARCH_KEYS) {
+    const entries = params.getAll(key);
+
+    // Fail closed on duplicate recognized keys instead of picking one.
+    if (entries.length > 1) return SEARCH_FALLBACK;
+
+    const value = entries[0];
+    if (value !== undefined && value !== "") values[key] = value;
+  }
+
+  // Unknown keys are ignored, not converted to a default search context.
+  if (Object.keys(values).length === 0) return SEARCH_FALLBACK;
+
+  const parsed = searchFiltersSchema.safeParse(values);
+  if (!parsed.success) return SEARCH_FALLBACK;
+
+  const query = serializeSearchFilters(parsed.data);
+  return query ? SEARCH_FALLBACK + "?" + query : SEARCH_FALLBACK;
 }

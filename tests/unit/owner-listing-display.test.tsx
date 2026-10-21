@@ -16,7 +16,7 @@ vi.mock('next/navigation',()=>({notFound:()=>{throw Error('Not found')},permanen
 beforeEach(()=>{m.preview=false;m.user=null;m.readiness=null;m.definitions.error=null;m.listing={...fixture('goods').listing,slug:'synthetic-owner-display',seller_id:'owner',created_at:'2026-10-11T00:00:00Z',published_at:null,category:{id:cid,name:'Synthetic Goods',slug:'synthetic-goods'},city:{name:'Jaipur'},locality:null,seller:{id:'owner',display_name:'Synthetic seller',created_at:'2026-10-11T00:00:00Z'},media:[],category_attributes:{storage_gb:256,unrecognized:'ARBITRARY_VALUE',society_name:'PRIVATE_VALUE',nested:{value:'NESTED_VALUE'}}};});
 afterEach(cleanup);
 it('actual detail page keeps category-defined storage and excludes private/arbitrary/nested metadata',async()=>{
- render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'}), searchParams: Promise.resolve({})}));
+ render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'})}));
  expect(screen.getByText('256')).toBeVisible();
  expect(screen.queryAllByText(/ARBITRARY_VALUE|PRIVATE_VALUE|NESTED_VALUE|\[object Object\]/)).toHaveLength(0);
  expect(screen.getByText('Storage (GB)')).toBeVisible();
@@ -32,7 +32,7 @@ it.each(['unknown contract','changed definition','changed revision','changed sta
  if(kind==='changed text')m.listing.title='Changed saved title';
  if(kind==='mismatched snapshot')r.packet!.consistency='mismatch';
  m.readiness=r;
- render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'}), searchParams: Promise.resolve({})}));
+ render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'})}));
  expect(screen.getByRole('status')).toHaveTextContent('could not be verified');
  expect(screen.getByText('Saved amount could not be verified')).toBeVisible();
  expect(screen.queryByText('2024')).toBeNull();expect(screen.queryByText('[object Object]')).toBeNull();
@@ -40,29 +40,29 @@ it.each(['unknown contract','changed definition','changed revision','changed sta
 });
 it('failed category definition read preserves photos without raw attribute fallback',async()=>{
  m.definitions.error={code:'42501'};
- render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'}), searchParams: Promise.resolve({})}));
+ render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'})}));
  expect(screen.getByRole('status')).toHaveTextContent('could not be verified');expect(screen.queryByText('256')).toBeNull();
  expect(screen.getByText('Existing photo gallery')).toBeVisible();
 });
 it('title/description stay plain text and missing description is not turned into seller text',async()=>{
  m.listing.title='Saved <b>title</b>';m.listing.description='Saved <script>description</script>';
- const first=render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'}), searchParams: Promise.resolve({})}));
+ const first=render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'})}));
  expect(screen.getByText('Saved <script>description</script>')).toBeVisible();expect(first.container.querySelector('script,b')).toBeNull();
  cleanup();m.listing.description=null;
- render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'}), searchParams: Promise.resolve({})}));
+ render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'})}));
  expect(screen.getByText('No detailed description was provided for this item.')).toBeVisible();expect(m.listing.description).toBeNull();
 });
 it('rental preview keeps period/basis, zero deposit and separate maintenance',async()=>{
  const v=fixture('property');v.context!.financial={currency:'INR',period:'month',basis:'dwelling',rent:{state:'known',amount_paise:123450},deposit:{state:'known',amount_paise:0},maintenance:{state:'separate',amount_paise:123,basis:'dwelling',period:'month'}};
  m.preview=true;m.user={id:'owner'};m.listing={...m.listing,...v.listing};m.readiness=evaluateReadiness(v);
- render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'}), searchParams: Promise.resolve({})}));
+ render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'})}));
  expect(screen.getByText('INR 1234.50 / month')).toBeVisible();expect(screen.getByText('Basis: dwelling · period: month')).toBeVisible();
  expect(screen.getByText('One-time deposit: INR 0.00')).toBeVisible();expect(screen.getByText('Maintenance: INR 1.23 / month / dwelling')).toBeVisible();
 });
 it.each(['two-wheelers','cars','property'] as const)('existing owner %s preview uses supported saved declarations',async family=>{
  const v=fixture(family);v.listing.category_attributes=family==='property'?{area_sqft:123.45}:{year:{state:'known',value:2024},km_driven:{state:'known',value:0}};
  m.preview=true;m.user={id:'owner'};m.readiness=evaluateReadiness(v);m.listing={...m.listing,...v.listing};
- render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'}), searchParams: Promise.resolve({})}));
+ render(await ListingDetailPage({params:Promise.resolve({slug:'synthetic-owner-display'})}));
  expect(screen.getByText(family==='property'?'123.45':'2024')).toBeVisible();
  expect(screen.queryByText('[object Object]')).toBeNull();
  if(family==='property')expect(screen.getByText('INR 1234.50 / month')).toBeVisible();

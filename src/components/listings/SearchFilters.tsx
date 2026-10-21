@@ -41,20 +41,6 @@ export function SearchFilters({
   const [priceMax, setPriceMax] = useState(initialFilters.price_max?.toString() || "");
   const [sort, setSort] = useState(initialFilters.sort || "newest");
 
-  // Safely synchronize local state when URL filters change (e.g. Back/Forward navigation)
-  const [prevFilters, setPrevFilters] = useState(initialFilters);
-  if (initialFilters !== prevFilters) {
-    setPrevFilters(initialFilters);
-    setQuery(initialFilters.q || "");
-    setCategory(initialFilters.category || "");
-    setCity(initialFilters.city || "");
-    setLocality(initialFilters.locality || "");
-    setCondition(initialFilters.condition || "");
-    setPriceMin(initialFilters.price_min?.toString() || "");
-    setPriceMax(initialFilters.price_max?.toString() || "");
-    setSort(initialFilters.sort || "newest");
-  }
-
   // Filter localities by selected city
   const filteredLocalities = city
     ? localities.filter((loc) => loc.city_id === city)

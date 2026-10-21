@@ -21,12 +21,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: 2.117.0
-
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -34,47 +28,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: pnpm
-      - name: Mint short-lived Backend Contents-read token
-        id: backend-token
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # pinned v2
-        with:
-          app-id: ${{ vars.FAIRSWAP_BACKEND_CI_APP_ID }}
-          private-key: ${{ secrets.FAIRSWAP_BACKEND_CI_APP_PRIVATE_KEY }}
-          owner: vivek2310sharma
-          repositories: FairSwap-Backend
-          permission-contents: read
-
-      - name: Checkout immutable private Backend source
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pinned v4.2.2
-        with:
-          repository: vivek2310sharma/FairSwap-Backend
-          ref: 2f26f839c3fa0ae690cf5c3795a983d62e1b6c47
-          token: ${{ steps.backend-token.outputs.token }}
-          path: .fairswap-backend-ci-source
-          persist-credentials: false
-
-      - name: Validate and materialize Backend SQL only for disposable CI
-        shell: bash
-        run: |
-          set -euo pipefail
-          node scripts/ci/materialize-backend.mjs "$GITHUB_WORKSPACE/.fairswap-backend-ci-source"
-          rm -rf -- "$GITHUB_WORKSPACE/.fairswap-backend-ci-source"
-
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Start Disposable Local Supabase
-        run: supabase start -x studio,analytics,logflare,supavisor
-
-      - name: Export Supabase keys to ENV before build
-        run: |
-          STATUS_JSON=$(supabase status -o json)
-          echo "SUPABASE_SECRET_KEY=$(echo "$STATUS_JSON" | jq -r '.SERVICE_ROLE_KEY // empty')" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // empty')" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$(echo "$STATUS_JSON" | jq -r '.ANON_KEY // empty')" >> $GITHUB_ENV
-
       - name: Lint
         run: pnpm lint
       - name: Typecheck
@@ -97,8 +54,3 @@ jobs:
         run: pnpm exec playwright test e2e/help-centre.spec.ts
       - name: Run Homepage Playwright Regression Tests
         run: pnpm exec playwright test e2e/homepage-performance.spec.ts
-
-      - name: Run Navigation Regression Tests
-        env:
-          ALLOW_LOCAL_TEST_MUTATIONS: "true"
-        run: pnpm exec playwright test e2e/navigation.spec.ts

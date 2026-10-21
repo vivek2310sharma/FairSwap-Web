@@ -57,10 +57,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   const parsed = searchFiltersSchema.safeParse(flatParams);
-  const filters = parsed.success
-    ? parsed.data
-    : searchFiltersSchema.parse({});
-
+  const filters = parsed.success ? parsed.data : searchFiltersSchema.parse({});
   const searchContext = serializeSearchFilters(filters);
 
   const [categories, cities, localities, searchResult] = await Promise.all([
@@ -116,6 +113,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             {/* Filter Sidebar */}
             <div className="lg:col-span-1">
               <SearchFilters
+                key={searchContext}
                 categories={categories}
                 cities={cities}
                 localities={localities}
