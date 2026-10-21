@@ -95,6 +95,9 @@ jobs:
       - name: Validate V2 Node image preparation with real Sharp decode
         run: pnpm vitest run tests/security/moderation-v2-node-preparation.test.ts
 
+      - name: Validate V2 create-only transport and byte readback
+        run: pnpm vitest run tests/security/moderation-v2-storage-readback.test.ts
+
   database-security-tests:
     name: Supabase Local DB & Security Tests
     runs-on: ubuntu-latest
