@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ListingStatus } from "@/types/listing";
-import { transitionListingAction, submitListingAction } from "./actions";
+import { resolveListingActions } from "@/lib/listings/action-matrix";
+import { ListingActionsContainer } from "./ListingActionsContainer";
 import { ModerationStatusBadge } from "./ModerationStatusBadge";
 import { ShareButton } from "@/components/listings/ShareButton";
 import {isPropertyEnabled} from '@/lib/listings/property/server';
@@ -47,16 +48,6 @@ function getStatusBadge(status: ListingStatus, testFamily=false) {
       {testFamily&&status==='pending_review'?'Test Review — Not Live':labels[status] || status}
     </span>
   );
-}
-
-async function onSubmitListing(listingId: string) {
-  "use server";
-  await submitListingAction(listingId);
-}
-
-async function onTransitionListing(listingId: string, action: string) {
-  "use server";
-  await transitionListingAction(listingId, action);
 }
 
 export default async function ListingsDashboardPage() {
@@ -210,6 +201,16 @@ export default async function ListingsDashboardPage() {
 
             const isPublic = publicListingIds.has(listing.id);
 
+            const actions = resolveListingActions({
+              id: listing.id,
+              slug: listing.slug,
+              status: listing.status,
+              renewal_count: listing.renewal_count,
+              propertyDraft,
+              vehicleDraft,
+              unresolvedFamily,
+            });
+
             return (
               <div
                 key={listing.id}
@@ -257,121 +258,23 @@ export default async function ListingsDashboardPage() {
                         {listing.removal_reason}
                       </div>
                     )}
-                  </div>
-
-                  {/* Actions according to lifecycle matrix */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href={`/account/listings/${listing.id}/edit`}
-                      className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                    >
-                      {(propertyDraft||vehicleDraft)&&listing.status==='pending_review'?'View saved details':'Edit'}
-                    </Link>
-
                     {listing.status==='draft'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">{isVerifiedSubmissionTestEnvironment(process.env)?'Open the saved draft to check Test submission availability. Approval and publication remain disabled.':'Test draft only. Submission and publication are unavailable.'}</p>}
                     {listing.status==='pending_review'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">This category is still in testing. Your submitted listing remains private, even when its automated checks finish. Approval and public publication are not available yet; saved details and photos are read-only.</p>}
                     {listing.status==='draft'&&unresolvedFamily&&<p role="status" className="text-sm text-amber-800">{contextLookupFailed?'Category references could not be loaded. Submission is unavailable. Try again later.':'Category information is unavailable. Submission is unavailable until this draft’s category is verified.'}</p>}
-                    {listing.status === "draft" && !propertyDraft && !vehicleDraft && !unresolvedFamily && (
-                      <form action={onSubmitListing.bind(null, listing.id)}>
-                        <button
-                          type="submit"
-                          className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"
-                        >
-                          Submit for Review
-                        </button>
-                      </form>
-                    )}
+                  </div>
 
-                    {listing.status === "active" && (
-                      <>
-                        {isPublic && (
-                          <ShareButton
-                            slug={listing.slug}
-                            title={listing.title}
-                            price_type={listing.price_type}
-                            price_paise={listing.price_paise}
-                            variant="inline"
-                          />
-                        )}
-                        <form action={onTransitionListing.bind(null, listing.id, "pause")}>
-                          <button
-                            type="submit"
-                            className="rounded border border-yellow-300 bg-yellow-50 px-2.5 py-1.5 text-xs font-semibold text-yellow-800 hover:bg-yellow-100"
-                          >
-                            Pause
-                          </button>
-                        </form>
-                        <form action={onTransitionListing.bind(null, listing.id, "reserve")}>
-                          <button
-                            type="submit"
-                            className="rounded border border-blue-300 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-800 hover:bg-blue-100"
-                          >
-                            Mark Reserved
-                          </button>
-                        </form>
-                        <form action={onTransitionListing.bind(null, listing.id, "mark_sold")}>
-                          <button
-                            type="submit"
-                            className="rounded border border-purple-300 bg-purple-50 px-2.5 py-1.5 text-xs font-semibold text-purple-800 hover:bg-purple-100"
-                          >
-                            Mark Sold
-                          </button>
-                        </form>
-                      </>
+                  {/* ADS-08 single primary action and overflow menu; preserve public-only Share */}
+                  <div className="shrink-0 flex items-center gap-2">
+                    {listing.status === "active" && isPublic && (
+                      <ShareButton
+                        slug={listing.slug}
+                        title={listing.title}
+                        price_type={listing.price_type}
+                        price_paise={listing.price_paise}
+                        variant="inline"
+                      />
                     )}
-
-                    {listing.status === "reserved" && (
-                      <>
-                        <form action={onTransitionListing.bind(null, listing.id, "unreserve")}>
-                          <button
-                            type="submit"
-                            className="rounded border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
-                          >
-                            Unreserve
-                          </button>
-                        </form>
-                        <form action={onTransitionListing.bind(null, listing.id, "mark_sold")}>
-                          <button
-                            type="submit"
-                            className="rounded border border-purple-300 bg-purple-50 px-2.5 py-1.5 text-xs font-semibold text-purple-800 hover:bg-purple-100"
-                          >
-                            Mark Sold
-                          </button>
-                        </form>
-                      </>
-                    )}
-
-                    {listing.status === "paused" && (
-                      <>
-                        <form action={onTransitionListing.bind(null, listing.id, "resume")}>
-                          <button
-                            type="submit"
-                            className="rounded border border-emerald-300 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
-                          >
-                            Resume
-                          </button>
-                        </form>
-                        <form action={onTransitionListing.bind(null, listing.id, "mark_sold")}>
-                          <button
-                            type="submit"
-                            className="rounded border border-purple-300 bg-purple-50 px-2.5 py-1.5 text-xs font-semibold text-purple-800 hover:bg-purple-100"
-                          >
-                            Mark Sold
-                          </button>
-                        </form>
-                      </>
-                    )}
-
-                    {listing.status === "expired" && listing.renewal_count < 3 && (
-                      <form action={onTransitionListing.bind(null, listing.id, "renew")}>
-                        <button
-                          type="submit"
-                          className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"
-                        >
-                          Renew ({3 - listing.renewal_count} left)
-                        </button>
-                      </form>
-                    )}
+                    <ListingActionsContainer listingId={listing.id} actions={actions} />
                   </div>
                 </div>
               </div>

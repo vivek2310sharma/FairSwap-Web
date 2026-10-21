@@ -58,7 +58,7 @@ export function IndiaSafetyCard() {
         <li className="flex items-start gap-2">
           <span className="font-bold text-emerald-700 dark:text-emerald-400 shrink-0">&bull;</span>
           <div>
-            <strong>QR Codes &amp; Collect Requests:</strong> Never scan a stranger&apos;s QR code or accept a UPI collect request to receive payment.
+            <strong>QR Codes &amp; Collect Requests:</strong> Never scan a stranger&apos;s QR code or approve a UPI collect/payment request to receive money. Under NPCI rules, collect requests are for paying money out, not receiving it.
           </div>
         </li>
 

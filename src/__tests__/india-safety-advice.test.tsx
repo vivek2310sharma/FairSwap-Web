@@ -38,19 +38,23 @@ describe("IndiaSafetyAdvice Components", () => {
     expect(screen.getByText(/अग्रिम भुगतान \/ टोकन मनी:/i)).toBeInTheDocument();
   });
 
-  it("allows toggling the Hindi safety disclosure details", () => {
+  it("allows toggling the Hindi safety disclosure details via click event", () => {
     render(<IndiaSafetyCard />);
 
     const summaryElement = screen.getByText(/हिंदी में सुरक्षा सलाह \(Hindi Safety Guidance\)/i);
     const detailsElement = summaryElement.closest("details");
 
     expect(detailsElement).toBeInTheDocument();
-    expect(detailsElement).not.toHaveAttribute("open");
 
     if (detailsElement) {
+      // Test initial state
+      const initialOpen = detailsElement.hasAttribute("open");
+
+      // Simulate click event on summary
       fireEvent.click(summaryElement);
-      detailsElement.setAttribute("open", "");
-      expect(detailsElement).toHaveAttribute("open");
+
+      // Verify toggle toggled state cleanly
+      expect(detailsElement.hasAttribute("open")).toBe(!initialOpen);
     }
   });
 });

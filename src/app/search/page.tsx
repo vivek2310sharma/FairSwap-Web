@@ -9,7 +9,7 @@ import {
   getPublicLocalities,
   searchPublicListings,
 } from "@/lib/discovery/queries";
-import { searchFiltersSchema } from "@/types/listing";
+import { searchFiltersSchema, getEffectiveSort } from "@/types/listing";
 import { serializeSearchFilters } from "@/lib/navigation/search-context";
 import { createClient } from "@/lib/supabase/server";
 import { Metadata } from "next";
@@ -57,8 +57,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   const parsed = searchFiltersSchema.safeParse(flatParams);
-  const filters = parsed.success ? parsed.data : searchFiltersSchema.parse({});
-  const searchContext = serializeSearchFilters(filters);
+  const rawFilters = parsed.success ? parsed.data : searchFiltersSchema.parse({});
+  const effectiveSort = getEffectiveSort(rawFilters.q, rawFilters.sort);
+  const filters = {
+    ...rawFilters,
+    sort: effectiveSort,
+  };
+  const searchContext = serializeSearchFilters(rawFilters);
 
   const [categories, cities, localities, searchResult] = await Promise.all([
     getPublicCategories(),
@@ -117,7 +122,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 categories={categories}
                 cities={cities}
                 localities={localities}
-                initialFilters={filters}
+                initialFilters={rawFilters}
               />
             </div>
 
@@ -125,13 +130,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <div className="lg:col-span-3">
               {searchResult.items.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <div
+                    data-testid="search-results-grid"
+                    className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-6 lg:grid-cols-3"
+                  >
                     {searchResult.items.map((listing) => (
                       <ListingCard
                         key={listing.id}
                         listing={listing}
                         isFavourited={userFavSet.has(listing.id)}
                         searchContext={searchContext}
+                        variant="compact"
                       />
                     ))}
                   </div>

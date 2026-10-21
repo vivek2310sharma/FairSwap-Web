@@ -385,7 +385,6 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
 
                 <div className="mt-6 space-y-3">
                   <CompactSafetyNotice />
-
                   <ContactSellerButton
                     sellerName={listing.seller.display_name}
                     listingId={listing.id}
@@ -400,7 +399,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                 </div>
               </div>
 
-              {/* Safety Card */}
+              {/* India Safety Advice Card */}
               <IndiaSafetyCard />
             </div>
           </div>
