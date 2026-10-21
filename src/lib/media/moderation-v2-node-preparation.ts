@@ -215,6 +215,8 @@ export async function prepareV2ImageObjects(
     };
     requireImage(VARIANTS.every(variant => objects[variant].sha256 === sha256(objects[variant].bytes)), "SEAL_INVALID");
     requireImage(new Set(VARIANTS.map(variant => objects[variant].objectId)).size === 5, "SEAL_INVALID");
+    const webpCodecVersion = sharp.versions.webp;
+    requireImage(typeof webpCodecVersion === "string" && webpCodecVersion.length > 0, "SEAL_INVALID");
     return {
       ok: true,
       bundle: {
@@ -225,7 +227,7 @@ export async function prepareV2ImageObjects(
           implementation: "sharp",
           sharpVersion: sharp.versions.sharp,
           libvipsVersion: sharp.versions.vips,
-          webpCodecVersion: sharp.versions.webp,
+          webpCodecVersion,
           canonicalWebpQuality: 82,
           derivativeWebpQuality: 80,
           effort: 4,
