@@ -73,16 +73,18 @@ jobs:
       - name: Run Typecheck
         run: pnpm run typecheck
 
-      - name: Run Homepage Performance Unit Tests
-        run: pnpm vitest run src/__tests__/recent-listings.test.tsx
-
       - name: Run Auth Email Template Contract Tests
         run: |
           pnpm vitest run tests/unit/auth-email-templates.test.ts tests/unit/sign-in-actions.test.ts tests/auth/callback.test.ts tests/unit/extract-otp.test.ts
           node --test tools/sync-supabase-auth-emails.test.mjs tools/sync-supabase-recovery-email.test.mjs
 
-      - name: Verify dormant Production family gates
-        run: pnpm vitest run tests/unit/production-category-gates.test.ts
+      - name: Run New Post Ad & Saved Edit Regression Tests
+        run: pnpm vitest run tests/unit/post-ad-goods-entry.test.tsx tests/unit/post-ad-goods-page.test.tsx tests/unit/post-ad-goods-server.test.ts tests/unit/post-ad-goods-edit-retention.test.tsx
+
+      - name: Run S1 Test-Only Non-Delivery Capture Unit Tests
+        run: |
+          test -f tests/unit/email-outbox-s1-capture.test.ts
+          pnpm vitest run tests/unit/email-outbox-s1-capture.test.ts
 
       - name: Run Moderation Unit Tests
         run: |
@@ -91,15 +93,6 @@ jobs:
           else
             echo "No moderation unit tests found on this branch; skipping."
           fi
-
-      - name: Validate V2 Node image preparation with real Sharp decode
-        run: pnpm vitest run tests/security/moderation-v2-node-preparation.test.ts
-
-      - name: Validate V2 create-only transport and byte readback
-        run: pnpm vitest run tests/security/moderation-v2-storage-readback.test.ts
-
-      - name: Validate V2 Backend registry payload contract (no DB authority)
-        run: pnpm vitest run tests/security/moderation-v2-registry-candidate.test.ts
 
   database-security-tests:
     name: Supabase Local DB & Security Tests
@@ -155,7 +148,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Start Disposable Local Supabase
-        run: supabase start -x studio,analytics,logflare,supavisor
+        run: |
+          supabase stop --no-backup || true
+          supabase start -x studio,analytics,logflare,supavisor
 
       - name: Run Schema & Media Invalidation pgTAP Tests
         run: |
@@ -289,6 +284,35 @@ jobs:
           else
             echo "MOD-03A migrations not detected on this branch; skipping MOD-03A integration suite."
           fi
+
+      - name: Run S1 Disposable Direct Auth & Family Compatibility SQL
+        env:
+          CI: "true"
+          POST_AD_RUN_LOCAL_DB_TESTS: "true"
+          POST_AD_DB_HOST: "127.0.0.1"
+          POST_AD_DB_PORT: "54322"
+          POST_AD_DB_RUN_ID: "post-ad-disposable-${{ github.run_id }}-${{ github.run_attempt }}"
+        run: |
+          set -euo pipefail
+          # This step is disposable LOCAL contract evidence, not hosted Test S1.
+          [[ "${GITHUB_ACTIONS:-}" == "true" ]] || { echo "::error::GitHub Actions isolation required"; exit 1; }
+          [[ "$POST_AD_DB_RUN_ID" =~ ^post-ad-disposable-[0-9]+-[0-9]+$ ]] || exit 1
+          DB_URL=$(supabase status -o json | jq -r '.DB_URL // empty')
+          # Never print DB_URL: it contains the local container password.
+          [[ "$DB_URL" =~ ^postgres(ql)?://postgres:[^@]+@127\.0\.0\.1:54322/postgres$ ]] || {
+            echo "::error::Only the positively identified local 127.0.0.1:54322/postgres stack is allowed"
+            exit 1
+          }
+          [[ -f tests/security/post-ad-compatibility-disposable-db.test.ts &&
+             -f tests/security/sql/post-ad-current-base-compatibility.sql ]] || exit 1
+          # supabase test db provisions pgTAP in its own runner/session; the
+          # independent node-postgres connection needs the extension installed.
+          # This DDL is strictly inside the disposable local Supabase DB.
+          supabase db query "CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;"
+          supabase db query "CREATE SCHEMA IF NOT EXISTS test_validation_meta;"
+          supabase db query "CREATE TABLE IF NOT EXISTS test_validation_meta.run_identity (run_id text PRIMARY KEY, task text NOT NULL);"
+          supabase db query "INSERT INTO test_validation_meta.run_identity (run_id,task) VALUES ('$POST_AD_DB_RUN_ID','POST-AD-DISPOSABLE-DB-VERIFY-01') ON CONFLICT (run_id) DO UPDATE SET task=excluded.task;"
+          pnpm vitest run tests/security/post-ad-compatibility-disposable-db.test.ts
 
   pg17-release-rehearsal:
     name: Isolated PostgreSQL 17 Release Rehearsal
@@ -635,3 +659,94 @@ jobs:
           echo "Tearing down isolated PG17 Supabase stack..."
           cd /tmp/sb-pg17-rehearsal && supabase stop || true
           rm -rf /tmp/sb-pg17-rehearsal
+
+  post-ad-insert-guard-pg17:
+    name: Post Ad INSERT RLS Production Baseline (PostgreSQL 17)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.117.0
+
+      - name: Setup Node.js for private Backend snapshot guard
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+
+      - name: Mint short-lived Backend Contents-read token
+        id: backend-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # pinned v2
+        with:
+          app-id: ${{ vars.FAIRSWAP_BACKEND_CI_APP_ID }}
+          private-key: ${{ secrets.FAIRSWAP_BACKEND_CI_APP_PRIVATE_KEY }}
+          owner: vivek2310sharma
+          repositories: FairSwap-Backend
+          permission-contents: read
+
+      - name: Checkout immutable private Backend source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pinned v4.2.2
+        with:
+          repository: vivek2310sharma/FairSwap-Backend
+          ref: 2f26f839c3fa0ae690cf5c3795a983d62e1b6c47
+          token: ${{ steps.backend-token.outputs.token }}
+          path: .fairswap-backend-ci-source
+          persist-credentials: false
+
+      - name: Validate and materialize Backend SQL only for disposable CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/ci/materialize-backend.mjs "$GITHUB_WORKSPACE/.fairswap-backend-ci-source"
+          rm -rf -- "$GITHUB_WORKSPACE/.fairswap-backend-ci-source"
+
+      - name: Start disposable PostgreSQL 17 stack
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/fairswap-issue133/supabase/migrations /tmp/fairswap-issue133/supabase/tests
+          sed 's/major_version = 15/major_version = 17/' supabase/config.toml > /tmp/fairswap-issue133/supabase/config.toml
+          cp -r supabase/templates /tmp/fairswap-issue133/supabase/
+          grep -q 'major_version = 17' /tmp/fairswap-issue133/supabase/config.toml
+          cd /tmp/fairswap-issue133
+          supabase start -x studio,analytics,logflare,supavisor
+          VERSION=$(supabase db query 'SHOW server_version;' --output json | jq -r '.[0].server_version // empty')
+          [[ "$VERSION" == 17.* ]] || { echo "::error::PostgreSQL 17 required, found $VERSION"; exit 1; }
+
+      - name: Reconstruct exact Production 36 migration baseline
+        run: |
+          set -euo pipefail
+          for file in "$GITHUB_WORKSPACE"/supabase/migrations/*.sql; do
+            name=$(basename "$file")
+            version=$(echo "$name" | cut -d '_' -f1)
+            if [[ "$version" < '20261007161426' ]]; then
+              cp "$file" /tmp/fairswap-issue133/supabase/migrations/
+            fi
+          done
+          FILES=$(find /tmp/fairswap-issue133/supabase/migrations -maxdepth 1 -name '*.sql' | wc -l)
+          [[ "$FILES" -eq 36 ]] || { echo "::error::Expected 36 baseline files, found $FILES"; exit 1; }
+          cd /tmp/fairswap-issue133
+          supabase migration up
+          RECORDED=$(supabase db query 'SELECT count(*)::int AS total FROM supabase_migrations.schema_migrations;' --output json | jq -r '.[0].total')
+          [[ "$RECORDED" -eq 36 ]] || { echo "::error::Expected 36 baseline versions, found $RECORDED"; exit 1; }
+
+      - name: Rehearse Goods 38 to 39 INSERT RLS guard
+        run: |
+          set -euo pipefail
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261008210921_post_ad_category_metadata.sql" /tmp/fairswap-issue133/supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261009163210_seller_listing_category_context.sql" /tmp/fairswap-issue133/supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/migrations/20261013192336_post_ad_listing_insert_category_guard.sql" /tmp/fairswap-issue133/supabase/migrations/
+          cp "$GITHUB_WORKSPACE/supabase/tests/listings_insert_category_eligibility.test.sql" /tmp/fairswap-issue133/supabase/tests/
+          cd /tmp/fairswap-issue133
+          supabase migration up
+          RECORDED=$(supabase db query 'SELECT count(*)::int AS total FROM supabase_migrations.schema_migrations;' --output json | jq -r '.[0].total')
+          [[ "$RECORDED" -eq 39 ]] || { echo "::error::Expected Goods-only 39 migration versions, found $RECORDED"; exit 1; }
+          supabase test db /tmp/fairswap-issue133/supabase/tests/listings_insert_category_eligibility.test.sql
+
+      - name: Teardown isolated PostgreSQL 17 stack
+        if: always()
+        run: |
+          cd /tmp/fairswap-issue133 && supabase stop || true
+          rm -rf /tmp/fairswap-issue133

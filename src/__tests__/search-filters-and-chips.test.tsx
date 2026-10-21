@@ -212,7 +212,9 @@ describe("SRCH-04 SearchFilters Component (Desktop Instant Apply & Mobile Drawer
     );
 
     const categorySelect = screen.getAllByLabelText(/category/i)[0];
-    fireEvent.change(categorySelect, { target: { value: "electronics" } });
+    act(() => {
+      fireEvent.change(categorySelect, { target: { value: "electronics" } });
+    });
 
     expect(mockPush).toHaveBeenCalledWith("/search?category=electronics&page=1");
   });
@@ -228,7 +230,9 @@ describe("SRCH-04 SearchFilters Component (Desktop Instant Apply & Mobile Drawer
     );
 
     const citySelect = screen.getAllByLabelText(/district/i)[0];
-    fireEvent.change(citySelect, { target: { value: "city-delhi" } });
+    act(() => {
+      fireEvent.change(citySelect, { target: { value: "city-delhi" } });
+    });
 
     expect(mockPush).toHaveBeenCalledWith("/search?city=city-delhi&page=1");
   });
@@ -244,7 +248,9 @@ describe("SRCH-04 SearchFilters Component (Desktop Instant Apply & Mobile Drawer
     );
 
     const keywordInput = screen.getAllByPlaceholderText(/search items, titles, brands/i)[0];
-    fireEvent.change(keywordInput, { target: { value: "laptop" } });
+    act(() => {
+      fireEvent.change(keywordInput, { target: { value: "laptop" } });
+    });
 
     // Should not call router.push immediately
     expect(mockPush).not.toHaveBeenCalled();
@@ -263,9 +269,38 @@ describe("SRCH-04 SearchFilters Component (Desktop Instant Apply & Mobile Drawer
 
     // Enter key triggers immediate search
     mockPush.mockReset();
-    fireEvent.change(keywordInput, { target: { value: "phone" } });
-    fireEvent.keyDown(keywordInput, { key: "Enter", code: "Enter" });
+    act(() => {
+      fireEvent.change(keywordInput, { target: { value: "phone" } });
+      fireEvent.keyDown(keywordInput, { key: "Enter", code: "Enter" });
+    });
     expect(mockPush).toHaveBeenCalledWith("/search?q=phone&page=1");
+  });
+
+  it("desktop: prevents state contamination when typing uncommitted inputs and changing dropdown", () => {
+    render(
+      <SearchFilters
+        categories={sampleCategories}
+        cities={sampleCities}
+        localities={sampleLocalities}
+        initialFilters={{ q: "macbook" }}
+      />
+    );
+
+    const keywordInput = screen.getAllByPlaceholderText(/search items, titles, brands/i)[0];
+    const categorySelect = screen.getAllByLabelText(/category/i)[0];
+
+    // Type uncommitted text into keyword input
+    act(() => {
+      fireEvent.change(keywordInput, { target: { value: "macbook pro 16" } });
+    });
+
+    // Immediately change category dropdown before keyword debounce finishes
+    act(() => {
+      fireEvent.change(categorySelect, { target: { value: "electronics" } });
+    });
+
+    // Should submit category change preserving applied URL keyword 'macbook', NOT uncommitted text 'macbook pro 16'
+    expect(mockPush).toHaveBeenCalledWith("/search?q=macbook&category=electronics&page=1");
   });
 
   it("desktop: price range validates on blur and does not trigger on digits", () => {
@@ -282,17 +317,26 @@ describe("SRCH-04 SearchFilters Component (Desktop Instant Apply & Mobile Drawer
     const maxPriceInput = screen.getAllByLabelText(/maximum price in rupees/i)[0];
 
     // Typing digits does not navigate
-    fireEvent.change(minPriceInput, { target: { value: "100" } });
+    act(() => {
+      fireEvent.change(minPriceInput, { target: { value: "100" } });
+    });
     expect(mockPush).not.toHaveBeenCalled();
 
-    // Invalid range (min > max) on blur should not trigger navigation
-    fireEvent.change(maxPriceInput, { target: { value: "50" } });
-    fireEvent.blur(maxPriceInput);
+    // Invalid range (min > max) on blur should show error and not trigger navigation
+    act(() => {
+      fireEvent.change(maxPriceInput, { target: { value: "50" } });
+      fireEvent.blur(maxPriceInput);
+      vi.runAllTimers();
+    });
     expect(mockPush).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(/minimum price cannot be greater than maximum price/i);
 
     // Valid range on blur triggers navigation
-    fireEvent.change(maxPriceInput, { target: { value: "5000" } });
-    fireEvent.blur(maxPriceInput);
+    act(() => {
+      fireEvent.change(maxPriceInput, { target: { value: "5000" } });
+      fireEvent.blur(maxPriceInput);
+      vi.runAllTimers();
+    });
     expect(mockPush).toHaveBeenCalledWith("/search?price_min=100&price_max=5000&page=1");
   });
 
@@ -308,29 +352,124 @@ describe("SRCH-04 SearchFilters Component (Desktop Instant Apply & Mobile Drawer
 
     // Open mobile drawer
     const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
-    fireEvent.click(openDrawerBtn);
+    act(() => {
+      fireEvent.click(openDrawerBtn);
+    });
 
     const drawer = screen.getByRole("dialog", { name: /filter listings/i });
     expect(drawer).toBeInTheDocument();
 
     // Select new condition inside drawer
     const conditionSelect = within(drawer).getByLabelText(/condition/i);
-    fireEvent.change(conditionSelect, { target: { value: "new" } });
+    act(() => {
+      fireEvent.change(conditionSelect, { target: { value: "new" } });
+    });
 
     // Drawer changes should NOT trigger instant push
     expect(mockPush).not.toHaveBeenCalled();
 
     // Close without applying discards changes
     const closeBtn = within(drawer).getByRole("button", { name: /close/i });
-    fireEvent.click(closeBtn);
+    act(() => {
+      fireEvent.click(closeBtn);
+    });
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
 
     // Reopen drawer and verify condition was restored to initial
-    fireEvent.click(openDrawerBtn);
+    act(() => {
+      fireEvent.click(openDrawerBtn);
+    });
     const newDrawer = screen.getByRole("dialog", { name: /filter listings/i });
     expect(within(newDrawer).getByLabelText(/condition/i)).toHaveValue("");
+  });
+
+  it("mobile drawer: displays error when minimum price > maximum price", () => {
+    render(
+      <SearchFilters
+        categories={sampleCategories}
+        cities={sampleCities}
+        localities={sampleLocalities}
+        initialFilters={{}}
+      />
+    );
+
+    const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
+    act(() => {
+      fireEvent.click(openDrawerBtn);
+    });
+
+    const drawer = screen.getByRole("dialog", { name: /filter listings/i });
+    const minInput = within(drawer).getByLabelText(/minimum price in rupees/i);
+    const maxInput = within(drawer).getByLabelText(/maximum price in rupees/i);
+    const applyBtn = within(drawer).getByRole("button", { name: /apply filters/i });
+
+    act(() => {
+      fireEvent.change(minInput, { target: { value: "10000" } });
+      fireEvent.change(maxInput, { target: { value: "5000" } });
+      fireEvent.click(applyBtn);
+      vi.runAllTimers();
+    });
+
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(within(drawer).getByRole("alert")).toHaveTextContent(/minimum price cannot be greater than maximum price/i);
+  });
+
+  it("mobile drawer: pressing Enter inside keyword field does not trigger navigation", () => {
+    render(
+      <SearchFilters
+        categories={sampleCategories}
+        cities={sampleCities}
+        localities={sampleLocalities}
+        initialFilters={{}}
+      />
+    );
+
+    const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
+    act(() => {
+      fireEvent.click(openDrawerBtn);
+    });
+
+    const drawer = screen.getByRole("dialog", { name: /filter listings/i });
+    const keywordInput = within(drawer).getByPlaceholderText(/search items, titles, brands/i);
+
+    act(() => {
+      fireEvent.change(keywordInput, { target: { value: "iphone" } });
+      fireEvent.keyDown(keywordInput, { key: "Enter", code: "Enter" });
+    });
+
+    // Pressing Enter inside mobile drawer must NOT navigate prematurely
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("mobile drawer: changing district clears locality and filters locality options", () => {
+    render(
+      <SearchFilters
+        categories={sampleCategories}
+        cities={sampleCities}
+        localities={sampleLocalities}
+        initialFilters={{ city: "city-mumbai", locality: "loc-andheri" }}
+      />
+    );
+
+    const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
+    act(() => {
+      fireEvent.click(openDrawerBtn);
+    });
+
+    const drawer = screen.getByRole("dialog", { name: /filter listings/i });
+    const citySelect = within(drawer).getByLabelText(/district/i);
+
+    expect(within(drawer).getByLabelText(/locality/i)).toHaveValue("loc-andheri");
+
+    // Change district to Delhi
+    act(() => {
+      fireEvent.change(citySelect, { target: { value: "city-delhi" } });
+    });
+
+    // Locality should be cleared and locality dropdown should not offer Mumbai localities
+    expect(within(drawer).queryByLabelText(/locality/i)).not.toBeInTheDocument();
   });
 
   it("mobile drawer: apply filters button submits all selected filters together", () => {
@@ -345,18 +484,21 @@ describe("SRCH-04 SearchFilters Component (Desktop Instant Apply & Mobile Drawer
 
     // Open mobile drawer
     const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
-    fireEvent.click(openDrawerBtn);
+    act(() => {
+      fireEvent.click(openDrawerBtn);
+    });
 
     const drawer = screen.getByRole("dialog", { name: /filter listings/i });
 
     const conditionSelect = within(drawer).getByLabelText(/condition/i);
-    fireEvent.change(conditionSelect, { target: { value: "like_new" } });
-
     const sortSelect = within(drawer).getByLabelText(/sort by/i);
-    fireEvent.change(sortSelect, { target: { value: "price_asc" } });
-
     const applyBtn = within(drawer).getByRole("button", { name: /apply filters/i });
-    fireEvent.click(applyBtn);
+
+    act(() => {
+      fireEvent.change(conditionSelect, { target: { value: "like_new" } });
+      fireEvent.change(sortSelect, { target: { value: "price_asc" } });
+      fireEvent.click(applyBtn);
+    });
 
     expect(mockPush).toHaveBeenCalledWith(
       "/search?condition=like_new&sort=price_asc&page=1"

@@ -1,7 +1,6 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { Scale, Mail, ShieldAlert, AlertTriangle, CheckCircle2, FileText } from "lucide-react";
 
 export const metadata = {
@@ -237,9 +236,9 @@ export default function GrievancePage() {
               <span>•</span>
               <span>
                 Visit the{" "}
-                <a href={HELP_CENTRE_URL} className="text-brand-link underline hover:text-brand-hover">
-                  Help Centre
-                </a>
+                <Link href="/help" className="text-brand-link underline hover:text-brand-hover">
+                  Help Center &amp; FAQ
+                </Link>
               </span>
               <span>•</span>
               <span>
