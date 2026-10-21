@@ -39,6 +39,12 @@ const setupSql = [
   "     AND split_part(OLD.name, '/', 3) = 'v2' THEN",
   "    RAISE EXCEPTION 'FS_V2_SEALED_OBJECT_IMMUTABLE' USING ERRCODE = '23514';",
   "  END IF;",
+  "  IF TG_OP = 'UPDATE' THEN",
+  "    IF NEW.bucket_id IN ('listing-originals', 'listing-derivatives')",
+  "       AND split_part(NEW.name, '/', 3) = 'v2' THEN",
+  "      RAISE EXCEPTION 'FS_V2_SEALED_OBJECT_IMMUTABLE' USING ERRCODE = '23514';",
+  "    END IF;",
+  "  END IF;",
   "  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;",
   "  RETURN NEW;",
   "END;",
@@ -82,6 +88,18 @@ function localStorageApi(apiUrl, serviceKey) {
         method: "PUT",
         headers: { ...auth, "Content-Type": contentType },
         body: bytes,
+      });
+      return toResult(response);
+    },
+    move: async (sourceKey, destinationKey) => {
+      const response = await fetch(root + "/move", {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bucketId: "listing-originals",
+          sourceKey,
+          destinationKey,
+        }),
       });
       return toResult(response);
     },
@@ -160,6 +178,8 @@ async function main() {
   const sealedPath = base + "v2/" + assetVersion + "/" + digest + "/original.png";
   const sealedRace = base + "v2/" + randomUUID() + "/" + digest + "/original.png";
   const legacyPath = base + "original.png";
+  const moveSource = base + "move-source.png";
+  const moveSealedDest = base + "v2/" + randomUUID() + "/" + digest + "/original.png";
   const imageA = await sharp({
     create: { width: 4, height: 4, channels: 3, background: { r: 255, g: 0, b: 0 } },
   }).png().toBuffer();
@@ -205,6 +225,16 @@ async function main() {
     assert.equal(signedResponse.status, 200, "Signed image URL status");
     assert.equal(sha256(Buffer.from(await signedResponse.arrayBuffer())), sha256(imageA));
 
+    // Moving a legacy object INTO the sealed namespace must also be rejected.
+    await requireUpload(store, moveSource, imageA, false, "move-source legacy upload");
+    await mustReject(
+      store.move(moveSource, moveSealedDest),
+      "service_role move() into sealed namespace",
+    );
+    assert.equal(sha256(await downloadBytes(store, moveSource)), sha256(imageA));
+    const unexpectedDestination = await store.download(moveSealedDest);
+    assert.ok(unexpectedDestination.error, "Rejected move must not create a sealed destination object");
+
     // Concurrent create-only requests for the same new key must not swap bytes.
     const concurrent = await Promise.all([
       store.upload(sealedRace, imageA, { contentType: "image/png", upsert: false }),
@@ -225,7 +255,7 @@ async function main() {
     // Always drop the experimental trigger before cleaning up its test objects.
     if (triggerInstalled) await db.query("DROP TRIGGER IF EXISTS " + triggerName + " ON storage.objects");
     await db.query("DROP FUNCTION IF EXISTS " + functionName + "()");
-    await store.remove([sealedPath, sealedRace, legacyPath]);
+    await store.remove([sealedPath, sealedRace, legacyPath, moveSource, moveSealedDest]);
     await db.end();
   }
 }
