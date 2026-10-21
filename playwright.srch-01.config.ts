@@ -6,7 +6,7 @@ const MOCK_SUPABASE_PORT = 54322;
 const MOCK_SUPABASE_URL = `http://127.0.0.1:${MOCK_SUPABASE_PORT}`;
 
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: "./e2e-isolated",
   testMatch: ["**/mobile-search-grid.spec.ts"],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
