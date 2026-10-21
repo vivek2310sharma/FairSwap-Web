@@ -7,6 +7,7 @@ import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { PhotoGallery } from "@/components/listings/PhotoGallery";
 import { FavouriteButton } from "@/components/listings/FavouriteButton";
 import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
+import { CompactSafetyNotice, IndiaSafetyCard } from "@/components/listings/IndiaSafetyAdvice";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ShareButton } from "@/components/listings/ShareButton";
 import {
@@ -24,7 +25,6 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {
   MapPin,
   Calendar,
-  ShieldCheck,
   ArrowLeft,
   User,
   AlertTriangle,
@@ -385,6 +385,8 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                 )}
 
                 <div className="mt-6 space-y-3">
+                  <CompactSafetyNotice />
+
                   <ContactSellerButton
                     sellerName={listing.seller.display_name}
                     listingId={listing.id}
@@ -399,33 +401,8 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                 </div>
               </div>
 
-              {/* Safety Card */}
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 dark:border-emerald-800 dark:bg-emerald-950">
-                <div className="flex items-center gap-2 font-bold text-emerald-900 dark:text-emerald-200 text-sm">
-                  <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-                  <span>FairSwap Safety Advice</span>
-                </div>
-                <ul className="mt-3 space-y-2 text-xs text-emerald-950 dark:text-emerald-100 font-medium">
-                  <li>&bull; Always meet the seller in a public, crowded place.</li>
-                  <li>&bull; Inspect and test the item thoroughly in person.</li>
-                  <li>&bull; Do not send advance payments or token money online.</li>
-                  <li>&bull; Bring a friend along when inspecting valuable items.</li>
-                </ul>
-                <div className="mt-4 flex flex-wrap gap-4 border-t border-emerald-200 pt-3 dark:border-emerald-800">
-                  <Link
-                    href="/safety"
-                    className="text-xs font-semibold text-emerald-800 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-200"
-                  >
-                    In-person safety tips
-                  </Link>
-                  <a
-                    href={HELP_CENTRE_URL}
-                    className="text-xs font-semibold text-emerald-800 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-200"
-                  >
-                    Help Centre
-                  </a>
-                </div>
-              </div>
+              {/* India-specific scam prevention advice */}
+              <IndiaSafetyCard helpCentreHref={HELP_CENTRE_URL} />
             </div>
           </div>
 
