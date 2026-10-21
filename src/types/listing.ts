@@ -286,6 +286,28 @@ export const submitListingSchema = draftListingSchema.extend({
   }
 );
 
+export const searchSortOptionSchema = z.enum(["newest", "price_asc", "price_desc", "relevance"]);
+export type SearchSortOption = z.infer<typeof searchSortOptionSchema>;
+
+export function getEffectiveSort(q?: string, sortParam?: string): SearchSortOption {
+  const hasKeyword = Boolean(q && q.trim().length > 0);
+
+  if (!hasKeyword) {
+    // Relevance is not applicable without a keyword.
+    // If sortParam is 'relevance', normalize to 'newest'.
+    if (sortParam === "price_asc" || sortParam === "price_desc" || sortParam === "newest") {
+      return sortParam;
+    }
+    return "newest";
+  }
+
+  if (sortParam === "newest" || sortParam === "price_asc" || sortParam === "price_desc" || sortParam === "relevance") {
+    return sortParam;
+  }
+
+  return "relevance";
+}
+
 export const searchFiltersSchema = z.object({
   q: z.string().max(100).optional().default(""),
   category: z.string().max(100).optional().default(""),
@@ -294,7 +316,7 @@ export const searchFiltersSchema = z.object({
   condition: z.enum(["new", "like_new", "good", "fair", "poor"]).optional(),
   price_min: z.coerce.number().min(0).max(100000000).optional(),
   price_max: z.coerce.number().min(0).max(100000000).optional(),
-  sort: z.enum(["newest", "price_asc", "price_desc", "relevance"]).optional().default("newest"),
+  sort: searchSortOptionSchema.optional(),
   page: z.coerce.number().int().min(1).max(1000).optional().default(1),
 });
 
