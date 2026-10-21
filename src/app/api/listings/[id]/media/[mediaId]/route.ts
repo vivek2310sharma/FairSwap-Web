@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/supabase/request-auth";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import { logger } from "@/lib/logger";
+import { planLegacyMediaStorageCleanup } from "@/lib/media/legacy-storage-cleanup";
 import {
   mediaApiError,
   mapRpcErrorToMediaError,
@@ -20,15 +21,16 @@ import {
  * 2. Preflight guards: maintenance, active account, current policy, listing owner, mutable status.
  * 3. Lookup private storage paths before DB deletion using server-only service client.
  *    - Database lookup error returns 422 MEDIA_DELETE_FAILED (never reported as success).
- * 4. Execute authoritative transactional deletion via user-scoped RPC `seller_delete_listing_media`.
+ * 4. Refuse sealed or unexpected keys BEFORE DB deletion.
+ * 5. Execute authoritative transactional deletion via user-scoped RPC `seller_delete_listing_media`.
  *    - Idempotent: If media row is already absent for the owner's listing, returns success with deleted=false.
  *    - Automatically falls back cover_photo_id to the next ready media item.
  *    - Re-review trigger fires ONLY if deleted media was 'ready'.
- * 5. DB deletion commits first.
- * 6. Best-effort private Storage cleanup runs after committed DB deletion.
+ * 6. DB deletion commits first.
+ * 7. Best-effort private Storage cleanup runs after committed DB deletion.
  *    - If Storage cleanup fails, the DB row remains deleted; an orphaned private object is
  *      preferable to a visible DB row or active cover pointing at a destroyed object.
- * 7. Returns safe media snapshot.
+ * 8. Returns safe media snapshot.
  */
 export async function DELETE(
   request: NextRequest,
@@ -69,13 +71,29 @@ export async function DELETE(
     return mediaApiError("MEDIA_DELETE_FAILED");
   }
 
-  // Capture paths for subsequent Storage cleanup if media exists
-  const originalPath = mediaRow?.original_storage_path;
-  const derivativePaths = [
-    mediaRow?.thumbnail_storage_path,
-    mediaRow?.medium_storage_path,
-    mediaRow?.large_storage_path,
-  ].filter((p): p is string => Boolean(p));
+  // Only known legacy paths may be removed by this privileged route.
+  // V2 sealed/unknown paths are retired through a separate trusted workflow.
+  const cleanupPlan = planLegacyMediaStorageCleanup(listingId, mediaId, {
+    original_storage_path: mediaRow?.original_storage_path,
+    thumbnail_storage_path: mediaRow?.thumbnail_storage_path,
+    medium_storage_path: mediaRow?.medium_storage_path,
+    large_storage_path: mediaRow?.large_storage_path,
+  });
+
+  // Fail closed BEFORE the DB mutation. This is an app-level fence;
+  // Backend must independently enforce this against races and other writers.
+  if (mediaRow && cleanupPlan.kind === "deferred") {
+    logger.warn("media.storage_cleanup_deferred", {
+      operation: "delete_media_storage_cleanup",
+      listing_id: listingId,
+      media_id: mediaId,
+      stage: "sealed_or_unrecognized_path",
+    });
+    return mediaApiError(
+      "LISTING_MEDIA_NOT_EDITABLE",
+      "This photo requires review before it can be removed."
+    );
+  }
 
   // 4. Authenticated user-scoped RPC deletion (DB-first)
   const { data: deleteResult, error: rpcError } = await client.rpc("seller_delete_listing_media", {
@@ -93,23 +111,23 @@ export async function DELETE(
     deleteResult !== null &&
     (deleteResult as { deleted?: boolean }).deleted === true;
 
-  if (isDeleted) {
+  if (isDeleted && cleanupPlan.kind === "legacy") {
     try {
       let cleanupErrorOccurred = false;
 
-      if (originalPath) {
+      if (cleanupPlan.originals.length > 0) {
         const { error: origErr } = await serviceClient.storage
           .from("listing-originals")
-          .remove([originalPath]);
+          .remove(cleanupPlan.originals);
         if (origErr) {
           cleanupErrorOccurred = true;
         }
       }
 
-      if (derivativePaths.length > 0) {
+      if (cleanupPlan.derivatives.length > 0) {
         const { error: derivErr } = await serviceClient.storage
           .from("listing-derivatives")
-          .remove(derivativePaths);
+          .remove(cleanupPlan.derivatives);
         if (derivErr) {
           cleanupErrorOccurred = true;
         }
