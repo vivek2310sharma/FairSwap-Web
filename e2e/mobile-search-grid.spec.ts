@@ -65,7 +65,11 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
     // Target the thumbnail image link (first card link)
     const thumbnailLink = resultsGrid.locator("a[href*='/listings/iphone-15-pro-max-mumbai']").first();
     await expect(thumbnailLink).toBeVisible();
-    await thumbnailLink.click({ force: true });
+
+    // Scroll element below sticky header before clicking natively without force
+    await thumbnailLink.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -100));
+    await thumbnailLink.click();
 
     // Verify navigation settles on the expected listing detail URL
     await expect(page).toHaveURL(/\/listings\/iphone-15-pro-max-mumbai/);
@@ -82,8 +86,10 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
     const favBtn = resultsGrid.getByRole("button", { name: "Save to favourites" }).first();
     await expect(favBtn).toBeVisible();
 
-    // Click/tap the favourite button
-    await favBtn.click({ force: true });
+    // Scroll element below sticky header before clicking natively without force
+    await favBtn.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -100));
+    await favBtn.click();
 
     // Verify favourite action triggered the legitimate sign-in redirect rather than direct listing page navigation
     await expect(page).toHaveURL(/\/auth\/sign-in/);

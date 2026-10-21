@@ -83,7 +83,7 @@ jobs:
         run: pnpm run build
 
       - name: Run Mobile Search Grid E2E Tests
-        run: pnpm test:e2e e2e/mobile-search-grid.spec.ts
+        run: pnpm exec playwright test --config=playwright.srch-01.config.ts
 
       - name: Run Auth Email Template Contract Tests
         run: |
