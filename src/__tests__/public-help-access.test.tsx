@@ -5,9 +5,22 @@ import SafetyPage from "@/app/safety/page";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 describe("Public assistance remains separate from account workflows", () => {
-  it("lets signed-out visitors read help and email support while preserving grievances and tickets", () => {
+  it("lets signed-out visitors read help, email and WhatsApp support while preserving grievances and tickets", () => {
     render(<ContactPage />);
     const main = within(screen.getByRole("main"));
+    expect(main.getByRole("heading", { name: "WhatsApp Support" })).toBeInTheDocument();
+
+    const whatsappLink = main.getByRole("link", { name: "+91 7877966996" });
+    expect(whatsappLink).toHaveAttribute("href", "https://wa.me/917877966996");
+    expect(whatsappLink).toHaveAttribute("target", "_blank");
+    expect(whatsappLink.getAttribute("rel")?.split(/\s+/)).toEqual(
+      expect.arrayContaining(["noopener", "noreferrer"])
+    );
+
+    expect(main.queryByRole("heading", { name: "Phone Contact" })).not.toBeInTheDocument();
+    expect(main.queryByRole("link", { name: "+91 8826599917" })).not.toBeInTheDocument();
+    expect(main.queryByText(/8826599917/)).not.toBeInTheDocument();
+
     expect(main.getByRole("link", { name: "Help Centre" })).toHaveAttribute("href", HELP_CENTRE_URL);
     expect(main.getByRole("link", { name: "support@fairswap.in" })).toHaveAttribute(
       "href",
