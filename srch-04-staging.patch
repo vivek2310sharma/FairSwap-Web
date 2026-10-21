@@ -1,0 +1,1598 @@
+From 2886205177c2189de073752ecca495fb4221e128 Mon Sep 17 00:00:00 2001
+From: "google-labs-jules[bot]"
+ <161369871+google-labs-jules[bot]@users.noreply.github.com>
+Date: Wed, 21 Oct 2026 19:19:45 +0000
+Subject: [PATCH] feat(search): active filter chips and desktop instant apply
+ on staging (SRCH-04)
+
+---
+ .../search-filters-and-chips.test.tsx         | 507 +++++++++++++
+ src/app/search/page.tsx                       |  10 +-
+ src/components/listings/ActiveFilterChips.tsx | 209 ++++++
+ src/components/listings/SearchFilters.tsx     | 694 +++++++++++++-----
+ 4 files changed, 1238 insertions(+), 182 deletions(-)
+ create mode 100644 src/__tests__/search-filters-and-chips.test.tsx
+ create mode 100644 src/components/listings/ActiveFilterChips.tsx
+
+diff --git a/src/__tests__/search-filters-and-chips.test.tsx b/src/__tests__/search-filters-and-chips.test.tsx
+new file mode 100644
+index 0000000..31cdb72
+--- /dev/null
++++ b/src/__tests__/search-filters-and-chips.test.tsx
+@@ -0,0 +1,507 @@
++import { render, screen, fireEvent, act, within } from "@testing-library/react";
++import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
++import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
++import { SearchFilters } from "@/components/listings/SearchFilters";
++import { Category, City, Locality } from "@/types/listing";
++
++const mockPush = vi.fn();
++
++vi.mock("next/navigation", () => ({
++  useRouter: () => ({
++    push: mockPush,
++  }),
++  useTransition: () => [false, (cb: () => void) => cb()],
++}));
++
++const sampleCategories: Category[] = [
++  {
++    id: "cat-1",
++    slug: "electronics",
++    name: "Electronics & Appliances",
++    description: null,
++    icon: null,
++    sort_order: 1,
++    is_active: true,
++    created_at: "2026-01-01T00:00:00Z",
++    updated_at: "2026-01-01T00:00:00Z",
++  },
++  {
++    id: "cat-2",
++    slug: "vehicles",
++    name: "Vehicles & Motors",
++    description: null,
++    icon: null,
++    sort_order: 2,
++    is_active: true,
++    created_at: "2026-01-01T00:00:00Z",
++    updated_at: "2026-01-01T00:00:00Z",
++  },
++];
++
++const sampleCities: City[] = [
++  {
++    id: "city-mumbai",
++    name: "Mumbai",
++    state: "Maharashtra",
++    slug: "mumbai",
++    is_active: true,
++    created_at: "2026-01-01T00:00:00Z",
++  },
++  {
++    id: "city-delhi",
++    name: "Delhi NCR",
++    state: "Delhi",
++    slug: "delhi-ncr",
++    is_active: true,
++    created_at: "2026-01-01T00:00:00Z",
++  },
++];
++
++const sampleLocalities: Locality[] = [
++  {
++    id: "loc-andheri",
++    city_id: "city-mumbai",
++    name: "Andheri East",
++    slug: "andheri-east",
++    is_active: true,
++    created_at: "2026-01-01T00:00:00Z",
++  },
++  {
++    id: "loc-bandra",
++    city_id: "city-mumbai",
++    name: "Bandra West",
++    slug: "bandra-west",
++    is_active: true,
++    created_at: "2026-01-01T00:00:00Z",
++  },
++];
++
++describe("SRCH-04 ActiveFilterChips Component", () => {
++  beforeEach(() => {
++    mockPush.mockReset();
++  });
++
++  it("renders nothing when no filters are active", () => {
++    const { container } = render(
++      <ActiveFilterChips
++        filters={{ page: 1 }}
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++      />
++    );
++    expect(container.firstChild).toBeNull();
++  });
++
++  it("renders chips with human-readable labels and formats INR prices", () => {
++    render(
++      <ActiveFilterChips
++        filters={{
++          q: "laptop",
++          category: "electronics",
++          city: "city-mumbai",
++          locality: "loc-andheri",
++          condition: "like_new",
++          price_min: 10000,
++          price_max: 50000,
++          sort: "price_asc",
++          page: 2,
++        }}
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++      />
++    );
++
++    expect(screen.getByText('Keyword: "laptop"')).toBeInTheDocument();
++    expect(screen.getByText("Electronics & Appliances")).toBeInTheDocument();
++    expect(screen.getByText("Mumbai")).toBeInTheDocument();
++    expect(screen.getByText("Andheri East")).toBeInTheDocument();
++    expect(screen.getByText("Like New")).toBeInTheDocument();
++    expect(screen.getByText("Min ₹10,000")).toBeInTheDocument();
++    expect(screen.getByText("Max ₹50,000")).toBeInTheDocument();
++    expect(screen.getByText("Price: Low to High")).toBeInTheDocument();
++
++    // Verify pagination is not displayed as a filter chip
++    expect(screen.queryByText(/page/i)).not.toBeInTheDocument();
++  });
++
++  it("removes single chip and preserves other filters, resetting page to 1", () => {
++    render(
++      <ActiveFilterChips
++        filters={{
++          q: "laptop",
++          category: "electronics",
++          page: 3,
++        }}
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++      />
++    );
++
++    const removeKeywordBtn = screen.getByRole("button", {
++      name: /remove filter keyword: "laptop"/i,
++    });
++    fireEvent.click(removeKeywordBtn);
++
++    expect(mockPush).toHaveBeenCalledWith("/search?category=electronics&page=1");
++  });
++
++  it("clearing district chip also clears dependent locality", () => {
++    render(
++      <ActiveFilterChips
++        filters={{
++          city: "city-mumbai",
++          locality: "loc-andheri",
++          category: "electronics",
++          page: 2,
++        }}
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++      />
++    );
++
++    const removeCityBtn = screen.getByRole("button", {
++      name: /remove filter mumbai/i,
++    });
++    fireEvent.click(removeCityBtn);
++
++    expect(mockPush).toHaveBeenCalledWith("/search?category=electronics&page=1");
++  });
++
++  it("clicking Clear All resets to /search", () => {
++    render(
++      <ActiveFilterChips
++        filters={{
++          q: "phone",
++          price_min: 5000,
++        }}
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++      />
++    );
++
++    const clearAllBtn = screen.getByRole("button", { name: /clear all/i });
++    fireEvent.click(clearAllBtn);
++
++    expect(mockPush).toHaveBeenCalledWith("/search");
++  });
++});
++
++describe("SRCH-04 SearchFilters Component (Desktop Instant Apply & Mobile Drawer)", () => {
++  beforeEach(() => {
++    mockPush.mockReset();
++    vi.useFakeTimers();
++  });
++
++  afterEach(() => {
++    vi.useRealTimers();
++  });
++
++  it("desktop: category dropdown change applies immediately", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{}}
++      />
++    );
++
++    const categorySelect = screen.getAllByLabelText(/category/i)[0];
++    act(() => {
++      fireEvent.change(categorySelect, { target: { value: "electronics" } });
++    });
++
++    expect(mockPush).toHaveBeenCalledWith("/search?category=electronics&page=1");
++  });
++
++  it("desktop: district dropdown change clears locality and applies immediately", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{ city: "city-mumbai", locality: "loc-andheri" }}
++      />
++    );
++
++    const citySelect = screen.getAllByLabelText(/district/i)[0];
++    act(() => {
++      fireEvent.change(citySelect, { target: { value: "city-delhi" } });
++    });
++
++    expect(mockPush).toHaveBeenCalledWith("/search?city=city-delhi&page=1");
++  });
++
++  it("desktop: keyword typing is debounced by 500ms and Enter key applies immediately", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{}}
++      />
++    );
++
++    const keywordInput = screen.getAllByPlaceholderText(/search items, titles, brands/i)[0];
++    act(() => {
++      fireEvent.change(keywordInput, { target: { value: "laptop" } });
++    });
++
++    // Should not call router.push immediately
++    expect(mockPush).not.toHaveBeenCalled();
++
++    // Advance 400ms - still not called
++    act(() => {
++      vi.advanceTimersByTime(400);
++    });
++    expect(mockPush).not.toHaveBeenCalled();
++
++    // Advance 100ms (total 500ms) - should be called
++    act(() => {
++      vi.advanceTimersByTime(100);
++    });
++    expect(mockPush).toHaveBeenCalledWith("/search?q=laptop&page=1");
++
++    // Enter key triggers immediate search
++    mockPush.mockReset();
++    act(() => {
++      fireEvent.change(keywordInput, { target: { value: "phone" } });
++      fireEvent.keyDown(keywordInput, { key: "Enter", code: "Enter" });
++    });
++    expect(mockPush).toHaveBeenCalledWith("/search?q=phone&page=1");
++  });
++
++  it("desktop: prevents state contamination when typing uncommitted inputs and changing dropdown", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{ q: "macbook" }}
++      />
++    );
++
++    const keywordInput = screen.getAllByPlaceholderText(/search items, titles, brands/i)[0];
++    const categorySelect = screen.getAllByLabelText(/category/i)[0];
++
++    // Type uncommitted text into keyword input
++    act(() => {
++      fireEvent.change(keywordInput, { target: { value: "macbook pro 16" } });
++    });
++
++    // Immediately change category dropdown before keyword debounce finishes
++    act(() => {
++      fireEvent.change(categorySelect, { target: { value: "electronics" } });
++    });
++
++    // Should submit category change preserving applied URL keyword 'macbook', NOT uncommitted text 'macbook pro 16'
++    expect(mockPush).toHaveBeenCalledWith("/search?q=macbook&category=electronics&page=1");
++  });
++
++  it("desktop: price range validates on blur and does not trigger on digits", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{}}
++      />
++    );
++
++    const minPriceInput = screen.getAllByLabelText(/minimum price in rupees/i)[0];
++    const maxPriceInput = screen.getAllByLabelText(/maximum price in rupees/i)[0];
++
++    // Typing digits does not navigate
++    act(() => {
++      fireEvent.change(minPriceInput, { target: { value: "100" } });
++    });
++    expect(mockPush).not.toHaveBeenCalled();
++
++    // Invalid range (min > max) on blur should show error and not trigger navigation
++    act(() => {
++      fireEvent.change(maxPriceInput, { target: { value: "50" } });
++      fireEvent.blur(maxPriceInput);
++      vi.runAllTimers();
++    });
++    expect(mockPush).not.toHaveBeenCalled();
++    expect(screen.getByRole("alert")).toHaveTextContent(/minimum price cannot be greater than maximum price/i);
++
++    // Valid range on blur triggers navigation
++    act(() => {
++      fireEvent.change(maxPriceInput, { target: { value: "5000" } });
++      fireEvent.blur(maxPriceInput);
++      vi.runAllTimers();
++    });
++    expect(mockPush).toHaveBeenCalledWith("/search?price_min=100&price_max=5000&page=1");
++  });
++
++  it("mobile drawer: keeps batch apply button and discards changes on close", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{ category: "electronics" }}
++      />
++    );
++
++    // Open mobile drawer
++    const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
++    act(() => {
++      fireEvent.click(openDrawerBtn);
++    });
++
++    const drawer = screen.getByRole("dialog", { name: /filter listings/i });
++    expect(drawer).toBeInTheDocument();
++
++    // Select new condition inside drawer
++    const conditionSelect = within(drawer).getByLabelText(/condition/i);
++    act(() => {
++      fireEvent.change(conditionSelect, { target: { value: "new" } });
++    });
++
++    // Drawer changes should NOT trigger instant push
++    expect(mockPush).not.toHaveBeenCalled();
++
++    // Close without applying discards changes
++    const closeBtn = within(drawer).getByRole("button", { name: /close/i });
++    act(() => {
++      fireEvent.click(closeBtn);
++    });
++
++    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
++    expect(mockPush).not.toHaveBeenCalled();
++
++    // Reopen drawer and verify condition was restored to initial
++    act(() => {
++      fireEvent.click(openDrawerBtn);
++    });
++    const newDrawer = screen.getByRole("dialog", { name: /filter listings/i });
++    expect(within(newDrawer).getByLabelText(/condition/i)).toHaveValue("");
++  });
++
++  it("mobile drawer: displays error when minimum price > maximum price", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{}}
++      />
++    );
++
++    const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
++    act(() => {
++      fireEvent.click(openDrawerBtn);
++    });
++
++    const drawer = screen.getByRole("dialog", { name: /filter listings/i });
++    const minInput = within(drawer).getByLabelText(/minimum price in rupees/i);
++    const maxInput = within(drawer).getByLabelText(/maximum price in rupees/i);
++    const applyBtn = within(drawer).getByRole("button", { name: /apply filters/i });
++
++    act(() => {
++      fireEvent.change(minInput, { target: { value: "10000" } });
++      fireEvent.change(maxInput, { target: { value: "5000" } });
++      fireEvent.click(applyBtn);
++      vi.runAllTimers();
++    });
++
++    expect(mockPush).not.toHaveBeenCalled();
++    expect(within(drawer).getByRole("alert")).toHaveTextContent(/minimum price cannot be greater than maximum price/i);
++  });
++
++  it("mobile drawer: pressing Enter inside keyword field does not trigger navigation", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{}}
++      />
++    );
++
++    const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
++    act(() => {
++      fireEvent.click(openDrawerBtn);
++    });
++
++    const drawer = screen.getByRole("dialog", { name: /filter listings/i });
++    const keywordInput = within(drawer).getByPlaceholderText(/search items, titles, brands/i);
++
++    act(() => {
++      fireEvent.change(keywordInput, { target: { value: "iphone" } });
++      fireEvent.keyDown(keywordInput, { key: "Enter", code: "Enter" });
++    });
++
++    // Pressing Enter inside mobile drawer must NOT navigate prematurely
++    expect(mockPush).not.toHaveBeenCalled();
++  });
++
++  it("mobile drawer: changing district clears locality and filters locality options", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{ city: "city-mumbai", locality: "loc-andheri" }}
++      />
++    );
++
++    const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
++    act(() => {
++      fireEvent.click(openDrawerBtn);
++    });
++
++    const drawer = screen.getByRole("dialog", { name: /filter listings/i });
++    const citySelect = within(drawer).getByLabelText(/district/i);
++
++    expect(within(drawer).getByLabelText(/locality/i)).toHaveValue("loc-andheri");
++
++    // Change district to Delhi
++    act(() => {
++      fireEvent.change(citySelect, { target: { value: "city-delhi" } });
++    });
++
++    // Locality should be cleared and locality dropdown should not offer Mumbai localities
++    expect(within(drawer).queryByLabelText(/locality/i)).not.toBeInTheDocument();
++  });
++
++  it("mobile drawer: apply filters button submits all selected filters together", () => {
++    render(
++      <SearchFilters
++        categories={sampleCategories}
++        cities={sampleCities}
++        localities={sampleLocalities}
++        initialFilters={{}}
++      />
++    );
++
++    // Open mobile drawer
++    const openDrawerBtn = screen.getByRole("button", { name: /filter & sort/i });
++    act(() => {
++      fireEvent.click(openDrawerBtn);
++    });
++
++    const drawer = screen.getByRole("dialog", { name: /filter listings/i });
++
++    const conditionSelect = within(drawer).getByLabelText(/condition/i);
++    const sortSelect = within(drawer).getByLabelText(/sort by/i);
++    const applyBtn = within(drawer).getByRole("button", { name: /apply filters/i });
++
++    act(() => {
++      fireEvent.change(conditionSelect, { target: { value: "like_new" } });
++      fireEvent.change(sortSelect, { target: { value: "price_asc" } });
++      fireEvent.click(applyBtn);
++    });
++
++    expect(mockPush).toHaveBeenCalledWith(
++      "/search?condition=like_new&sort=price_asc&page=1"
++    );
++  });
++});
+diff --git a/src/app/search/page.tsx b/src/app/search/page.tsx
+index 2dca0d7..6525d19 100644
+--- a/src/app/search/page.tsx
++++ b/src/app/search/page.tsx
+@@ -2,6 +2,7 @@ import { Header } from "@/components/header";
+ import { Footer } from "@/components/footer";
+ import { ListingCard } from "@/components/listings/ListingCard";
+ import { SearchFilters } from "@/components/listings/SearchFilters";
++import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
+ import { Pagination } from "@/components/listings/Pagination";
+ import {
+   getPublicCategories,
+@@ -113,7 +114,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
+             {/* Filter Sidebar */}
+             <div className="lg:col-span-1">
+               <SearchFilters
+-                key={searchContext}
+                 categories={categories}
+                 cities={cities}
+                 localities={localities}
+@@ -123,6 +123,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
+
+             {/* Results Grid */}
+             <div className="lg:col-span-3">
++              {/* Active Filter Chips */}
++              <ActiveFilterChips
++                filters={filters}
++                categories={categories}
++                cities={cities}
++                localities={localities}
++              />
++
+               {searchResult.items.length > 0 ? (
+                 <>
+                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+diff --git a/src/components/listings/ActiveFilterChips.tsx b/src/components/listings/ActiveFilterChips.tsx
+new file mode 100644
+index 0000000..fea958d
+--- /dev/null
++++ b/src/components/listings/ActiveFilterChips.tsx
+@@ -0,0 +1,209 @@
++"use client";
++
++import { useTransition } from "react";
++import { useRouter } from "next/navigation";
++import { X } from "lucide-react";
++import { Category, City, Locality } from "@/types/listing";
++
++interface ActiveFilterChipsProps {
++  filters: {
++    q?: string;
++    category?: string;
++    city?: string;
++    locality?: string;
++    condition?: string;
++    price_min?: number;
++    price_max?: number;
++    sort?: string;
++    page?: number;
++  };
++  categories: Category[];
++  cities: City[];
++  localities: Locality[];
++}
++
++interface ChipItem {
++  id: string;
++  key: string;
++  label: string;
++}
++
++export function ActiveFilterChips({
++  filters,
++  categories,
++  cities,
++  localities,
++}: ActiveFilterChipsProps) {
++  const router = useRouter();
++  const [isPending, startTransition] = useTransition();
++
++  const chips: ChipItem[] = [];
++
++  // 1. Keyword Search
++  if (filters.q && filters.q.trim()) {
++    chips.push({
++      id: "q",
++      key: "q",
++      label: `Keyword: "${filters.q.trim()}"`,
++    });
++  }
++
++  // 2. Category
++  if (filters.category) {
++    const catObj = categories.find((c) => c.slug === filters.category);
++    chips.push({
++      id: "category",
++      key: "category",
++      label: catObj ? catObj.name : filters.category,
++    });
++  }
++
++  // 3. District / City
++  if (filters.city) {
++    const cityObj = cities.find((c) => c.id === filters.city);
++    chips.push({
++      id: "city",
++      key: "city",
++      label: cityObj ? cityObj.name : filters.city,
++    });
++  }
++
++  // 4. Locality
++  if (filters.locality) {
++    const locObj = localities.find((l) => l.id === filters.locality);
++    chips.push({
++      id: "locality",
++      key: "locality",
++      label: locObj ? locObj.name : filters.locality,
++    });
++  }
++
++  // 5. Condition
++  if (filters.condition) {
++    const conditionLabels: Record<string, string> = {
++      new: "Brand New",
++      like_new: "Like New",
++      good: "Good",
++      fair: "Fair",
++      poor: "For Parts / Poor",
++    };
++    chips.push({
++      id: "condition",
++      key: "condition",
++      label: conditionLabels[filters.condition] || filters.condition,
++    });
++  }
++
++  // 6. Min Price
++  if (filters.price_min !== undefined && filters.price_min !== null) {
++    chips.push({
++      id: "price_min",
++      key: "price_min",
++      label: `Min ₹${filters.price_min.toLocaleString("en-IN")}`,
++    });
++  }
++
++  // 7. Max Price
++  if (filters.price_max !== undefined && filters.price_max !== null) {
++    chips.push({
++      id: "price_max",
++      key: "price_max",
++      label: `Max ₹${filters.price_max.toLocaleString("en-IN")}`,
++    });
++  }
++
++  // 8. Sort (non-default)
++  if (filters.sort && filters.sort !== "newest") {
++    const sortLabels: Record<string, string> = {
++      price_asc: "Price: Low to High",
++      price_desc: "Price: High to Low",
++      relevance: "Most Relevant",
++    };
++    chips.push({
++      id: "sort",
++      key: "sort",
++      label: sortLabels[filters.sort] || filters.sort,
++    });
++  }
++
++  if (chips.length === 0) {
++    return null;
++  }
++
++  const handleRemoveFilter = (keyToRemove: string) => {
++    const params = new URLSearchParams();
++
++    if (filters.q && keyToRemove !== "q") params.set("q", filters.q);
++    if (filters.category && keyToRemove !== "category") params.set("category", filters.category);
++
++    // If removing city, dependent locality is also removed
++    if (keyToRemove === "city") {
++      // skip city & locality
++    } else {
++      if (filters.city && keyToRemove !== "city") params.set("city", filters.city);
++      if (filters.locality && keyToRemove !== "locality") params.set("locality", filters.locality);
++    }
++
++    if (filters.condition && keyToRemove !== "condition") params.set("condition", filters.condition);
++    if (filters.price_min !== undefined && keyToRemove !== "price_min")
++      params.set("price_min", filters.price_min.toString());
++    if (filters.price_max !== undefined && keyToRemove !== "price_max")
++      params.set("price_max", filters.price_max.toString());
++    if (filters.sort && filters.sort !== "newest" && keyToRemove !== "sort")
++      params.set("sort", filters.sort);
++
++    // Always reset to page 1
++    params.set("page", "1");
++
++    const queryStr = params.toString();
++    const targetUrl = queryStr ? `/search?${queryStr}` : "/search";
++
++    startTransition(() => {
++      router.push(targetUrl);
++    });
++  };
++
++  const handleClearAll = () => {
++    startTransition(() => {
++      router.push("/search");
++    });
++  };
++
++  return (
++    <div
++      aria-label="Active filters"
++      className={`mb-6 flex flex-wrap items-center gap-2 text-xs transition-opacity ${
++        isPending ? "opacity-60" : ""
++      }`}
++    >
++      <span className="font-semibold text-muted uppercase tracking-wider mr-1">
++        Active Filters:
++      </span>
++
++      {chips.map((chip) => (
++        <span
++          key={chip.id}
++          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground shadow-2xs hover:bg-surface transition-colors"
++        >
++          <span>{chip.label}</span>
++          <button
++            type="button"
++            onClick={() => handleRemoveFilter(chip.key)}
++            aria-label={`Remove filter ${chip.label}`}
++            className="rounded-full p-0.5 text-muted hover:bg-neutral-200 hover:text-foreground dark:hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-action-500"
++          >
++            <X className="h-3.5 w-3.5" aria-hidden="true" />
++          </button>
++        </span>
++      ))}
++
++      <button
++        type="button"
++        onClick={handleClearAll}
++        className="ml-1 text-xs font-semibold text-action-600 hover:text-action-700 hover:underline dark:text-action-400 focus:outline-none focus:ring-2 focus:ring-action-500 rounded px-1.5 py-0.5"
++      >
++        Clear All
++      </button>
++    </div>
++  );
++}
+diff --git a/src/components/listings/SearchFilters.tsx b/src/components/listings/SearchFilters.tsx
+index 1c28e61..eacd3ed 100644
+--- a/src/components/listings/SearchFilters.tsx
++++ b/src/components/listings/SearchFilters.tsx
+@@ -1,8 +1,8 @@
+ "use client";
+
+-import { useState, useTransition } from "react";
++import { useState, useRef, useEffect, useTransition, useId } from "react";
+ import { useRouter } from "next/navigation";
+-import { SlidersHorizontal, RotateCcw, Search } from "lucide-react";
++import { SlidersHorizontal, RotateCcw, Search, Loader2, AlertCircle } from "lucide-react";
+ import { Category, City, Locality } from "@/types/listing";
+
+ interface SearchFiltersProps {
+@@ -21,6 +21,8 @@ interface SearchFiltersProps {
+   };
+ }
+
++const MAX_PRICE = 100000000;
++
+ export function SearchFilters({
+   categories,
+   cities,
+@@ -30,8 +32,10 @@ export function SearchFilters({
+   const router = useRouter();
+   const [isPending, startTransition] = useTransition();
+   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
++  const [priceError, setPriceError] = useState<string | null>(null);
++  const baseId = useId();
+
+-  // Form State
++  // Uncommitted local form state
+   const [query, setQuery] = useState(initialFilters.q || "");
+   const [category, setCategory] = useState(initialFilters.category || "");
+   const [city, setCity] = useState(initialFilters.city || "");
+@@ -41,34 +45,239 @@ export function SearchFilters({
+   const [priceMax, setPriceMax] = useState(initialFilters.price_max?.toString() || "");
+   const [sort, setSort] = useState(initialFilters.sort || "newest");
+
+-  // Filter localities by selected city
++  // Synchronize local form state when applied initialFilters prop changes
++  const [prevInitialFilters, setPrevInitialFilters] = useState(initialFilters);
++  if (initialFilters !== prevInitialFilters) {
++    setPrevInitialFilters(initialFilters);
++    setQuery(initialFilters.q || "");
++    setCategory(initialFilters.category || "");
++    setCity(initialFilters.city || "");
++    setLocality(initialFilters.locality || "");
++    setCondition(initialFilters.condition || "");
++    setPriceMin(initialFilters.price_min?.toString() || "");
++    setPriceMax(initialFilters.price_max?.toString() || "");
++    setSort(initialFilters.sort || "newest");
++    setPriceError(null);
++  }
++
++  // Ref for debouncing query changes on desktop
++  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
++
++  useEffect(() => {
++    return () => {
++      if (debounceTimerRef.current) {
++        clearTimeout(debounceTimerRef.current);
++      }
++    };
++  }, []);
++
++  // Filter localities by selected city/district
+   const filteredLocalities = city
+     ? localities.filter((loc) => loc.city_id === city)
+     : localities;
+
+-  const handleSubmit = (e: React.FormEvent) => {
++  // Price Range Validator
++  const validatePriceInputs = (minStr: string, maxStr: string) => {
++    const trimmedMin = minStr.trim();
++    const trimmedMax = maxStr.trim();
++
++    let minNum: number | undefined;
++    let maxNum: number | undefined;
++
++    if (trimmedMin !== "") {
++      minNum = Number(trimmedMin);
++      if (isNaN(minNum) || minNum < 0 || !Number.isFinite(minNum)) {
++        return { isValid: false, error: "Minimum price must be a non-negative number" };
++      }
++      if (minNum > MAX_PRICE) {
++        return { isValid: false, error: "Minimum price exceeds maximum allowed value" };
++      }
++    }
++
++    if (trimmedMax !== "") {
++      maxNum = Number(trimmedMax);
++      if (isNaN(maxNum) || maxNum < 0 || !Number.isFinite(maxNum)) {
++        return { isValid: false, error: "Maximum price must be a non-negative number" };
++      }
++      if (maxNum > MAX_PRICE) {
++        return { isValid: false, error: "Maximum price exceeds maximum allowed value" };
++      }
++    }
++
++    if (minNum !== undefined && maxNum !== undefined && minNum > maxNum) {
++      return { isValid: false, error: "Minimum price cannot be greater than maximum price" };
++    }
++
++    return { isValid: true, error: null, minStr: trimmedMin, maxStr: trimmedMax };
++  };
++
++  // DESKTOP INSTANT APPLY FOR SELECT CONTROLS
++  // Merges the changed field into currently APPLIED initialFilters, avoiding state contamination
++  const applyDesktopSelect = (overrides: {
++    category?: string;
++    city?: string;
++    locality?: string;
++    condition?: string;
++    sort?: string;
++  }) => {
++    if (debounceTimerRef.current) {
++      clearTimeout(debounceTimerRef.current);
++      debounceTimerRef.current = null;
++    }
++
++    const params = new URLSearchParams();
++
++    // Preserve applied keyword search
++    if (initialFilters.q && initialFilters.q.trim()) {
++      params.set("q", initialFilters.q.trim());
++    }
++
++    // Category
++    const cat = "category" in overrides ? overrides.category : initialFilters.category;
++    if (cat) params.set("category", cat);
++
++    // City / District
++    const cty = "city" in overrides ? overrides.city : initialFilters.city;
++    if (cty) params.set("city", cty);
++
++    // Locality (if city changed, locality is explicitly passed as "")
++    const loc = "locality" in overrides ? overrides.locality : initialFilters.locality;
++    if (cty && loc) params.set("locality", loc);
++
++    // Condition
++    const cond = "condition" in overrides ? overrides.condition : initialFilters.condition;
++    if (cond) params.set("condition", cond);
++
++    // Preserve applied price range
++    if (initialFilters.price_min !== undefined) {
++      params.set("price_min", initialFilters.price_min.toString());
++    }
++    if (initialFilters.price_max !== undefined) {
++      params.set("price_max", initialFilters.price_max.toString());
++    }
++
++    // Sort
++    const srt = "sort" in overrides ? overrides.sort : initialFilters.sort;
++    if (srt && srt !== "newest") params.set("sort", srt);
++
++    params.set("page", "1");
++
++    const queryStr = params.toString();
++    const targetUrl = queryStr ? `/search?${queryStr}` : "/search";
++
++    startTransition(() => {
++      router.push(targetUrl);
++    });
++  };
++
++  // DESKTOP DEBOUNCED / ENTER KEYWORD APPLY
++  const applyDesktopQuery = (newQ: string) => {
++    if (debounceTimerRef.current) {
++      clearTimeout(debounceTimerRef.current);
++      debounceTimerRef.current = null;
++    }
++
++    const params = new URLSearchParams();
++
++    if (newQ.trim()) params.set("q", newQ.trim());
++    if (initialFilters.category) params.set("category", initialFilters.category);
++    if (initialFilters.city) params.set("city", initialFilters.city);
++    if (initialFilters.locality) params.set("locality", initialFilters.locality);
++    if (initialFilters.condition) params.set("condition", initialFilters.condition);
++    if (initialFilters.price_min !== undefined) params.set("price_min", initialFilters.price_min.toString());
++    if (initialFilters.price_max !== undefined) params.set("price_max", initialFilters.price_max.toString());
++    if (initialFilters.sort && initialFilters.sort !== "newest") params.set("sort", initialFilters.sort);
++
++    params.set("page", "1");
++
++    const queryStr = params.toString();
++    const targetUrl = queryStr ? `/search?${queryStr}` : "/search";
++
++    startTransition(() => {
++      router.push(targetUrl);
++    });
++  };
++
++  // DESKTOP PRICE RANGE BLUR / ENTER APPLY
++  const handlePriceBlurOrEnterDesktop = () => {
++    if (mobileFiltersOpen) return;
++
++    const validation = validatePriceInputs(priceMin, priceMax);
++    if (!validation.isValid) {
++      setPriceError(validation.error);
++      return;
++    }
++
++    setPriceError(null);
++
++    const { minStr, maxStr } = validation;
++    const currentMinStr = initialFilters.price_min?.toString() || "";
++    const currentMaxStr = initialFilters.price_max?.toString() || "";
++
++    if (minStr === currentMinStr && maxStr === currentMaxStr) return;
++
++    const params = new URLSearchParams();
++    if (initialFilters.q) params.set("q", initialFilters.q);
++    if (initialFilters.category) params.set("category", initialFilters.category);
++    if (initialFilters.city) params.set("city", initialFilters.city);
++    if (initialFilters.locality) params.set("locality", initialFilters.locality);
++    if (initialFilters.condition) params.set("condition", initialFilters.condition);
++
++    if (minStr) params.set("price_min", minStr);
++    if (maxStr) params.set("price_max", maxStr);
++
++    if (initialFilters.sort && initialFilters.sort !== "newest") params.set("sort", initialFilters.sort);
++
++    params.set("page", "1");
++
++    const queryStr = params.toString();
++    const targetUrl = queryStr ? `/search?${queryStr}` : "/search";
++
++    startTransition(() => {
++      router.push(targetUrl);
++    });
++  };
++
++  // MOBILE DRAWER BATCH SUBMIT
++  const handleMobileSubmit = (e: React.FormEvent) => {
+     e.preventDefault();
+
++    const validation = validatePriceInputs(priceMin, priceMax);
++    if (!validation.isValid) {
++      setPriceError(validation.error);
++      return;
++    }
++
++    setPriceError(null);
++
+     const params = new URLSearchParams();
+     if (query.trim()) params.set("q", query.trim());
+     if (category) params.set("category", category);
+     if (city) params.set("city", city);
+     if (locality) params.set("locality", locality);
+     if (condition) params.set("condition", condition);
+-    if (priceMin.trim()) params.set("price_min", priceMin.trim());
+-    if (priceMax.trim()) params.set("price_max", priceMax.trim());
++
++    if (validation.minStr) params.set("price_min", validation.minStr);
++    if (validation.maxStr) params.set("price_max", validation.maxStr);
++
+     if (sort && sort !== "newest") params.set("sort", sort);
+
+-    // Reset to page 1 on new search
+     params.set("page", "1");
+
++    const queryStr = params.toString();
++    const targetUrl = queryStr ? `/search?${queryStr}` : "/search";
++
+     startTransition(() => {
+-      router.push(`/search?${params.toString()}`);
++      router.push(targetUrl);
+       setMobileFiltersOpen(false);
+     });
+   };
+
+   const handleReset = () => {
++    if (debounceTimerRef.current) {
++      clearTimeout(debounceTimerRef.current);
++      debounceTimerRef.current = null;
++    }
+     setQuery("");
+     setCategory("");
+     setCity("");
+@@ -77,6 +286,7 @@ export function SearchFilters({
+     setPriceMin("");
+     setPriceMax("");
+     setSort("newest");
++    setPriceError(null);
+
+     startTransition(() => {
+       router.push("/search");
+@@ -84,196 +294,305 @@ export function SearchFilters({
+     });
+   };
+
++  const handleMobileClose = () => {
++    // Discard uncommitted changes in mobile drawer
++    setQuery(initialFilters.q || "");
++    setCategory(initialFilters.category || "");
++    setCity(initialFilters.city || "");
++    setLocality(initialFilters.locality || "");
++    setCondition(initialFilters.condition || "");
++    setPriceMin(initialFilters.price_min?.toString() || "");
++    setPriceMax(initialFilters.price_max?.toString() || "");
++    setSort(initialFilters.sort || "newest");
++    setPriceError(null);
++    setMobileFiltersOpen(false);
++  };
++
++  const handleQueryInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
++    const val = e.target.value;
++    setQuery(val);
++
++    if (!mobileFiltersOpen) {
++      if (debounceTimerRef.current) {
++        clearTimeout(debounceTimerRef.current);
++      }
++      debounceTimerRef.current = setTimeout(() => {
++        applyDesktopQuery(val);
++      }, 500);
++    }
++  };
++
+   const hasActiveFilters =
+-    query || category || city || locality || condition || priceMin || priceMax || sort !== "newest";
+-
+-  const filterFormContent = (
+-    <form onSubmit={handleSubmit} className="space-y-5" aria-label="Listing filters">
+-      {/* Search Query Input */}
+-      <div>
+-        <label htmlFor="search-q" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+-          Keywords
+-        </label>
+-        <div className="relative mt-1">
+-          <input
+-            id="search-q"
+-            type="search"
+-            value={query}
+-            onChange={(e) => setQuery(e.target.value)}
+-            placeholder="Search items, titles, brands..."
+-            className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+-          />
+-          <button
+-            type="submit"
+-            aria-label="Submit search"
+-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-foreground"
+-          >
+-            <Search className="h-4 w-4" aria-hidden="true" />
+-          </button>
+-        </div>
+-      </div>
++    Boolean(query) ||
++    Boolean(category) ||
++    Boolean(city) ||
++    Boolean(locality) ||
++    Boolean(condition) ||
++    Boolean(priceMin) ||
++    Boolean(priceMax) ||
++    sort !== "newest";
+
+-      {/* Category Selection */}
+-      <div>
+-        <label htmlFor="filter-category" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+-          Category
+-        </label>
+-        <select
+-          id="filter-category"
+-          value={category}
+-          onChange={(e) => setCategory(e.target.value)}
+-          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+-        >
+-          <option value="">All Categories</option>
+-          {categories.map((c) => (
+-            <option key={c.id} value={c.slug}>
+-              {c.name}
+-            </option>
+-          ))}
+-        </select>
+-      </div>
++  // Form Fields Component for sidebar/drawer rendering
++  const renderFormContent = (idSuffix: string) => {
++    const formPrefix = `${baseId}-${idSuffix}`;
+
+-      {/* District Selection */}
+-      <div>
+-        <label htmlFor="filter-city" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+-          District
+-        </label>
+-        <select
+-          id="filter-city"
+-          value={city}
+-          onChange={(e) => {
+-            setCity(e.target.value);
+-            setLocality(""); // reset locality when district changes
+-          }}
+-          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+-        >
+-          <option value="">All Districts</option>
+-          {cities.map((ci) => (
+-            <option key={ci.id} value={ci.id}>
+-              {ci.name}, {ci.state}
+-            </option>
+-          ))}
+-        </select>
+-        <p className="mt-1 text-[11px] text-muted">
+-          Filters by administrative district. No distance radii are inferred.
+-        </p>
+-      </div>
++    return (
++      <form onSubmit={handleMobileSubmit} className="space-y-5" aria-label="Listing filters">
++        {/* Search Query Input */}
++        <div>
++          <label htmlFor={`${formPrefix}-search-q`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
++            Keywords
++          </label>
++          <div className="relative mt-1">
++            <input
++              id={`${formPrefix}-search-q`}
++              type="search"
++              value={query}
++              onChange={handleQueryInputChange}
++              onKeyDown={(e) => {
++                if (e.key === "Enter") {
++                  e.preventDefault();
++                  if (!mobileFiltersOpen) {
++                    applyDesktopQuery(query);
++                  }
++                }
++              }}
++              placeholder="Search items, titles, brands..."
++              className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
++            />
++            <button
++              type="submit"
++              aria-label="Submit search"
++              className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-foreground"
++            >
++              <Search className="h-4 w-4" aria-hidden="true" />
++            </button>
++          </div>
++        </div>
+
+-      {/* Locality Selection (Only if district selected) */}
+-      {city && filteredLocalities.length > 0 && (
++        {/* Category Selection */}
+         <div>
+-          <label htmlFor="filter-locality" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+-            Locality / Area
++          <label htmlFor={`${formPrefix}-filter-category`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
++            Category
+           </label>
+           <select
+-            id="filter-locality"
+-            value={locality}
+-            onChange={(e) => setLocality(e.target.value)}
++            id={`${formPrefix}-filter-category`}
++            value={category}
++            onChange={(e) => {
++              const val = e.target.value;
++              setCategory(val);
++              if (!mobileFiltersOpen) {
++                applyDesktopSelect({ category: val });
++              }
++            }}
+             className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+           >
+-            <option value="">All Areas in District</option>
+-            {filteredLocalities.map((loc) => (
+-              <option key={loc.id} value={loc.id}>
+-                {loc.name}
++            <option value="">All Categories</option>
++            {categories.map((c) => (
++              <option key={c.id} value={c.slug}>
++                {c.name}
+               </option>
+             ))}
+           </select>
+         </div>
+-      )}
+
+-      {/* Condition Selection */}
+-      <div>
+-        <label htmlFor="filter-condition" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+-          Condition
+-        </label>
+-        <select
+-          id="filter-condition"
+-          value={condition}
+-          onChange={(e) => setCondition(e.target.value)}
+-          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+-        >
+-          <option value="">Any Condition</option>
+-          <option value="new">Brand New</option>
+-          <option value="like_new">Like New</option>
+-          <option value="good">Good</option>
+-          <option value="fair">Fair</option>
+-          <option value="poor">For Parts / Poor</option>
+-        </select>
+-      </div>
++        {/* District Selection */}
++        <div>
++          <label htmlFor={`${formPrefix}-filter-city`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
++            District
++          </label>
++          <select
++            id={`${formPrefix}-filter-city`}
++            value={city}
++            onChange={(e) => {
++              const val = e.target.value;
++              setCity(val);
++              setLocality(""); // Clear locality when district changes
++              if (!mobileFiltersOpen) {
++                applyDesktopSelect({ city: val, locality: "" });
++              }
++            }}
++            className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
++          >
++            <option value="">All Districts</option>
++            {cities.map((ci) => (
++              <option key={ci.id} value={ci.id}>
++                {ci.name}, {ci.state}
++              </option>
++            ))}
++          </select>
++          <p className="mt-1 text-[11px] text-muted">
++            Filters by administrative district. No distance radii are inferred.
++          </p>
++        </div>
+
+-      {/* Price Range */}
+-      <div>
+-        <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
+-          Price Range (₹)
+-        </label>
+-        <div className="mt-1 grid grid-cols-2 gap-2">
+-          <input
+-            id="filter-price-min"
+-            type="number"
+-            min="0"
+-            step="100"
+-            placeholder="Min ₹"
+-            value={priceMin}
+-            onChange={(e) => setPriceMin(e.target.value)}
+-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+-            aria-label="Minimum price in rupees"
+-          />
+-          <input
+-            id="filter-price-max"
+-            type="number"
+-            min="0"
+-            step="100"
+-            placeholder="Max ₹"
+-            value={priceMax}
+-            onChange={(e) => setPriceMax(e.target.value)}
+-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+-            aria-label="Maximum price in rupees"
+-          />
++        {/* Locality Selection (Only if district selected) */}
++        {city && filteredLocalities.length > 0 && (
++          <div>
++            <label htmlFor={`${formPrefix}-filter-locality`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
++              Locality / Area
++            </label>
++            <select
++              id={`${formPrefix}-filter-locality`}
++              value={locality}
++              onChange={(e) => {
++                const val = e.target.value;
++                setLocality(val);
++                if (!mobileFiltersOpen) {
++                  applyDesktopSelect({ locality: val });
++                }
++              }}
++              className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
++            >
++              <option value="">All Areas in District</option>
++              {filteredLocalities.map((loc) => (
++                <option key={loc.id} value={loc.id}>
++                  {loc.name}
++                </option>
++              ))}
++            </select>
++          </div>
++        )}
++
++        {/* Condition Selection */}
++        <div>
++          <label htmlFor={`${formPrefix}-filter-condition`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
++            Condition
++          </label>
++          <select
++            id={`${formPrefix}-filter-condition`}
++            value={condition}
++            onChange={(e) => {
++              const val = e.target.value;
++              setCondition(val);
++              if (!mobileFiltersOpen) {
++                applyDesktopSelect({ condition: val });
++              }
++            }}
++            className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
++          >
++            <option value="">Any Condition</option>
++            <option value="new">Brand New</option>
++            <option value="like_new">Like New</option>
++            <option value="good">Good</option>
++            <option value="fair">Fair</option>
++            <option value="poor">For Parts / Poor</option>
++          </select>
+         </div>
+-      </div>
+
+-      {/* Sort Order */}
+-      <div>
+-        <label htmlFor="filter-sort" className="block text-xs font-semibold uppercase tracking-wider text-muted">
+-          Sort By
+-        </label>
+-        <select
+-          id="filter-sort"
+-          value={sort}
+-          onChange={(e) => setSort(e.target.value)}
+-          className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+-        >
+-          <option value="newest">Newest First</option>
+-          <option value="relevance">Most Relevant</option>
+-          <option value="price_asc">Price: Low to High</option>
+-          <option value="price_desc">Price: High to Low</option>
+-        </select>
+-      </div>
++        {/* Price Range */}
++        <div>
++          <label className="block text-xs font-semibold uppercase tracking-wider text-muted">
++            Price Range (₹)
++          </label>
++          <div className="mt-1 grid grid-cols-2 gap-2">
++            <input
++              id={`${formPrefix}-filter-price-min`}
++              type="number"
++              min="0"
++              max={MAX_PRICE}
++              step="100"
++              placeholder="Min ₹"
++              value={priceMin}
++              onChange={(e) => {
++                setPriceMin(e.target.value);
++                setPriceError(null);
++              }}
++              onBlur={handlePriceBlurOrEnterDesktop}
++              onKeyDown={(e) => {
++                if (e.key === "Enter") {
++                  e.preventDefault();
++                  if (!mobileFiltersOpen) {
++                    handlePriceBlurOrEnterDesktop();
++                  }
++                }
++              }}
++              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
++              aria-label="Minimum price in rupees"
++            />
++            <input
++              id={`${formPrefix}-filter-price-max`}
++              type="number"
++              min="0"
++              max={MAX_PRICE}
++              step="100"
++              placeholder="Max ₹"
++              value={priceMax}
++              onChange={(e) => {
++                setPriceMax(e.target.value);
++                setPriceError(null);
++              }}
++              onBlur={handlePriceBlurOrEnterDesktop}
++              onKeyDown={(e) => {
++                if (e.key === "Enter") {
++                  e.preventDefault();
++                  if (!mobileFiltersOpen) {
++                    handlePriceBlurOrEnterDesktop();
++                  }
++                }
++              }}
++              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
++              aria-label="Maximum price in rupees"
++            />
++          </div>
++          {priceError && (
++            <div className="mt-1.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400" role="alert">
++              <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
++              <span>{priceError}</span>
++            </div>
++          )}
++        </div>
+
+-      {/* Action Buttons */}
+-      <div className="pt-2 flex flex-col gap-2">
+-        <button
+-          type="submit"
+-          disabled={isPending}
+-          className="w-full rounded-lg bg-action-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700 focus:outline-none focus:ring-2 focus:ring-action-500 disabled:opacity-50"
+-        >
+-          {isPending ? "Applying..." : "Apply Filters"}
+-        </button>
++        {/* Sort Order */}
++        <div>
++          <label htmlFor={`${formPrefix}-filter-sort`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
++            Sort By
++          </label>
++          <select
++            id={`${formPrefix}-filter-sort`}
++            value={sort}
++            onChange={(e) => {
++              const val = e.target.value;
++              setSort(val);
++              if (!mobileFiltersOpen) {
++                applyDesktopSelect({ sort: val });
++              }
++            }}
++            className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
++          >
++            <option value="newest">Newest First</option>
++            <option value="relevance">Most Relevant</option>
++            <option value="price_asc">Price: Low to High</option>
++            <option value="price_desc">Price: High to Low</option>
++          </select>
++        </div>
+
+-        {hasActiveFilters && (
++        {/* Action Buttons */}
++        <div className="pt-2 flex flex-col gap-2">
++          {/* Mobile-only Apply button */}
+           <button
+-            type="button"
+-            onClick={handleReset}
++            type="submit"
+             disabled={isPending}
+-            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface hover:text-foreground focus:outline-none"
++            className="lg:hidden w-full rounded-lg bg-action-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700 focus:outline-none focus:ring-2 focus:ring-action-500 disabled:opacity-50"
+           >
+-            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+-            Clear All Filters
++            {isPending ? "Applying..." : "Apply Filters"}
+           </button>
+-        )}
+-      </div>
+-    </form>
+-  );
++
++          {hasActiveFilters && (
++            <button
++              type="button"
++              onClick={handleReset}
++              disabled={isPending}
++              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted hover:bg-surface hover:text-foreground focus:outline-none"
++            >
++              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
++              Clear All Filters
++            </button>
++          )}
++        </div>
++      </form>
++    );
++  };
+
+   return (
+     <div>
+@@ -297,7 +616,12 @@ export function SearchFilters({
+       {/* Desktop Sidebar */}
+       <div className="hidden lg:block rounded-xl border border-border bg-card p-5 shadow-xs">
+         <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+-          <h2 className="text-sm font-bold text-foreground">Filter Listings</h2>
++          <div className="flex items-center gap-2">
++            <h2 className="text-sm font-bold text-foreground">Filter Listings</h2>
++            {isPending && (
++              <Loader2 className="h-3.5 w-3.5 animate-spin text-action-600" aria-label="Loading..." />
++            )}
++          </div>
+           {hasActiveFilters && (
+             <button
+               type="button"
+@@ -308,27 +632,35 @@ export function SearchFilters({
+             </button>
+           )}
+         </div>
+-        {filterFormContent}
++        {renderFormContent("desktop")}
+       </div>
+
+       {/* Mobile Drawer */}
+       {mobileFiltersOpen && (
+         <div
+           id="mobile-filter-drawer"
++          role="dialog"
++          aria-modal="true"
++          aria-label="Filter listings"
+           className="lg:hidden fixed inset-0 z-50 flex bg-black/50 backdrop-blur-xs"
+         >
+           <div className="ml-auto w-full max-w-xs h-full overflow-y-auto bg-card p-6 shadow-xl">
+             <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
+-              <h2 className="text-base font-bold text-foreground">Filters</h2>
++              <div className="flex items-center gap-2">
++                <h2 className="text-base font-bold text-foreground">Filters</h2>
++                {isPending && (
++                  <Loader2 className="h-4 w-4 animate-spin text-action-600" aria-label="Loading..." />
++                )}
++              </div>
+               <button
+                 type="button"
+-                onClick={() => setMobileFiltersOpen(false)}
++                onClick={handleMobileClose}
+                 className="text-sm font-medium text-muted hover:text-foreground"
+               >
+                 Close
+               </button>
+             </div>
+-            {filterFormContent}
++            {renderFormContent("mobile")}
+           </div>
+         </div>
+       )}
+--
+2.53.0

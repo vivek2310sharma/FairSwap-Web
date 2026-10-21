@@ -148,9 +148,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Start Disposable Local Supabase
-        run: |
-          supabase stop --no-backup || true
-          supabase start -x studio,analytics,logflare,supavisor
+        run: supabase start -x studio,analytics,logflare,supavisor
 
       - name: Run Schema & Media Invalidation pgTAP Tests
         run: |
