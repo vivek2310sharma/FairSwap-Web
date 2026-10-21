@@ -1,8 +1,7 @@
-import { Suspense } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
-import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
+import { TrustStrip } from "@/components/trust-strip";
 import Link from "next/link";
 import Form from "next/form";
 import Image from "next/image";
@@ -70,10 +69,11 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Scam Awareness Trust Strip */}
+        <TrustStrip />
+
         {/* Recent Approved Listings */}
-        <Suspense fallback={<RecentListingsSkeleton />}>
-          <RecentListingsSection />
-        </Suspense>
+        <RecentListingsSection />
 
         {/* How it works */}
         <section id="how-it-works" className="border-y border-border bg-surface scroll-mt-16">
@@ -96,7 +96,7 @@ export default function HomePage() {
                 {
                   icon: Shield,
                   title: "Exchange",
-                  text: "Arrange payment and pickup independently.",
+                  text: "Meet in a public place, inspect the item, and agree on payment directly.",
                 },
               ].map((step) => (
                 <div key={step.title} className="text-center">

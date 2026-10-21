@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOutAction } from "../auth/actions";
@@ -189,19 +188,13 @@ export default async function AccountPage() {
               ? "Submit a formal moderation appeal to the FairSwap review team."
               : "Contact customer support or follow up on existing inquiries."}
           </div>
-          <div className="mt-6 flex flex-wrap gap-4">
+          <div className="mt-6">
             <Link
               href="/account/support"
               className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
             >
-              {isSuspended ? "Submit Appeal" : "Support Tickets"}
+              {isSuspended ? "Submit Appeal" : "Support Tickets"} &rarr;
             </Link>
-            <a
-              href={HELP_CENTRE_URL}
-              className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
-            >
-              Help Centre
-            </a>
           </div>
         </div>
 

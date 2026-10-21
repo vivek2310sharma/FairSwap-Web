@@ -38,7 +38,7 @@ export default function AcceptableUsePage() {
           </div>
           <span className="hidden sm:inline text-border">•</span>
           <div>
-            <span>Last Updated: {LEGAL_POLICY.acceptableUseLastUpdated}</span>
+            <span>Last Updated: {LEGAL_POLICY.lastUpdated}</span>
           </div>
           <span className="hidden sm:inline text-border">•</span>
           <div className="flex items-center gap-1">

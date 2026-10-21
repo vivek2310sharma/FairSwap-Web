@@ -1,8 +1,7 @@
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
-import { Mail, Clock, ShieldCheck, Scale } from "lucide-react";
+import { Mail, Clock, AlertTriangle, ShieldCheck, Scale } from "lucide-react";
 
 export const metadata = {
   title: "Contact Guidance — FairSwap",
@@ -14,6 +13,17 @@ export default function ContactPage() {
     <>
       <Header />
       <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/60 dark:text-amber-200">
+          <div className="flex items-center gap-2 font-semibold">
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            <span>Controlled Production Pilot Notice</span>
+          </div>
+          <p className="mt-1 text-xs">
+            FairSwap is currently operating as a controlled production pilot. For platform support, use the
+            email address, phone contact, or support tickets below. FairSwap does not provide emergency assistance.
+          </p>
+        </div>
+
         <div className="flex items-center gap-3">
           <Mail className="h-7 w-7 text-action-600" aria-hidden="true" />
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -22,41 +32,39 @@ export default function ContactPage() {
         </div>
 
         <div className="mt-8 space-y-6">
-          {/* Public support must remain accessible without authentication. */}
+          {/* Public merchant support contacts are accessible without an account. */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Mail className="h-5 w-5 text-action-600" aria-hidden="true" />
-              Public Help &amp; Email Support
+              Customer Support
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              If you cannot sign up or sign in, visit the{" "}
-              <a href={HELP_CENTRE_URL} className="font-medium text-brand-link underline hover:text-brand-hover">
-                Help Centre
-              </a>{" "}
-              for public guidance. You can also email{" "}
-              <a href="mailto:support@fairswap.in" className="font-medium text-brand-link underline hover:text-brand-hover">
-                support@fairswap.in
-              </a>{" "}
-              without an account. Never send passwords, OTPs or payment details.
+              Contact FairSwap about accounts, advertisements, or platform-related questions:
             </p>
-          </div>
-
-          {/* Public business support number: calls only; not emergency assistance. */}
-          <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
-              <Mail className="h-5 w-5 text-action-600" aria-hidden="true" />
-              Phone Contact
-            </h2>
-            <p className="mt-2 text-sm text-muted leading-relaxed">
-              For FairSwap platform-related questions, you may call{" "}
-              <a href="tel:+918826599917" className="font-medium text-brand-link underline hover:text-brand-hover">
-                +91 8826599917
-              </a>.
-              You can also use the{" "}
+            <dl className="mt-3 space-y-3 text-sm">
+              <div>
+                <dt className="font-medium text-foreground">Support email</dt>
+                <dd>
+                  <a href="mailto:support@fairswap.in" className="text-brand-link underline hover:text-brand-hover">
+                    support@fairswap.in
+                  </a>
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-foreground">Phone contact (calls)</dt>
+                <dd>
+                  <a href="tel:+918826599917" className="text-brand-link underline hover:text-brand-hover">
+                    +91 8826599917
+                  </a>
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-sm text-muted leading-relaxed">
+              See the{" "}
               <a href="https://help.fairswap.in/en/contact" className="font-medium text-brand-link underline hover:text-brand-hover">
                 Help Centre contact page
               </a>{" "}
-              to find support options.
+              for more ways to get help. Never share passwords, OTPs or payment PINs.
             </p>
           </div>
 

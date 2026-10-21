@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { PhotoGallery } from "@/components/listings/PhotoGallery";
 import { FavouriteButton } from "@/components/listings/FavouriteButton";
 import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
@@ -385,19 +384,13 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                   <li>&bull; Do not send advance payments or token money online.</li>
                   <li>&bull; Bring a friend along when inspecting valuable items.</li>
                 </ul>
-                <div className="mt-4 flex flex-wrap gap-4 border-t border-emerald-200 pt-3 dark:border-emerald-800">
+                <div className="mt-4 pt-3 border-t border-emerald-200 dark:border-emerald-800">
                   <Link
                     href="/safety"
                     className="text-xs font-semibold text-emerald-800 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-200"
                   >
-                    In-person safety tips
+                    Learn more safety tips &rarr;
                   </Link>
-                  <a
-                    href={HELP_CENTRE_URL}
-                    className="text-xs font-semibold text-emerald-800 hover:text-emerald-900 dark:text-emerald-300 dark:hover:text-emerald-200"
-                  >
-                    Help Centre
-                  </a>
                 </div>
               </div>
             </div>

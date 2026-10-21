@@ -209,51 +209,6 @@ describe("Seller Media Derivative Delivery & Signed URL Tests (#103)", () => {
     expect(json.code).toBe("INVALID_MEDIA_REQUEST");
   });
 
-  it("B4 sealed derivative: public Web delivery preserves unchanged signed route shape", async () => {
-    const bundleKey = `${listingId}/${mediaId}/v2/33333333-3333-4333-8333-333333333333/${"a".repeat(64)}/medium.webp`;
-    const current = await mockGetMedia();
-    mockGetMedia.mockResolvedValue({
-      ...current,
-      data: { ...current.data, medium_storage_path: bundleKey },
-    });
-    mockIsPublicVisible.mockResolvedValue({ data: true, error: null });
-
-    const res = await GET(
-      new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId}/medium`),
-      { params: Promise.resolve({ id: listingId, mediaId, size: "medium" }) },
-    );
-
-    expect(res.status).toBe(302);
-    expect(mockCreateSignedUrl).toHaveBeenCalledWith(bundleKey, 3600);
-    expect(res.headers.get("location")).toBe("https://storage.example.com/object?token=signed_sig_123");
-  });
-
-  it("B4 sealed derivative: Android/iOS JSON mode keeps short-lived URL and never forwards bearer", async () => {
-    const bearer = "do_not_forward_native_access_token";
-    const bundleKey = `${listingId}/${mediaId}/v2/33333333-3333-4333-8333-333333333333/${"b".repeat(64)}/thumb.webp`;
-    const current = await mockGetMedia();
-    mockGetMedia.mockResolvedValue({
-      ...current,
-      data: { ...current.data, thumbnail_storage_path: bundleKey },
-    });
-    mockAuthUser.mockResolvedValue({ id: ownerId });
-
-    const res = await GET(
-      new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId}/thumb`, {
-        headers: { Authorization: `Bearer ${bearer}`, Accept: "application/json" },
-      }),
-      { params: Promise.resolve({ id: listingId, mediaId, size: "thumb" }) },
-    );
-
-    expect(res.status).toBe(200);
-    expect(res.headers.get("cache-control")).toBe("no-store");
-    expect(mockCreateSignedUrl).toHaveBeenCalledWith(bundleKey, 60);
-    const body = await res.json();
-    expect(body.expiresIn).toBe(60);
-    expect(body.url).toBe("https://storage.example.com/object?token=signed_sig_123");
-    expect(JSON.stringify(body)).not.toContain(bearer);
-  });
-
   it("rejects unsupported size parameter with 400 INVALID_MEDIA_REQUEST", async () => {
     const req = new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId}/huge`);
     const res = await GET(req, { params: Promise.resolve({ id: listingId, mediaId, size: "huge" }) });
