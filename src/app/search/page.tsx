@@ -9,7 +9,7 @@ import {
   getPublicLocalities,
   searchPublicListings,
 } from "@/lib/discovery/queries";
-import { searchFiltersSchema } from "@/types/listing";
+import { searchFiltersSchema, getEffectiveSort } from "@/types/listing";
 import { serializeSearchFilters } from "@/lib/navigation/search-context";
 import { createClient } from "@/lib/supabase/server";
 import { Metadata } from "next";
@@ -57,8 +57,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   const parsed = searchFiltersSchema.safeParse(flatParams);
-  const filters = parsed.success ? parsed.data : searchFiltersSchema.parse({});
-  const searchContext = serializeSearchFilters(filters);
+  const rawFilters = parsed.success ? parsed.data : searchFiltersSchema.parse({});
+  const effectiveSort = getEffectiveSort(rawFilters.q, rawFilters.sort);
+  const filters = {
+    ...rawFilters,
+    sort: effectiveSort,
+  };
+  const searchContext = serializeSearchFilters(rawFilters);
 
   const [categories, cities, localities, searchResult] = await Promise.all([
     getPublicCategories(),
@@ -117,7 +122,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 categories={categories}
                 cities={cities}
                 localities={localities}
-                initialFilters={filters}
+                initialFilters={rawFilters}
               />
             </div>
 

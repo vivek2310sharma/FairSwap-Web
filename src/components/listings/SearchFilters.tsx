@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal, RotateCcw, Search } from "lucide-react";
-import { Category, City, Locality } from "@/types/listing";
+import { Category, City, Locality, SearchSortOption, getEffectiveSort } from "@/types/listing";
 
 interface SearchFiltersProps {
   categories: Category[];
@@ -39,7 +39,35 @@ export function SearchFilters({
   const [condition, setCondition] = useState(initialFilters.condition || "");
   const [priceMin, setPriceMin] = useState(initialFilters.price_min?.toString() || "");
   const [priceMax, setPriceMax] = useState(initialFilters.price_max?.toString() || "");
-  const [sort, setSort] = useState(initialFilters.sort || "newest");
+
+  // Track if sort was explicitly provided in props or changed by user
+  const initialEffectiveSort = getEffectiveSort(initialFilters.q, initialFilters.sort);
+  const [sort, setSort] = useState<SearchSortOption>(initialEffectiveSort);
+  const [isExplicitSort, setIsExplicitSort] = useState<boolean>(
+    initialFilters.sort !== undefined && initialFilters.sort !== ""
+  );
+
+  const handleQueryChange = (newQuery: string) => {
+    setQuery(newQuery);
+    const hasKeyword = newQuery.trim().length > 0;
+
+    if (!isExplicitSort) {
+      setSort(hasKeyword ? "relevance" : "newest");
+    } else if (!hasKeyword && sort === "relevance") {
+      setSort("newest");
+      setIsExplicitSort(false);
+    }
+  };
+
+  const handleSortChange = (newSort: string) => {
+    const validSort = newSort as SearchSortOption;
+    setSort(validSort);
+
+    const hasKeyword = query.trim().length > 0;
+    const isImplicitDefault = hasKeyword ? validSort === "relevance" : validSort === "newest";
+
+    setIsExplicitSort(!isImplicitDefault);
+  };
 
   // Filter localities by selected city
   const filteredLocalities = city
@@ -50,14 +78,18 @@ export function SearchFilters({
     e.preventDefault();
 
     const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
+    const trimmedQuery = query.trim();
+    if (trimmedQuery) params.set("q", trimmedQuery);
     if (category) params.set("category", category);
     if (city) params.set("city", city);
     if (locality) params.set("locality", locality);
     if (condition) params.set("condition", condition);
     if (priceMin.trim()) params.set("price_min", priceMin.trim());
     if (priceMax.trim()) params.set("price_max", priceMax.trim());
-    if (sort && sort !== "newest") params.set("sort", sort);
+
+    if (isExplicitSort || (trimmedQuery && sort !== "relevance")) {
+      params.set("sort", sort);
+    }
 
     // Reset to page 1 on new search
     params.set("page", "1");
@@ -77,6 +109,7 @@ export function SearchFilters({
     setPriceMin("");
     setPriceMax("");
     setSort("newest");
+    setIsExplicitSort(false);
 
     startTransition(() => {
       router.push("/search");
@@ -84,8 +117,16 @@ export function SearchFilters({
     });
   };
 
+  const currentEffectiveSort = getEffectiveSort(query, sort);
   const hasActiveFilters =
-    query || category || city || locality || condition || priceMin || priceMax || sort !== "newest";
+    Boolean(query) ||
+    Boolean(category) ||
+    Boolean(city) ||
+    Boolean(locality) ||
+    Boolean(condition) ||
+    Boolean(priceMin) ||
+    Boolean(priceMax) ||
+    isExplicitSort;
 
   const filterFormContent = (
     <form onSubmit={handleSubmit} className="space-y-5" aria-label="Listing filters">
@@ -99,7 +140,7 @@ export function SearchFilters({
             id="search-q"
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="Search items, titles, brands..."
             className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
           />
@@ -239,12 +280,12 @@ export function SearchFilters({
         </label>
         <select
           id="filter-sort"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
+          value={currentEffectiveSort}
+          onChange={(e) => handleSortChange(e.target.value)}
           className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
         >
           <option value="newest">Newest First</option>
-          <option value="relevance">Most Relevant</option>
+          <option value="relevance" disabled={!query.trim()}>Most Relevant</option>
           <option value="price_asc">Price: Low to High</option>
           <option value="price_desc">Price: High to Low</option>
         </select>
