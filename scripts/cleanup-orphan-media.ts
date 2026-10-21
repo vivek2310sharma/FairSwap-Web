@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../src/types/database";
+import { planLegacyMediaStorageCleanup } from "../src/lib/media/legacy-storage-cleanup";
 
 try {
   const proc = process as unknown as { loadEnvFile?: (path?: string) => void };
@@ -67,6 +68,21 @@ async function main() {
   let failedCount = 0;
 
   for (const media of staleMedia) {
+    const cleanupPlan = planLegacyMediaStorageCleanup(media.listing_id, media.id, {
+      original_storage_path: media.original_storage_path,
+      thumbnail_storage_path: media.thumbnail_storage_path,
+      medium_storage_path: media.medium_storage_path,
+      large_storage_path: media.large_storage_path,
+    });
+
+    if (cleanupPlan.kind === "deferred") {
+      // Unexpected or V2 sealed paths are never removed by a legacy cleanup job.
+      // Preserve DB metadata for the trusted retirement/reconciliation workflow.
+      console.warn(`[DEFERRED] Skipping media ${media.id}: storage paths need trusted review`);
+      failedCount++;
+      continue;
+    }
+
     if (isDryRun) {
       console.log(`[DRY RUN] Would clean media ${media.id} (status: ${media.processing_status}, listing: ${media.listing_id})`);
       cleanedCount++;
@@ -76,25 +92,20 @@ async function main() {
     // Step A: Storage deletion first with explicit error checking
     let storageFailed = false;
 
-    if (media.original_storage_path) {
+    if (cleanupPlan.originals.length > 0) {
       const { error: origErr } = await supabase.storage
         .from("listing-originals")
-        .remove([media.original_storage_path]);
+        .remove(cleanupPlan.originals);
       if (origErr) {
         console.error(`[STORAGE ERROR] Failed to remove original for media ${media.id}:`, origErr.message);
         storageFailed = true;
       }
     }
 
-    const derivativesToDelete: string[] = [];
-    if (media.thumbnail_storage_path) derivativesToDelete.push(media.thumbnail_storage_path);
-    if (media.medium_storage_path) derivativesToDelete.push(media.medium_storage_path);
-    if (media.large_storage_path) derivativesToDelete.push(media.large_storage_path);
-
-    if (derivativesToDelete.length > 0 && !storageFailed) {
+    if (cleanupPlan.derivatives.length > 0 && !storageFailed) {
       const { error: derivErr } = await supabase.storage
         .from("listing-derivatives")
-        .remove(derivativesToDelete);
+        .remove(cleanupPlan.derivatives);
       if (derivErr) {
         console.error(`[STORAGE ERROR] Failed to remove derivatives for media ${media.id}:`, derivErr.message);
         storageFailed = true;

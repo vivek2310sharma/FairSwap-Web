@@ -714,6 +714,74 @@ let orderCalled = false;
   });
 
   describe("E. Delete Operations & Idempotent RPC Response (Sections 5 & 7)", () => {
+    it("B2b: refuses sealed-media deletion BEFORE DB RPC and Storage access", async () => {
+      const priorFrom = mockDbFrom.getMockImplementation();
+      expect(priorFrom).toBeDefined();
+      mockDbFrom.mockImplementation((table: string) => {
+        const normal = priorFrom!(table);
+        if (table !== "listing_media") return normal;
+        return {
+          ...normal,
+          select: (projection: string) => {
+            if (projection.startsWith("id, original_storage_path")) {
+              const row = {
+                id: mediaId1,
+                original_storage_path: `${listingId}/${mediaId1}/v2/33333333-3333-4333-8333-333333333333/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/original.jpg`,
+                thumbnail_storage_path: `${listingId}/${mediaId1}/thumb.webp`,
+                medium_storage_path: `${listingId}/${mediaId1}/medium.webp`,
+                large_storage_path: `${listingId}/${mediaId1}/large.webp`,
+                processing_status: "ready",
+              };
+              return {
+                eq: () => ({
+                  eq: () => ({
+                    maybeSingle: async () => ({ data: row, error: null }),
+                  }),
+                }),
+              };
+            }
+            return normal.select(projection);
+          },
+        };
+      });
+
+      mockRpc.mockImplementation(async (name: string) => {
+        if (name === "has_current_policy_acceptance") return { data: true, error: null };
+        if (name === "seller_delete_listing_media") {
+          return {
+            data: {
+              success: true,
+              deleted: true,
+              deleted_media_id: mediaId1,
+              new_cover_id: mediaId2,
+            },
+            error: null,
+          };
+        }
+        return { data: { success: true }, error: null };
+      });
+
+      const warn = vi.spyOn(logger, "warn");
+      const response = await deleteMedia(
+        new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId1}`, {
+          method: "DELETE",
+        }),
+        { params: Promise.resolve({ id: listingId, mediaId: mediaId1 }) },
+      );
+
+      expect(response.status).toBe(409);
+      const body = await response.json();
+      expect(body.code).toBe("LISTING_MEDIA_NOT_EDITABLE");
+      expect(body.committed).toBeUndefined();
+      expect(mockRpc.mock.calls.some(([name]) => name === "seller_delete_listing_media")).toBe(false);
+      expect(mockServiceStorage.from).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith(
+        "media.storage_cleanup_deferred",
+        expect.objectContaining({ stage: "sealed_or_unrecognized_path" }),
+      );
+      warn.mockRestore();
+    });
+
     it("deleted=true: returns exact successful deletion shape with deleted_media_id", async () => {
       mockRpc.mockImplementation(async (name: string) => {
         if (name === "has_current_policy_acceptance") return { data: true, error: null };
