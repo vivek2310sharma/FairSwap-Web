@@ -18,7 +18,7 @@ export function CompactSafetyNotice() {
             Safety First — Avoid Scams
           </p>
           <p className="text-[11px] leading-relaxed text-amber-900/90 dark:text-amber-200/90">
-            Never scan a QR code or enter a UPI PIN to receive money. Do not share OTPs, click unknown WhatsApp payment links, or pay advance tokens.
+            Never scan a QR code or enter a UPI PIN to receive money. Approving a payment request with a PIN authorizes money leaving your account. Do not share OTPs, click unknown payment links, or pay advance tokens.
           </p>
         </div>
       </div>
@@ -51,7 +51,7 @@ export function IndiaSafetyCard() {
         <li className="flex items-start gap-2">
           <span className="font-bold text-emerald-700 dark:text-emerald-400 shrink-0">&bull;</span>
           <div>
-            <strong>OTP &amp; UPI PIN Security:</strong> Never share OTPs, passwords, or banking credentials. Receiving money does not require entering a UPI PIN. If asked to enter a PIN, you are authorizing a payment out of your account.
+            <strong>OTP &amp; UPI PIN Security:</strong> Never share OTPs, passwords, or banking credentials. Receiving money does not require entering a UPI PIN. Approving a payment request with a PIN authorizes money leaving your account.
           </div>
         </li>
 
@@ -102,7 +102,7 @@ export function IndiaSafetyCard() {
           <li className="flex items-start gap-2">
             <span className="font-bold text-emerald-700 dark:text-emerald-400 shrink-0">&bull;</span>
             <div>
-              <strong>ओटीपी और यूपीआई पिन:</strong> पैसे प्राप्त करने के लिए कभी भी यूपीआई पिन दर्ज न करें और न ही ओटीपी साझा करें। यदि आपसे यूपीआई पिन दर्ज करने को कहा जाता है, तो आप भुगतान अधिकृत (authorize) कर रहे हैं।
+              <strong>ओटीपी और यूपीआई पिन:</strong> पैसे प्राप्त करने के लिए कभी भी यूपीआई पिन दर्ज न करें और न ही ओटीपी साझा करें। यूपीआई पिन से भुगतान अनुरोध स्वीकृत करने पर आपके खाते से पैसे कटते हैं।
             </div>
           </li>
           <li className="flex items-start gap-2">

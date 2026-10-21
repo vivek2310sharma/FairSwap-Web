@@ -28,6 +28,10 @@ export default function SafetyPage() {
           </div>
         </div>
 
+        <div className="mt-8">
+          <IndiaSafetyCard />
+        </div>
+
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-center gap-2 text-base font-semibold text-foreground">
@@ -73,10 +77,6 @@ export default function SafetyPage() {
               electronics, vehicles, or jewelry. Inform someone you trust about where you are going.
             </p>
           </div>
-        </div>
-
-        <div className="mt-8">
-          <IndiaSafetyCard />
         </div>
 
         <div className="mt-6 rounded-xl border border-border bg-card p-6">
