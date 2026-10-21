@@ -57,7 +57,6 @@ describe("ListingActionsContainer", () => {
 
     const menuButton = screen.getByRole("button", { name: "More actions" });
     expect(menuButton).toBeInTheDocument();
-
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 
     fireEvent.click(menuButton);
@@ -67,6 +66,29 @@ describe("ListingActionsContainer", () => {
     expect(screen.getByRole("menuitem", { name: "Edit" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Pause" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Mark reserved" })).toBeInTheDocument();
+  });
+
+  it("handles keyboard navigation (Arrow keys and Escape) in overflow menu", () => {
+    const actions = resolveListingActions({
+      id: "active-1",
+      slug: "active-item",
+      status: "active",
+      renewal_count: 0,
+    });
+
+    render(<ListingActionsContainer listingId="active-1" actions={actions} />);
+
+    const menuButton = screen.getByRole("button", { name: "More actions" });
+    fireEvent.click(menuButton);
+
+    const items = screen.getAllByRole("menuitem");
+    expect(items).toHaveLength(3);
+
+    fireEvent.keyDown(document, { key: "ArrowDown" });
+    fireEvent.keyDown(document, { key: "ArrowDown" });
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("does not render overflow menu button when secondary actions array is empty", () => {
@@ -112,7 +134,7 @@ describe("ListingActionsContainer", () => {
     });
   });
 
-  it("cancels confirmation modal on Cancel button click", () => {
+  it("cancels confirmation modal on Cancel button click or Escape key", () => {
     const actions = resolveListingActions({
       id: "active-1",
       slug: "active-item",
@@ -128,5 +150,58 @@ describe("ListingActionsContainer", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(mockTransition).not.toHaveBeenCalled();
+
+    // Test Escape key dismissal
+    fireEvent.click(screen.getByRole("button", { name: "Mark as sold" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("displays actionable error message when server action fails", async () => {
+    mockTransition.mockResolvedValueOnce({ error: "Failed to transition listing." });
+
+    const actions = resolveListingActions({
+      id: "paused-1",
+      slug: "paused-item",
+      status: "paused",
+      renewal_count: 0,
+    });
+
+    render(<ListingActionsContainer listingId="paused-1" actions={actions} />);
+
+    const resumeBtn = screen.getByRole("button", { name: "Resume" });
+    await act(async () => {
+      fireEvent.click(resumeBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Failed to transition listing.");
+    });
+  });
+
+  it("handles policy reacceptance redirect when returned from server action", async () => {
+    mockTransition.mockResolvedValueOnce({
+      error: "Policy reacceptance required.",
+      redirectTo: "/account/listings?policy_review=1",
+    });
+
+    const actions = resolveListingActions({
+      id: "paused-1",
+      slug: "paused-item",
+      status: "paused",
+      renewal_count: 0,
+    });
+
+    render(<ListingActionsContainer listingId="paused-1" actions={actions} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Resume" }));
+    });
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/account/listings?policy_review=1");
+    });
   });
 });
