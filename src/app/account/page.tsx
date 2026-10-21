@@ -19,16 +19,17 @@ export default async function AccountPage() {
     .eq("id", userData.user.id)
     .single<Profile>();
 
-  const { data: account } = await supabase
+  const { data: account, error: accountError } = await supabase
     .from("user_accounts")
     .select("*")
     .eq("user_id", userData.user.id)
     .single<UserAccount>();
 
-  const isSuspended = account?.account_status === "suspended";
-  const isDeletionPending = account?.account_status === "deletion_pending";
-  const isDeleted = account?.account_status === "deleted";
-  const isRestricted = isSuspended || isDeletionPending || isDeleted;
+  const isAccountUnavailable = Boolean(accountError || !account);
+  const isSuspended = !isAccountUnavailable && account?.account_status === "suspended";
+  const isDeletionPending = !isAccountUnavailable && account?.account_status === "deletion_pending";
+  const isDeleted = !isAccountUnavailable && account?.account_status === "deleted";
+  const isActive = !isAccountUnavailable && account?.account_status === "active";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -48,6 +49,20 @@ export default async function AccountPage() {
           </button>
         </form>
       </div>
+
+      {isAccountUnavailable && (
+        <div
+          role="alert"
+          className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800"
+        >
+          <div className="flex items-center gap-2 font-bold text-amber-900">
+            <span aria-hidden="true">⚠️</span> Account Information Unavailable
+          </div>
+          <p className="mt-1">
+            Unable to verify account status right now. Profile editing and marketplace actions may be limited.
+          </p>
+        </div>
+      )}
 
       {isSuspended && (
         <div
@@ -135,7 +150,7 @@ export default async function AccountPage() {
               href="/account/profile"
               className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
             >
-              {isRestricted ? "View Profile" : "Edit Profile"} &rarr;
+              {isActive ? "Edit Profile" : "View Profile"} &rarr;
             </Link>
           </div>
         </div>
