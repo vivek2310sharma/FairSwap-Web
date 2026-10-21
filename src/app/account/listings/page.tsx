@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ListingStatus } from "@/types/listing";
 import { transitionListingAction, submitListingAction } from "./actions";
 import { ModerationStatusBadge } from "./ModerationStatusBadge";
+import { ShareButton } from "@/components/listings/ShareButton";
 import {isPropertyEnabled} from '@/lib/listings/property/server';
 import {propertyFinancialSchema,propertyRentSummary,isPropertyRentalCategory} from '@/lib/listings/property/contract';
 import {twoWheelerV1} from '@/lib/listings/two-wheeler/contract';
@@ -117,6 +118,27 @@ export default async function ListingsDashboardPage() {
   ]);
   const contextLookupFailed=!!propertyResult?.error||motorcycleContexts.failed||carContexts.failed;
 
+  const activeListingIds = (listings ?? [])
+    .filter((l) => l.status === "active")
+    .map((l) => l.id);
+
+  const visibilityChecks = await Promise.all(
+    activeListingIds.map(async (id) => {
+      try {
+        const { data } = await supabase.rpc("is_listing_publicly_visible", {
+          listing_id: id,
+        });
+        return [id, !!data] as const;
+      } catch {
+        return [id, false] as const;
+      }
+    })
+  );
+
+  const publicListingIds = new Set(
+    visibilityChecks.filter(([, isVis]) => isVis).map(([id]) => id)
+  );
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="flex flex-col justify-between gap-4 border-b border-gray-200 pb-6 sm:flex-row sm:items-center">
@@ -185,6 +207,8 @@ export default async function ListingsDashboardPage() {
             const cityName = Array.isArray(listing.cities)
               ? listing.cities[0]?.name
               : (listing.cities as { name?: string } | null)?.name;
+
+            const isPublic = publicListingIds.has(listing.id);
 
             return (
               <div
@@ -260,6 +284,15 @@ export default async function ListingsDashboardPage() {
 
                     {listing.status === "active" && (
                       <>
+                        {isPublic && (
+                          <ShareButton
+                            slug={listing.slug}
+                            title={listing.title}
+                            price_type={listing.price_type}
+                            price_paise={listing.price_paise}
+                            variant="inline"
+                          />
+                        )}
                         <form action={onTransitionListing.bind(null, listing.id, "pause")}>
                           <button
                             type="submit"
