@@ -28,6 +28,7 @@ export default async function AccountPage() {
   const isSuspended = account?.account_status === "suspended";
   const isDeletionPending = account?.account_status === "deletion_pending";
   const isDeleted = account?.account_status === "deleted";
+  const isRestricted = isSuspended || isDeletionPending || isDeleted;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -134,7 +135,7 @@ export default async function AccountPage() {
               href="/account/profile"
               className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
             >
-              Edit Profile &rarr;
+              {isRestricted ? "View Profile" : "Edit Profile"} &rarr;
             </Link>
           </div>
         </div>

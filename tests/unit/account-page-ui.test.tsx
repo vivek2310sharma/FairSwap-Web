@@ -34,7 +34,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(mocks.redirect).toHaveBeenCalledWith("/auth/sign-in?next=/account");
   });
 
-  it("renders active account without internal terms version or status badge", async () => {
+  it("renders active account without internal terms version or status badge, showing Edit Profile link", async () => {
     const user = { id: "user-active-123", email: "customer@example.com" };
     const profile = { display_name: "John Doe", city: "Mumbai", state: "Maharashtra", bio: "Hello world" };
     const account = {
@@ -81,6 +81,10 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByText("Status:")).toBeNull();
     expect(screen.queryByText("active")).toBeNull();
 
+    // Edit Profile link exists for active account
+    const profileLink = screen.getByRole("link", { name: /Edit Profile/i });
+    expect(profileLink).toHaveAttribute("href", "/account/profile");
+
     // Security Settings link exists
     const securityLink = screen.getByRole("link", { name: /Security Settings/i });
     expect(securityLink).toHaveAttribute("href", "/account/security");
@@ -89,7 +93,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("renders suspended account banner and appeal link", async () => {
+  it("renders suspended account banner, appeal link, and View Profile link", async () => {
     const user = { id: "user-suspended-123", email: "suspended@example.com" };
     const profile = { display_name: "Suspended User" };
     const account = { user_id: "user-suspended-123", account_status: "suspended", terms_version: "2026-09-18" };
@@ -125,6 +129,11 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByText("Account Suspended")).toBeInTheDocument();
     expect(screen.getByText(/Your account is currently suspended/i)).toBeInTheDocument();
 
+    // Public profile card shows View Profile link instead of Edit Profile for restricted account
+    const profileLink = screen.getByRole("link", { name: /View Profile/i });
+    expect(profileLink).toHaveAttribute("href", "/account/profile");
+    expect(screen.queryByRole("link", { name: /Edit Profile/i })).toBeNull();
+
     // Help & Support card shows appeal link
     expect(screen.getByText("Appeals & Inquiries")).toBeInTheDocument();
     const appealLink = screen.getByRole("link", { name: "Submit Appeal" });
@@ -137,7 +146,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByText("suspended")).toBeNull();
   });
 
-  it("renders human-readable alert for deletion_pending account without exposing raw status", async () => {
+  it("renders human-readable alert for deletion_pending account and View Profile link", async () => {
     const user = { id: "user-del-123", email: "del@example.com" };
     const account = { user_id: "user-del-123", account_status: "deletion_pending", terms_version: "2026-09-18" };
 
@@ -157,12 +166,16 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText("Account Deletion Pending")).toBeInTheDocument();
 
+    // View Profile link rendered instead of Edit Profile
+    expect(screen.getByRole("link", { name: /View Profile/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Edit Profile/i })).toBeNull();
+
     // Raw enum string not displayed
     expect(screen.queryByText("deletion_pending")).toBeNull();
     expect(screen.queryByText("Terms Version:")).toBeNull();
   });
 
-  it("renders human-readable alert for deleted account without exposing raw status", async () => {
+  it("renders human-readable alert for deleted account and View Profile link", async () => {
     const user = { id: "user-deleted-123", email: "deleted@example.com" };
     const account = { user_id: "user-deleted-123", account_status: "deleted", terms_version: "2026-09-18" };
 
@@ -181,6 +194,10 @@ describe("ACC-02 My Account Page UI Tests", () => {
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText("Account Closed")).toBeInTheDocument();
+
+    // View Profile link rendered instead of Edit Profile
+    expect(screen.getByRole("link", { name: /View Profile/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Edit Profile/i })).toBeNull();
 
     // Raw enum string not displayed
     expect(screen.queryByText("deleted")).toBeNull();
