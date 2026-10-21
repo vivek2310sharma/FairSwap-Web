@@ -209,7 +209,7 @@ describe("Seller Media Derivative Delivery & Signed URL Tests (#103)", () => {
     expect(json.code).toBe("INVALID_MEDIA_REQUEST");
   });
 
-  it("B4 sealed derivative: public Web delivery preserves unchanged signed route shape", async () => {
+  it("B2 sealed derivative: public delivery fails closed without issuing a signed URL", async () => {
     const bundleKey = `${listingId}/${mediaId}/v2/33333333-3333-4333-8333-333333333333/${"a".repeat(64)}/medium.webp`;
     const current = await mockGetMedia();
     mockGetMedia.mockResolvedValue({
@@ -223,12 +223,13 @@ describe("Seller Media Derivative Delivery & Signed URL Tests (#103)", () => {
       { params: Promise.resolve({ id: listingId, mediaId, size: "medium" }) },
     );
 
-    expect(res.status).toBe(302);
-    expect(mockCreateSignedUrl).toHaveBeenCalledWith(bundleKey, 3600);
-    expect(res.headers.get("location")).toBe("https://storage.example.com/object?token=signed_sig_123");
+    expect(res.status).toBe(404);
+    expect((await res.json()).code).toBe("MEDIA_NOT_FOUND");
+    expect(mockCreateSignedUrl).not.toHaveBeenCalled();
+    expect(res.headers.get("location")).toBeNull();
   });
 
-  it("B4 sealed derivative: Android/iOS JSON mode keeps short-lived URL and never forwards bearer", async () => {
+  it("B2 sealed derivative: native JSON mode returns 404 and never leaks Bearer or URL", async () => {
     const bearer = "do_not_forward_native_access_token";
     const bundleKey = `${listingId}/${mediaId}/v2/33333333-3333-4333-8333-333333333333/${"b".repeat(64)}/thumb.webp`;
     const current = await mockGetMedia();
@@ -245,13 +246,47 @@ describe("Seller Media Derivative Delivery & Signed URL Tests (#103)", () => {
       { params: Promise.resolve({ id: listingId, mediaId, size: "thumb" }) },
     );
 
-    expect(res.status).toBe(200);
-    expect(res.headers.get("cache-control")).toBe("no-store");
-    expect(mockCreateSignedUrl).toHaveBeenCalledWith(bundleKey, 60);
+    expect(res.status).toBe(404);
+    expect(mockCreateSignedUrl).not.toHaveBeenCalled();
     const body = await res.json();
-    expect(body.expiresIn).toBe(60);
-    expect(body.url).toBe("https://storage.example.com/object?token=signed_sig_123");
+    expect(body.code).toBe("MEDIA_NOT_FOUND");
+    expect(body.url).toBeUndefined();
     expect(JSON.stringify(body)).not.toContain(bearer);
+  });
+
+  it("B2 mixed original sealed / derivative V1 keys fail closed for public URLs", async () => {
+    const originalSealedPath = `${listingId}/${mediaId}/v2/33333333-3333-4333-8333-333333333333/${"c".repeat(64)}/original.jpg`;
+    const current = await mockGetMedia();
+    mockGetMedia.mockResolvedValue({
+      ...current,
+      data: { ...current.data, original_storage_path: originalSealedPath },
+    });
+    mockIsPublicVisible.mockResolvedValue({ data: true, error: null });
+
+    const res = await GET(
+      new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId}/large`),
+      { params: Promise.resolve({ id: listingId, mediaId, size: "large" }) }
+    );
+    expect(res.status).toBe(404);
+    expect(mockCreateSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it("B2 cross-listing Storage paths fail closed even when source is ordinary V1", async () => {
+    const current = await mockGetMedia();
+    mockGetMedia.mockResolvedValue({
+      ...current,
+      data: {
+        ...current.data,
+        medium_storage_path: `another-listing/${mediaId}/medium.webp`,
+      },
+    });
+    mockAuthUser.mockResolvedValue({ id: ownerId });
+    const res = await GET(
+      new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId}/thumb`),
+      { params: Promise.resolve({ id: listingId, mediaId, size: "thumb" }) }
+    );
+    expect(res.status).toBe(404);
+    expect(mockCreateSignedUrl).not.toHaveBeenCalled();
   });
 
   it("rejects unsupported size parameter with 400 INVALID_MEDIA_REQUEST", async () => {
