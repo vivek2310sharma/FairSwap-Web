@@ -65,10 +65,15 @@ describe("Supabase Auth email templates (#126, #111, #142)", () => {
     expect(doc.querySelector('meta[name="x-apple-disable-message-reformatting"]')).not.toBeNull();
     expect(doc.querySelectorAll('table[role="presentation"]').length).toBeGreaterThan(1);
     expect(doc.querySelectorAll("table:not([role='presentation'])").length).toBe(0);
-    expect(doc.querySelectorAll("script, form, iframe, img").length).toBe(0);
+    expect(doc.querySelectorAll("script, form, iframe").length).toBe(0);
+    const brandImages = doc.querySelectorAll("img");
+    expect(brandImages).toHaveLength(1);
+    expect(brandImages[0].getAttribute("src")).toBe("https://fairswap.in/brand/FairSwap_Web_Logo_Transparent.png");
+    expect(brandImages[0].getAttribute("alt")).toBe("FairSwap");
+    expect(html).toContain("Give. Get. Grow Together.");
     expect(html).toContain("10 minutes");
     expect(html).toContain("FairSwap");
-    expect(html).toContain("#047857");
+    expect(html).toContain("#0b58b6");
   });
 
   it("keeps OTP expiration, configured length, email copy, and JWT lifetime consistent", () => {

@@ -6,7 +6,7 @@ import { constants, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const COMMIT = '2f26f839c3fa0ae690cf5c3795a983d62e1b6c47';
+const COMMIT = 'b3d7eae6cb3eaeaf4fc2f4c2a4d288b69aa62367';
 const MANIFEST_SHA256 = 'eb2dfee779a15634927cfbf25fcd6ffc59df591a585d1ec8f5f3d40e5caaf1dd';
 const TEST_GIT_BLOBS = Object.freeze({
   'supabase/tests/admin_medium_operation.test.sql': 'f16c9bffec7ec425e1f3cd5539d495f8305c772d',
@@ -27,10 +27,20 @@ const MIRRORED_CODE_GIT_BLOBS = Object.freeze({
   'supabase/functions/process-listing-moderation/index.ts': '0a47295de371abd1a7ddee3621d91265da5de684',
   'supabase/functions/process-email-outbox/deno.json': '3315f15a8206229e7b93de14dca0f6aef6ccfc9c',
   'supabase/functions/process-listing-moderation/deno.json': '02ee4fe44c8a381ace70a5578a752f213f4c55df',
-  'supabase/templates/confirm_email.html': '38dd9b867ba412714d99631aabddeff998aea351',
-  'supabase/templates/recovery_email.html': '31669f5f8aec0c8b6ca197d8e379f73c5f32016b',
-  'supabase/templates/magic_link.html': 'e1eb956b616c17ad9e37e872007025f1b8cd8b61',
-  'supabase/functions/_shared/email-outbox-worker.ts': 'ee176f43f992d73d412aa9b9e3a1333b09561fcb',
+  'supabase/templates/confirm_email.html': '0072bce7085d3cef2108df6fff7c273ffb5c8de6',
+  'supabase/templates/recovery_email.html': '801012488bcddc126633ffa2cb40b9de6e33f4a9',
+  'supabase/templates/invite_email.html': '21d5adbc0f06fe8d136ceeac808e49f7ff53d2d4',
+  'supabase/templates/email_change.html': 'd2b6db8525b86b9e24f22fa5818f69c6382e1da5',
+  'supabase/templates/reauthentication.html': 'c07ce114a4f9a5dcfd31bb17830815358d313e0c',
+  'supabase/templates/password_changed_notification.html': '275c23e372350e9ccb064e885689b5dba3d8b053',
+  'supabase/templates/email_changed_notification.html': '73f14f3c2542d8c24cfae308d6b2d309b6fd2240',
+  'supabase/templates/phone_changed_notification.html': '0ce78bbc62a84e5cc68cf90cc543a0cef79d6178',
+  'supabase/templates/identity_linked_notification.html': '81593ff081bac7ab4465f8110d32b46864f274fb',
+  'supabase/templates/identity_unlinked_notification.html': 'e412fe17518799c3cd33e84f3af31ba316ca9a64',
+  'supabase/templates/mfa_factor_enrolled_notification.html': '1ee64f433d2b34143dff1aa5f5353c5fc611889c',
+  'supabase/templates/mfa_factor_unenrolled_notification.html': 'fdc1d806cf91cee1730b450bec07815d782518e3',
+  'supabase/templates/magic_link.html': '6750981793cdffe32bd9760eae59dfc50da04d9c',
+  'supabase/functions/_shared/email-outbox-worker.ts': '35274ab227d176bf43d522197884ac6c5c98bb85',
   'supabase/functions/_shared/listing-moderation-worker.ts': '764af1986305bc763d2a53c9909727528a4b2b4e',
   'src/lib/moderation/checker.ts': 'dd8655bf58bc1d6ca0b47c48ee0104d81629eb2c',
   'src/lib/moderation/contract.ts': 'e14984a5f4bdcc36c4e4ab42c309e46c2dc828ca',
