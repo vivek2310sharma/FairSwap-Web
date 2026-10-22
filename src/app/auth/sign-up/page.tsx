@@ -86,9 +86,9 @@ export default function SignUpPage() {
                 name="termsAccepted"
                 type="checkbox"
                 required
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
               />
-              <label htmlFor="termsAccepted" className="ml-2 block text-xs text-gray-700">
+              <label htmlFor="termsAccepted" className="ml-2 block min-w-0 text-xs text-gray-700">
                 I accept the{" "}
                 <Link href="/terms" className="text-emerald-700 underline hover:text-emerald-800" target="_blank">
                   Terms of Service
@@ -111,9 +111,9 @@ export default function SignUpPage() {
                 name="ageConfirmed"
                 type="checkbox"
                 required
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
               />
-              <label htmlFor="ageConfirmed" className="ml-2 block text-xs text-gray-700">
+              <label htmlFor="ageConfirmed" className="ml-2 block min-w-0 text-xs text-gray-700">
                 I confirm that I am at least {LEGAL_POLICY.minimumAge} years old.
               </label>
             </div>
