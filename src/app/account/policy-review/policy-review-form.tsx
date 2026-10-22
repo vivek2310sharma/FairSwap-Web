@@ -37,9 +37,9 @@ export function PolicyReviewForm({ nextTarget }: PolicyReviewFormProps) {
               name="termsAccepted"
               type="checkbox"
               required
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
             />
-            <label htmlFor="termsAccepted" className="ml-3 block text-sm text-gray-700">
+            <label htmlFor="termsAccepted" className="ml-3 block min-w-0 text-sm text-gray-700">
               I accept the{" "}
               <Link
                 href="/terms"
@@ -74,9 +74,9 @@ export function PolicyReviewForm({ nextTarget }: PolicyReviewFormProps) {
               name="ageConfirmed"
               type="checkbox"
               required
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
             />
-            <label htmlFor="ageConfirmed" className="ml-3 block text-sm text-gray-700">
+            <label htmlFor="ageConfirmed" className="ml-3 block min-w-0 text-sm text-gray-700">
               I confirm that I am at least {LEGAL_POLICY.minimumAge} years old.
             </label>
           </div>
