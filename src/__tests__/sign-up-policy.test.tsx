@@ -48,7 +48,7 @@ describe("Signup Policy Acceptance & 18+ Verification", () => {
       expect(screen.queryByText(new RegExp(`v${LEGAL_POLICY.privacyVersion}`))).not.toBeInTheDocument();
     });
 
-    it("renders required Terms and 18+ checkboxes without pre-checking", () => {
+    it("renders required Terms and 18+ checkboxes without pre-checking and with flex shrink-0 class", () => {
       render(<SignUpPage />);
 
       const termsCheckbox = screen.getByLabelText(/I accept the/i);
@@ -56,12 +56,14 @@ describe("Signup Policy Acceptance & 18+ Verification", () => {
       expect(termsCheckbox).toHaveAttribute("type", "checkbox");
       expect(termsCheckbox).toBeRequired();
       expect(termsCheckbox).not.toBeChecked();
+      expect(termsCheckbox).toHaveClass("shrink-0", "h-4", "w-4");
 
       const ageCheckbox = screen.getByLabelText(/I confirm that I am at least 18 years old/i);
       expect(ageCheckbox).toBeInTheDocument();
       expect(ageCheckbox).toHaveAttribute("type", "checkbox");
       expect(ageCheckbox).toBeRequired();
       expect(ageCheckbox).not.toBeChecked();
+      expect(ageCheckbox).toHaveClass("shrink-0", "h-4", "w-4");
     });
   });
 
