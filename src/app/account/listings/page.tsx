@@ -67,7 +67,7 @@ function getStatusBadge(status: ListingStatus, testFamily = false) {
       }`}
     >
       {testFamily && status === "pending_review"
-        ? "Review — Not Live"
+        ? "Test Review — Not Live"
         : labels[status] || status}
     </span>
   );
@@ -416,14 +416,14 @@ export default async function ListingsDashboardPage({
                           <p className="mt-2 text-xs text-amber-800 font-medium">
                             {isVerifiedSubmissionTestEnvironment(process.env)
                               ? "Open the saved draft to check Test submission availability. Approval and publication remain disabled."
-                              : "Draft only. This category is not yet open for submission or publication."}
+                              : "Test draft only. Submission and publication are unavailable."}
                           </p>
                         )}
 
                       {listing.status === "pending_review" &&
                         (propertyDraft || vehicleDraft) && (
                           <p className="mt-2 text-xs text-amber-800 font-medium">
-                            Automated review can finish while this category is not publicly live. Saved details and photos are read-only; approval and publication remain disabled.
+                            This category is still in testing. Your submitted listing remains private, even when its automated checks finish. Approval and public publication are not available yet; saved details and photos are read-only.
                           </p>
                         )}
 
