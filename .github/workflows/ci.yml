@@ -49,7 +49,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pinned v4.2.2
         with:
           repository: vivek2310sharma/FairSwap-Backend
-          ref: 2f26f839c3fa0ae690cf5c3795a983d62e1b6c47
+          ref: b3d7eae6cb3eaeaf4fc2f4c2a4d288b69aa62367
           token: ${{ steps.backend-token.outputs.token }}
           path: .fairswap-backend-ci-source
           persist-credentials: false
@@ -150,7 +150,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pinned v4.2.2
         with:
           repository: vivek2310sharma/FairSwap-Backend
-          ref: 2f26f839c3fa0ae690cf5c3795a983d62e1b6c47
+          ref: b3d7eae6cb3eaeaf4fc2f4c2a4d288b69aa62367
           token: ${{ steps.backend-token.outputs.token }}
           path: .fairswap-backend-ci-source
           persist-credentials: false
@@ -370,7 +370,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pinned v4.2.2
         with:
           repository: vivek2310sharma/FairSwap-Backend
-          ref: 2f26f839c3fa0ae690cf5c3795a983d62e1b6c47
+          ref: b3d7eae6cb3eaeaf4fc2f4c2a4d288b69aa62367
           token: ${{ steps.backend-token.outputs.token }}
           path: .fairswap-backend-ci-source
           persist-credentials: false
@@ -709,7 +709,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pinned v4.2.2
         with:
           repository: vivek2310sharma/FairSwap-Backend
-          ref: 2f26f839c3fa0ae690cf5c3795a983d62e1b6c47
+          ref: b3d7eae6cb3eaeaf4fc2f4c2a4d288b69aa62367
           token: ${{ steps.backend-token.outputs.token }}
           path: .fairswap-backend-ci-source
           persist-credentials: false
