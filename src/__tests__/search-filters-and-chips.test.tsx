@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
 import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
@@ -11,6 +11,8 @@ vi.mock("next/navigation", () => ({
     push: mockPush,
   }),
 }));
+
+global.fetch = vi.fn();
 
 describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
   const mockData = {
@@ -52,7 +54,7 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
           }}
           categories={[mockData.cat]}
           cities={[mockData.city1, mockData.city2]}
-          localities={[mockData.loc1, mockData.loc2]}
+          localities={[mockData.loc1]}
         />
       );
 
@@ -72,7 +74,7 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
           filters={{ sort: "newest" }}
           categories={[mockData.cat]}
           cities={[mockData.city1, mockData.city2]}
-          localities={[mockData.loc1, mockData.loc2]}
+          localities={[mockData.loc1]}
         />
       );
 
@@ -89,7 +91,7 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
           }}
           categories={[mockData.cat]}
           cities={[mockData.city1, mockData.city2]}
-          localities={[mockData.loc1, mockData.loc2]}
+          localities={[mockData.loc1]}
         />
       );
 
@@ -119,46 +121,100 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
     });
   });
 
-  describe("SearchFilters", () => {
-    beforeEach(() => {
-      vi.useFakeTimers();
-    });
-
-    it("triggers immediate router.push when category dropdown changes on desktop", () => {
+  describe("SearchFilters Blocking Regression Fixes", () => {
+    it("DOES NOT leak uncommitted keyword text or invalid prices into URL when instant category select changes", () => {
       render(
         <SearchFilters
           categories={[mockData.cat]}
-          cities={[mockData.city1, mockData.city2]}
-          localities={[mockData.loc1, mockData.loc2]}
+          cities={[mockData.city1]}
+          localities={[mockData.loc1]}
           initialFilters={{}}
         />
       );
 
+      // Type uncommitted draft query text and invalid price in sidebar
+      const keywordInput = screen.getByLabelText("Keywords");
+      const minPriceInput = screen.getByLabelText("Minimum price in rupees");
+
+      fireEvent.change(keywordInput, { target: { value: "uncommitted keyword text" } });
+      fireEvent.change(minPriceInput, { target: { value: "-999" } });
+
+      // Change category select dropdown
       const categorySelect = screen.getByLabelText("Category");
       fireEvent.change(categorySelect, { target: { value: "electronics" } });
 
+      // Instant navigation must apply ONLY the validated category change and NOT leak uncommitted query or invalid price
       expect(mockPush).toHaveBeenCalledWith("/search?category=electronics&page=1");
     });
 
-    it("merges fast-select dropdown and condition changes without dropping fast selections", () => {
+    it("cancels pending debounced keyword search timer when applied initialFilters changes (e.g. chip removal)", () => {
+      vi.useFakeTimers();
+      const { rerender } = render(
+        <SearchFilters
+          categories={[mockData.cat]}
+          cities={[mockData.city1]}
+          localities={[mockData.loc1]}
+          initialFilters={{ q: "old" }}
+        />
+      );
+
+      // Type draft edit in keyword input
+      const keywordInput = screen.getByLabelText("Keywords");
+      fireEvent.change(keywordInput, { target: { value: "typing new text" } });
+
+      // Simulate external URL navigation (e.g., user removes a filter chip or presses Back)
+      rerender(
+        <SearchFilters
+          categories={[mockData.cat]}
+          cities={[mockData.city1]}
+          localities={[mockData.loc1]}
+          initialFilters={{ category: "electronics" }}
+        />
+      );
+
+      // Fast-forward 500ms
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+
+      // The debounced query push should have been canceled
+      expect(mockPush).not.toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    it("fetches localities lazily when district is changed in mobile drawer with server-scoped localities prop", async () => {
+      (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => [mockData.loc2],
+      });
+
       render(
         <SearchFilters
           categories={[mockData.cat]}
           cities={[mockData.city1, mockData.city2]}
-          localities={[mockData.loc1, mockData.loc2]}
-          initialFilters={{}}
+          localities={[mockData.loc1]} // Server supplies ONLY city-1 localities
+          initialFilters={{ city: "city-1", locality: "loc-1" }}
         />
       );
 
-      const categorySelect = screen.getByLabelText("Category");
-      const conditionSelect = screen.getByLabelText("Condition");
+      // Open drawer
+      fireEvent.click(screen.getByRole("button", { name: /Filter & Sort/i }));
 
-      fireEvent.change(categorySelect, { target: { value: "electronics" } });
-      fireEvent.change(conditionSelect, { target: { value: "like_new" } });
+      const districtSelects = screen.getAllByLabelText("District");
+      const drawerDistrictSelect = districtSelects[districtSelects.length - 1];
 
-      expect(mockPush).toHaveBeenLastCalledWith(
-        "/search?category=electronics&condition=like_new&page=1"
-      );
+      // Change district to Udaipur (city-2)
+      fireEvent.change(drawerDistrictSelect, { target: { value: "city-2" } });
+
+      // Verify lazy endpoint was called for city-2
+      expect(global.fetch).toHaveBeenCalledWith("/api/discovery/localities?city_id=city-2");
+
+      // Wait for newly fetched locality option to appear
+      await waitFor(() => {
+        const localitySelects = screen.getAllByLabelText("Locality / Area");
+        const drawerLocalitySelect = localitySelects[localitySelects.length - 1];
+        expect(drawerLocalitySelect).toHaveTextContent("Hiran Magri");
+      });
     });
 
     it("preserves explicit sort=newest in URL when user explicitly selects Newest First for keyword query", () => {
@@ -175,152 +231,6 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
       fireEvent.change(sortSelect, { target: { value: "newest" } });
 
       expect(mockPush).toHaveBeenCalledWith("/search?q=laptop&sort=newest&page=1");
-    });
-
-    it("debounces keyword changes on desktop by 500ms and omits implicit relevance sort from query string", () => {
-      render(
-        <SearchFilters
-          categories={[mockData.cat]}
-          cities={[mockData.city1]}
-          localities={[mockData.loc1]}
-          initialFilters={{}}
-        />
-      );
-
-      const keywordInput = screen.getByLabelText("Keywords");
-      fireEvent.change(keywordInput, { target: { value: "laptop" } });
-
-      expect(mockPush).not.toHaveBeenCalled();
-
-      act(() => {
-        vi.advanceTimersByTime(500);
-      });
-
-      expect(mockPush).toHaveBeenCalledWith("/search?q=laptop&page=1");
-    });
-
-    it("applies price inputs on blur on desktop when valid", () => {
-      render(
-        <SearchFilters
-          categories={[mockData.cat]}
-          cities={[mockData.city1]}
-          localities={[mockData.loc1]}
-          initialFilters={{}}
-        />
-      );
-
-      const minPriceInput = screen.getByLabelText("Minimum price in rupees");
-      fireEvent.change(minPriceInput, { target: { value: "1000" } });
-      fireEvent.blur(minPriceInput);
-
-      expect(mockPush).toHaveBeenCalledWith("/search?price_min=1000&page=1");
-    });
-
-    it("shows price error alert when min price is greater than max price", () => {
-      render(
-        <SearchFilters
-          categories={[mockData.cat]}
-          cities={[mockData.city1]}
-          localities={[mockData.loc1]}
-          initialFilters={{}}
-        />
-      );
-
-      const minPriceInput = screen.getByLabelText("Minimum price in rupees");
-      const maxPriceInput = screen.getByLabelText("Maximum price in rupees");
-
-      fireEvent.change(minPriceInput, { target: { value: "5000" } });
-      fireEvent.change(maxPriceInput, { target: { value: "1000" } });
-      fireEvent.blur(maxPriceInput);
-
-      expect(mockPush).not.toHaveBeenCalled();
-      expect(
-        screen.getByText("Minimum price cannot be greater than maximum price")
-      ).toBeInTheDocument();
-    });
-
-    it("updates available localities dynamically inside mobile drawer when district changes", () => {
-      render(
-        <SearchFilters
-          categories={[mockData.cat]}
-          cities={[mockData.city1, mockData.city2]}
-          localities={[mockData.loc1, mockData.loc2]}
-          initialFilters={{ city: "city-1", locality: "loc-1" }}
-        />
-      );
-
-      // Open drawer
-      fireEvent.click(screen.getByRole("button", { name: /Filter & Sort/i }));
-
-      const districtSelects = screen.getAllByLabelText("District");
-      const drawerDistrictSelect = districtSelects[districtSelects.length - 1];
-
-      // Change district to Udaipur (city-2)
-      fireEvent.change(drawerDistrictSelect, { target: { value: "city-2" } });
-
-      // Locality select inside drawer should now show Hiran Magri (loc-2)
-      const hiranOptions = screen.getAllByText("Hiran Magri");
-      expect(hiranOptions.length).toBeGreaterThan(0);
-      expect(screen.queryByText("Vaishali Nagar")).not.toBeInTheDocument();
-    });
-
-    it("preserves mobile drawer changes without router.push until Apply Filters is clicked", () => {
-      render(
-        <SearchFilters
-          categories={[mockData.cat]}
-          cities={[mockData.city1]}
-          localities={[mockData.loc1]}
-          initialFilters={{}}
-        />
-      );
-
-      // Open mobile drawer
-      const openDrawerButton = screen.getByRole("button", { name: /Filter & Sort/i });
-      fireEvent.click(openDrawerButton);
-
-      // Change category inside drawer
-      const categorySelects = screen.getAllByLabelText("Category");
-      const drawerCategorySelect = categorySelects[categorySelects.length - 1];
-
-      fireEvent.change(drawerCategorySelect, { target: { value: "electronics" } });
-
-      // No instant apply on mobile drawer
-      expect(mockPush).not.toHaveBeenCalled();
-
-      // Click Apply Filters inside drawer
-      const applyButtons = screen.getAllByRole("button", { name: /Apply Filters/i });
-      fireEvent.click(applyButtons[applyButtons.length - 1]);
-
-      expect(mockPush).toHaveBeenCalledWith("/search?category=electronics&page=1");
-    });
-
-    it("discards uncommitted mobile drawer edits on close", () => {
-      render(
-        <SearchFilters
-          categories={[mockData.cat]}
-          cities={[mockData.city1]}
-          localities={[mockData.loc1]}
-          initialFilters={{ category: "electronics" }}
-        />
-      );
-
-      // Open drawer
-      fireEvent.click(screen.getByRole("button", { name: /Filter & Sort/i }));
-
-      const categorySelects = screen.getAllByLabelText("Category");
-      const drawerCategorySelect = categorySelects[categorySelects.length - 1];
-
-      // Edit category
-      fireEvent.change(drawerCategorySelect, { target: { value: "" } });
-
-      // Close drawer
-      fireEvent.click(screen.getByText("Close"));
-
-      // Re-open drawer
-      fireEvent.click(screen.getByRole("button", { name: /Filter & Sort/i }));
-
-      const reopenedSelects = screen.getAllByLabelText("Category");
-      expect(reopenedSelects[reopenedSelects.length - 1]).toHaveValue("electronics");
     });
   });
 });

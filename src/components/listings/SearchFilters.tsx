@@ -35,7 +35,7 @@ export function SearchFilters({
   const [priceError, setPriceError] = useState<string | null>(null);
   const baseId = useId();
 
-  // Uncommitted local form state
+  // Uncommitted local draft form state
   const [query, setQuery] = useState(initialFilters.q || "");
   const [category, setCategory] = useState(initialFilters.category || "");
   const [city, setCity] = useState(initialFilters.city || "");
@@ -54,7 +54,22 @@ export function SearchFilters({
       !(initialFilters.sort === "relevance" && !hasInitialKeyword)
   );
 
-  // Synchronize local form state when applied initialFilters prop changes using React state pattern
+  // Dynamic localities state
+  const [fetchedLocalities, setFetchedLocalities] = useState<{ cityId: string; items: Locality[] } | null>(null);
+
+  // Ref for debouncing query changes on desktop
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cancel any debounced timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Synchronize local form state and cancel pending debounces when initialFilters prop changes
   const [prevInitialFilters, setPrevInitialFilters] = useState(initialFilters);
   if (initialFilters !== prevInitialFilters) {
     setPrevInitialFilters(initialFilters);
@@ -77,21 +92,45 @@ export function SearchFilters({
     setPriceError(null);
   }
 
-  // Ref for debouncing query changes on desktop
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
+  // Cancel pending debounce in effect when initialFilters prop changes
   useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+  }, [initialFilters]);
 
-  // Filter localities by selected city/district
-  const filteredLocalities = city
-    ? localities.filter((loc) => loc.city_id === city)
-    : localities;
+  // Compute effective dynamic localities
+  const dynamicLocalities = (() => {
+    if (!city) return localities;
+    const matchesProp = localities.filter((loc) => loc.city_id === city);
+    if (matchesProp.length > 0) return matchesProp;
+    if (fetchedLocalities && fetchedLocalities.cityId === city) return fetchedLocalities.items;
+    return [];
+  })();
+
+  // Lazy load localities for newly selected district if needed
+  useEffect(() => {
+    if (!city) return;
+    const matchesProp = localities.filter((loc) => loc.city_id === city);
+    if (matchesProp.length > 0) return;
+
+    let active = true;
+    fetch(`/api/discovery/localities?city_id=${encodeURIComponent(city)}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Locality[]) => {
+        if (active && Array.isArray(data)) {
+          setFetchedLocalities({ cityId: city, items: data });
+        }
+      })
+      .catch(() => {
+        if (active) setFetchedLocalities({ cityId: city, items: [] });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [city, localities]);
 
   // Price Range Validator
   const validatePriceInputs = (minStr: string, maxStr: string) => {
@@ -128,59 +167,102 @@ export function SearchFilters({
     return { isValid: true, error: null, minStr: trimmedMin, maxStr: trimmedMax };
   };
 
-  // Helper to execute instant navigation on desktop merging state directly from current local component state
-  const triggerDesktopNavigation = (
-    overrides?: {
-      q?: string;
-      category?: string;
-      city?: string;
-      locality?: string;
-      condition?: string;
-      price_min?: string;
-      price_max?: string;
-      sort?: SearchSortOption;
-      isExplicitSort?: boolean;
-    }
-  ) => {
+  // DESKTOP INSTANT APPLY FOR SELECT CONTROLS
+  // Merges ONLY the newly selected control value into currently APPLIED initialFilters,
+  // completely ignoring uncommitted query text and invalid price inputs.
+  const triggerDesktopSelectNavigation = (overrides: {
+    category?: string;
+    city?: string;
+    locality?: string;
+    condition?: string;
+    sort?: SearchSortOption;
+    isExplicitSort?: boolean;
+  }) => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
 
-    const currentQ = overrides?.q !== undefined ? overrides.q : query;
-    const currentCat = overrides?.category !== undefined ? overrides.category : category;
-    const currentCty = overrides?.city !== undefined ? overrides.city : city;
-    const currentLoc = overrides?.locality !== undefined ? overrides.locality : locality;
-    const currentCond = overrides?.condition !== undefined ? overrides.condition : condition;
-    const currentPMin = overrides?.price_min !== undefined ? overrides.price_min : priceMin;
-    const currentPMax = overrides?.price_max !== undefined ? overrides.price_max : priceMax;
-    const currentSrt = overrides?.sort !== undefined ? overrides.sort : sort;
-    const currentExplicit = overrides?.isExplicitSort !== undefined ? overrides.isExplicitSort : isExplicitSort;
+    const params = new URLSearchParams();
+
+    // 1. Preserve APPLIED keyword search
+    if (initialFilters.q && initialFilters.q.trim()) {
+      params.set("q", initialFilters.q.trim());
+    }
+
+    // 2. Category
+    const cat = "category" in overrides ? overrides.category : initialFilters.category;
+    if (cat) params.set("category", cat);
+
+    // 3. City & Locality
+    const cty = "city" in overrides ? overrides.city : initialFilters.city;
+    if (cty) params.set("city", cty);
+
+    const loc = "locality" in overrides ? overrides.locality : initialFilters.locality;
+    if (cty && loc) params.set("locality", loc);
+
+    // 4. Condition
+    const cond = "condition" in overrides ? overrides.condition : initialFilters.condition;
+    if (cond) params.set("condition", cond);
+
+    // 5. Preserve APPLIED valid price range only
+    if (initialFilters.price_min !== undefined) {
+      params.set("price_min", initialFilters.price_min.toString());
+    }
+    if (initialFilters.price_max !== undefined) {
+      params.set("price_max", initialFilters.price_max.toString());
+    }
+
+    // 6. Sort
+    const appliedQ = initialFilters.q || "";
+    const hasQ = Boolean(appliedQ.trim());
+    const srt = overrides.sort !== undefined ? overrides.sort : sort;
+    const explicit = overrides.isExplicitSort !== undefined ? overrides.isExplicitSort : isExplicitSort;
+    const effectiveSrt = getEffectiveSort(appliedQ, srt);
+
+    if (explicit) {
+      if (effectiveSrt !== "newest" || hasQ) {
+        params.set("sort", effectiveSrt);
+      }
+    } else if (effectiveSrt !== (hasQ ? "relevance" : "newest")) {
+      if (effectiveSrt !== "newest") {
+        params.set("sort", effectiveSrt);
+      }
+    }
+
+    params.set("page", "1");
+
+    const queryStr = params.toString();
+    const targetUrl = queryStr ? `/search?${queryStr}` : "/search";
+
+    startTransition(() => {
+      router.push(targetUrl);
+    });
+  };
+
+  // DESKTOP DEBOUNCED / ENTER KEYWORD APPLY
+  const applyDesktopQuery = (newQ: string, effectiveSortOverride?: SearchSortOption, explicitSortOverride?: boolean) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
 
     const params = new URLSearchParams();
 
-    // Keyword
-    if (currentQ.trim()) params.set("q", currentQ.trim());
+    if (newQ.trim()) params.set("q", newQ.trim());
+    if (initialFilters.category) params.set("category", initialFilters.category);
+    if (initialFilters.city) params.set("city", initialFilters.city);
+    if (initialFilters.locality) params.set("locality", initialFilters.locality);
+    if (initialFilters.condition) params.set("condition", initialFilters.condition);
+    if (initialFilters.price_min !== undefined) params.set("price_min", initialFilters.price_min.toString());
+    if (initialFilters.price_max !== undefined) params.set("price_max", initialFilters.price_max.toString());
 
-    // Category
-    if (currentCat) params.set("category", currentCat);
+    const srt = effectiveSortOverride || sort;
+    const explicit = explicitSortOverride !== undefined ? explicitSortOverride : isExplicitSort;
+    const effectiveSrt = getEffectiveSort(newQ, srt);
+    const hasQ = Boolean(newQ.trim());
 
-    // City & Locality
-    if (currentCty) params.set("city", currentCty);
-    if (currentCty && currentLoc) params.set("locality", currentLoc);
-
-    // Condition
-    if (currentCond) params.set("condition", currentCond);
-
-    // Prices
-    if (currentPMin) params.set("price_min", currentPMin);
-    if (currentPMax) params.set("price_max", currentPMax);
-
-    // Sort
-    const hasQ = Boolean(currentQ.trim());
-    const effectiveSrt = getEffectiveSort(currentQ, currentSrt);
-
-    if (currentExplicit) {
+    if (explicit) {
       if (effectiveSrt !== "newest" || hasQ) {
         params.set("sort", effectiveSrt);
       }
@@ -222,11 +304,7 @@ export function SearchFilters({
         clearTimeout(debounceTimerRef.current);
       }
       debounceTimerRef.current = setTimeout(() => {
-        triggerDesktopNavigation({
-          q: newQuery,
-          sort: updatedSort,
-          isExplicitSort: updatedExplicit,
-        });
+        applyDesktopQuery(newQuery, updatedSort, updatedExplicit);
       }, 500);
     }
   };
@@ -242,7 +320,7 @@ export function SearchFilters({
     setIsExplicitSort(newExplicit);
 
     if (!mobileFiltersOpen) {
-      triggerDesktopNavigation({
+      triggerDesktopSelectNavigation({
         sort: validSort,
         isExplicitSort: newExplicit,
       });
@@ -267,9 +345,36 @@ export function SearchFilters({
 
     if (minStr === currentMinStr && maxStr === currentMaxStr) return;
 
-    triggerDesktopNavigation({
-      price_min: minStr,
-      price_max: maxStr,
+    const params = new URLSearchParams();
+    if (initialFilters.q) params.set("q", initialFilters.q);
+    if (initialFilters.category) params.set("category", initialFilters.category);
+    if (initialFilters.city) params.set("city", initialFilters.city);
+    if (initialFilters.locality) params.set("locality", initialFilters.locality);
+    if (initialFilters.condition) params.set("condition", initialFilters.condition);
+
+    if (minStr) params.set("price_min", minStr);
+    if (maxStr) params.set("price_max", maxStr);
+
+    const effectiveSrt = getEffectiveSort(initialFilters.q, sort);
+    const hasQ = Boolean(initialFilters.q?.trim());
+
+    if (isExplicitSort) {
+      if (effectiveSrt !== "newest" || hasQ) {
+        params.set("sort", effectiveSrt);
+      }
+    } else if (effectiveSrt !== (hasQ ? "relevance" : "newest")) {
+      if (effectiveSrt !== "newest") {
+        params.set("sort", effectiveSrt);
+      }
+    }
+
+    params.set("page", "1");
+
+    const queryStr = params.toString();
+    const targetUrl = queryStr ? `/search?${queryStr}` : "/search";
+
+    startTransition(() => {
+      router.push(targetUrl);
     });
   };
 
@@ -396,7 +501,7 @@ export function SearchFilters({
                 if (e.key === "Enter") {
                   e.preventDefault();
                   if (!mobileFiltersOpen) {
-                    triggerDesktopNavigation({ q: query });
+                    applyDesktopQuery(query);
                   }
                 }
               }}
@@ -425,7 +530,7 @@ export function SearchFilters({
               const val = e.target.value;
               setCategory(val);
               if (!mobileFiltersOpen) {
-                triggerDesktopNavigation({ category: val });
+                triggerDesktopSelectNavigation({ category: val });
               }
             }}
             className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
@@ -452,7 +557,7 @@ export function SearchFilters({
               setCity(val);
               setLocality(""); // Clear locality when district changes
               if (!mobileFiltersOpen) {
-                triggerDesktopNavigation({ city: val, locality: "" });
+                triggerDesktopSelectNavigation({ city: val, locality: "" });
               }
             }}
             className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
@@ -470,7 +575,7 @@ export function SearchFilters({
         </div>
 
         {/* Locality Selection (Only if district selected) */}
-        {city && filteredLocalities.length > 0 && (
+        {city && dynamicLocalities.length > 0 && (
           <div>
             <label htmlFor={`${formPrefix}-filter-locality`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
               Locality / Area
@@ -482,13 +587,13 @@ export function SearchFilters({
                 const val = e.target.value;
                 setLocality(val);
                 if (!mobileFiltersOpen) {
-                  triggerDesktopNavigation({ locality: val });
+                  triggerDesktopSelectNavigation({ locality: val });
                 }
               }}
               className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
             >
               <option value="">All Areas in District</option>
-              {filteredLocalities.map((loc) => (
+              {dynamicLocalities.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}
                 </option>
@@ -509,7 +614,7 @@ export function SearchFilters({
               const val = e.target.value;
               setCondition(val);
               if (!mobileFiltersOpen) {
-                triggerDesktopNavigation({ condition: val });
+                triggerDesktopSelectNavigation({ condition: val });
               }
             }}
             className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
