@@ -2,6 +2,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { SearchFilters } from "@/components/listings/SearchFilters";
+import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
 import { Pagination } from "@/components/listings/Pagination";
 import {
   getPublicCategories,
@@ -65,10 +66,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   };
   const searchContext = serializeSearchFilters(rawFilters);
 
+  // Note: getPublicLocalities without city argument fetches all localities
+  // so localities for newly selected districts in mobile drawer are immediately available.
   const [categories, cities, localities, searchResult] = await Promise.all([
     getPublicCategories(),
     getPublicCities(),
-    getPublicLocalities(filters.city || undefined),
+    getPublicLocalities(),
     searchPublicListings(filters),
   ]);
 
@@ -128,6 +131,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             {/* Results Grid */}
             <div className="lg:col-span-3">
+              {/* Active Filter Chips */}
+              <ActiveFilterChips
+                filters={rawFilters}
+                categories={categories}
+                cities={cities}
+                localities={localities}
+              />
+
               {searchResult.items.length > 0 ? (
                 <>
                   <div
