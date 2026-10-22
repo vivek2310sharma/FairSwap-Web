@@ -2,6 +2,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { SearchFilters } from "@/components/listings/SearchFilters";
+import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
 import { Pagination } from "@/components/listings/Pagination";
 import {
   getPublicCategories,
@@ -11,7 +12,6 @@ import {
 } from "@/lib/discovery/queries";
 import { searchFiltersSchema, getEffectiveSort } from "@/types/listing";
 import { serializeSearchFilters } from "@/lib/navigation/search-context";
-import { loadPublicFamilyDisplays } from "@/lib/discovery/public-family-query";
 import { createClient } from "@/lib/supabase/server";
 import { Metadata } from "next";
 import { SearchX } from "lucide-react";
@@ -66,14 +66,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   };
   const searchContext = serializeSearchFilters(rawFilters);
 
+  // Note: getPublicLocalities without city argument fetches all localities
+  // so localities for newly selected districts in mobile drawer are immediately available.
   const [categories, cities, localities, searchResult] = await Promise.all([
     getPublicCategories(),
     getPublicCities(),
-    getPublicLocalities(filters.city || undefined),
+    getPublicLocalities(),
     searchPublicListings(filters),
   ]);
-
-  const familyDisplays = await loadPublicFamilyDisplays(searchResult.items);
 
   // Check user favourite status
   const supabase = await createClient();
@@ -131,6 +131,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             {/* Results Grid */}
             <div className="lg:col-span-3">
+              {/* Active Filter Chips */}
+              <ActiveFilterChips
+                filters={rawFilters}
+                categories={categories}
+                cities={cities}
+                localities={localities}
+              />
+
               {searchResult.items.length > 0 ? (
                 <>
                   <div
@@ -141,7 +149,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                       <ListingCard
                         key={listing.id}
                         listing={listing}
-                        familyDisplay={familyDisplays.get(listing.id)}
                         isFavourited={userFavSet.has(listing.id)}
                         searchContext={searchContext}
                         variant="compact"

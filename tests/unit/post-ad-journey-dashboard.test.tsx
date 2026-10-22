@@ -75,7 +75,7 @@ it('batched owner context fallback recognizes hidden motorcycle and Cars categor
   render(await ListingsDashboardPage());
   for(const id of ['tw','car']){
     noSubmit(id);
-    expect(card(id).getByText(/Draft only/)).toBeInTheDocument();
+    expect(card(id).getByText(/Test draft only/)).toBeInTheDocument();
   }
   for(const table of ['listing_vehicle_contexts','listing_car_contexts']) expect(m.reads.filter(r=>r.table===table)).toEqual([{table,column:'listing_id',ids:['tw','car']}]);
   hasSubmit('goods');
@@ -85,7 +85,7 @@ it('owner Property context recognizes a missing ordinary relation and preserves 
   m.rows.find(r=>r.id==='pg')!.categories=[];
   render(await ListingsDashboardPage());
   noSubmit('pg');
-  expect(card('pg').getByText(/Draft only/)).toBeInTheDocument();
+  expect(card('pg').getByText(/Test draft only/)).toBeInTheDocument();
   expect(card('pg').getByText('INR 1234.50 / bed / month')).toBeInTheDocument();
 });
 
@@ -125,16 +125,16 @@ it('Cars-only gate reads no disabled motorcycle or Property table',async()=>{
   m.contexts.listing_car_contexts=[{listing_id:'car',category_id:'car-category'}];
   render(await ListingsDashboardPage());
   noSubmit('car');
-  expect(card('car').getByText(/Draft only/)).toBeInTheDocument();
+  expect(card('car').getByText(/Test draft only/)).toBeInTheDocument();
   expect(m.from.mock.calls.map(c=>c[0])).toEqual(['listings','listing_car_contexts']);
 });
 
-it.each(['tw','car','pg'])('keeps one Review — Not Live badge for pending %s when enhanced Goods status is enabled',async id=>{
+it.each(['tw','car','pg'])('keeps one Test Review — Not Live badge for pending %s when enhanced Goods status is enabled',async id=>{
   process.env.NEXT_PUBLIC_ENABLE_ENHANCED_MODERATION_STATUS='true';
   try {
     m.rows=[{...rows.find(r=>r.id===id)!,status:'pending_review'}];
     render(await ListingsDashboardPage());
-    expect(screen.getAllByText('Review — Not Live')).toHaveLength(1);
+    expect(screen.getAllByText('Test Review — Not Live')).toHaveLength(1);
     expect(screen.queryByText('Under Review')).toBeNull();
     expect(screen.queryByText('Checking...')).toBeNull();
   } finally { delete process.env.NEXT_PUBLIC_ENABLE_ENHANCED_MODERATION_STATUS; }

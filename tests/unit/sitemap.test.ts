@@ -53,13 +53,6 @@ vi.mock("@/lib/supabase/service", () => ({
 }));
 
 describe("Point 9B-R7 — Sitemap Active-Listing Remediation Tests", () => {
-  it("does not index the legacy /help redirect as a duplicate FAQ", async () => {
-    const routes = await sitemap();
-    expect(routes.some((route) => new URL(route.url).pathname === "/help")).toBe(false);
-    expect(routes.some((route) => new URL(route.url).pathname === "/safety")).toBe(true);
-    expect(routes.some((route) => new URL(route.url).pathname === "/grievance")).toBe(true);
-  });
-
   beforeEach(() => {
     vi.clearAllMocks();
     mockCategoriesSelect.mockResolvedValue({
@@ -91,7 +84,7 @@ describe("Point 9B-R7 — Sitemap Active-Listing Remediation Tests", () => {
           {
             slug: "bike-123",
             updated_at: "2026-09-15T10:00:00.000Z",
-            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            expires_at: "2026-10-15T10:00:00.000Z",
             seller_id: "seller-1",
           },
         ],
@@ -140,7 +133,7 @@ describe("Point 9B-R7 — Sitemap Active-Listing Remediation Tests", () => {
           {
             slug: "suspended-seller-item",
             updated_at: "2026-09-15T10:00:00.000Z",
-            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            expires_at: "2026-10-15T10:00:00.000Z",
             seller_id: "seller-suspended",
           },
         ],
@@ -163,13 +156,13 @@ describe("Point 9B-R7 — Sitemap Active-Listing Remediation Tests", () => {
           {
             slug: "",
             updated_at: "2026-09-15T10:00:00.000Z",
-            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            expires_at: "2026-10-15T10:00:00.000Z",
             seller_id: "seller-1",
           },
           {
             slug: "   ",
             updated_at: "2026-09-15T10:00:00.000Z",
-            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            expires_at: "2026-10-15T10:00:00.000Z",
             seller_id: "seller-1",
           },
         ],

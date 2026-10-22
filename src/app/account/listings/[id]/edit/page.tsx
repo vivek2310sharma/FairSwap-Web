@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
 import PendingOwnerListing from '@/components/listings/PendingOwnerListing';
 import {loadSubmissionState} from '@/lib/listings/submission-server';
-import {isVerifiedSubmissionTestEnvironment,isVerifiedProductionFamilySubmissionRouteEnvironment} from '@/lib/listings/test-runtime';
+import {isVerifiedSubmissionTestEnvironment} from '@/lib/listings/test-runtime';
 import {loadOwnerReadiness} from '@/lib/listings/readiness-server';
 import {isPropertyEnabled,loadPropertyReferences,financialFromContext} from '@/lib/listings/property/server';
 import { ListingCategoryReference, ListingAttributeReference, City, Listing, ListingMedia, PincodeLookupResult } from "@/types/listing";
@@ -77,7 +77,7 @@ export default async function EditListingPage({
   }
   const readiness=await loadOwnerReadiness(supabase as SupabaseClient<Database>,id);
   let submission;
-  try{if(baseListing.status==='pending_review'||isVerifiedSubmissionTestEnvironment(process.env)||isVerifiedProductionFamilySubmissionRouteEnvironment(process.env))submission=await loadSubmissionState(supabase,id);}catch{return <p role="alert">Saved submission eligibility could not be loaded. Reload to try again.</p>;}
+  try{if(baseListing.status==='pending_review'||isVerifiedSubmissionTestEnvironment(process.env))submission=await loadSubmissionState(supabase,id);}catch{return <p role="alert">Saved submission eligibility could not be loaded. Reload to try again.</p>;}
 
   // Fetch private location fields via owner-private path
   const { data: privLocData } = await (

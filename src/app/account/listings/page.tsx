@@ -2,23 +2,20 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ListingStatus } from "@/types/listing";
+import { resolveListingActions } from "@/lib/listings/action-matrix";
+import { ListingActionsContainer } from "./ListingActionsContainer";
 import { ModerationStatusBadge } from "./ModerationStatusBadge";
 import { ShareButton } from "@/components/listings/ShareButton";
 import { ListingThumbnail } from "./ListingThumbnail";
-import { isPropertyEnabled } from "@/lib/listings/property/server";
-import {
-  propertyFinancialSchema,
-  propertyRentSummary,
-  isPropertyRentalCategory,
-} from "@/lib/listings/property/contract";
-import { twoWheelerV1 } from "@/lib/listings/two-wheeler/contract";
-import { carsV1 } from "@/lib/listings/cars/contract";
-import { isTwoWheelerEnabled, isCarsEnabled } from "@/lib/listings/two-wheeler/server";
-import { isVerifiedSubmissionTestEnvironment } from "@/lib/listings/test-runtime";
-import { resolveListingActions } from "@/lib/listings/action-matrix";
-import { ListingActionsContainer } from "./ListingActionsContainer";
+import {isPropertyEnabled} from '@/lib/listings/property/server';
+import {propertyFinancialSchema,propertyRentSummary,isPropertyRentalCategory} from '@/lib/listings/property/contract';
+import {twoWheelerV1} from '@/lib/listings/two-wheeler/contract';
+import {carsV1} from '@/lib/listings/cars/contract';
+import {isTwoWheelerEnabled,isCarsEnabled} from '@/lib/listings/two-wheeler/server';
+import {isVerifiedSubmissionTestEnvironment} from '@/lib/listings/test-runtime';
 
-function getStatusBadge(status: ListingStatus, testFamily = false) {
+
+function getStatusBadge(status: ListingStatus, testFamily=false) {
   const styles: Record<ListingStatus, string> = {
     draft: "bg-gray-100 text-gray-800 border-gray-300",
     pending_review: "bg-amber-100 text-amber-800 border-amber-300",
@@ -49,9 +46,7 @@ function getStatusBadge(status: ListingStatus, testFamily = false) {
         styles[status] || styles.draft
       }`}
     >
-      {testFamily && status === "pending_review"
-        ? "Review — Not Live"
-        : labels[status] || status}
+      {testFamily&&status==='pending_review'?'Test Review — Not Live':labels[status] || status}
     </span>
   );
 }
@@ -81,7 +76,6 @@ export default async function ListingsDashboardPage() {
       rejection_reason,
       removal_reason,
       cover_photo_id,
-      expires_at,
       created_at,
       updated_at,
       categories(name,slug),
@@ -91,79 +85,30 @@ export default async function ListingsDashboardPage() {
     .order("updated_at", { ascending: false })
     .limit(100);
 
-  const propertyIds = (listings ?? []).map((l) => l.id);
-  const propertyResult =
-    isPropertyEnabled() && propertyIds.length
-      ? await (async () => {
-          try {
-            return await supabase
-              .from("listing_property_contexts")
-              .select("listing_id,category_id,financial")
-              .in("listing_id", propertyIds);
-          } catch {
-            return {
-              data: null,
-              error: { message: "Saved Property references could not be loaded." },
-            };
-          }
-        })()
-      : null;
-  const rentals = new Map(
-    (propertyResult?.error ? [] : propertyResult?.data ?? [])
-      .filter((p) =>
-        listings?.some((l) => l.id === p.listing_id && l.category_id === p.category_id)
-      )
-      .map((p) => [p.listing_id, p.financial])
-  );
-
-  const unresolvedIds = (listings ?? [])
-    .filter((l) => {
-      const category = Array.isArray(l.categories)
-        ? l.categories[0]
-        : l.categories;
-      return (
-        ["draft", "pending_review"].includes(l.status) &&
-        !category?.slug?.trim() &&
-        !rentals.has(l.id)
-      );
-    })
-    .map((l) => l.id);
-
-  const loadVehicleContexts = async (
-    table: "listing_vehicle_contexts" | "listing_car_contexts",
-    enabled: boolean
-  ) => {
-    if (!enabled || !unresolvedIds.length)
-      return { ids: new Set<string>(), failed: false };
+  const propertyIds=(listings??[]).map(l=>l.id);
+  const propertyResult=isPropertyEnabled()&&propertyIds.length?await (async()=>{
+    try {return await supabase.from('listing_property_contexts').select('listing_id,category_id,financial').in('listing_id',propertyIds);}
+    catch {return {data:null,error:{message:'Saved Property references could not be loaded.'}};}
+  })():null;
+  const rentals=new Map((propertyResult?.error?[]:propertyResult?.data??[]).filter(p=>listings?.some(l=>l.id===p.listing_id&&l.category_id===p.category_id)).map(p=>[p.listing_id,p.financial]));
+  // Only displayed, owned drafts with an unresolved ordinary relation need fallback.
+  const unresolvedIds=(listings??[]).filter(l=>{
+    const category=Array.isArray(l.categories)?l.categories[0]:l.categories;
+    return ['draft','pending_review'].includes(l.status)&&!category?.slug?.trim()&&!rentals.has(l.id);
+  }).map(l=>l.id);
+  const loadVehicleContexts=async(table:'listing_vehicle_contexts'|'listing_car_contexts',enabled:boolean)=>{
+    if(!enabled||!unresolvedIds.length)return {ids:new Set<string>(),failed:false};
     try {
-      const result = await supabase
-        .from(table)
-        .select("listing_id,category_id")
-        .in("listing_id", unresolvedIds);
-      if (result.error) return { ids: new Set<string>(), failed: true };
-      return {
-        ids: new Set(
-          (result.data ?? [])
-            .filter((c) =>
-              listings?.some(
-                (l) => l.id === c.listing_id && l.category_id === c.category_id
-              )
-            )
-            .map((c) => c.listing_id)
-        ),
-        failed: false,
-      };
-    } catch {
-      return { ids: new Set<string>(), failed: true };
-    }
+      const result=await supabase.from(table).select('listing_id,category_id').in('listing_id',unresolvedIds);
+      if(result.error)return {ids:new Set<string>(),failed:true};
+      return {ids:new Set((result.data??[]).filter(c=>listings?.some(l=>l.id===c.listing_id&&l.category_id===c.category_id)).map(c=>c.listing_id)),failed:false};
+    } catch {return {ids:new Set<string>(),failed:true};}
   };
-
-  const [motorcycleContexts, carContexts] = await Promise.all([
-    loadVehicleContexts("listing_vehicle_contexts", isTwoWheelerEnabled()),
-    loadVehicleContexts("listing_car_contexts", isCarsEnabled()),
+  const [motorcycleContexts,carContexts]=await Promise.all([
+    loadVehicleContexts('listing_vehicle_contexts',isTwoWheelerEnabled()),
+    loadVehicleContexts('listing_car_contexts',isCarsEnabled()),
   ]);
-  const contextLookupFailed =
-    !!propertyResult?.error || motorcycleContexts.failed || carContexts.failed;
+  const contextLookupFailed=!!propertyResult?.error||motorcycleContexts.failed||carContexts.failed;
 
   const activeListingIds = (listings ?? [])
     .filter((l) => l.status === "active")
@@ -205,7 +150,7 @@ export default async function ListingsDashboardPage() {
         </div>
         <Link
           href="/account/listings/new"
-          className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
         >
           + Create New Listing
         </Link>
@@ -227,7 +172,7 @@ export default async function ListingsDashboardPage() {
           <div className="mt-6">
             <Link
               href="/account/listings/new"
-              className="inline-flex items-center rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-emerald-500"
+              className="inline-flex items-center rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500"
             >
               + Create Listing
             </Link>
@@ -236,31 +181,17 @@ export default async function ListingsDashboardPage() {
       ) : (
         <div className="mt-6 space-y-4">
           {listings?.map((listing) => {
-            const propertyDraft =
-              isPropertyRentalCategory(listing.categories) || rentals.has(listing.id);
-            const categoryReference = Array.isArray(listing.categories)
-              ? listing.categories[0]
-              : listing.categories;
-            const vehicleDraft =
-              motorcycleContexts.ids.has(listing.id) ||
-              carContexts.ids.has(listing.id) ||
-              [...twoWheelerV1.paths, ...carsV1.paths].some(
-                (path) => path.slug === categoryReference?.slug
-              );
-            const unresolvedFamily =
-              !propertyDraft && !vehicleDraft && !categoryReference?.slug?.trim();
-            const financial = propertyFinancialSchema.safeParse(
-              rentals.get(listing.id)
-            );
-            const priceDisplay = propertyDraft
-              ? financial.success
-                ? propertyRentSummary(financial.data)
-                : "Rental details unavailable"
-              : listing.price_type === "free"
-              ? "Free"
-              : listing.price_paise
-              ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
-              : "Price not set";
+            const propertyDraft=isPropertyRentalCategory(listing.categories)||rentals.has(listing.id);
+            const categoryReference=Array.isArray(listing.categories)?listing.categories[0]:listing.categories;
+            const vehicleDraft=motorcycleContexts.ids.has(listing.id)||carContexts.ids.has(listing.id)||[...twoWheelerV1.paths,...carsV1.paths].some(path=>path.slug===categoryReference?.slug);
+            const unresolvedFamily=!propertyDraft&&!vehicleDraft&&!categoryReference?.slug?.trim();
+            const financial=propertyFinancialSchema.safeParse(rentals.get(listing.id));
+            const priceDisplay =
+              propertyDraft ? financial.success?propertyRentSummary(financial.data):'Rental details unavailable' : listing.price_type === "free"
+                ? "Free"
+                : listing.price_paise
+                ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
+                : "Price not set";
 
             const categoryName = Array.isArray(listing.categories)
               ? listing.categories[0]?.name
@@ -284,7 +215,7 @@ export default async function ListingsDashboardPage() {
             return (
               <div
                 key={listing.id}
-                className="rounded-lg border border-gray-200 bg-white p-5 shadow-xs transition hover:border-gray-300"
+                className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:border-gray-300"
               >
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                   <div className="flex items-start gap-4 min-w-0 flex-1">
@@ -295,36 +226,26 @@ export default async function ListingsDashboardPage() {
                     />
                     <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-bold text-gray-900">
-                          {listing.title}
-                        </h2>
-                        {listing.status === "pending_review" &&
-                        !propertyDraft &&
-                        !vehicleDraft ? (
+                        <h2 className="text-lg font-bold text-gray-900">{listing.title}</h2>
+                        {listing.status === "pending_review" && !propertyDraft && !vehicleDraft ? (
                           <ModerationStatusBadge
                             listingId={listing.id}
                             initialStatus={listing.status}
                           />
                         ) : (
-                          getStatusBadge(
-                            listing.status,
-                            propertyDraft || vehicleDraft
-                          )
+                          getStatusBadge(listing.status,propertyDraft||vehicleDraft)
                         )}
                       </div>
 
                       <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                        <span className="font-semibold text-gray-900 text-sm">
-                          {priceDisplay}
-                        </span>
+                        <span className="font-semibold text-gray-900 text-sm">{priceDisplay}</span>
                         <span>•</span>
                         <span>{categoryName || "Uncategorized"}</span>
                         <span>•</span>
                         <span>{cityName || "No city"}</span>
                         <span>•</span>
                         <span>
-                          Updated{" "}
-                          {new Date(listing.updated_at).toLocaleDateString("en-IN")}
+                          Updated {new Date(listing.updated_at).toLocaleDateString("en-IN")}
                         </span>
                       </div>
 
@@ -344,35 +265,14 @@ export default async function ListingsDashboardPage() {
                           {listing.removal_reason}
                         </div>
                       )}
-
-                      {listing.status === "draft" &&
-                        (propertyDraft || vehicleDraft) && (
-                          <p className="mt-2 text-xs text-amber-800 font-medium">
-                            {isVerifiedSubmissionTestEnvironment(process.env)
-                              ? "Open the saved draft to check Test submission availability. Approval and publication remain disabled."
-                              : "Draft only. This category is not yet open for submission or publication."}
-                          </p>
-                        )}
-
-                      {listing.status === "pending_review" &&
-                        (propertyDraft || vehicleDraft) && (
-                          <p className="mt-2 text-xs text-amber-800 font-medium">
-                            Automated review can finish while this category is not publicly live. Saved details and photos are read-only; approval and publication remain disabled.
-                          </p>
-                        )}
-
-                      {listing.status === "draft" && unresolvedFamily && (
-                        <p role="status" className="mt-2 text-xs text-amber-800 font-medium">
-                          {contextLookupFailed
-                            ? "Category references could not be loaded. Submission is unavailable. Try again later."
-                            : "Category information is unavailable. Submission is unavailable until this draft’s category is verified."}
-                        </p>
-                      )}
+                      {listing.status==='draft'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">{isVerifiedSubmissionTestEnvironment(process.env)?'Open the saved draft to check Test submission availability. Approval and publication remain disabled.':'Test draft only. Submission and publication are unavailable.'}</p>}
+                      {listing.status==='pending_review'&&(propertyDraft||vehicleDraft)&&<p className="text-sm text-amber-800">This category is still in testing. Your submitted listing remains private, even when its automated checks finish. Approval and public publication are not available yet; saved details and photos are read-only.</p>}
+                      {listing.status==='draft'&&unresolvedFamily&&<p role="status" className="text-sm text-amber-800">{contextLookupFailed?'Category references could not be loaded. Submission is unavailable. Try again later.':'Category information is unavailable. Submission is unavailable until this draft’s category is verified.'}</p>}
                     </div>
                   </div>
 
-                  {/* Actions according to simplified single primary + overflow menu contract */}
-                  <div className="shrink-0 flex items-center gap-2 sm:self-start">
+                  {/* ADS-08 single primary action and overflow menu; preserve public-only Share */}
+                  <div className="shrink-0 flex items-center gap-2">
                     {listing.status === "active" && isPublic && (
                       <ShareButton
                         slug={listing.slug}
@@ -382,10 +282,7 @@ export default async function ListingsDashboardPage() {
                         variant="inline"
                       />
                     )}
-                    <ListingActionsContainer
-                      listingId={listing.id}
-                      actions={actions}
-                    />
+                    <ListingActionsContainer listingId={listing.id} actions={actions} />
                   </div>
                 </div>
               </div>

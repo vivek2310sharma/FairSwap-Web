@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { PhotoGallery } from "@/components/listings/PhotoGallery";
 import { FavouriteButton } from "@/components/listings/FavouriteButton";
 import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
@@ -16,8 +15,6 @@ import {
 } from "@/lib/discovery/queries";
 import { createClient } from "@/lib/supabase/server";
 import { getBackToSearchHref } from "@/lib/navigation/search-context";
-import { loadPublicFamilyDisplays } from "@/lib/discovery/public-family-query";
-import { publicPriceFallback, publicFamilyForSlug } from "@/lib/discovery/family-display";
 import {z} from 'zod';
 import {loadOwnerReadiness} from '@/lib/listings/readiness-server';
 import {reviewableField,reviewPacketSchema} from '@/lib/listings/submission-readiness';
@@ -58,7 +55,12 @@ export async function generateMetadata({
     ? `${siteUrl}/api/listings/${listing.id}/media/${firstPhoto.id}/large`
     : undefined;
 
-  const formattedPrice = publicPriceFallback(listing.category.slug, listing.price_type, listing.price_paise);
+  const formattedPrice =
+    listing.price_type === "free"
+      ? "Free"
+      : listing.price_paise !== null && listing.price_paise !== undefined
+      ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
+      : "Price on request";
 
   const descriptionText = `${formattedPrice} • ${
     listing.description?.slice(0, 140) ||
@@ -144,9 +146,6 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   let specifications: {field:string;label:string;value:string}[]=[];
   let specificationsUnavailable=!!assessment&&!packet;
   if(packet)specifications=packet.sellerAnswers;
-  else if(!assessment && publicFamilyForSlug(listing.category.slug)) {
-    specificationsUnavailable = true;
-  }
   else if(!assessment){
     // Goods/legacy definitions remain the source of public field membership.
     // Failed/invalid reads never fall back to raw stored keys or nested values.
@@ -159,22 +158,15 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
         ?[{field:a.name,label:a.label,value:String(value)}]:[];
     });
   }
-  const publicFamily = !isOwnerOrStaffPreview
-    ? (await loadPublicFamilyDisplays([listing])).get(listing.id)
-    : undefined;
-  if (publicFamily && !packet) {
-    specifications = publicFamily.specifications;
-    specificationsUnavailable = false;
-  }
   const rental=packet?.pricing.kind==='rental'?packet.pricing.financial:null;
-  const formattedPrice = publicFamily?.priceLabel ?? (assessment&&!packet?'Saved amount could not be verified':
+  const formattedPrice = assessment&&!packet?'Saved amount could not be verified':
     packet?.family==='property'&&!rental?'Rental financial declarations could not be verified':
     rental?propertyRentSummary(rental):
     listing.price_type === "free"
       ? "Free"
       : listing.price_paise !== null && listing.price_paise !== undefined
       ? `₹${(listing.price_paise / 100).toLocaleString("en-IN")}`
-      : publicPriceFallback(listing.category.slug, listing.price_type, listing.price_paise));
+      : "Price on request";
 
   const conditionLabels: Record<string, string> = {
     new: "Brand New",
@@ -317,7 +309,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
               {specifications.length > 0 && (
                   <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
                     <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                      {publicFamily?.family === "property" || packet?.family === "property" ? "Property details" : publicFamily?.family === "cars" || publicFamily?.family === "two-wheelers" ? "Vehicle specifications" : "Item Specifications"}
+                      Item Specifications
                     </h2>
                     <dl className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
                       {specifications.map(answer => (
@@ -335,14 +327,6 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                 )}
 
               {/* Description */}
-              {publicFamily?.rental && <section aria-label="Rental charges" className="rounded-2xl border border-border bg-card p-6 shadow-xs">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">Rental terms</h2>
-                <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
-                  <div><dt className="text-muted">Rental basis</dt><dd className="font-semibold">{publicFamily.rental.basis}</dd></div>
-                  <div><dt className="text-muted">Security deposit</dt><dd className="font-semibold">{publicFamily.rental.deposit}</dd></div>
-                  <div><dt className="text-muted">Maintenance</dt><dd className="font-semibold">{publicFamily.rental.maintenance}</dd></div>
-                </dl>
-              </section>}
               {rental&&<section aria-label="Rental financial declarations">
                 <p>Basis: {rental.basis??'Unanswered'} · period: month</p>
                 <p>One-time deposit: {rental.deposit?.state==='known'?`INR ${paiseToPropertyRupees(rental.deposit.amount_paise)}`:rental.deposit?.state??'Unanswered'}</p>
@@ -417,7 +401,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
               </div>
 
               {/* India-specific scam prevention advice */}
-              <IndiaSafetyCard helpCentreHref={HELP_CENTRE_URL} />
+              <IndiaSafetyCard />
             </div>
           </div>
 

@@ -6,7 +6,7 @@ import {loadSubmissionState} from '@/lib/listings/submission-server';
 
 const m=vi.hoisted(()=>({client:vi.fn()}));
 vi.mock('@/lib/supabase/server',()=>({createClient:m.client}));
-vi.mock('@/lib/listings/test-runtime',()=>({isVerifiedPostAdTestEnvironment:()=>true,isVerifiedSubmissionTestEnvironment:()=>true,isVerifiedProductionFamilySubmissionRouteEnvironment:()=>false}));
+vi.mock('@/lib/listings/test-runtime',()=>({isVerifiedPostAdTestEnvironment:()=>true,isVerifiedSubmissionTestEnvironment:()=>true}));
 vi.mock('@/lib/listings/property/server',()=>({isPropertyEnabled:()=>false,savePropertyDraft:vi.fn()}));
 vi.mock('@/lib/listings/two-wheeler/server',()=>({saveVehicleDraft:vi.fn()}));
 vi.mock('@/lib/listings/post-ad-server',()=>({validatePostAdSelection:vi.fn()}));
