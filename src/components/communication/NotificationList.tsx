@@ -12,12 +12,12 @@ import {
   LifeBuoy,
   ShieldAlert,
   ArrowRight,
-  AlertCircle,
 } from "lucide-react";
 import { type Notification } from "@/types/communication";
 import { formatNotificationDateTime } from "@/lib/formatters";
 import { resolveNotificationLink } from "@/lib/notifications/links";
 import { useNotificationReadState } from "./useNotificationReadState";
+import { NotificationErrorNotice } from "./NotificationErrorNotice";
 
 interface NotificationListProps {
   initialNotifications: Notification[];
@@ -43,10 +43,11 @@ function NotificationIcon({ type }: { type: string }) {
 
 export function NotificationList({ initialNotifications }: NotificationListProps) {
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-  const { markOne, markAll, error, isPending, isMarkingAll } = useNotificationReadState(
-    notifications,
-    setNotifications
-  );
+  const { markOne, markAll, error, errorAction, isMarkAllDisabled, isMarkOneDisabled } =
+    useNotificationReadState(
+      notifications,
+      setNotifications
+    );
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
@@ -68,7 +69,7 @@ export function NotificationList({ initialNotifications }: NotificationListProps
           <button
             type="button"
             onClick={() => void markAll()}
-            disabled={isMarkingAll}
+            disabled={isMarkAllDisabled}
             className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-background disabled:opacity-60"
           >
             <CheckCheck className="h-3.5 w-3.5 text-action-700 dark:text-action-300" aria-hidden="true" />
@@ -77,15 +78,7 @@ export function NotificationList({ initialNotifications }: NotificationListProps
         )}
       </div>
 
-      {error ? (
-        <div
-          role="alert"
-          className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-100"
-        >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          <span>{error}</span>
-        </div>
-      ) : null}
+      {error ? <NotificationErrorNotice message={error} action={errorAction} /> : null}
 
       {notifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-12 text-center">
@@ -146,7 +139,7 @@ export function NotificationList({ initialNotifications }: NotificationListProps
                       <button
                         type="button"
                         onClick={() => void markOne(n.id)}
-                        disabled={isPending(n.id)}
+                        disabled={isMarkOneDisabled(n.id)}
                         className="inline-flex min-h-[44px] items-center gap-1 text-sm text-muted hover:text-foreground disabled:opacity-60 dark:text-neutral-300"
                       >
                         <Check className="h-3.5 w-3.5" aria-hidden="true" />

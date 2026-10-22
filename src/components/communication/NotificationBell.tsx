@@ -6,6 +6,7 @@ import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Notification } from "@/types/communication";
 import { useNotificationReadState } from "./useNotificationReadState";
+import { NotificationErrorNotice } from "./NotificationErrorNotice";
 import { formatMessageDate } from "@/lib/formatters";
 import { resolveNotificationLink } from "@/lib/notifications/links";
 
@@ -74,10 +75,11 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
     };
   }, [currentUserId, supabase]);
 
-  const { markOne, markAll, error, isPending, isMarkingAll } = useNotificationReadState(
-    notifications,
-    setNotifications
-  );
+  const { markOne, markAll, error, errorAction, isMarkAllDisabled, isMarkOneDisabled } =
+    useNotificationReadState(
+      notifications,
+      setNotifications
+    );
 
   return (
     <div className="relative">
@@ -109,7 +111,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                 <button
                   type="button"
                   onClick={markAll}
-                  disabled={isMarkingAll}
+                  disabled={isMarkAllDisabled}
                   className="flex items-center gap-1 text-xs font-semibold text-brand-link hover:underline disabled:opacity-60"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
@@ -119,9 +121,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
             </div>
 
             {error ? (
-              <p role="alert" className="mt-2 rounded-lg bg-red-50 p-2 text-xs text-red-900 dark:bg-red-950/50 dark:text-red-100">
-                {error}
-              </p>
+              <NotificationErrorNotice message={error} action={errorAction} className="mt-2 text-xs" />
             ) : null}
 
             <div className="mt-2 max-h-80 overflow-y-auto divide-y divide-border/50">
@@ -166,7 +166,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                         <button
                           type="button"
                           onClick={() => void markOne(n.id)}
-                          disabled={isPending(n.id)}
+                          disabled={isMarkOneDisabled(n.id)}
                           className="text-[10px] text-muted hover:text-foreground disabled:opacity-60"
                         >
                           Mark as read
