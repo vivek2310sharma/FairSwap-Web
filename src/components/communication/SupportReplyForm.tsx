@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send, Loader2, AlertCircle } from "lucide-react";
 import { customerReplySupportTicketAction } from "@/app/account/support/actions";
+import { SUPPORT_GENERIC_NETWORK_MESSAGE } from "@/lib/support/tickets";
 
 interface SupportReplyFormProps {
   ticketId: string;
@@ -35,9 +36,9 @@ export function SupportReplyForm({ ticketId }: SupportReplyFormProps) {
 
       setContent("");
       router.refresh();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send reply. Please check your network.";
-      setError(msg);
+    } catch {
+      // Raw exception text (network or server internals) is never shown to users.
+      setError(SUPPORT_GENERIC_NETWORK_MESSAGE);
     } finally {
       setIsSubmitting(false);
     }

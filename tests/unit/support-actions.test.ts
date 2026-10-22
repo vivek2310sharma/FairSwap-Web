@@ -390,3 +390,83 @@ describe("submitScamReportAction", () => {
     expect(logs).not.toContain(USER.email);
   });
 });
+
+describe("createSupportTicketAction outcome handling", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const input = { category: "general", subject: "Need some help", message: "I need help with my account." };
+
+  it("never confirms success for an invalid or missing ticket id", async () => {
+    for (const data of ["not-a-uuid", null, 7, { id: TICKET_ID }, ""]) {
+      scenario({ createTicket: { data } });
+      const result = await createSupportTicketAction(input);
+
+      expect(result.success, JSON.stringify(data)).toBeUndefined();
+      expect(result.ticketId).toBeUndefined();
+      expect(result.uncertain).toBe(true);
+      expect(result.error).toMatch(/check your tickets before trying again/i);
+    }
+  });
+
+  it("treats an error without a database code (network failure) as uncertain", async () => {
+    scenario({ createTicket: { error: { message: "TypeError: fetch failed" } } });
+    const result = await createSupportTicketAction(input);
+
+    expect(result.success).toBeUndefined();
+    expect(result.uncertain).toBe(true);
+    expect(result.error).not.toMatch(/fetch failed/);
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/account/support");
+  });
+
+  it("treats a thrown RPC call as uncertain", async () => {
+    const fake = scenario();
+    (fake.client as { rpc: unknown }).rpc = async () => {
+      throw new Error("socket hang up");
+    };
+    const result = await createSupportTicketAction(input);
+
+    expect(result.success).toBeUndefined();
+    expect(result.uncertain).toBe(true);
+    expect(result.error).not.toMatch(/socket/);
+  });
+
+  it("keeps database-coded rejections definitive and retry-safe", async () => {
+    scenario({ createTicket: { error: { message: "Account restricted", code: "P0001" } } });
+    const result = await createSupportTicketAction(input);
+
+    expect(result.uncertain).toBeUndefined();
+    expect(result.success).toBeUndefined();
+    expect(result.error).toMatch(/cannot create support tickets/i);
+  });
+
+  it("returns success only with a validated ticket id", async () => {
+    scenario();
+    expect(await createSupportTicketAction(input)).toEqual({ success: true, ticketId: TICKET_ID });
+  });
+});
+
+describe("customerReplySupportTicketAction failure handling", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns a safe message when the RPC call throws", async () => {
+    const fake = scenario();
+    (fake.client as { rpc: unknown }).rpc = async () => {
+      throw new Error("ECONNRESET 10.0.0.5:5432");
+    };
+    const result = await customerReplySupportTicketAction({ ticketId: TICKET_ID, content: "Thanks" });
+
+    expect(result.success).toBeUndefined();
+    expect(result.error).toBeTruthy();
+    expect(result.error).not.toMatch(/ECONNRESET|10\.0\.0\.5/);
+  });
+
+  it("does not echo raw database text for coded or uncoded errors", async () => {
+    scenario({ reply: { error: { message: 'relation "support_messages" does not exist', code: "42P01" } } });
+    const coded = await customerReplySupportTicketAction({ ticketId: TICKET_ID, content: "Thanks" });
+    expect(coded.error).not.toMatch(/relation|support_messages/);
+
+    scenario({ reply: { error: { message: "internal host 10.1.2.3 refused" } } });
+    const uncoded = await customerReplySupportTicketAction({ ticketId: TICKET_ID, content: "Thanks" });
+    expect(uncoded.error).not.toMatch(/10\.1\.2\.3|refused/);
+  });
+});

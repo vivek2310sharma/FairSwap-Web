@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Notification } from "@/types/communication";
-import { markNotificationReadAction, markAllNotificationsReadAction } from "@/app/account/notifications/actions";
+import { useNotificationReadState } from "./useNotificationReadState";
 import { formatMessageDate } from "@/lib/formatters";
 import { resolveNotificationLink } from "@/lib/notifications/links";
 
@@ -74,19 +74,10 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
     };
   }, [currentUserId, supabase]);
 
-  const handleMarkRead = async (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
-    );
-    await markNotificationReadAction(id);
-  };
-
-  const handleMarkAllRead = async () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read_at: new Date().toISOString() }))
-    );
-    await markAllNotificationsReadAction();
-  };
+  const { markOne, markAll, error, isPending, isMarkingAll } = useNotificationReadState(
+    notifications,
+    setNotifications
+  );
 
   return (
     <div className="relative">
@@ -117,14 +108,21 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
               {unreadCount > 0 && (
                 <button
                   type="button"
-                  onClick={handleMarkAllRead}
-                  className="flex items-center gap-1 text-xs font-semibold text-brand-link hover:underline"
+                  onClick={markAll}
+                  disabled={isMarkingAll}
+                  className="flex items-center gap-1 text-xs font-semibold text-brand-link hover:underline disabled:opacity-60"
                 >
                   <CheckCheck className="h-3.5 w-3.5" />
                   <span>Mark all read</span>
                 </button>
               )}
             </div>
+
+            {error ? (
+              <p role="alert" className="mt-2 rounded-lg bg-red-50 p-2 text-xs text-red-900 dark:bg-red-950/50 dark:text-red-100">
+                {error}
+              </p>
+            ) : null}
 
             <div className="mt-2 max-h-80 overflow-y-auto divide-y divide-border/50">
               {notifications.length === 0 ? (
@@ -153,7 +151,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                         <Link
                           href={resolveNotificationLink(n.link) as string}
                           onClick={() => {
-                            if (!n.read_at) handleMarkRead(n.id);
+                            void markOne(n.id);
                             setIsOpen(false);
                           }}
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-link hover:underline"
@@ -167,8 +165,9 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                       {!n.read_at && (
                         <button
                           type="button"
-                          onClick={() => handleMarkRead(n.id)}
-                          className="text-[10px] text-muted hover:text-foreground"
+                          onClick={() => void markOne(n.id)}
+                          disabled={isPending(n.id)}
+                          className="text-[10px] text-muted hover:text-foreground disabled:opacity-60"
                         >
                           Mark as read
                         </button>

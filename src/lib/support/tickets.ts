@@ -105,6 +105,14 @@ export function mapSupportRpcError(message: string | undefined | null): string {
   return "We could not submit your request. Please try again shortly.";
 }
 
+/** Shown when a create request may or may not have produced a ticket. Never invites an immediate retry. */
+export const SUPPORT_UNCERTAIN_MESSAGE =
+  "We could not confirm that your request was submitted. Please check your tickets before trying again, so you do not send it twice.";
+
+/** Safe fallback for failed reply or lookup calls; raw exception text is never shown to users. */
+export const SUPPORT_GENERIC_NETWORK_MESSAGE =
+  "We could not complete that request. Please check your connection and try again.";
+
 /**
  * True when the error came from the database or PostgREST (a SQLSTATE such as `P0001` or a
  * `PGRST…` code), meaning the call was processed and rejected. Errors without such a code, such

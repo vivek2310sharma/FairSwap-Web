@@ -160,6 +160,7 @@ describe("Support ticket detail page", () => {
     ticket?: FakeResult;
     messages?: FakeResult;
     user?: typeof USER | null;
+    accountStatus?: string | null;
   } = {}) {
     const {
       ticket = { data: { ...ticketRow, user_id: USER.id } },
@@ -184,10 +185,18 @@ describe("Support ticket detail page", () => {
         ],
       },
       user = USER,
+      accountStatus = "active",
     } = opts;
     const fake = createFakeSupabase({
       user,
-      tables: { support_tickets: ticket, support_messages: messages },
+      tables: {
+        support_tickets: ticket,
+        support_messages: messages,
+        user_accounts:
+          accountStatus === null
+            ? { data: null, error: { message: "fail" } }
+            : { data: { account_status: accountStatus } },
+      },
     });
     mocks.createClient.mockResolvedValue(fake.client);
     return fake;
@@ -290,5 +299,66 @@ describe("Support ticket detail page", () => {
 
     expect(screen.getByLabelText("Add a reply")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send reply" })).toBeInTheDocument();
+  });
+
+  describe("reply availability by account status", () => {
+    const appeal = { ...ticketRow, category: "moderation_appeal", user_id: USER.id };
+    const ordinary = { ...ticketRow, category: "general", user_id: USER.id };
+
+    it("offers the reply form to active accounts", async () => {
+      detailScenario({ ticket: { data: ordinary }, accountStatus: "active" });
+      render(await SupportTicketPage(params(TICKET_ID)));
+      expect(screen.getByLabelText("Add a reply")).toBeInTheDocument();
+    });
+
+    it("hides the reply form for a suspended account on an ordinary ticket and explains why", async () => {
+      detailScenario({ ticket: { data: ordinary }, accountStatus: "suspended" });
+      render(await SupportTicketPage(params(TICKET_ID)));
+
+      expect(screen.queryByLabelText("Add a reply")).toBeNull();
+      expect(screen.queryByRole("button", { name: "Send reply" })).toBeNull();
+      expect(screen.getByRole("status")).toHaveTextContent("only reply to moderation appeals");
+    });
+
+    it("keeps the reply form for a suspended account on a moderation appeal", async () => {
+      detailScenario({ ticket: { data: appeal }, accountStatus: "suspended" });
+      render(await SupportTicketPage(params(TICKET_ID)));
+
+      expect(screen.getByLabelText("Add a reply")).toBeInTheDocument();
+    });
+
+    it("hides the form when the account status cannot be verified, with a safe message", async () => {
+      detailScenario({ ticket: { data: ordinary }, accountStatus: null });
+      render(await SupportTicketPage(params(TICKET_ID)));
+
+      expect(screen.queryByLabelText("Add a reply")).toBeNull();
+      expect(screen.getByRole("status")).toHaveTextContent("could not verify your account status");
+    });
+
+    it("scopes the account-status lookup to the signed-in user and never renders internal notes", async () => {
+      const fake = detailScenario({
+        ticket: { data: ordinary },
+        messages: {
+          data: [
+            {
+              id: "internal",
+              ticket_id: TICKET_ID,
+              sender_id: "staff-secret-id",
+              is_internal_note: true,
+              content: "INTERNAL STAFF NOTE",
+              created_at: "2026-10-20T10:00:00.000Z",
+            },
+          ],
+        },
+      });
+      const { container } = render(await SupportTicketPage(params(TICKET_ID)));
+
+      const accountQuery = fake.queries.find((q) => q.table === "user_accounts");
+      expect(accountQuery?.eq).toContainEqual(["user_id", USER.id]);
+      const messageQuery = fake.queries.find((q) => q.table === "support_messages");
+      expect(messageQuery?.eq).toContainEqual(["is_internal_note", false]);
+      // The fake returns the row regardless of filters; the page must not leak staff ids anywhere.
+      expect(container.innerHTML).not.toContain("staff-secret-id");
+    });
   });
 });

@@ -119,23 +119,84 @@ describe("CreateTicketDialog", () => {
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
-  it("recovers from a network failure and shows a loading state while submitting", async () => {
-    let reject: (reason: Error) => void = () => {};
-    mocks.create.mockReturnValue(new Promise((_, rej) => (reject = rej)));
-    render(<CreateTicketDialog />);
-    open();
-
+  const fillAndSubmit = async () => {
     fireEvent.change(screen.getByLabelText("Subject"), { target: { value: "Need some help" } });
     fireEvent.change(screen.getByLabelText("Details"), { target: { value: "I need help with my account." } });
     await act(async () => {
       fireEvent.submit(screen.getByRole("button", { name: "Submit ticket" }).closest("form")!);
     });
+  };
 
+  it("shows a loading state while submitting", async () => {
+    let resolve: (value: unknown) => void = () => {};
+    mocks.create.mockReturnValue(new Promise((r) => (resolve = r)));
+    render(<CreateTicketDialog />);
+    open();
+
+    await fillAndSubmit();
     expect(screen.getByRole("button", { name: /Submitting/ })).toBeDisabled();
     await act(async () => {
-      reject(new Error("fetch failed"));
+      resolve({ error: "Try again later." });
     });
-    expect(await screen.findByRole("alert")).toHaveTextContent("Network problem");
+    expect(screen.getByRole("button", { name: "Submit ticket" })).toBeEnabled();
+  });
+
+  it("treats a thrown server call as an uncertain outcome and blocks resubmission", async () => {
+    mocks.create.mockRejectedValue(new Error("fetch failed"));
+    render(<CreateTicketDialog />);
+    open();
+
+    await fillAndSubmit();
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("check your tickets before trying again");
+    expect(alert).not.toHaveTextContent("fetch failed");
+    expect(screen.getByRole("button", { name: "Submit ticket" })).toBeDisabled();
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it("shows the uncertain message from the server without confirming success", async () => {
+    mocks.create.mockResolvedValue({
+      error: "We could not confirm that your request was submitted. Please check your tickets before trying again, so you do not send it twice.",
+      uncertain: true,
+    });
+    render(<CreateTicketDialog />);
+    open();
+
+    await fillAndSubmit();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("could not confirm");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit ticket" })).toBeDisabled();
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+
+  it("never confirms success when the action reports success without a ticket id", async () => {
+    mocks.create.mockResolvedValue({ success: true });
+    render(<CreateTicketDialog />);
+    open();
+
+    await fillAndSubmit();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("check your tickets");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it("'Check my tickets' refreshes the list, keeps the draft, and re-enables a deliberate retry", async () => {
+    mocks.create.mockResolvedValue({ error: "Not sure.", uncertain: true });
+    render(<CreateTicketDialog />);
+    open();
+
+    await fillAndSubmit();
+    fireEvent.click(await screen.findByRole("button", { name: "Check my tickets" }));
+
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    open();
+    expect(screen.getByLabelText("Subject")).toHaveValue("Need some help");
     expect(screen.getByRole("button", { name: "Submit ticket" })).toBeEnabled();
   });
 });

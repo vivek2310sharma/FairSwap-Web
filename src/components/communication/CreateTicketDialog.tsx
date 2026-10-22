@@ -8,6 +8,7 @@ import {
   CUSTOMER_SELECTABLE_CATEGORIES,
   SUPPORT_CATEGORY_LABELS,
   SUPPORT_LIMITS,
+  SUPPORT_UNCERTAIN_MESSAGE,
   supportTicketCategorySchema,
   type SupportTicketCategory,
 } from "@/lib/support/tickets";
@@ -28,6 +29,9 @@ export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogPr
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when a previous submit may or may not have created a ticket. Blocks resubmission until the
+  // user has looked at their ticket list.
+  const [uncertain, setUncertain] = useState(false);
 
   const router = useRouter();
   const uid = useId();
@@ -57,7 +61,7 @@ export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || uncertain) return;
 
     const trimmedSubject = subject.trim();
     const trimmedMessage = message.trim();
@@ -90,22 +94,27 @@ export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogPr
         message: trimmedMessage,
       });
 
-      if (res.error) {
-        setError(res.error);
+      if (res.uncertain) {
+        setUncertain(true);
+        setError(res.error ?? SUPPORT_UNCERTAIN_MESSAGE);
+        return;
+      }
+
+      if (res.error || !res.ticketId) {
+        // A success flag without a validated ticket id is never treated as confirmation.
+        setError(res.error ?? SUPPORT_UNCERTAIN_MESSAGE);
+        if (!res.error) setUncertain(true);
         return;
       }
 
       setIsOpen(false);
       setSubject("");
       setMessage("");
-
-      if (res.ticketId) {
-        router.push(`/account/support/${res.ticketId}`);
-      } else {
-        router.refresh();
-      }
+      router.push(`/account/support/${res.ticketId}`);
     } catch {
-      setError("Network problem while submitting. Please check your connection and try again.");
+      // The request may have reached the server before the connection dropped.
+      setUncertain(true);
+      setError(SUPPORT_UNCERTAIN_MESSAGE);
     } finally {
       setIsSubmitting(false);
     }
@@ -162,7 +171,25 @@ export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogPr
                   className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-100"
                 >
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>{error}</span>
+                  <span>
+                    {error}
+                    {uncertain ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Keep the draft, close the dialog and refresh the list so the user can look.
+                          setUncertain(false);
+                          setError(null);
+                          setIsOpen(false);
+                          triggerRef.current?.focus();
+                          router.refresh();
+                        }}
+                        className="mt-1 block min-h-[44px] py-2 text-left text-sm font-semibold underline"
+                      >
+                        Check my tickets
+                      </button>
+                    ) : null}
+                  </span>
                 </div>
               )}
 
@@ -238,7 +265,7 @@ export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogPr
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting || !subject.trim() || !message.trim()}
+                  disabled={isSubmitting || uncertain || !subject.trim() || !message.trim()}
                   className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-action-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700 disabled:opacity-60"
                 >
                   {isSubmitting ? (

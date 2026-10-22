@@ -72,6 +72,22 @@ export default async function SupportTicketPage({
 
   const ticket = ticketData as TicketRow | null;
 
+  // Account status decides whether replying is offered. The Backend RPC stays the authority: it
+  // rejects non-appeal replies from suspended accounts regardless of what this page renders.
+  let accountStatus: string = "unavailable";
+  if (ticket) {
+    const { data: account, error: accountError } = await supabase
+      .from("user_accounts")
+      .select("account_status")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!accountError && account) accountStatus = account.account_status;
+  }
+  const canReply =
+    ticket !== null &&
+    (accountStatus === "active" ||
+      (accountStatus === "suspended" && ticket.category === "moderation_appeal"));
+
   let messages: MessageRow[] = [];
   let messagesFailed = false;
 
@@ -184,13 +200,24 @@ export default async function SupportTicketPage({
                 </ol>
               )}
 
-              {ticket.status !== "closed" ? (
+              {ticket.status === "closed" ? (
+                <div className="mt-6 rounded-xl border border-border bg-card p-4 text-center text-sm text-muted dark:text-neutral-300">
+                  This ticket is closed. If you have a new issue, please submit a new inquiry.
+                </div>
+              ) : canReply ? (
                 <div className="mt-6">
                   <SupportReplyForm ticketId={ticket.id} />
                 </div>
               ) : (
-                <div className="mt-6 rounded-xl border border-border bg-card p-4 text-center text-sm text-muted dark:text-neutral-300">
-                  This ticket is closed. If you have a new issue, please submit a new inquiry.
+                <div
+                  role="status"
+                  className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-100"
+                >
+                  {accountStatus === "suspended"
+                    ? "Your account is suspended, so you can only reply to moderation appeals."
+                    : accountStatus === "unavailable"
+                      ? "We could not verify your account status, so replies are unavailable right now. Please try again shortly."
+                      : "Replies are not available for this account."}
                 </div>
               )}
             </>
