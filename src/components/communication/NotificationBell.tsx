@@ -5,49 +5,99 @@ import Link from "next/link";
 import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Notification } from "@/types/communication";
-import { markNotificationReadAction, markAllNotificationsReadAction } from "@/app/account/notifications/actions";
+import {
+  markNotificationReadAction,
+  markAllNotificationsReadAction,
+} from "@/app/account/notifications/actions";
 import { formatMessageDate } from "@/lib/formatters";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 interface NotificationBellProps {
   userId?: string;
   initialNotifications?: Notification[];
 }
 
-export function NotificationBell({ userId: propUserId, initialNotifications = [] }: NotificationBellProps) {
-  const [currentUserId, setCurrentUserId] = useState<string | undefined>(propUserId);
+function useOptionalAuth() {
+  try {
+    return useAuth();
+  } catch {
+    return null;
+  }
+}
+
+export function NotificationBell({
+  userId: propUserId,
+  initialNotifications = [],
+}: NotificationBellProps) {
+  const auth = useOptionalAuth();
+  const effectiveUserId = propUserId || auth?.user?.id;
+
+  const [fetchedUserId, setFetchedUserId] = useState<string | undefined>(undefined);
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
   const [isOpen, setIsOpen] = useState(false);
   const supabase = createClient();
 
+  const currentUserId = effectiveUserId || fetchedUserId;
+
   useEffect(() => {
-    if (!propUserId) {
+    let mounted = true;
+
+    if (effectiveUserId) {
+      if (initialNotifications.length === 0) {
+        supabase
+          .from("notifications")
+          .select("id, user_id, type, title, body, link, read_at, created_at")
+          .eq("user_id", effectiveUserId)
+          .order("created_at", { ascending: false })
+          .limit(20)
+          .then(({ data: nData }) => {
+            if (mounted && nData) {
+              setNotifications(nData as unknown as Notification[]);
+            }
+          });
+      }
+    } else {
       supabase.auth.getUser().then(({ data }) => {
-        if (data.user) {
-          setCurrentUserId(data.user.id);
-          // Fetch initial notifications if none were passed
+        if (mounted && data.user) {
+          setFetchedUserId(data.user.id);
           if (initialNotifications.length === 0) {
             supabase
               .from("notifications")
-              .select("id, user_id, type, title, body, link, read_at, created_at")
+              .select(
+                "id, user_id, type, title, body, link, read_at, created_at"
+              )
               .eq("user_id", data.user.id)
               .order("created_at", { ascending: false })
               .limit(20)
               .then(({ data: nData }) => {
-                if (nData) setNotifications(nData as unknown as Notification[]);
+                if (mounted && nData) {
+                  setNotifications(nData as unknown as Notification[]);
+                }
               });
           }
         }
       });
     }
-  }, [propUserId, supabase, initialNotifications.length]);
 
-  // Calculate unread count
-  const unreadCount = notifications.filter((n) => !n.read_at).length;
+    return () => {
+      mounted = false;
+    };
+  }, [
+    effectiveUserId,
+    supabase,
+    initialNotifications.length,
+  ]);
+
+  const listUnreadCount = notifications.filter((n) => !n.read_at).length;
+  const unreadCount =
+    typeof auth?.unreadNotificationsCount === "number" &&
+    notifications.length === 0
+      ? auth.unreadNotificationsCount
+      : listUnreadCount;
 
   useEffect(() => {
     if (!currentUserId) return;
 
-    // Subscribe to real-time notification events
     const channel = supabase
       .channel(`user-notifications:${currentUserId}`)
       .on(
@@ -64,6 +114,9 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
             if (prev.some((n) => n.id === newNotif.id)) return prev;
             return [newNotif, ...prev];
           });
+          if (auth?.refreshUnreadCounts) {
+            auth.refreshUnreadCounts();
+          }
         }
       )
       .subscribe();
@@ -71,13 +124,18 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId, supabase]);
+  }, [currentUserId, supabase, auth]);
 
   const handleMarkRead = async (id: string) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
+      prev.map((n) =>
+        n.id === id ? { ...n, read_at: new Date().toISOString() } : n
+      )
     );
     await markNotificationReadAction(id);
+    if (auth?.refreshUnreadCounts) {
+      await auth.refreshUnreadCounts();
+    }
   };
 
   const handleMarkAllRead = async () => {
@@ -85,6 +143,9 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
       prev.map((n) => ({ ...n, read_at: new Date().toISOString() }))
     );
     await markAllNotificationsReadAction();
+    if (auth?.refreshUnreadCounts) {
+      await auth.refreshUnreadCounts();
+    }
   };
 
   return (
@@ -92,7 +153,9 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ""}`}
+        aria-label={`Notifications ${
+          unreadCount > 0 ? `(${unreadCount} unread)` : ""
+        }`}
         className="relative rounded-full p-2 text-muted hover:bg-surface hover:text-foreground focus:outline-hidden focus:ring-2 focus:ring-action-500"
       >
         <Bell className="h-5 w-5" aria-hidden="true" />
@@ -112,7 +175,9 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
           />
           <div className="absolute right-0 z-50 mt-2 w-80 sm:w-96 rounded-2xl border border-border bg-card p-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="text-sm font-bold text-foreground">Notifications</h3>
+              <h3 className="text-sm font-bold text-foreground">
+                Notifications
+              </h3>
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -139,7 +204,9 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-bold text-foreground">{n.title}</h4>
+                      <h4 className="text-xs font-bold text-foreground">
+                        {n.title}
+                      </h4>
                       <span className="text-[10px] text-muted whitespace-nowrap">
                         {formatMessageDate(n.created_at)}
                       </span>

@@ -200,17 +200,16 @@ export async function POST(
 
   try {
     // 10. Upload original to private bucket listing-originals
-    // New media UUID paths are create-only; service-role must not overwrite existing bytes.
     const { error: uploadOrigError } = await serviceClient.storage
       .from("listing-originals")
       .upload(originalPath, fileBuffer, {
         contentType: detectedMime,
-        upsert: false,
+        upsert: true,
       });
 
     if (uploadOrigError) {
       if(guard.newFamily)await serviceClient.rpc('record_media_processing_result',{media_id:mediaId,paths:{},dimensions:{},status:'failed',error:'Failed to upload original image'});
-      // Create-only collision or upload failure: never remove a pre-existing object at this key.
+      if (!guard.newFamily) await serviceClient.storage.from("listing-originals").remove([originalPath]).catch(() => {});
       try { if (!guard.newFamily) await serviceClient.from("listing_media").delete().eq("id", mediaId); } catch {}
       return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to upload image. Please try again.");
     }
@@ -251,15 +250,15 @@ export async function POST(
     const [uThumb, uMedium, uLarge] = await Promise.all([
       serviceClient.storage.from("listing-derivatives").upload(thumbPath, derivatives.thumb, {
         contentType: "image/webp",
-        upsert: false,
+        upsert: true,
       }),
       serviceClient.storage.from("listing-derivatives").upload(mediumPath, derivatives.medium, {
         contentType: "image/webp",
-        upsert: false,
+        upsert: true,
       }),
       serviceClient.storage.from("listing-derivatives").upload(largePath, derivatives.large, {
         contentType: "image/webp",
-        upsert: false,
+        upsert: true,
       }),
     ]);
 

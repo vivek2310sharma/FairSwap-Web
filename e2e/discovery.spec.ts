@@ -37,7 +37,7 @@ test.describe("Milestone 1.4 Public Discovery, Search, and Favourites E2E", () =
     await expect(page).toHaveURL("/search");
   });
 
-  test("public policy, safety, and contact guidance pages render current content", async ({
+  test("draft policy, safety, and contact guidance pages render truthful notices", async ({
     page,
   }) => {
     // 1. Safety page
@@ -46,23 +46,23 @@ test.describe("Milestone 1.4 Public Discovery, Search, and Favourites E2E", () =
     await expect(page.getByText("Meet in Public Spaces")).toBeVisible();
     await expect(page.getByText("No Advance Payments")).toBeVisible();
 
-    // 2. Old bookmarks redirect to the independent public Help Centre.
-    const helpRedirect = await page.request.get("/help", { maxRedirects: 0 });
-    expect(helpRedirect.status()).toBe(307);
-    expect(helpRedirect.headers()["location"]).toBe("https://help.fairswap.in/en");
+    // 2. Help page
+    await page.goto("/help");
+    await expect(page.getByRole("heading", { level: 1, name: /frequently asked questions/i })).toBeVisible();
+    await expect(page.getByText("Development Prototype Documentation")).toBeVisible();
 
-    // 3. Terms of Service
+    // 3. Terms draft
     await page.goto("/terms");
-    await expect(page.getByRole("heading", { level: 1, name: "Terms of Service" })).toBeVisible();
+    await expect(page.getByText("terms-2026-09-draft")).toBeVisible();
 
-    // 4. Privacy Policy
+    // 4. Privacy draft
     await page.goto("/privacy");
-    await expect(page.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeVisible();
+    await expect(page.getByText("privacy-2026-09-draft")).toBeVisible();
 
     // 5. Contact guidance
     await page.goto("/contact");
     await expect(page.getByRole("heading", { level: 1, name: /contact guidance/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Public Help & Email Support" })).toBeVisible();
+    await expect(page.getByText("Milestone 1.4")).toBeVisible();
   });
 
   test("homepage quick search redirects to /search with parameters", async ({ page }) => {

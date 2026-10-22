@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   MobileBottomNav,
   shouldShowBottomNav,
@@ -7,9 +7,14 @@ import {
 } from "@/components/navigation/MobileBottomNav";
 
 const mockUsePathname = vi.fn();
+const mockUseAuth = vi.fn();
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mockUsePathname(),
+}));
+
+vi.mock("@/components/providers/AuthProvider", () => ({
+  useAuth: () => mockUseAuth(),
 }));
 
 describe("MobileBottomNav visibility rules (shouldShowBottomNav)", () => {
@@ -84,7 +89,17 @@ describe("MobileBottomNav route active matching (isRouteActive)", () => {
 });
 
 describe("MobileBottomNav Component", () => {
-  it("renders 5 navigation items on the homepage with Home active", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({
+      user: { id: "user-123" },
+      isLoading: false,
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+  });
+
+  it("renders 5 navigation items on the homepage with Home active for logged-in user", () => {
     mockUsePathname.mockReturnValue("/");
     render(<MobileBottomNav />);
 
@@ -113,6 +128,37 @@ describe("MobileBottomNav Component", () => {
       expect(link.className).toContain("min-h-[44px]");
       expect(link.className).toContain("min-w-[44px]");
     }
+  });
+
+  it("renders Sign In item when user is logged out", () => {
+    mockUsePathname.mockReturnValue("/");
+    mockUseAuth.mockReturnValue({
+      user: null,
+      isLoading: false,
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    render(<MobileBottomNav />);
+
+    const signInLink = screen.getByRole("link", { name: "Sign In" });
+    expect(signInLink).toHaveAttribute("href", "/auth/sign-in");
+  });
+
+  it("renders unread badge on Chats item when logged in with unread messages", () => {
+    mockUsePathname.mockReturnValue("/");
+    mockUseAuth.mockReturnValue({
+      user: { id: "user-123" },
+      isLoading: false,
+      unreadMessagesCount: 5,
+      unreadNotificationsCount: 0,
+    });
+
+    render(<MobileBottomNav />);
+
+    const chatsLink = screen.getByRole("link", { name: "Chats (5 unread)" });
+    expect(chatsLink).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
   });
 
   it("renders safe-area spacer with full navigation height calculation", () => {

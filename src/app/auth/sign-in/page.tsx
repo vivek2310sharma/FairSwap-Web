@@ -13,7 +13,6 @@ import { NEUTRAL_OTP_ACKNOWLEDGEMENT } from "@/lib/auth/constants";
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
 import { AuthCloseLink } from "@/components/auth/AuthCloseLink";
 import { PasswordInput } from "@/components/auth/PasswordInput";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 const EmailSchema = z.string().email("Please provide a valid email address.");
 
@@ -610,12 +609,6 @@ function SignInForm() {
             </div>
           </div>
         )}
-        <p className="mt-6 border-t border-gray-100 pt-4 text-center text-sm text-gray-600">
-          Trouble accessing your account?{" "}
-          <a href={HELP_CENTRE_URL} className="font-semibold text-emerald-700 underline hover:text-emerald-800">
-            Visit the Help Centre
-          </a>
-        </p>
       </div>
     </main>
   );

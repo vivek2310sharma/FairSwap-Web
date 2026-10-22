@@ -1,9 +1,25 @@
-import { render, screen, fireEvent, within } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Header } from "@/components/header";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
+
+const mockUseAuth = vi.fn();
+
+vi.mock("@/components/providers/AuthProvider", () => ({
+  useAuth: () => mockUseAuth(),
+}));
 
 describe("Header component", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({
+      user: null,
+      isLoading: false,
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+      signOut: vi.fn(),
+    });
+  });
+
   it("renders the FairSwap wordmark with link to home", () => {
     render(<Header />);
     const homeLink = screen.getByRole("link", { name: /fairswap home/i });
@@ -27,30 +43,31 @@ describe("Header component", () => {
     );
     expect(screen.getByRole("link", { name: "Safety" })).toHaveAttribute(
       "href",
-      "/safety"
+      "/#safety"
     );
   });
 
-  it("provides exactly one same-tab public Help Centre link in desktop navigation", () => {
+  it("shows Sign In button when user is logged out", () => {
     render(<Header />);
-    const navigation = screen.getByRole("navigation", { name: "Main navigation" });
-    const links = within(navigation).getAllByRole("link", { name: "Help Centre" });
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute("href", HELP_CENTRE_URL);
-    expect(links[0]).not.toHaveAttribute("target", "_blank");
+    const signInLinks = screen.getAllByRole("link", { name: /sign in/i });
+    expect(signInLinks.length).toBeGreaterThan(0);
+    expect(signInLinks[0]).toHaveAttribute("href", "/auth/sign-in");
   });
 
-  it("keeps public Help Centre and authenticated support tickets distinct on mobile", () => {
+  it("shows Account, Messages, and NotificationBell when user is logged in", () => {
+    mockUseAuth.mockReturnValue({
+      user: { id: "user-123" },
+      isLoading: false,
+      unreadMessagesCount: 4,
+      unreadNotificationsCount: 2,
+      signOut: vi.fn(),
+    });
+
     render(<Header />);
-    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
-    const mobile = screen.getByRole("navigation", { name: "Mobile navigation" });
-    const help = within(mobile).getByRole("link", { name: "Help Centre" });
-    const tickets = within(mobile).getByRole("link", { name: "Support Tickets" });
-    expect(help).toHaveAttribute("href", HELP_CENTRE_URL);
-    expect(help).not.toHaveAttribute("target", "_blank");
-    expect(tickets).toHaveAttribute("href", "/account/support");
-    fireEvent.click(help);
-    expect(screen.queryByRole("navigation", { name: "Mobile navigation" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /account/i })).toHaveAttribute("href", "/account");
+    const messagesLink = screen.getByRole("link", { name: /messages \(4 unread\)/i });
+    expect(messagesLink).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
   });
 
   it("toggles mobile menu on button click with proper aria attributes", () => {
@@ -73,13 +90,37 @@ describe("Header component", () => {
     expect(screen.queryByRole("navigation", { name: "Mobile navigation" })).not.toBeInTheDocument();
   });
 
+  it("shows unread message & notification badges in mobile menu when logged in", () => {
+    const mockSignOut = vi.fn();
+    mockUseAuth.mockReturnValue({
+      user: { id: "user-123" },
+      isLoading: false,
+      unreadMessagesCount: 12,
+      unreadNotificationsCount: 3,
+      signOut: mockSignOut,
+    });
+
+    render(<Header />);
+    const menuButton = screen.getByRole("button", { name: /open menu/i });
+    fireEvent.click(menuButton);
+
+    const badges9Plus = screen.getAllByText("9+");
+    expect(badges9Plus.length).toBeGreaterThan(0); // 12 formatted as 9+
+    const badges3 = screen.getAllByText("3");
+    expect(badges3.length).toBeGreaterThan(0);
+
+    const signOutBtn = screen.getByRole("button", { name: /sign out/i });
+    expect(signOutBtn).toBeInTheDocument();
+    fireEvent.click(signOutBtn);
+    expect(mockSignOut).toHaveBeenCalledOnce();
+  });
+
   it("supports keyboard focus and interaction on mobile toggle button", () => {
     render(<Header />);
     const menuButton = screen.getByRole("button", { name: /open menu/i });
     menuButton.focus();
     expect(menuButton).toHaveFocus();
 
-    // Native HTML button fires click on Enter/Space
     fireEvent.keyDown(menuButton, { key: "Enter", code: "Enter" });
     fireEvent.click(menuButton);
     expect(menuButton).toHaveAttribute("aria-expanded", "true");
