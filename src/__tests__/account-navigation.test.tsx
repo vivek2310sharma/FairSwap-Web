@@ -13,8 +13,8 @@ describe("AccountNav component", () => {
     mockUsePathname.mockReset();
   });
 
-  it("renders the account navigation landmark", () => {
-    mockUsePathname.mockReturnValue("/account");
+  it("renders the account navigation landmark on child routes", () => {
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
     const nav = screen.getByRole("navigation", {
       name: "Account navigation",
@@ -23,7 +23,7 @@ describe("AccountNav component", () => {
   });
 
   it("renders exactly the six primary navigation items without Help Centre", () => {
-    mockUsePathname.mockReturnValue("/account");
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
 
     const expectedLabels = [
@@ -46,7 +46,7 @@ describe("AccountNav component", () => {
   });
 
   it("does NOT expose policy-review as a navigation item", () => {
-    mockUsePathname.mockReturnValue("/account");
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
 
     const nav = screen.getByRole("navigation", {
@@ -58,7 +58,7 @@ describe("AccountNav component", () => {
   });
 
   it("links Settings to /account/settings", () => {
-    mockUsePathname.mockReturnValue("/account");
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
     expect(screen.getByRole("link", { name: /Settings/ })).toHaveAttribute(
       "href",
@@ -68,11 +68,45 @@ describe("AccountNav component", () => {
 
   // --- Active state: exact match for Overview ---
 
-  it("marks Overview as active only on exact /account", () => {
-    mockUsePathname.mockReturnValue("/account");
+  // --- ACC-01: the overview is itself the section menu, so the tab strip is hidden there ---
+
+  it("renders nothing on the /account overview (no duplicate navigation)", () => {
+    for (const route of ["/account", "/account/"]) {
+      mockUsePathname.mockReturnValue(route);
+      const { container, unmount } = render(<AccountNav />);
+      expect(container).toBeEmptyDOMElement();
+      expect(screen.queryByRole("navigation", { name: "Account navigation" })).toBeNull();
+      unmount();
+    }
+  });
+
+  it("stays visible on every child route, including support and the scam report flow", () => {
+    const children = [
+      "/account/listings",
+      "/account/favourites",
+      "/account/messages",
+      "/account/notifications",
+      "/account/settings",
+      "/account/profile",
+      "/account/privacy",
+      "/account/support",
+      "/account/support/report-scam",
+      "/account/support/9b2f6f1e-0000-4000-8000-000000000000",
+    ];
+    for (const route of children) {
+      mockUsePathname.mockReturnValue(route);
+      const { unmount } = render(<AccountNav />);
+      expect(screen.getByRole("navigation", { name: "Account navigation" }), route).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("is hidden below 640px (HDR-01 bottom nav replaces it) and shown from sm upwards", () => {
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
-    const overviewLink = screen.getByRole("link", { name: /Overview/ });
-    expect(overviewLink).toHaveAttribute("aria-current", "page");
+    const nav = screen.getByRole("navigation", { name: "Account navigation" });
+    expect(nav.className).toContain("hidden");
+    expect(nav.className).toContain("sm:block");
   });
 
   it("does NOT mark Overview as active on /account/listings", () => {

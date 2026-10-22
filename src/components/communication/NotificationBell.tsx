@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { type Notification } from "@/types/communication";
 import { markNotificationReadAction, markAllNotificationsReadAction } from "@/app/account/notifications/actions";
 import { formatMessageDate } from "@/lib/formatters";
+import { resolveNotificationLink } from "@/lib/notifications/links";
 
 interface NotificationBellProps {
   userId?: string;
@@ -148,9 +149,9 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                       {n.body}
                     </p>
                     <div className="mt-2 flex items-center justify-between">
-                      {n.link ? (
+                      {resolveNotificationLink(n.link) ? (
                         <Link
-                          href={n.link}
+                          href={resolveNotificationLink(n.link) as string}
                           onClick={() => {
                             if (!n.read_at) handleMarkRead(n.id);
                             setIsOpen(false);

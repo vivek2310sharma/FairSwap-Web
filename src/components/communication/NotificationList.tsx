@@ -19,6 +19,7 @@ import {
   markAllNotificationsReadAction,
 } from "@/app/account/notifications/actions";
 import { formatNotificationDateTime } from "@/lib/formatters";
+import { resolveNotificationLink } from "@/lib/notifications/links";
 
 interface NotificationListProps {
   initialNotifications: Notification[];
@@ -50,7 +51,7 @@ export function NotificationList({ initialNotifications }: NotificationListProps
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "message_received":
+      case "new_message":
         return <MessageSquare className="h-5 w-5 text-amber-500" />;
       case "listing_approved":
         return <Tag className="h-5 w-5 text-emerald-500" />;
@@ -63,22 +64,6 @@ export function NotificationList({ initialNotifications }: NotificationListProps
       default:
         return <Bell className="h-5 w-5 text-stone-400" />;
     }
-  };
-
-  const getTargetLink = (n: Notification): string | null => {
-    if (n.type === "message_received" && n.payload?.conversation_id) {
-      return `/account/messages/${n.payload.conversation_id}`;
-    }
-    if (n.type === "listing_approved" && n.payload?.slug) {
-      return `/listings/${n.payload.slug}`;
-    }
-    if (n.type === "listing_rejected" && n.payload?.listing_id) {
-      return `/account/listings`;
-    }
-    if (n.type === "support_reply" && n.payload?.ticket_id) {
-      return `/account/support/${n.payload.ticket_id}`;
-    }
-    return null;
   };
 
   return (
@@ -121,7 +106,7 @@ export function NotificationList({ initialNotifications }: NotificationListProps
         <div className="divide-y divide-stone-800/60 rounded-2xl border border-stone-800/80 bg-stone-800/40">
           {notifications.map((n) => {
             const isUnread = !n.read_at;
-            const targetLink = getTargetLink(n);
+            const targetLink = resolveNotificationLink(n.link);
 
             return (
               <div

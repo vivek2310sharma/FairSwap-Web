@@ -44,27 +44,33 @@ export function SupportReplyForm({ ticketId }: SupportReplyFormProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-stone-800 bg-stone-800/40 p-5"
-    >
-      <h3 className="text-sm font-semibold text-stone-200">Add a Reply</h3>
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-card p-5">
+      <label htmlFor="support-reply" className="text-sm font-semibold text-foreground">
+        Add a reply
+      </label>
 
       {error && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+        <div
+          id="support-reply-error"
+          role="alert"
+          className="mt-3 flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-100"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </div>
       )}
 
       <div className="mt-3">
         <textarea
+          id="support-reply"
           rows={4}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Type your reply here..."
+          placeholder="Type your reply here"
           maxLength={3000}
-          className="w-full rounded-xl border border-stone-700 bg-stone-800/90 p-3 text-sm text-stone-100 placeholder-stone-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+          disabled={isSubmitting}
+          aria-describedby={error ? "support-reply-error" : undefined}
+          className="w-full rounded-xl border border-border bg-surface p-3 text-sm text-foreground placeholder:text-muted dark:placeholder:text-neutral-300 focus:border-action-600 focus:outline-none focus:ring-2 focus:ring-action-600/40"
         />
       </div>
 
@@ -72,17 +78,17 @@ export function SupportReplyForm({ ticketId }: SupportReplyFormProps) {
         <button
           type="submit"
           disabled={isSubmitting || !content.trim()}
-          className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 disabled:opacity-50"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-action-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700 disabled:opacity-60"
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Sending...</span>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              <span>Sending…</span>
             </>
           ) : (
             <>
-              <Send className="h-4 w-4" />
-              <span>Send Reply</span>
+              <Send className="h-4 w-4" aria-hidden="true" />
+              <span>Send reply</span>
             </>
           )}
         </button>

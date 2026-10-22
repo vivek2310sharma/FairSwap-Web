@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { Menu, X, Search, Heart, PlusCircle, User, MessageSquare, Bell, LifeBuoy } from "lucide-react";
 import { NotificationBell } from "@/components/communication/NotificationBell";
 
@@ -12,8 +13,26 @@ const navLinks = [
   { label: "Safety", href: "/#safety" },
 ];
 
-export function Header() {
+export interface HeaderViewer {
+  /** First word of the signed-in user's display name, when known. */
+  firstName: string | null;
+  /** Single-character avatar fallback. */
+  initial: string;
+}
+
+interface HeaderProps {
+  /**
+   * Signed-in user details, supplied by server layouts that already know the user
+   * (currently /account/*). When omitted the header shows the generic Account link,
+   * so public pages stay statically renderable and make no extra auth requests.
+   */
+  viewer?: HeaderViewer | null;
+}
+
+export function Header({ viewer = null }: HeaderProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const isAccountRoute = pathname === "/account" || (pathname?.startsWith("/account/") ?? false);
 
   const toggleMenu = useCallback(() => {
     setMobileMenuOpen((prev) => !prev);
@@ -47,17 +66,18 @@ export function Header() {
             <Search className="h-4 w-4" aria-hidden="true" />
             Browse
           </Link>
-          <Link
-            href="/account/favourites"
-            className="flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-foreground"
-          >
-            <Heart className="h-4 w-4" aria-hidden="true" />
-            Favourites
-          </Link>
         </nav>
 
         {/* Action buttons */}
         <div className="hidden items-center gap-3 sm:flex">
+          <Link
+            href="/account/favourites"
+            className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-foreground p-1.5 rounded-lg hover:bg-surface"
+            aria-label="Favourites"
+            title="Favourites"
+          >
+            <Heart className="h-4 w-4" aria-hidden="true" />
+          </Link>
           <Link
             href="/account/messages"
             className="flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-foreground p-1.5 rounded-lg hover:bg-surface"
@@ -69,10 +89,25 @@ export function Header() {
           <NotificationBell />
           <Link
             href="/account"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
+            aria-current={pathname === "/account" ? "page" : undefined}
+            aria-label={viewer?.firstName ? `Account (${viewer.firstName})` : undefined}
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold text-foreground hover:bg-surface ${
+              viewer
+                ? `min-h-[36px] rounded-t-lg border-b-2 px-2 py-1 ${isAccountRoute ? "border-action-600" : "border-transparent"}`
+                : `rounded-lg border px-3 py-1.5 ${isAccountRoute ? "border-action-600" : "border-border"}`
+            }`}
           >
-            <User className="h-3.5 w-3.5" aria-hidden="true" />
-            Account
+            {viewer ? (
+              <span
+                aria-hidden="true"
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-action-600 text-[11px] font-bold text-white"
+              >
+                {viewer.initial}
+              </span>
+            ) : (
+              <User className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            <span className="max-w-[8rem] truncate">{viewer?.firstName ?? "Account"}</span>
           </Link>
           <Link
             href="/account/listings/new"

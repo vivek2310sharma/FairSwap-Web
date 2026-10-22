@@ -36,13 +36,25 @@ function isActive(pathname: string, href: string, exact: boolean): boolean {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
+/** The overview (`/account`) is itself the section menu, so the tab strip is not repeated there. */
+export function isAccountOverviewPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return normalized === "/account";
+}
+
 export function AccountNav() {
   const pathname = usePathname();
+
+  if (isAccountOverviewPath(pathname)) {
+    return null;
+  }
 
   return (
     <nav
       aria-label="Account navigation"
-      className="border-b border-border bg-background"
+      // Below 640px the HDR-01 bottom navigation (Account tab -> hub) replaces this strip.
+      className="hidden border-b border-border bg-background sm:block"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ul

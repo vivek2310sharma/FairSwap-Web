@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X, LifeBuoy, AlertCircle, Loader2 } from "lucide-react";
 import { createSupportTicketAction } from "@/app/account/support/actions";
-import { type SupportTicketCategory } from "@/types/communication";
+import {
+  CUSTOMER_SELECTABLE_CATEGORIES,
+  SUPPORT_CATEGORY_LABELS,
+  SUPPORT_LIMITS,
+  supportTicketCategorySchema,
+  type SupportTicketCategory,
+} from "@/lib/support/tickets";
 
 interface CreateTicketDialogProps {
   isSuspended?: boolean;
 }
+
+const FIELD_CLASS =
+  "mt-1.5 w-full min-h-[44px] rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted dark:placeholder:text-neutral-300 focus:border-action-600 focus:outline-none focus:ring-2 focus:ring-action-600/40 disabled:opacity-60";
 
 export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,17 +30,43 @@ export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogPr
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
+  const uid = useId();
+  const titleId = `${uid}-title`;
+  const errorId = `${uid}-error`;
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const subjectRef = useRef<HTMLInputElement>(null);
+
+  const close = () => {
+    if (isSubmitting) return;
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+    subjectRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isSubmitting) {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, isSubmitting]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (!subject.trim() || subject.trim().length < 5) {
+    const trimmedSubject = subject.trim();
+    const trimmedMessage = message.trim();
+
+    if (trimmedSubject.length < 5) {
       setError("Subject must be at least 5 characters long.");
       return;
     }
-
-    if (!message.trim() || message.trim().length < 10) {
+    if (trimmedMessage.length < 10) {
       setError("Please provide at least 10 characters describing your issue.");
       return;
     }
@@ -39,148 +74,180 @@ export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogPr
     setIsSubmitting(true);
     setError(null);
 
-    const res = await createSupportTicketAction({
-      category,
-      subject: subject.trim(),
-      message: message.trim(),
-    });
+    try {
+      // Suspended accounts can only file appeals; the server enforces this too.
+      const parsedCategory = supportTicketCategorySchema.safeParse(
+        isSuspended ? "moderation_appeal" : category
+      );
+      if (!parsedCategory.success) {
+        setError(parsedCategory.error.errors[0]?.message ?? "Please choose a valid category.");
+        return;
+      }
 
-    setIsSubmitting(false);
+      const res = await createSupportTicketAction({
+        category: parsedCategory.data,
+        subject: trimmedSubject,
+        message: trimmedMessage,
+      });
 
-    if (res.error) {
-      setError(res.error);
-      return;
-    }
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
 
-    setIsOpen(false);
-    setSubject("");
-    setMessage("");
+      setIsOpen(false);
+      setSubject("");
+      setMessage("");
 
-    if (res.ticketId) {
-      router.push(`/account/support/${res.ticketId}`);
-    } else {
-      router.refresh();
+      if (res.ticketId) {
+        router.push(`/account/support/${res.ticketId}`);
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setError("Network problem while submitting. Please check your connection and try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <>
       <button
+        ref={triggerRef}
+        type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+        className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-action-600 px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-action-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
       >
-        <Plus className="h-4 w-4" />
-        <span>{isSuspended ? "Submit Appeal" : "New Inquiry"}</span>
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        <span>{isSuspended ? "Submit appeal" : "New inquiry"}</span>
       </button>
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-xs"
-            onClick={() => !isSubmitting && setIsOpen(false)}
-          />
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={close} aria-hidden="true" />
 
-          <div className="relative w-full max-w-lg rounded-2xl border border-stone-800 bg-stone-900 p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-stone-800">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500">
-                  <LifeBuoy className="h-5 w-5" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-action-50 text-action-700 dark:bg-action-900/40 dark:text-action-300">
+                  <LifeBuoy className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <div>
-                  <h3 className="text-base font-semibold text-stone-100">
-                    {isSuspended ? "Submit Moderation Appeal" : "Create Support Ticket"}
-                  </h3>
-                  <p className="text-xs text-stone-400">
-                    Our team typically responds within 24–48 business hours.
-                  </p>
-                </div>
+                <h3 id={titleId} className="text-base font-semibold text-foreground">
+                  {isSuspended ? "Submit moderation appeal" : "Create support ticket"}
+                </h3>
               </div>
 
               <button
-                onClick={() => setIsOpen(false)}
+                type="button"
+                onClick={close}
                 disabled={isSubmitting}
-                className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-800 hover:text-stone-200"
+                aria-label="Close"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-muted dark:text-neutral-300 hover:bg-surface hover:text-foreground"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4" noValidate>
               {error && (
-                <div className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-400">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
+                <div
+                  id={errorId}
+                  role="alert"
+                  className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-xs text-red-900 dark:border-red-800 dark:bg-red-950/50 dark:text-red-100"
+                >
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <span>{error}</span>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-stone-300">
+                <label htmlFor={`${uid}-category`} className="block text-sm font-semibold text-foreground">
                   Category
                 </label>
                 <select
-                  value={category}
+                  id={`${uid}-category`}
+                  value={isSuspended ? "moderation_appeal" : category}
                   onChange={(e) => setCategory(e.target.value as SupportTicketCategory)}
-                  disabled={isSuspended}
-                  className="mt-1.5 w-full rounded-xl border border-stone-700 bg-stone-800/90 px-3 py-2 text-sm text-stone-100 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-50"
+                  disabled={isSuspended || isSubmitting}
+                  className={FIELD_CLASS}
                 >
-                  <option value="general">General Question</option>
-                  <option value="account">Account & Privacy</option>
-                  <option value="listing_issue">Listing Help</option>
-                  <option value="safety_concern">Safety & Security Concern</option>
-                  <option value="moderation_appeal">Moderation Appeal</option>
-                  <option value="other">Other Inquiry</option>
+                  {(isSuspended ? (["moderation_appeal"] as const) : CUSTOMER_SELECTABLE_CATEGORIES).map(
+                    (value) => (
+                      <option key={value} value={value}>
+                        {SUPPORT_CATEGORY_LABELS[value]}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-stone-300">
+                <label htmlFor={`${uid}-subject`} className="block text-sm font-semibold text-foreground">
                   Subject
                 </label>
                 <input
+                  id={`${uid}-subject`}
+                  ref={subjectRef}
                   type="text"
-                  placeholder="Summary of your inquiry..."
+                  placeholder="Summary of your inquiry"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  maxLength={200}
-                  className="mt-1.5 w-full rounded-xl border border-stone-700 bg-stone-800/90 px-3 py-2 text-sm text-stone-100 placeholder-stone-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  maxLength={SUPPORT_LIMITS.subjectMax}
+                  disabled={isSubmitting}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? errorId : undefined}
+                  className={FIELD_CLASS}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-stone-300">
-                  Detailed Description
+                <label htmlFor={`${uid}-message`} className="block text-sm font-semibold text-foreground">
+                  Details
                 </label>
                 <textarea
+                  id={`${uid}-message`}
                   rows={5}
-                  placeholder="Please provide all relevant details..."
+                  placeholder="Please provide all relevant details"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  maxLength={3000}
-                  className="mt-1.5 w-full rounded-xl border border-stone-700 bg-stone-800/90 p-3 text-sm text-stone-100 placeholder-stone-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  maxLength={SUPPORT_LIMITS.messageMax}
+                  disabled={isSubmitting}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? errorId : undefined}
+                  className={FIELD_CLASS}
                 />
+                <p className="mt-1 text-xs text-muted dark:text-neutral-300">
+                  Do not share passwords, OTPs, UPI PINs or card numbers.
+                </p>
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsOpen(false)}
+                  onClick={close}
                   disabled={isSubmitting}
-                  className="rounded-xl border border-stone-700 bg-transparent px-4 py-2 text-sm font-medium text-stone-300 hover:bg-stone-800"
+                  className="min-h-[44px] rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !subject.trim() || !message.trim()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 disabled:opacity-50"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-action-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700 disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Submitting...</span>
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      <span>Submitting…</span>
                     </>
                   ) : (
-                    <span>Submit Ticket</span>
+                    <span>Submit ticket</span>
                   )}
                 </button>
               </div>

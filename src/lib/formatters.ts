@@ -28,6 +28,25 @@ export function formatMessageTime(isoString: string): string {
 }
 
 /**
+ * Formats an ISO date string as "Month YYYY" (e.g. "March 2026") in Indian time.
+ * Returns an empty string for missing or invalid input.
+ */
+export function formatMonthYear(isoString: string | null | undefined): string {
+  if (!isoString) return "";
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return "";
+    return date.toLocaleDateString(MARKETPLACE_LOCALE, {
+      month: "long",
+      year: "numeric",
+      timeZone: MARKETPLACE_TIMEZONE,
+    });
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Formats an ISO date string into a deterministic short date string (e.g. "18 Sep").
  */
 export function formatMessageDate(isoString: string): string {
