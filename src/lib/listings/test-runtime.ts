@@ -121,8 +121,36 @@ export function isVerifiedExperimentalProductionEnvironment(
   if (!isVerifiedGoodsProductionEnvironment(env)) return false;
   if (env.POST_AD_EXPERIMENTAL_PRODUCTION_FOUNDATION_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
   if (env.POST_AD_EXPERIMENTAL_PRODUCTION_PUBLICATION_LOCK_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
-  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_MODE !== "draft_only") return false;
+  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_MODE !== "draft_only" &&
+      !isVerifiedProductionFamilyLaunchEnvironment(env, family)) return false;
   return env[productionFamilyDraftFlags[family]] === "true";
+}
+
+/** Review-required LIVE production switch. Never enabled by the existing draft-only
+ * release: three distinct attestations are required in addition to verified Goods,
+ * the installed category foundation and individually enabled family assignment.
+ * This controls Web routing only; DB RLS + atomic submit/moderation are authority. */
+export function isVerifiedProductionFamilyLaunchEnvironment(
+  env: Record<string, string | undefined>,
+  family: keyof typeof productionFamilyDraftFlags
+): boolean {
+  if (!isVerifiedGoodsProductionEnvironment(env)) return false;
+  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_FOUNDATION_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
+  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_PUBLICATION_LOCK_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
+  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_MODE !== "reviewed_live") return false;
+  if (env.POST_AD_PRODUCTION_FAMILY_SUBMISSION_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
+  if (env.POST_AD_PRODUCTION_FAMILY_MODERATION_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
+  if (env.POST_AD_PRODUCTION_FAMILY_PUBLIC_READ_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
+  return env[productionFamilyDraftFlags[family]] === "true";
+}
+
+/** True only when at least one family is independently approved for public launch. */
+export function isVerifiedProductionFamilySubmissionRouteEnvironment(
+  env: Record<string, string | undefined>
+): boolean {
+  return (["two-wheelers", "cars", "property"] as const).some(family =>
+    isVerifiedProductionFamilyLaunchEnvironment(env, family)
+  );
 }
 
 export function isVerifiedTwoWheelerTestEnvironment(env: Record<string, string | undefined>): boolean {

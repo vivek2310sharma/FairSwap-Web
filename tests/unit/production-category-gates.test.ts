@@ -3,6 +3,8 @@ import {
   POST_AD_PRODUCTION_PROJECT,
   POST_AD_TEST_PROJECT,
   isVerifiedExperimentalProductionEnvironment,
+  isVerifiedProductionFamilyLaunchEnvironment,
+  isVerifiedProductionFamilySubmissionRouteEnvironment,
   requiresSavedSubmissionFamilyReads,
 } from "../../src/lib/listings/test-runtime";
 
@@ -68,5 +70,54 @@ describe("fail-closed Production experimental draft gates", () => {
     const env=production({POST_AD_PROPERTY_PRODUCTION_DRAFT_ENABLED:"true",
       POST_AD_EXPERIMENTAL_PRODUCTION_PUBLICATION_LOCK_VERIFIED:undefined});
     expect(()=>requiresSavedSubmissionFamilyReads(env)).toThrow("Unverified Production family draft read configuration");
+  });
+});
+
+
+describe("production live family submission is independently attested", () => {
+  const release={
+    POST_AD_EXPERIMENTAL_PRODUCTION_MODE: "reviewed_live",
+    POST_AD_PRODUCTION_FAMILY_SUBMISSION_VERIFIED: POST_AD_PRODUCTION_PROJECT,
+    POST_AD_PRODUCTION_FAMILY_MODERATION_VERIFIED: POST_AD_PRODUCTION_PROJECT,
+    POST_AD_PRODUCTION_FAMILY_PUBLIC_READ_VERIFIED: POST_AD_PRODUCTION_PROJECT,
+    POST_AD_CARS_PRODUCTION_DRAFT_ENABLED: "true",
+  };
+  it("never enables a public release from draft-only flags", () => {
+    const env=production({POST_AD_CARS_PRODUCTION_DRAFT_ENABLED:"true"});
+    expect(isVerifiedExperimentalProductionEnvironment(env,"cars")).toBe(true);
+    expect(isVerifiedProductionFamilyLaunchEnvironment(env,"cars")).toBe(false);
+    expect(isVerifiedProductionFamilySubmissionRouteEnvironment(env)).toBe(false);
+  });
+  it("denies live mode until every independent backend attestation is present", () => {
+    for (const missing of [
+      "POST_AD_PRODUCTION_FAMILY_SUBMISSION_VERIFIED",
+      "POST_AD_PRODUCTION_FAMILY_MODERATION_VERIFIED",
+      "POST_AD_PRODUCTION_FAMILY_PUBLIC_READ_VERIFIED",
+    ]) {
+      const env=production({...release,[missing]:undefined});
+      expect(isVerifiedProductionFamilyLaunchEnvironment(env,"cars")).toBe(false);
+      expect(isVerifiedExperimentalProductionEnvironment(env,"cars")).toBe(false);
+      expect(isVerifiedProductionFamilySubmissionRouteEnvironment(env)).toBe(false);
+    }
+  });
+  it("requires correct project/branch/production target, not merely matching attestations",()=>{
+    for (const override of [
+      {VERCEL_ENV:"preview"},
+      {VERCEL_GIT_COMMIT_REF:"staging"},
+      {NEXT_PUBLIC_SUPABASE_URL:testUrl},
+      {POST_AD_GOODS_TEST_ENABLED:"true"},
+      {POST_AD_PRODUCTION_CREDENTIALS_VERIFIED:undefined},
+    ]) {
+      const env=production({...release,...override});
+      expect(isVerifiedProductionFamilyLaunchEnvironment(env,"cars")).toBe(false);
+    }
+  });
+  it("activates only the explicitly approved saved family and retains owner-read checks",()=>{
+    const env=production(release);
+    expect(isVerifiedProductionFamilyLaunchEnvironment(env,"cars")).toBe(true);
+    expect(isVerifiedProductionFamilyLaunchEnvironment(env,"two-wheelers")).toBe(false);
+    expect(isVerifiedProductionFamilyLaunchEnvironment(env,"property")).toBe(false);
+    expect(isVerifiedProductionFamilySubmissionRouteEnvironment(env)).toBe(true);
+    expect(requiresSavedSubmissionFamilyReads(env)).toBe(true);
   });
 });
