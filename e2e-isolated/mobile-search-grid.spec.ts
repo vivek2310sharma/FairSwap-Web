@@ -20,7 +20,7 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
       await page.goto("/search");
 
       // Assert target results grid exists and contains real rendered cards
-      const resultsGrid = page.getByTestId("search-results-grid");
+      const resultsGrid = page.getByRole("main").getByTestId("search-results-grid");
       await expect(resultsGrid).toBeVisible({ timeout: 10000 });
 
       // Verify real listing title, long Indian price, Hindi Devanagari text, and locality
@@ -59,7 +59,7 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
     await page.setViewportSize({ width: 360, height: 640 });
     await page.goto("/search");
 
-    const resultsGrid = page.getByTestId("search-results-grid");
+    const resultsGrid = page.getByRole("main").getByTestId("search-results-grid");
     await expect(resultsGrid).toBeVisible({ timeout: 10000 });
 
     // Target the thumbnail image link (first card link)
@@ -79,7 +79,7 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
     await page.setViewportSize({ width: 360, height: 640 });
     await page.goto("/search");
 
-    const resultsGrid = page.getByTestId("search-results-grid");
+    const resultsGrid = page.getByRole("main").getByTestId("search-results-grid");
     await expect(resultsGrid).toBeVisible({ timeout: 10000 });
 
     // Find the real 44px favourite button rendered by React ListingCard
