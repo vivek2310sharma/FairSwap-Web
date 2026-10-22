@@ -11,7 +11,6 @@ import {
 } from "@/lib/discovery/queries";
 import { searchFiltersSchema, getEffectiveSort } from "@/types/listing";
 import { serializeSearchFilters } from "@/lib/navigation/search-context";
-import { loadPublicFamilyDisplays } from "@/lib/discovery/public-family-query";
 import { createClient } from "@/lib/supabase/server";
 import { Metadata } from "next";
 import { SearchX } from "lucide-react";
@@ -72,8 +71,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     getPublicLocalities(filters.city || undefined),
     searchPublicListings(filters),
   ]);
-
-  const familyDisplays = await loadPublicFamilyDisplays(searchResult.items);
 
   // Check user favourite status
   const supabase = await createClient();
@@ -141,7 +138,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                       <ListingCard
                         key={listing.id}
                         listing={listing}
-                        familyDisplay={familyDisplays.get(listing.id)}
                         isFavourited={userFavSet.has(listing.id)}
                         searchContext={searchContext}
                         variant="compact"

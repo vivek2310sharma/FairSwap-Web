@@ -7,6 +7,7 @@ interface PaginationProps {
   totalCount: number;
   perPage: number;
   searchParams: Record<string, string | undefined>;
+  baseUrl?: string;
 }
 
 export function Pagination({
@@ -15,6 +16,7 @@ export function Pagination({
   totalCount,
   perPage,
   searchParams,
+  baseUrl = "/search",
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -26,7 +28,8 @@ export function Pagination({
       }
     }
     params.set("page", page.toString());
-    return `/search?${params.toString()}`;
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   };
 
   const startItem = (currentPage - 1) * perPage + 1;

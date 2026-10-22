@@ -17,6 +17,23 @@ import { isTwoWheelerEnabled, isCarsEnabled } from "@/lib/listings/two-wheeler/s
 import { isVerifiedSubmissionTestEnvironment } from "@/lib/listings/test-runtime";
 import { resolveListingActions } from "@/lib/listings/action-matrix";
 import { ListingActionsContainer } from "./ListingActionsContainer";
+import { MyAdsStatusTabs } from "@/components/account/MyAdsStatusTabs";
+import {
+  fetchMyListingCounts,
+  getStatusesForTab,
+  MY_ADS_TABS,
+  parseMyAdsTab,
+} from "@/lib/listings/my-ads";
+import { Pagination } from "@/components/listings/Pagination";
+
+const PER_PAGE = 10;
+
+interface ListingsDashboardPageProps {
+  searchParams?: Promise<{
+    status?: string | string[];
+    page?: string | string[];
+  }>;
+}
 
 function getStatusBadge(status: ListingStatus, testFamily = false) {
   const styles: Record<ListingStatus, string> = {
@@ -56,7 +73,16 @@ function getStatusBadge(status: ListingStatus, testFamily = false) {
   );
 }
 
-export default async function ListingsDashboardPage() {
+export default async function ListingsDashboardPage({
+  searchParams = Promise.resolve({}),
+}: ListingsDashboardPageProps = {}) {
+  const resolvedSearchParams = await searchParams;
+  const activeTab = parseMyAdsTab(resolvedSearchParams?.status);
+  const rawPage = Array.isArray(resolvedSearchParams?.page)
+    ? resolvedSearchParams.page[0]
+    : resolvedSearchParams?.page;
+  const currentPage = Math.max(1, parseInt(rawPage || "1", 10) || 1);
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -66,30 +92,50 @@ export default async function ListingsDashboardPage() {
     redirect("/auth/sign-in?next=/account/listings");
   }
 
-  const { data: listings, error } = await supabase
+  const statuses = getStatusesForTab(activeTab);
+
+  let query = supabase
     .from("listings")
-    .select(`
-      id,
-      category_id,
-      slug,
-      title,
-      price_type,
-      price_paise,
-      status,
-      revision,
-      renewal_count,
-      rejection_reason,
-      removal_reason,
-      cover_photo_id,
-      expires_at,
-      created_at,
-      updated_at,
-      categories(name,slug),
-      cities(name)
-    `)
-    .eq("seller_id", user.id)
-    .order("updated_at", { ascending: false })
-    .limit(100);
+    .select(
+      `
+        id,
+        category_id,
+        slug,
+        title,
+        price_type,
+        price_paise,
+        status,
+        revision,
+        renewal_count,
+        rejection_reason,
+        removal_reason,
+        cover_photo_id,
+        expires_at,
+        created_at,
+        updated_at,
+        categories(name,slug),
+        cities(name)
+      `,
+      { count: "exact" }
+    )
+    .eq("seller_id", user.id);
+
+  if (statuses && statuses.length > 0) {
+    query = query.in("status", statuses);
+  }
+
+  const from = (currentPage - 1) * PER_PAGE;
+  const to = from + PER_PAGE - 1;
+
+  query = query.order("updated_at", { ascending: false }).range(from, to);
+
+  const [{ data: listings, count, error }, counts] = await Promise.all([
+    query,
+    fetchMyListingCounts(supabase, user.id),
+  ]);
+
+  const totalCount = count ?? 0;
+  const totalPages = Math.ceil(totalCount / PER_PAGE);
 
   const propertyIds = (listings ?? []).map((l) => l.id);
   const propertyResult =
@@ -186,6 +232,8 @@ export default async function ListingsDashboardPage() {
     visibilityChecks.filter(([, isVis]) => isVis).map(([id]) => id)
   );
 
+  const currentTabMeta = MY_ADS_TABS.find((t) => t.key === activeTab);
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <div className="flex flex-col justify-between gap-4 border-b border-gray-200 pb-6 sm:flex-row sm:items-center">
@@ -211,6 +259,10 @@ export default async function ListingsDashboardPage() {
         </Link>
       </div>
 
+      <div className="mt-6">
+        <MyAdsStatusTabs activeTab={activeTab} counts={counts} />
+      </div>
+
       {error && (
         <div className="mt-6 rounded-md bg-red-50 p-4 text-sm text-red-700 border border-red-200">
           Failed to load listings: {error.message}
@@ -220,11 +272,25 @@ export default async function ListingsDashboardPage() {
       {listings && listings.length === 0 ? (
         <div className="mt-12 text-center rounded-lg border-2 border-dashed border-gray-300 p-12">
           <span className="text-4xl">📦</span>
-          <h3 className="mt-2 text-base font-semibold text-gray-900">No listings yet</h3>
+          <h3 className="mt-2 text-base font-semibold text-gray-900">
+            {activeTab === "all"
+              ? "No listings yet"
+              : `No ${currentTabMeta?.label.toLowerCase() || activeTab} listings`}
+          </h3>
           <p className="mt-1 text-sm text-gray-500">
-            Get started by creating your first listing on FairSwap.
+            {activeTab === "all"
+              ? "Get started by creating your first listing on FairSwap."
+              : `You don't have any listings in "${currentTabMeta?.label || activeTab}".`}
           </p>
-          <div className="mt-6">
+          <div className="mt-6 flex justify-center gap-3">
+            {activeTab !== "all" && (
+              <Link
+                href="/account/listings"
+                className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3.5 py-2 text-sm font-semibold text-gray-700 shadow-xs hover:bg-gray-50"
+              >
+                View All Listings
+              </Link>
+            )}
             <Link
               href="/account/listings/new"
               className="inline-flex items-center rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-emerald-500"
@@ -391,6 +457,17 @@ export default async function ListingsDashboardPage() {
               </div>
             );
           })}
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            perPage={PER_PAGE}
+            searchParams={{
+              status: activeTab === "all" ? undefined : activeTab,
+            }}
+            baseUrl="/account/listings"
+          />
         </div>
       )}
     </div>

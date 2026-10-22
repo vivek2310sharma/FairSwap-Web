@@ -12,9 +12,7 @@ import { saveVehicleDraft } from "@/lib/listings/two-wheeler/server";
 import {savePropertyDraft,isPropertyEnabled} from '@/lib/listings/property/server';
 import {isPropertyRentalCategory} from '@/lib/listings/property/contract';
 import {loadSubmissionState} from '@/lib/listings/submission-server';
-import {isVerifiedSubmissionTestEnvironment,isVerifiedProductionFamilySubmissionRouteEnvironment} from '@/lib/listings/test-runtime';
-import {productionFamilyRpcClient} from '@/lib/listings/production-family-rpc';
-import {hasSavedSubmissionFamily} from '@/lib/listings/saved-submission-family';
+import {isVerifiedSubmissionTestEnvironment} from '@/lib/listings/test-runtime';
 import {
   isSellerWriteMaintenanceEnabled,
   SELLER_WRITE_MAINTENANCE_MESSAGE,
@@ -248,31 +246,17 @@ export async function submitListingAction(listingId: string, expectedRevision?: 
 
   // Persisted family, never a caller-supplied macro or readiness flag.
   try {
-    const productionFamilyRoute=isVerifiedProductionFamilySubmissionRouteEnvironment(process.env);
-    const submission=(isVerifiedSubmissionTestEnvironment(process.env)||productionFamilyRoute)
-      ?await loadSubmissionState(supabase,listingId):null;
+    const submission=isVerifiedSubmissionTestEnvironment(process.env)?await loadSubmissionState(supabase,listingId):null;
     if(submission?.family){
-      if(!submission.enabled)return {error:'Submission is not enabled for this saved category. Your draft remains available.'};
+      if(!submission.enabled)return {error:'Test submission is disabled. Saved records remain available.'};
       if(!Number.isSafeInteger(expectedRevision)||expectedRevision!<1)return {error:'Save and reload this draft before submitting.'};
-      const {data,error}=productionFamilyRoute
-        ?await productionFamilyRpcClient(supabase as SupabaseClient<Database>).rpc('seller_submit_family_listing',{listing_id:listingId,expected_revision:expectedRevision!})
-        :await supabase.rpc('seller_submit_listing',{listing_id:listingId,expected_revision:expectedRevision!});
+      const {data,error}=await supabase.rpc('seller_submit_listing',{listing_id:listingId,expected_revision:expectedRevision!});
       if(error)return {error:error.message};
       revalidatePath('/account/listings');revalidatePath(`/account/listings/${listingId}/edit`);
       const result=data as {result?:string}|null;
       return {success:true,listingId,message:result?.result==='already_pending'?'Already awaiting review.':'Listing submitted for review.'};
     }
   }catch(e){return {error:e instanceof Error?e.message:'Submission eligibility is unavailable'};}
-
-  // A saved new-family draft must never be routed through legacy Goods submission,
-  // including during the intermediate draft-only production release.
-  try {
-    if (await hasSavedSubmissionFamily(supabase as SupabaseClient<Database>,listingId)) {
-      return {error:'Vehicle and Property submission is not yet enabled for this saved listing.'};
-    }
-  } catch {
-    return {error:'Saved listing family could not be verified. Please reload.'};
-  }
 
   // Server-side location integrity check
   const { data: listingData } = await supabase

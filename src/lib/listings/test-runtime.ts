@@ -19,19 +19,6 @@ export function requiresSavedSubmissionFamilyReads(env: Record<string, string | 
   if ([env.POST_AD_TWO_WHEELER_TEST_ENABLED, env.POST_AD_CARS_TEST_ENABLED, env.POST_AD_PROPERTY_TEST_ENABLED].includes('true')) {
     throw Error('Unsupported family schema deployment configuration');
   }
-  // Verified Production draft-only families require saved-context reads.
-  // Misconfigured flags fail closed; never infer backend capability from failed reads.
-  const families = ["two-wheelers", "cars", "property"] as const;
-  const requested = families.some(family => env[productionFamilyDraftFlags[family]] === "true");
-  if (requested) {
-    if (env.NEXT_PUBLIC_SUPABASE_URL !== productionUrl || urls.some(url => url !== productionUrl)) {
-      throw Error("Production family schema target mismatch");
-    }
-    if (!families.some(family => isVerifiedExperimentalProductionEnvironment(env, family))) {
-      throw Error("Unverified Production family draft read configuration");
-    }
-    return true;
-  }
   // Supported legacy-only deployments have no activated family integration.
   // Never infer legacy capability from a failed database/context read.
   return false;
@@ -104,53 +91,6 @@ export function isVerifiedGoodsProductionEnvironment(env: Record<string, string 
     } catch { return false; }
   };
   return publicKeys.every(key => matches(key,"anon")) && privateKeys.every(key => matches(key,"service_role"));
-}
-
-const productionFamilyDraftFlags = {
-  "two-wheelers": "POST_AD_TWO_WHEELER_PRODUCTION_DRAFT_ENABLED",
-  cars: "POST_AD_CARS_PRODUCTION_DRAFT_ENABLED",
-  property: "POST_AD_PROPERTY_PRODUCTION_DRAFT_ENABLED",
-} as const;
-
-/** Phase A/B Production boundary: independently attested, default OFF, draft only.
- * Environment variables are not authorization. Database/RLS/guards decide writes. */
-export function isVerifiedExperimentalProductionEnvironment(
-  env: Record<string, string | undefined>,
-  family: keyof typeof productionFamilyDraftFlags
-): boolean {
-  if (!isVerifiedGoodsProductionEnvironment(env)) return false;
-  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_FOUNDATION_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
-  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_PUBLICATION_LOCK_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
-  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_MODE !== "draft_only" &&
-      !isVerifiedProductionFamilyLaunchEnvironment(env, family)) return false;
-  return env[productionFamilyDraftFlags[family]] === "true";
-}
-
-/** Review-required LIVE production switch. Never enabled by the existing draft-only
- * release: three distinct attestations are required in addition to verified Goods,
- * the installed category foundation and individually enabled family assignment.
- * This controls Web routing only; DB RLS + atomic submit/moderation are authority. */
-export function isVerifiedProductionFamilyLaunchEnvironment(
-  env: Record<string, string | undefined>,
-  family: keyof typeof productionFamilyDraftFlags
-): boolean {
-  if (!isVerifiedGoodsProductionEnvironment(env)) return false;
-  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_FOUNDATION_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
-  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_PUBLICATION_LOCK_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
-  if (env.POST_AD_EXPERIMENTAL_PRODUCTION_MODE !== "reviewed_live") return false;
-  if (env.POST_AD_PRODUCTION_FAMILY_SUBMISSION_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
-  if (env.POST_AD_PRODUCTION_FAMILY_MODERATION_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
-  if (env.POST_AD_PRODUCTION_FAMILY_PUBLIC_READ_VERIFIED !== POST_AD_PRODUCTION_PROJECT) return false;
-  return env[productionFamilyDraftFlags[family]] === "true";
-}
-
-/** True only when at least one family is independently approved for public launch. */
-export function isVerifiedProductionFamilySubmissionRouteEnvironment(
-  env: Record<string, string | undefined>
-): boolean {
-  return (["two-wheelers", "cars", "property"] as const).some(family =>
-    isVerifiedProductionFamilyLaunchEnvironment(env, family)
-  );
 }
 
 export function isVerifiedTwoWheelerTestEnvironment(env: Record<string, string | undefined>): boolean {

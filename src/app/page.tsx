@@ -1,8 +1,6 @@
-import { Suspense } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
-import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
 import { TrustStrip } from "@/components/trust-strip";
 import Link from "next/link";
 import Form from "next/form";
@@ -75,12 +73,10 @@ export default function HomePage() {
         <TrustStrip />
 
         {/* Recent Approved Listings */}
-        <Suspense fallback={<RecentListingsSkeleton />}>
-          <RecentListingsSection />
-        </Suspense>
+        <RecentListingsSection />
 
         {/* How it works */}
-        <section id="how-it-works" className="border-y border-border bg-surface scroll-mt-16">
+        <section id="how-it-works" className="border-y border-border bg-surface">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <h2 className="text-center text-2xl font-bold text-foreground">
               How It Works
@@ -121,7 +117,7 @@ export default function HomePage() {
         </section>
 
         {/* Browse Categories preview */}
-        <section id="categories" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 scroll-mt-16">
+        <section id="categories" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-foreground">
               Browse Categories
@@ -156,7 +152,7 @@ export default function HomePage() {
         </section>
 
         {/* Safety section */}
-        <section id="safety" className="border-t border-border bg-surface scroll-mt-16">
+        <section id="safety" className="border-t border-border bg-surface">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-foreground">

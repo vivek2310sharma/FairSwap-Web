@@ -6,7 +6,6 @@ import { LifeBuoy, Clock, CheckCircle2, AlertCircle, ChevronRight } from "lucide
 import type { Metadata } from "next";
 import { type SupportTicket } from "@/types/communication";
 import { CreateTicketDialog } from "@/components/communication/CreateTicketDialog";
-import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 export const metadata: Metadata = {
   title: "Support & Help — FairSwap",
@@ -113,10 +112,7 @@ export default async function SupportPage() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-stone-100">Help & Support</h1>
               <p className="mt-1 text-sm text-stone-400">
-                Create an inquiry or reply to an existing ticket here. For public FAQs, visit the{" "}
-                <a href={HELP_CENTRE_URL} className="text-amber-400 underline hover:text-amber-300">
-                  Help Centre
-                </a>.
+                Have questions or need assistance with an issue? Contact our support staff.
               </p>
             </div>
 

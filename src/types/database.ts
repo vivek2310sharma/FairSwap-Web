@@ -1981,6 +1981,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      get_my_listing_counts: {
+        Args: never
+        Returns: Json
+      }
       get_my_reports: {
         Args: never
         Returns: {
