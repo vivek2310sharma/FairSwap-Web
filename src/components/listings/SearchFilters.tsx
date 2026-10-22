@@ -21,6 +21,17 @@ interface SearchFiltersProps {
   };
 }
 
+interface AppliedFilters {
+  q?: string;
+  category?: string;
+  city?: string;
+  locality?: string;
+  condition?: string;
+  price_min?: number;
+  price_max?: number;
+  sort?: string;
+}
+
 const MAX_PRICE = 100000000;
 
 export function SearchFilters({
@@ -34,6 +45,9 @@ export function SearchFilters({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
   const baseId = useId();
+
+  // Ref tracking authoritative applied filters on desktop to prevent rapid race conditions
+  const appliedFiltersRef = useRef<AppliedFilters>(initialFilters);
 
   // Uncommitted local draft form state
   const [query, setQuery] = useState(initialFilters.q || "");
@@ -69,10 +83,11 @@ export function SearchFilters({
     };
   }, []);
 
-  // Synchronize local form state and cancel pending debounces when initialFilters prop changes
+  // Synchronize local form state when initialFilters prop changes (including Back/Forward navigation)
   const [prevInitialFilters, setPrevInitialFilters] = useState(initialFilters);
   if (initialFilters !== prevInitialFilters) {
     setPrevInitialFilters(initialFilters);
+
     const newHasKeyword = Boolean(initialFilters.q && initialFilters.q.trim().length > 0);
     const newEffectiveSort = getEffectiveSort(initialFilters.q, initialFilters.sort);
     const newIsExplicit =
@@ -92,43 +107,58 @@ export function SearchFilters({
     setPriceError(null);
   }
 
-  // Cancel pending debounce in effect when initialFilters prop changes
+  // Update appliedFiltersRef and cancel pending debounce when initialFilters prop changes
   useEffect(() => {
+    appliedFiltersRef.current = initialFilters;
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
   }, [initialFilters]);
 
-  // Compute effective dynamic localities
+  // Compute effective dynamic localities and loading status
+  const propLocalitiesMatch = city ? localities.filter((loc) => loc.city_id === city) : [];
+  const hasPropMatch = propLocalitiesMatch.length > 0;
+  const isFetchingLocalities = Boolean(
+    city && !hasPropMatch && (!fetchedLocalities || fetchedLocalities.cityId !== city)
+  );
+
   const dynamicLocalities = (() => {
     if (!city) return localities;
-    const matchesProp = localities.filter((loc) => loc.city_id === city);
-    if (matchesProp.length > 0) return matchesProp;
+    if (hasPropMatch) return propLocalitiesMatch;
     if (fetchedLocalities && fetchedLocalities.cityId === city) return fetchedLocalities.items;
     return [];
   })();
 
-  // Lazy load localities for newly selected district if needed
+  // Lazy load localities for newly selected district with AbortController for stale request cancellation
   useEffect(() => {
     if (!city) return;
     const matchesProp = localities.filter((loc) => loc.city_id === city);
     if (matchesProp.length > 0) return;
 
-    let active = true;
-    fetch(`/api/discovery/localities?city_id=${encodeURIComponent(city)}`)
+    const controller = new AbortController();
+
+    fetch(`/api/discovery/localities?city_id=${encodeURIComponent(city)}`, {
+      signal: controller.signal,
+    })
       .then((res) => (res.ok ? res.json() : []))
       .then((data: Locality[]) => {
-        if (active && Array.isArray(data)) {
-          setFetchedLocalities({ cityId: city, items: data });
+        if (!controller.signal.aborted) {
+          if (Array.isArray(data)) {
+            setFetchedLocalities({ cityId: city, items: data });
+          } else {
+            setFetchedLocalities({ cityId: city, items: [] });
+          }
         }
       })
-      .catch(() => {
-        if (active) setFetchedLocalities({ cityId: city, items: [] });
+      .catch((err) => {
+        if (err.name !== "AbortError" && !controller.signal.aborted) {
+          setFetchedLocalities({ cityId: city, items: [] });
+        }
       });
 
     return () => {
-      active = false;
+      controller.abort();
     };
   }, [city, localities]);
 
@@ -168,8 +198,8 @@ export function SearchFilters({
   };
 
   // DESKTOP INSTANT APPLY FOR SELECT CONTROLS
-  // Merges ONLY the newly selected control value into currently APPLIED initialFilters,
-  // completely ignoring uncommitted query text and invalid price inputs.
+  // Accumulates changes into appliedFiltersRef to prevent rapid consecutive select dropouts before re-render,
+  // completely ignoring uncommitted keyword drafts and invalid price inputs.
   const triggerDesktopSelectNavigation = (overrides: {
     category?: string;
     city?: string;
@@ -183,38 +213,59 @@ export function SearchFilters({
       debounceTimerRef.current = null;
     }
 
+    const currentApplied = appliedFiltersRef.current;
+    const newApplied: AppliedFilters = { ...currentApplied };
+
+    if ("category" in overrides) {
+      if (overrides.category) newApplied.category = overrides.category;
+      else delete newApplied.category;
+    }
+    if ("city" in overrides) {
+      if (overrides.city) newApplied.city = overrides.city;
+      else delete newApplied.city;
+    }
+    if ("locality" in overrides) {
+      if (overrides.locality) newApplied.locality = overrides.locality;
+      else delete newApplied.locality;
+    }
+    if ("condition" in overrides) {
+      if (overrides.condition) newApplied.condition = overrides.condition;
+      else delete newApplied.condition;
+    }
+    if ("sort" in overrides) {
+      if (overrides.sort) newApplied.sort = overrides.sort;
+      else delete newApplied.sort;
+    }
+
+    appliedFiltersRef.current = newApplied;
+
     const params = new URLSearchParams();
 
     // 1. Preserve APPLIED keyword search
-    if (initialFilters.q && initialFilters.q.trim()) {
-      params.set("q", initialFilters.q.trim());
+    if (newApplied.q && newApplied.q.trim()) {
+      params.set("q", newApplied.q.trim());
     }
 
     // 2. Category
-    const cat = "category" in overrides ? overrides.category : initialFilters.category;
-    if (cat) params.set("category", cat);
+    if (newApplied.category) params.set("category", newApplied.category);
 
     // 3. City & Locality
-    const cty = "city" in overrides ? overrides.city : initialFilters.city;
-    if (cty) params.set("city", cty);
-
-    const loc = "locality" in overrides ? overrides.locality : initialFilters.locality;
-    if (cty && loc) params.set("locality", loc);
+    if (newApplied.city) params.set("city", newApplied.city);
+    if (newApplied.city && newApplied.locality) params.set("locality", newApplied.locality);
 
     // 4. Condition
-    const cond = "condition" in overrides ? overrides.condition : initialFilters.condition;
-    if (cond) params.set("condition", cond);
+    if (newApplied.condition) params.set("condition", newApplied.condition);
 
     // 5. Preserve APPLIED valid price range only
-    if (initialFilters.price_min !== undefined) {
-      params.set("price_min", initialFilters.price_min.toString());
+    if (newApplied.price_min !== undefined) {
+      params.set("price_min", newApplied.price_min.toString());
     }
-    if (initialFilters.price_max !== undefined) {
-      params.set("price_max", initialFilters.price_max.toString());
+    if (newApplied.price_max !== undefined) {
+      params.set("price_max", newApplied.price_max.toString());
     }
 
     // 6. Sort
-    const appliedQ = initialFilters.q || "";
+    const appliedQ = newApplied.q || "";
     const hasQ = Boolean(appliedQ.trim());
     const srt = overrides.sort !== undefined ? overrides.sort : sort;
     const explicit = overrides.isExplicitSort !== undefined ? overrides.isExplicitSort : isExplicitSort;
@@ -247,20 +298,30 @@ export function SearchFilters({
       debounceTimerRef.current = null;
     }
 
+    const trimmedQ = newQ.trim();
+    const currentApplied = appliedFiltersRef.current;
+    const newApplied: AppliedFilters = {
+      ...currentApplied,
+      q: trimmedQ || undefined,
+    };
+    if (!trimmedQ) delete newApplied.q;
+
+    appliedFiltersRef.current = newApplied;
+
     const params = new URLSearchParams();
 
-    if (newQ.trim()) params.set("q", newQ.trim());
-    if (initialFilters.category) params.set("category", initialFilters.category);
-    if (initialFilters.city) params.set("city", initialFilters.city);
-    if (initialFilters.locality) params.set("locality", initialFilters.locality);
-    if (initialFilters.condition) params.set("condition", initialFilters.condition);
-    if (initialFilters.price_min !== undefined) params.set("price_min", initialFilters.price_min.toString());
-    if (initialFilters.price_max !== undefined) params.set("price_max", initialFilters.price_max.toString());
+    if (trimmedQ) params.set("q", trimmedQ);
+    if (newApplied.category) params.set("category", newApplied.category);
+    if (newApplied.city) params.set("city", newApplied.city);
+    if (newApplied.city && newApplied.locality) params.set("locality", newApplied.locality);
+    if (newApplied.condition) params.set("condition", newApplied.condition);
+    if (newApplied.price_min !== undefined) params.set("price_min", newApplied.price_min.toString());
+    if (newApplied.price_max !== undefined) params.set("price_max", newApplied.price_max.toString());
 
     const srt = effectiveSortOverride || sort;
     const explicit = explicitSortOverride !== undefined ? explicitSortOverride : isExplicitSort;
-    const effectiveSrt = getEffectiveSort(newQ, srt);
-    const hasQ = Boolean(newQ.trim());
+    const effectiveSrt = getEffectiveSort(trimmedQ, srt);
+    const hasQ = Boolean(trimmedQ);
 
     if (explicit) {
       if (effectiveSrt !== "newest" || hasQ) {
@@ -340,23 +401,35 @@ export function SearchFilters({
     setPriceError(null);
 
     const { minStr = "", maxStr = "" } = validation;
-    const currentMinStr = initialFilters.price_min?.toString() || "";
-    const currentMaxStr = initialFilters.price_max?.toString() || "";
+    const currentApplied = appliedFiltersRef.current;
+    const currentMinStr = currentApplied.price_min?.toString() || "";
+    const currentMaxStr = currentApplied.price_max?.toString() || "";
 
     if (minStr === currentMinStr && maxStr === currentMaxStr) return;
 
+    const newApplied: AppliedFilters = {
+      ...currentApplied,
+      price_min: minStr ? Number(minStr) : undefined,
+      price_max: maxStr ? Number(maxStr) : undefined,
+    };
+    if (!minStr) delete newApplied.price_min;
+    if (!maxStr) delete newApplied.price_max;
+
+    appliedFiltersRef.current = newApplied;
+
     const params = new URLSearchParams();
-    if (initialFilters.q) params.set("q", initialFilters.q);
-    if (initialFilters.category) params.set("category", initialFilters.category);
-    if (initialFilters.city) params.set("city", initialFilters.city);
-    if (initialFilters.locality) params.set("locality", initialFilters.locality);
-    if (initialFilters.condition) params.set("condition", initialFilters.condition);
+    if (newApplied.q && newApplied.q.trim()) params.set("q", newApplied.q.trim());
+    if (newApplied.category) params.set("category", newApplied.category);
+    if (newApplied.city) params.set("city", newApplied.city);
+    if (newApplied.city && newApplied.locality) params.set("locality", newApplied.locality);
+    if (newApplied.condition) params.set("condition", newApplied.condition);
 
     if (minStr) params.set("price_min", minStr);
     if (maxStr) params.set("price_max", maxStr);
 
-    const effectiveSrt = getEffectiveSort(initialFilters.q, sort);
-    const hasQ = Boolean(initialFilters.q?.trim());
+    const appliedQ = newApplied.q || "";
+    const effectiveSrt = getEffectiveSort(appliedQ, sort);
+    const hasQ = Boolean(appliedQ.trim());
 
     if (isExplicitSort) {
       if (effectiveSrt !== "newest" || hasQ) {
@@ -429,6 +502,7 @@ export function SearchFilters({
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
+    appliedFiltersRef.current = {};
     setQuery("");
     setCategory("");
     setCity("");
@@ -483,9 +557,21 @@ export function SearchFilters({
   // Form Fields Component for sidebar/drawer rendering
   const renderFormContent = (idSuffix: string) => {
     const formPrefix = `${baseId}-${idSuffix}`;
+    const isDesktop = idSuffix === "desktop";
 
     return (
-      <form onSubmit={handleMobileSubmit} className="space-y-5" aria-label="Listing filters">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (isDesktop) {
+            applyDesktopQuery(query);
+          } else {
+            handleMobileSubmit(e);
+          }
+        }}
+        className="space-y-5"
+        aria-label="Listing filters"
+      >
         {/* Search Query Input */}
         <div>
           <label htmlFor={`${formPrefix}-search-q`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
@@ -509,7 +595,8 @@ export function SearchFilters({
               className="w-full rounded-lg border border-border bg-background px-3 py-2 pr-9 text-sm text-foreground placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
             />
             <button
-              type="submit"
+              type={isDesktop ? "button" : "submit"}
+              onClick={isDesktop ? () => applyDesktopQuery(query) : undefined}
               aria-label="Submit search"
               className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-foreground"
             >
@@ -575,7 +662,7 @@ export function SearchFilters({
         </div>
 
         {/* Locality Selection (Only if district selected) */}
-        {city && dynamicLocalities.length > 0 && (
+        {city && (dynamicLocalities.length > 0 || isFetchingLocalities) && (
           <div>
             <label htmlFor={`${formPrefix}-filter-locality`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
               Locality / Area
@@ -583,6 +670,7 @@ export function SearchFilters({
             <select
               id={`${formPrefix}-filter-locality`}
               value={locality}
+              disabled={isFetchingLocalities}
               onChange={(e) => {
                 const val = e.target.value;
                 setLocality(val);
@@ -590,9 +678,11 @@ export function SearchFilters({
                   triggerDesktopSelectNavigation({ locality: val });
                 }
               }}
-              className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500"
+              className="mt-1 block w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-action-500 disabled:opacity-50"
             >
-              <option value="">All Areas in District</option>
+              <option value="">
+                {isFetchingLocalities ? "Loading areas..." : "All Areas in District"}
+              </option>
               {dynamicLocalities.map((loc) => (
                 <option key={loc.id} value={loc.id}>
                   {loc.name}

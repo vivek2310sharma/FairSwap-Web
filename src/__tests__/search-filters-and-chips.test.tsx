@@ -4,6 +4,7 @@ import React from "react";
 import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
 import { SearchFilters } from "@/components/listings/SearchFilters";
 import { getEffectiveSort } from "@/types/listing";
+import { GET as localitiesRouteGET } from "@/app/api/discovery/localities/route";
 
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -12,15 +13,21 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
+vi.mock("@/lib/discovery/queries", () => ({
+  getPublicLocalities: vi.fn(async (cityId: string) => [
+    { id: "loc-1", city_id: cityId, name: "Vaishali Nagar", slug: "vaishali-nagar", is_active: true, created_at: "" },
+  ]),
+}));
+
 global.fetch = vi.fn();
 
 describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
   const mockData = {
     cat: { id: "cat-1", slug: "electronics", name: "Electronics", description: null, icon: null, sort_order: 1, is_active: true, created_at: "", updated_at: "" },
-    city1: { id: "city-1", name: "Jaipur", state: "Rajasthan", slug: "jaipur", is_active: true, created_at: "" },
-    city2: { id: "city-2", name: "Udaipur", state: "Rajasthan", slug: "udaipur", is_active: true, created_at: "" },
-    loc1: { id: "loc-1", city_id: "city-1", name: "Vaishali Nagar", slug: "vaishali-nagar", is_active: true, created_at: "" },
-    loc2: { id: "loc-2", city_id: "city-2", name: "Hiran Magri", slug: "hiran-magri", is_active: true, created_at: "" },
+    city1: { id: "11111111-1111-1111-1111-111111111111", name: "Jaipur", state: "Rajasthan", slug: "jaipur", is_active: true, created_at: "" },
+    city2: { id: "22222222-2222-2222-2222-222222222222", name: "Udaipur", state: "Rajasthan", slug: "udaipur", is_active: true, created_at: "" },
+    loc1: { id: "loc-1", city_id: "11111111-1111-1111-1111-111111111111", name: "Vaishali Nagar", slug: "vaishali-nagar", is_active: true, created_at: "" },
+    loc2: { id: "loc-2", city_id: "22222222-2222-2222-2222-222222222222", name: "Hiran Magri", slug: "hiran-magri", is_active: true, created_at: "" },
   };
 
   beforeEach(() => {
@@ -45,7 +52,7 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
           filters={{
             q: "phone",
             category: "electronics",
-            city: "city-1",
+            city: mockData.city1.id,
             locality: "loc-1",
             condition: "like_new",
             price_min: 5000,
@@ -85,7 +92,7 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
       render(
         <ActiveFilterChips
           filters={{
-            city: "city-1",
+            city: mockData.city1.id,
             locality: "loc-1",
             condition: "good",
           }}
@@ -121,7 +128,29 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
     });
   });
 
-  describe("SearchFilters Blocking Regression Fixes", () => {
+  describe("SearchFilters Desktop Race Conditions & Draft Isolation", () => {
+    it("accumulates rapid consecutive select dropdown changes on desktop without losing previous selections", () => {
+      render(
+        <SearchFilters
+          categories={[mockData.cat]}
+          cities={[mockData.city1, mockData.city2]}
+          localities={[mockData.loc1]}
+          initialFilters={{}}
+        />
+      );
+
+      const categorySelect = screen.getByLabelText("Category");
+      const conditionSelect = screen.getByLabelText("Condition");
+
+      // 1. User changes category to electronics
+      fireEvent.change(categorySelect, { target: { value: "electronics" } });
+      expect(mockPush).toHaveBeenNthCalledWith(1, "/search?category=electronics&page=1");
+
+      // 2. Before server re-renders initialFilters, user immediately changes condition to like_new
+      fireEvent.change(conditionSelect, { target: { value: "like_new" } });
+      expect(mockPush).toHaveBeenNthCalledWith(2, "/search?category=electronics&condition=like_new&page=1");
+    });
+
     it("DOES NOT leak uncommitted keyword text or invalid prices into URL when instant category select changes", () => {
       render(
         <SearchFilters
@@ -145,6 +174,52 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
 
       // Instant navigation must apply ONLY the validated category change and NOT leak uncommitted query or invalid price
       expect(mockPush).toHaveBeenCalledWith("/search?category=electronics&page=1");
+    });
+
+    it("desktop search icon button applies keyword search directly without triggering mobile form handler or failing on invalid price draft", () => {
+      render(
+        <SearchFilters
+          categories={[mockData.cat]}
+          cities={[mockData.city1]}
+          localities={[mockData.loc1]}
+          initialFilters={{}}
+        />
+      );
+
+      const keywordInput = screen.getByLabelText("Keywords");
+      const minPriceInput = screen.getByLabelText("Minimum price in rupees");
+      const searchButtons = screen.getAllByRole("button", { name: "Submit search" });
+      const desktopSearchButton = searchButtons[0];
+
+      fireEvent.change(keywordInput, { target: { value: "laptop" } });
+      fireEvent.change(minPriceInput, { target: { value: "-100" } }); // Invalid price draft
+
+      // Click search magnifying glass button on desktop
+      fireEvent.click(desktopSearchButton);
+
+      // Desktop search must apply keyword without calling mobile form or showing price error
+      expect(mockPush).toHaveBeenCalledWith("/search?q=laptop&page=1");
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("applies valid price range on blur on desktop", () => {
+      render(
+        <SearchFilters
+          categories={[mockData.cat]}
+          cities={[mockData.city1]}
+          localities={[mockData.loc1]}
+          initialFilters={{ category: "electronics" }}
+        />
+      );
+
+      const minPriceInput = screen.getByLabelText("Minimum price in rupees");
+      const maxPriceInput = screen.getByLabelText("Maximum price in rupees");
+
+      fireEvent.change(minPriceInput, { target: { value: "500" } });
+      fireEvent.change(maxPriceInput, { target: { value: "2000" } });
+      fireEvent.blur(maxPriceInput);
+
+      expect(mockPush).toHaveBeenCalledWith("/search?category=electronics&price_min=500&price_max=2000&page=1");
     });
 
     it("cancels pending debounced keyword search timer when applied initialFilters changes (e.g. chip removal)", () => {
@@ -193,7 +268,7 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
           categories={[mockData.cat]}
           cities={[mockData.city1, mockData.city2]}
           localities={[mockData.loc1]} // Server supplies ONLY city-1 localities
-          initialFilters={{ city: "city-1", locality: "loc-1" }}
+          initialFilters={{ city: mockData.city1.id, locality: "loc-1" }}
         />
       );
 
@@ -204,10 +279,13 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
       const drawerDistrictSelect = districtSelects[districtSelects.length - 1];
 
       // Change district to Udaipur (city-2)
-      fireEvent.change(drawerDistrictSelect, { target: { value: "city-2" } });
+      fireEvent.change(drawerDistrictSelect, { target: { value: mockData.city2.id } });
 
-      // Verify lazy endpoint was called for city-2
-      expect(global.fetch).toHaveBeenCalledWith("/api/discovery/localities?city_id=city-2");
+      // Verify lazy endpoint was called for city-2 with AbortController signal option
+      expect(global.fetch).toHaveBeenCalledWith(
+        `/api/discovery/localities?city_id=${mockData.city2.id}`,
+        expect.objectContaining({ signal: expect.any(Object) })
+      );
 
       // Wait for newly fetched locality option to appear
       await waitFor(() => {
@@ -231,6 +309,37 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
       fireEvent.change(sortSelect, { target: { value: "newest" } });
 
       expect(mockPush).toHaveBeenCalledWith("/search?q=laptop&sort=newest&page=1");
+    });
+  });
+
+  describe("Locality API Endpoint Validation & Headers", () => {
+    it("returns HTTP 400 Bad Request for malformed or missing city_id UUID", async () => {
+      // 1. Missing city_id
+      const req1 = new Request("http://localhost/api/discovery/localities");
+      const res1 = await localitiesRouteGET(req1);
+      expect(res1.status).toBe(400);
+      const json1 = await res1.json();
+      expect(json1.error).toBeDefined();
+
+      // 2. Malformed non-UUID city_id
+      const req2 = new Request("http://localhost/api/discovery/localities?city_id=not-a-uuid");
+      const res2 = await localitiesRouteGET(req2);
+      expect(res2.status).toBe(400);
+      const json2 = await res2.json();
+      expect(json2.error).toBeDefined();
+    });
+
+    it("returns HTTP 200 OK with Cache-Control headers for valid UUID city_id", async () => {
+      const validCityId = "11111111-1111-1111-1111-111111111111";
+      const req = new Request(`http://localhost/api/discovery/localities?city_id=${validCityId}`);
+      const res = await localitiesRouteGET(req);
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get("Cache-Control")).toContain("public");
+      const json = await res.json();
+      expect(Array.isArray(json)).toBe(true);
+      expect(json).toHaveLength(1);
+      expect(json[0].name).toBe("Vaishali Nagar");
     });
   });
 });
