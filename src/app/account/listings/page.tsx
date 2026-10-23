@@ -13,6 +13,11 @@ import {twoWheelerV1} from '@/lib/listings/two-wheeler/contract';
 import {carsV1} from '@/lib/listings/cars/contract';
 import {isTwoWheelerEnabled,isCarsEnabled} from '@/lib/listings/two-wheeler/server';
 import {isVerifiedSubmissionTestEnvironment} from '@/lib/listings/test-runtime';
+import { MyAdsStatusTabs } from '@/components/account/MyAdsStatusTabs';
+import { fetchMyListingCounts, getStatusesForTab, MY_ADS_TABS, parseMyAdsTab, parseMyAdsPage } from '@/lib/listings/my-ads';
+import { Pagination } from '@/components/listings/Pagination';
+
+const PER_PAGE = 10;
 
 
 function getStatusBadge(status: ListingStatus, testFamily=false) {
@@ -51,7 +56,14 @@ function getStatusBadge(status: ListingStatus, testFamily=false) {
   );
 }
 
-export default async function ListingsDashboardPage() {
+export default async function ListingsDashboardPage({ searchParams = Promise.resolve({}) }: {
+  searchParams?: Promise<{ status?: string | string[]; page?: string | string[] }>;
+} = {}) {
+  const params = await searchParams;
+  const activeTab = parseMyAdsTab(params.status);
+  const currentPage = parseMyAdsPage(params.page);
+  const statuses = getStatusesForTab(activeTab);
+  const currentTab = MY_ADS_TABS.find(tab => tab.key === activeTab)!;
   const supabase = await createClient();
   const {
     data: { user },
@@ -61,7 +73,7 @@ export default async function ListingsDashboardPage() {
     redirect("/auth/sign-in?next=/account/listings");
   }
 
-  const { data: listings, error } = await supabase
+  let query = supabase
     .from("listings")
     .select(`
       id,
@@ -80,10 +92,19 @@ export default async function ListingsDashboardPage() {
       updated_at,
       categories(name,slug),
       cities(name)
-    `)
-    .eq("seller_id", user.id)
-    .order("updated_at", { ascending: false })
-    .limit(100);
+    `, { count: "exact" })
+    .eq("seller_id", user.id);
+  if (statuses) query = query.in("status", statuses);
+  const [{ data: listings, error, count }, counts] = await Promise.all([
+    query.order("updated_at", { ascending: false }).order("id", { ascending: false })
+      .range((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE - 1),
+    fetchMyListingCounts(supabase, user.id),
+  ]);
+  const totalCount = count ?? 0;
+  const totalPages = Math.ceil(totalCount / PER_PAGE);
+  if (!error && currentPage > Math.max(1, totalPages)) {
+    redirect(activeTab === "all" ? "/account/listings" : `/account/listings?status=${activeTab}`);
+  }
 
   const propertyIds=(listings??[]).map(l=>l.id);
   const propertyResult=isPropertyEnabled()&&propertyIds.length?await (async()=>{
@@ -132,7 +153,7 @@ export default async function ListingsDashboardPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+    <div className="mx-auto w-full min-w-0 max-w-6xl px-4 py-10 sm:px-6">
       <div className="flex flex-col justify-between gap-4 border-b border-gray-200 pb-6 sm:flex-row sm:items-center">
         <div>
           <div className="flex items-center gap-2">
@@ -156,6 +177,8 @@ export default async function ListingsDashboardPage() {
         </Link>
       </div>
 
+      <div className="mt-6"><MyAdsStatusTabs activeTab={activeTab} counts={counts} /></div>
+      {counts === null && <p role="status" className="mt-2 text-sm text-gray-600">Status counts are temporarily unavailable.</p>}
       {error && (
         <div className="mt-6 rounded-md bg-red-50 p-4 text-sm text-red-700 border border-red-200">
           Failed to load listings: {error.message}
@@ -165,11 +188,12 @@ export default async function ListingsDashboardPage() {
       {listings && listings.length === 0 ? (
         <div className="mt-12 text-center rounded-lg border-2 border-dashed border-gray-300 p-12">
           <span className="text-4xl">📦</span>
-          <h3 className="mt-2 text-base font-semibold text-gray-900">No listings yet</h3>
+          <h3 className="mt-2 text-base font-semibold text-gray-900">{activeTab === "all" ? "No listings yet" : `No ${currentTab.label.toLowerCase()} listings`}</h3>
           <p className="mt-1 text-sm text-gray-500">
-            Get started by creating your first listing on FairSwap.
+            {activeTab === "all" ? "Get started by creating your first listing on FairSwap." : `You don’t have any listings in “${currentTab.label}”.`}
           </p>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            {activeTab !== "all" && <Link href="/account/listings" className="inline-flex min-h-11 items-center rounded-md border px-3.5 py-2 text-sm font-semibold">View All Listings</Link>}
             <Link
               href="/account/listings/new"
               className="inline-flex items-center rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500"
@@ -288,6 +312,8 @@ export default async function ListingsDashboardPage() {
               </div>
             );
           })}
+          {!error && <Pagination currentPage={currentPage} totalPages={totalPages} totalCount={totalCount}
+            perPage={PER_PAGE} searchParams={{ status: activeTab === "all" ? undefined : activeTab }} baseUrl="/account/listings" />}
         </div>
       )}
     </div>

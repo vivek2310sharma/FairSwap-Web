@@ -1,5 +1,7 @@
 # Current FairSwap-Web state and boundaries
 
+> ADS-01 local review, 23 October 2026: eight My Ads status tabs, owner-scoped counts and URL pagination are prepared for review; hosted acceptance is pending. See [scope and verification](ADS-01-LOCAL-REVIEW.md).
+
 **Snapshot:** 14 October 2026. This is an **operational summary**, not a substitute for the live code, GitHub release checks, Supabase Dashboard or fresh legal advice. Update dated evidence when architecture or operational status changes.
 
 ## Product and audience
