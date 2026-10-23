@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -25,27 +26,35 @@ interface NotificationListProps {
 }
 
 export function NotificationList({ initialNotifications }: NotificationListProps) {
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const { user, refreshUnreadCounts } = useAuth();
+  const [readError, setReadError] = useState<string | null>(null);
+  const [notificationRows, setNotifications] = useState<Notification[]>(initialNotifications);
+  const notifications = user ? notificationRows.filter(n => n.user_id === user.id) : [];
   const [isMarkingAll, setIsMarkingAll] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
   const handleMarkOneRead = async (id: string) => {
-    // Optimistic update
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
-    );
-    await markNotificationReadAction(id);
+    try {
+      const result = await markNotificationReadAction(id);
+      if (!result.success) { setReadError("Unable to mark notification as read."); return; }
+      setReadError(null);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+      await refreshUnreadCounts();
+    } catch { setReadError("Unable to mark notification as read."); }
   };
 
   const handleMarkAllRead = async () => {
     if (unreadCount === 0 || isMarkingAll) return;
     setIsMarkingAll(true);
-    // Optimistic update
-    const nowIso = new Date().toISOString();
-    setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || nowIso })));
-    await markAllNotificationsReadAction();
-    setIsMarkingAll(false);
+    try {
+      const result = await markAllNotificationsReadAction();
+      if (!result.success) { setReadError("Unable to mark notifications as read."); return; }
+      setReadError(null);
+      setNotifications(prev => prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() })));
+      await refreshUnreadCounts();
+    } catch { setReadError("Unable to mark notifications as read."); }
+    finally { setIsMarkingAll(false); }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -83,6 +92,7 @@ export function NotificationList({ initialNotifications }: NotificationListProps
 
   return (
     <div className="space-y-4">
+      {readError && <p role="alert">{readError}</p>}
       <div className="flex items-center justify-between pb-2">
         <div className="text-sm text-stone-400">
           {unreadCount > 0 ? (
