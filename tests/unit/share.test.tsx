@@ -152,6 +152,7 @@ vi.mock("@/lib/supabase/server", () => ({
         eq: () => q,
         order: () => q,
         limit: async () => ({ data: mockListings, error: null }),
+        range: async () => ({ data: mockListings, error: null }),
         in: async () => ({ data: [], error: null }),
       };
       return q;
