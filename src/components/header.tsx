@@ -117,7 +117,16 @@ export function Header() {
                 )}
               </Link>
               <NotificationBell />
-              <button type="button" disabled={signingOut} onClick={handleSignOut} className="rounded-lg p-2 text-xs focus-visible:ring-2 focus-visible:ring-action-500">Sign Out</button>
+              <button
+                type="button"
+                disabled={signingOut}
+                aria-busy={signingOut}
+                onClick={handleSignOut}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                {signingOut ? "Signing out…" : "Sign Out"}
+              </button>
               <Link
                 href="/account"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
