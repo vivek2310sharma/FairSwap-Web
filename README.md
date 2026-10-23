@@ -1,5 +1,7 @@
 # FairSwap — Web
 
+> ADS-01 production release preparation (23 October 2026): local main-based port; release and hosted acceptance are pending. See [handoff and verification](docs/ADS-01-PRODUCTION-HANDOFF.md).
+
 **India-first, trust-first peer-to-peer classifieds.** FairSwap helps people discover, list and discuss second-hand items. Buyers and sellers arrange exchanges directly; FairSwap is **not** an item checkout, escrow, payout or delivery service.
 
 > **Current documentation (reviewed 14 October 2026).** This repository is an operating Next.js application, not a starter pack. Older `Phase 1` / `Phase 2` milestones and starter prompts are historical records, **not active development gates**. Start with [CURRENT_STATE](docs/CURRENT_STATE.md), the [documentation index](docs/README.md), and [CONTRIBUTING](CONTRIBUTING.md).

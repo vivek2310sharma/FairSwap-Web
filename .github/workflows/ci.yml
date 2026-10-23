@@ -94,6 +94,12 @@ jobs:
       - name: Run LIST-03 WhatsApp Sharing Unit Tests
         run: pnpm vitest run tests/unit/share.test.tsx
 
+      - name: Run ADS-01 Status, Counts and Production Dashboard Tests
+        run: pnpm vitest run tests/unit/my-ads-status-tabs.test.tsx tests/security/my-ads-counts.test.ts tests/unit/my-ads-production.test.ts tests/unit/action-matrix.test.ts tests/unit/post-ad-journey-dashboard.test.tsx
+
+      - name: Run ADS-01 Isolated Dashboard E2E
+        run: pnpm exec playwright test --config=playwright.ads-01.config.ts
+
       - name: Run Auth Email Template Contract Tests
         run: |
           pnpm vitest run tests/unit/auth-email-templates.test.ts tests/unit/sign-in-actions.test.ts tests/auth/callback.test.ts tests/unit/extract-otp.test.ts
@@ -217,6 +223,18 @@ jobs:
             exit 1
           fi
           pnpm vitest run tests/security/listings-rls.test.ts
+
+      - name: Run ADS-01 Disposable Two-Owner Data API Isolation
+        env:
+          ADS01_RUN_DISPOSABLE_DB_TESTS: "true"
+          ALLOW_LOCAL_TEST_MUTATIONS: "true"
+        run: |
+          set -euo pipefail
+          STATUS_JSON=$(supabase status -o json)
+          export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS_JSON" | jq -r .API_URL)
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS_JSON" | jq -r .ANON_KEY)
+          export SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS_JSON" | jq -r .SERVICE_ROLE_KEY)
+          pnpm vitest run tests/security/my-ads-disposable-db.test.ts
 
       - name: Run MOD-03A Automatic Moderation Integration Tests
         run: |

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationProps {
+  baseUrl?: string;
   currentPage: number;
   totalPages: number;
   totalCount: number;
@@ -10,6 +11,7 @@ interface PaginationProps {
 }
 
 export function Pagination({
+  baseUrl = "/search",
   currentPage,
   totalPages,
   totalCount,
@@ -26,7 +28,7 @@ export function Pagination({
       }
     }
     params.set("page", page.toString());
-    return `/search?${params.toString()}`;
+    return `${baseUrl}?${params.toString()}`;
   };
 
   const startItem = (currentPage - 1) * perPage + 1;

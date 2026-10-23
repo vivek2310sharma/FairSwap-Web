@@ -1,5 +1,7 @@
 # FairSwap product roadmap — workstreams and readiness
 
+> ADS-01 production release preparation (23 October 2026): local main-based port; release and hosted acceptance are pending. See [handoff and verification](ADS-01-PRODUCTION-HANDOFF.md).
+
 **Current planning model, reviewed 14 October 2026.** Prioritize work by **verified behavior, customer trust, security, operational risk, and explicit owner approval**. Historical numbered development phases and `1.1–1.6` milestones do **not** determine which tasks may now be started.
 
 This is a living **planning index**, not implementation permission. GitHub issues and reviewed PRs supply concrete scope and current acceptance criteria.

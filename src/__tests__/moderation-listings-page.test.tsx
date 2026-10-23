@@ -56,6 +56,7 @@ function stubSellerListings() {
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue({ data: [pendingListing], error: null }),
+    range: vi.fn().mockResolvedValue({ data: [pendingListing], error: null }),
   };
 
   mockServerClient.mockResolvedValue({
