@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MyAdsTabScroller } from "./MyAdsTabScroller";
 import { MY_ADS_TABS, MyAdsTabKey, MyListingCounts } from "@/lib/listings/my-ads";
 
 interface MyAdsStatusTabsProps {
@@ -12,9 +13,7 @@ export function MyAdsStatusTabs({ activeTab, counts }: MyAdsStatusTabsProps) {
       aria-label="My Ads Status Navigation"
       className="border-b border-gray-200"
     >
-      <div
-        className="flex space-x-2 overflow-x-auto pb-1 scrollbar-none sm:space-x-4"
-      >
+      <MyAdsTabScroller activeTab={activeTab}>
         {MY_ADS_TABS.map((tab) => {
           const isSelected = activeTab === tab.key;
           const count = counts?.[tab.key] ?? "—";
@@ -46,7 +45,7 @@ export function MyAdsStatusTabs({ activeTab, counts }: MyAdsStatusTabsProps) {
             </Link>
           );
         })}
-      </div>
+      </MyAdsTabScroller>
     </nav>
   );
 }

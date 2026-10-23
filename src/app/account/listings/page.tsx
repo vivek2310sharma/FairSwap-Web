@@ -14,7 +14,7 @@ import {carsV1} from '@/lib/listings/cars/contract';
 import {isTwoWheelerEnabled,isCarsEnabled} from '@/lib/listings/two-wheeler/server';
 import {isVerifiedSubmissionTestEnvironment} from '@/lib/listings/test-runtime';
 import { MyAdsStatusTabs } from '@/components/account/MyAdsStatusTabs';
-import { fetchMyListingCounts, getStatusesForTab, MY_ADS_TABS, parseMyAdsTab, parseMyAdsPage } from '@/lib/listings/my-ads';
+import { fetchMyListingCounts, getStatusesForTab, MY_ADS_TABS, parseMyAdsTab, parseMyAdsPage, MY_ADS_MAX_PAGE } from '@/lib/listings/my-ads';
 import { Pagination } from '@/components/listings/Pagination';
 
 const PER_PAGE = 10;
@@ -101,7 +101,7 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
     fetchMyListingCounts(supabase, user.id),
   ]);
   const totalCount = count ?? 0;
-  const totalPages = Math.ceil(totalCount / PER_PAGE);
+  const totalPages = Math.min(MY_ADS_MAX_PAGE, Math.ceil(totalCount / PER_PAGE));
   if (!error && currentPage > Math.max(1, totalPages)) {
     redirect(activeTab === "all" ? "/account/listings" : `/account/listings?status=${activeTab}`);
   }
@@ -188,7 +188,7 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
       {listings && listings.length === 0 ? (
         <div className="mt-12 text-center rounded-lg border-2 border-dashed border-gray-300 p-12">
           <span className="text-4xl">📦</span>
-          <h3 className="mt-2 text-base font-semibold text-gray-900">{activeTab === "all" ? "No listings yet" : `No ${currentTab.label.toLowerCase()} listings`}</h3>
+          <h3 className="mt-2 text-base font-semibold text-gray-900">{currentTab.emptyLabel}</h3>
           <p className="mt-1 text-sm text-gray-500">
             {activeTab === "all" ? "Get started by creating your first listing on FairSwap." : `You don’t have any listings in “${currentTab.label}”.`}
           </p>

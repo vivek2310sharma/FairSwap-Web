@@ -22,18 +22,19 @@ export const myAdsTabSchema = z.enum(MY_ADS_TAB_KEYS).catch("all");
 export interface MyAdsStatusTabMeta {
   key: MyAdsTabKey;
   label: string;
+  emptyLabel: string;
   statuses: ListingStatus[] | null; // null means all seller statuses
 }
 
 export const MY_ADS_TABS: MyAdsStatusTabMeta[] = [
-  { key: "all", label: "All", statuses: null },
-  { key: "active", label: "Active", statuses: ["active", "reserved"] },
-  { key: "pending_review", label: "Under review", statuses: ["pending_review"] },
-  { key: "draft", label: "Drafts", statuses: ["draft"] },
-  { key: "rejected", label: "Needs action", statuses: ["rejected"] },
-  { key: "paused", label: "Paused", statuses: ["paused"] },
-  { key: "expired", label: "Expired", statuses: ["expired"] },
-  { key: "sold", label: "Sold", statuses: ["sold"] },
+  { key: "all", label: "All", emptyLabel: "No listings yet", statuses: null },
+  { key: "active", label: "Active", emptyLabel: "No active listings", statuses: ["active", "reserved"] },
+  { key: "pending_review", label: "Under review", emptyLabel: "No listings under review", statuses: ["pending_review"] },
+  { key: "draft", label: "Drafts", emptyLabel: "No draft listings", statuses: ["draft"] },
+  { key: "rejected", label: "Needs action", emptyLabel: "No listings needing action", statuses: ["rejected"] },
+  { key: "paused", label: "Paused", emptyLabel: "No paused listings", statuses: ["paused"] },
+  { key: "expired", label: "Expired", emptyLabel: "No expired listings", statuses: ["expired"] },
+  { key: "sold", label: "Sold", emptyLabel: "No sold listings", statuses: ["sold"] },
 ];
 
 export type MyListingCounts = Record<MyAdsTabKey, number>;
@@ -63,33 +64,7 @@ export async function fetchMyListingCounts(
   supabase: SupabaseClient<Database>,
   sellerId: string
 ): Promise<MyListingCounts | null> {
-  try {
-    const { data, error } = await supabase.rpc("get_my_listing_counts");
-    const parsed = z.object(Object.fromEntries(MY_ADS_TAB_KEYS.map(key => [key, z.number().int().nonnegative().safe()]))).safeParse(data);
-    if (!error && parsed.success) {
-      const counts = parsed.data as MyListingCounts;
-      const grouped = MY_ADS_TAB_KEYS.filter(key => key !== "all").reduce((sum, key) => sum + counts[key], 0);
-      if (counts.all >= grouped) return counts;
-    }
-
-    if (error) {
-      logger.warn("my_ads.rpc_counts_fallback", {
-        details: {
-          error_code: error.code,
-          error_message: error.message,
-          seller_id: sellerId,
-        },
-      });
-    }
-  } catch (err) {
-    logger.warn("my_ads.rpc_counts_exception", {
-      details: {
-        error: err instanceof Error ? err.message : String(err),
-        seller_id: sellerId,
-      },
-    });
-  }
-
+  // No RPC is called until a separately reviewed Backend contract exists.
   // Exact HEAD counts avoid the Data API row cap and remain owner-scoped.
   try {
     const entries = await Promise.all(MY_ADS_TABS.map(async tab => {
@@ -106,9 +81,12 @@ export async function fetchMyListingCounts(
   }
 }
 
+// At 10 rows per page, bound reads to the first 10,000 seller listings.
+export const MY_ADS_MAX_PAGE = 1000;
+
 export function parseMyAdsPage(rawPage?: string | string[]): number {
   const value = Array.isArray(rawPage) ? rawPage[0] : rawPage;
   if (!value || !/^[1-9]\d*$/.test(value)) return 1;
   const page = Number(value);
-  return Number.isSafeInteger(page) && page <= 214748364 ? page : 1;
+  return Number.isSafeInteger(page) && page <= MY_ADS_MAX_PAGE ? page : 1;
 }

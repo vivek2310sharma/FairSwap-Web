@@ -55,9 +55,22 @@ Replace the oversized main-targeted PR #228 with a focused staging-targeted PR a
 
 Rollback is a reviewed revert of these Web-only changes after integration; no database rollback is needed. Current work remains uncommitted for review.
 
+## Independent review follow-up — 23 October 2026
+
+This section supersedes the earlier local-only/RPC checkpoint above. PR #233 remains DRAFT against staging; no merge or hosted mutation is authorized.
+
+- Runtime counts now use exact owner-scoped HEAD queries directly. The absent, unaudited RPC call and speculative database type were removed; any future RPC requires separate Backend security review, including auth.uid(), invoker/RLS semantics, execute grants, grouping and two-owner isolation.
+- Pages are capped at 1,000 (10,000 accessible rows); larger/invalid inputs fall back to page one, and pagination never links beyond the cap. Counts remain exact across all seller listings.
+- Natural empty-state headings replace generated phrases. The selected status link is scrolled horizontally into view after hydration and status changes, without moving the page vertically; mobile deep links to Expired/Sold are covered.
+- Node 20 GitHub Actions now explicitly runs the ADS-01 unit/security suites and isolated Playwright suite. The existing disposable database job also runs an opted-in ADS-01 test with two new owners, unequal private-draft totals, real Data API row/count queries, adversarial foreign seller predicates, and scoped fixture cleanup. It fails closed outside the identified disposable GitHub runner and loopback target. No SQL source or RLS policy is changed.
+- CI image pulls use the official Supabase GHCR mirror to avoid the ECR download failure seen in run #300; CLI/image versions and rehearsal assertions remain unchanged. Reference: https://github.com/supabase/cli/blob/v2.117.0/apps/cli-go/internal/utils/docker.go (GetRegistryImageUrl).
+- Local PASS: 191 tests across 13 suites; eight Playwright checks; typecheck; lint; production build (same metadataBase/local sitemap warnings); diff check. The one real-DB acceptance test is intentionally skipped locally and must execute in CI; no local Docker runtime is available.
+- Hosted two-owner acceptance and full posting/full regression release gates remain outstanding. CI results for the pushed follow-up must be checked independently; local mocks do not certify database isolation.
+
 ## Exact isolated changed files
 
 ```text
+.github/workflows/ci.yml
 README.md
 docs/ADS-01-LOCAL-REVIEW.md
 docs/CURRENT_STATE.md
@@ -70,10 +83,11 @@ src/__tests__/moderation-listings-page.test.tsx
 src/__tests__/my-listings-revision.test.tsx
 src/app/account/listings/page.tsx
 src/components/account/MyAdsStatusTabs.tsx
+src/components/account/MyAdsTabScroller.tsx
 src/components/listings/Pagination.tsx
 src/lib/listings/my-ads.ts
-src/types/database.ts
 tests/security/my-ads-counts.test.ts
+tests/security/my-ads-disposable-db.test.ts
 tests/unit/my-ads-status-tabs.test.tsx
 tests/unit/post-ad-journey-dashboard.test.tsx
 tests/unit/share.test.tsx

@@ -129,7 +129,7 @@ describe("ADS-01 — My Ads Status Tabs Domain Logic & UI", () => {
       }
     });
 
-    it("sets aria-selected=true on the active tab and aria-selected=false on inactive tabs", () => {
+    it("marks only the current navigation link with aria-current", () => {
       render(<MyAdsStatusTabs activeTab="active" counts={sampleCounts} />);
 
       const activeTabElement = screen.getByRole("link", { name: /Active/i });
@@ -150,35 +150,7 @@ describe("ADS-01 — My Ads Status Tabs Domain Logic & UI", () => {
   });
 
   describe("fetchMyListingCounts", () => {
-    it("uses get_my_listing_counts RPC when available", async () => {
-      const mockSupabase = {
-        rpc: vi.fn(async () => ({
-          data: {
-            all: 10,
-            active: 4,
-            pending_review: 1,
-            draft: 2,
-            rejected: 1,
-            paused: 1,
-            sold: 1,
-            expired: 0,
-          },
-          error: null,
-        })),
-        from: mockFrom,
-      };
-
-      const counts = await fetchMyListingCounts(
-        mockSupabase as unknown as SupabaseClient<Database>,
-        "user-123"
-      );
-      expect(mockSupabase.rpc).toHaveBeenCalledWith("get_my_listing_counts");
-      expect(counts!.all).toBe(10);
-      expect(counts!.active).toBe(4);
-      expect(counts!.rejected).toBe(1);
-    });
-
-    it("falls back to listing query count aggregation when RPC returns an error or is absent", async () => {
+    it("uses owner-scoped exact counts without calling the unaudited RPC", async () => {
       const mockSupabase = {
         rpc: vi.fn(async () => ({ data: null, error: { message: "RPC function not found" } })),
         from: vi.fn(() => {
@@ -198,6 +170,7 @@ describe("ADS-01 — My Ads Status Tabs Domain Logic & UI", () => {
       expect(counts!.active).toBe(2); // active + reserved
       expect(counts!.draft).toBe(1);
       expect(counts!.rejected).toBe(1);
+      expect(mockSupabase.rpc).not.toHaveBeenCalled();
     });
   });
 
@@ -312,7 +285,7 @@ describe("ADS-01 — My Ads Status Tabs Domain Logic & UI", () => {
 
       render(pageComponent);
 
-      expect(screen.getByText(/No drafts listings/i)).toBeInTheDocument();
+      expect(screen.getByText(/No draft listings/i)).toBeInTheDocument();
       expect(screen.getByText("View All Listings")).toBeInTheDocument();
     });
   });

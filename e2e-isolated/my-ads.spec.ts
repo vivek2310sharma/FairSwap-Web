@@ -37,6 +37,19 @@ test('invalid parameters and out-of-range pages recover',async({page})=>{
   await expect(page.getByRole('link',{name:'All 13',exact:true})).toHaveAttribute('aria-current','page');
   await page.goto('/account/listings?status=active&page=100');
   await expect(page).toHaveURL(/\/account\/listings\?status=active$/);
+  await page.goto('/account/listings?status=active&page=1001');
+  await expect(page.getByRole('heading',{name:'Synthetic Goods 0',exact:true})).toBeVisible();
+});
+
+for (const status of ['expired', 'sold']) test(`mobile deep link reveals ${status} tab`, async ({page}) => {
+  await page.setViewportSize({width:320,height:800});
+  await page.goto(`/account/listings?status=${status}`);
+  const selected=page.getByRole('navigation',{name:'My Ads Status Navigation'}).locator('[aria-current="page"]');
+  await expect.poll(async()=>selected.evaluate(el=>{
+    const link=el.getBoundingClientRect(),strip=el.parentElement!.getBoundingClientRect();
+    return link.left>=strip.left-1 && link.right<=strip.right+1;
+  })).toBe(true);
+  await expect(page.getByRole('heading',{name:`No ${status} listings`})).toBeVisible();
 });
 
 test('unauthenticated sellers cannot open the dashboard',async({page,context})=>{
