@@ -76,6 +76,9 @@ jobs:
       - name: Run SRCH-01 Listing Card Unit Tests
         run: pnpm vitest run src/__tests__/listing-card.test.tsx
 
+      - name: Run SRCH-04 Search Filters and Locality Pagination Unit Tests
+        run: pnpm vitest run src/__tests__/search-filters-and-chips.test.tsx src/__tests__/locality-page.test.ts
+
       - name: Install Playwright Chromium for SRCH-01
         run: pnpm exec playwright install chromium
 
