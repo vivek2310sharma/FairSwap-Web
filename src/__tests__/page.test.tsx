@@ -1,6 +1,12 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import HomePage from "@/app/page";
+
+// These isolated page tests do not mount RootLayout's AuthProvider.
+vi.mock("@/components/providers/AuthProvider", () => ({
+  useAuth: () => ({ user: null, isLoading: false, unreadMessagesCount: 0,
+    unreadNotificationsCount: 0, refreshUnreadCounts: vi.fn(), signOut: vi.fn() }),
+}));
 
 describe("HomePage component", () => {
   it("renders main landmark and main heading", () => {

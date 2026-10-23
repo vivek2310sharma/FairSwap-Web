@@ -1,18 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import ReactDOMServer from "react-dom/server";
+import { markConversationReadAction } from "@/app/account/messages/actions";
 import { ChatThread } from "@/components/communication/ChatThread";
 import { formatMessageTime, formatMessageDate, formatNotificationDateTime } from "@/lib/formatters";
 import { type Conversation, type Message } from "@/types/communication";
 
-// Mock Supabase client
+const mocks = vi.hoisted(() => ({
+  refresh: vi.fn().mockResolvedValue(undefined),
+  onMessage: null as null | ((payload: { new: Message }) => void),
+}));
+vi.mock("@/components/providers/AuthProvider", () => ({ useAuth: () => ({ refreshUnreadCounts: mocks.refresh }) }));
 vi.mock("@/lib/supabase/client", () => ({
   createClient: vi.fn(() => ({
-    channel: vi.fn(() => ({
-      on: vi.fn().mockReturnThis(),
-      subscribe: vi.fn().mockReturnValue({}),
-    })),
+    channel: vi.fn(() => {
+      const channel = {
+        on: vi.fn().mockImplementation((_event, _filter, callback) => { mocks.onMessage = callback; return channel; }),
+        subscribe: vi.fn().mockReturnValue({}),
+      };
+      return channel;
+    }),
     removeChannel: vi.fn(),
   })),
 }));
@@ -250,5 +258,63 @@ describe("ChatThread & Timestamp Determinism", () => {
         screen.getByText("This conversation is closed because the listing was removed or rejected by moderation.")
       ).toBeInTheDocument();
     });
+  });
+});
+
+describe("HDR-03 viewed-thread read cursor", () => {
+  const conversation: Conversation = { id: "conv-123", listing_id: "listing-456", buyer_id: "buyer", seller_id: "seller", created_at: "2026-10-23T10:00:00Z", last_message_at: "2026-10-23T10:00:01Z" };
+  const incoming: Message = { id: "msg-001", conversation_id: conversation.id, sender_id: "seller", content: "Incoming unread", created_at: "2026-10-23T10:00:00Z" };
+  const outgoing: Message = { ...incoming, id: "msg-002", sender_id: "buyer", content: "My reply", created_at: "2026-10-23T10:00:01Z" };
+  const thread = (messages: Message[]) => <ChatThread conversation={conversation} initialMessages={messages} currentUserId="buyer" />;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(markConversationReadAction).mockResolvedValue({ success: true });
+    mocks.refresh.mockResolvedValue(undefined);
+  });
+  it("marks through the viewer's outgoing tail once, including StrictMode rerenders", async () => {
+    const view = render(<React.StrictMode>{thread([incoming, outgoing])}</React.StrictMode>);
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
+    expect(markConversationReadAction).toHaveBeenCalledExactlyOnceWith(conversation.id, outgoing.id);
+    view.rerender(<React.StrictMode>{thread([incoming, outgoing])}</React.StrictMode>);
+    expect(markConversationReadAction).toHaveBeenCalledOnce();
+  });
+  it("advances on displayed realtime outgoing messages and deduplicates redelivery", async () => {
+    render(thread([incoming]));
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
+    act(() => { mocks.onMessage?.({ new: outgoing }); });
+    await waitFor(() => expect(markConversationReadAction).toHaveBeenLastCalledWith(conversation.id, outgoing.id));
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledTimes(2));
+    act(() => { mocks.onMessage?.({ new: outgoing }); });
+    expect(markConversationReadAction).toHaveBeenCalledTimes(2);
+  });
+  it("reports a denied action, does not fake a count change, and retries only on request", async () => {
+    vi.mocked(markConversationReadAction).mockResolvedValueOnce({ error: "denied" });
+    render(thread([incoming, outgoing]));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Read status could not be updated");
+    expect(markConversationReadAction).toHaveBeenCalledOnce();
+    expect(mocks.refresh).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Retry read status" }));
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalledOnce());
+    expect(markConversationReadAction).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+  it("handles a rejected network request without an unhandled promise", async () => {
+    vi.mocked(markConversationReadAction).mockRejectedValueOnce(new Error("offline"));
+    render(thread([incoming, outgoing]));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Read status could not be updated");
+    expect(mocks.refresh).not.toHaveBeenCalled();
+  });
+  it("does not mark an empty thread", () => {
+    render(thread([]));
+    expect(markConversationReadAction).not.toHaveBeenCalled();
+  });
+  it("ignores an action response after unmount", async () => {
+    let resolve!: (result: { success: boolean }) => void;
+    vi.mocked(markConversationReadAction).mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    const view = render(thread([incoming, outgoing]));
+    await waitFor(() => expect(markConversationReadAction).toHaveBeenCalledOnce());
+    view.unmount();
+    await act(async () => { resolve({ success: true }); });
+    expect(mocks.refresh).not.toHaveBeenCalled();
   });
 });

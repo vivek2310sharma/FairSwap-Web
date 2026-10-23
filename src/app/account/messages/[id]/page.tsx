@@ -58,16 +58,16 @@ export default async function ConversationPage({
     redirect("/account/messages");
   }
 
-  // Fetch initial messages (ordered deterministically by created_at, id)
+  // Fetch the newest bounded window, then display it in chronological order.
   const { data: messageData } = await supabase
     .from("messages")
     .select("id, conversation_id, sender_id, content, created_at, client_request_id")
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(100);
 
-  const initialMessages: Message[] = (messageData || []) as Message[];
+  const initialMessages: Message[] = [...(messageData || [])].reverse() as Message[];
 
   // Determine counterparty ID
   const counterpartyId = convData.buyer_id === userId ? convData.seller_id : convData.buyer_id;
