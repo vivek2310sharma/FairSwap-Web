@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Bell,
-  CheckCheck,
   Check,
+  CheckCheck,
   MessageSquare,
   Tag,
   AlertTriangle,
@@ -14,80 +14,50 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { type Notification } from "@/types/communication";
-import {
-  markNotificationReadAction,
-  markAllNotificationsReadAction,
-} from "@/app/account/notifications/actions";
 import { formatNotificationDateTime } from "@/lib/formatters";
+import { resolveNotificationLink } from "@/lib/notifications/links";
+import { useNotificationReadState } from "./useNotificationReadState";
+import { NotificationErrorNotice } from "./NotificationErrorNotice";
 
 interface NotificationListProps {
   initialNotifications: Notification[];
 }
 
+function NotificationIcon({ type }: { type: string }) {
+  const className = "h-5 w-5";
+  switch (type) {
+    case "new_message":
+      return <MessageSquare className={className} aria-hidden="true" />;
+    case "listing_approved":
+      return <Tag className={className} aria-hidden="true" />;
+    case "listing_rejected":
+      return <AlertTriangle className={className} aria-hidden="true" />;
+    case "support_reply":
+      return <LifeBuoy className={className} aria-hidden="true" />;
+    case "report_update":
+      return <ShieldAlert className={className} aria-hidden="true" />;
+    default:
+      return <Bell className={className} aria-hidden="true" />;
+  }
+}
+
 export function NotificationList({ initialNotifications }: NotificationListProps) {
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-  const [isMarkingAll, setIsMarkingAll] = useState(false);
+  const { markOne, markAll, error, errorAction, isMarkAllDisabled, isMarkOneDisabled } =
+    useNotificationReadState(
+      notifications,
+      setNotifications
+    );
 
   const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-  const handleMarkOneRead = async (id: string) => {
-    // Optimistic update
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
-    );
-    await markNotificationReadAction(id);
-  };
-
-  const handleMarkAllRead = async () => {
-    if (unreadCount === 0 || isMarkingAll) return;
-    setIsMarkingAll(true);
-    // Optimistic update
-    const nowIso = new Date().toISOString();
-    setNotifications((prev) => prev.map((n) => ({ ...n, read_at: n.read_at || nowIso })));
-    await markAllNotificationsReadAction();
-    setIsMarkingAll(false);
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "message_received":
-        return <MessageSquare className="h-5 w-5 text-amber-500" />;
-      case "listing_approved":
-        return <Tag className="h-5 w-5 text-emerald-500" />;
-      case "listing_rejected":
-        return <AlertTriangle className="h-5 w-5 text-rose-500" />;
-      case "support_reply":
-        return <LifeBuoy className="h-5 w-5 text-blue-500" />;
-      case "report_update":
-        return <ShieldAlert className="h-5 w-5 text-amber-400" />;
-      default:
-        return <Bell className="h-5 w-5 text-stone-400" />;
-    }
-  };
-
-  const getTargetLink = (n: Notification): string | null => {
-    if (n.type === "message_received" && n.payload?.conversation_id) {
-      return `/account/messages/${n.payload.conversation_id}`;
-    }
-    if (n.type === "listing_approved" && n.payload?.slug) {
-      return `/listings/${n.payload.slug}`;
-    }
-    if (n.type === "listing_rejected" && n.payload?.listing_id) {
-      return `/account/listings`;
-    }
-    if (n.type === "support_reply" && n.payload?.ticket_id) {
-      return `/account/support/${n.payload.ticket_id}`;
-    }
-    return null;
-  };
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between pb-2">
-        <div className="text-sm text-stone-400">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
+        <div className="text-sm text-muted dark:text-neutral-300">
           {unreadCount > 0 ? (
             <span>
-              You have <span className="font-semibold text-amber-400">{unreadCount}</span> unread{" "}
+              You have <span className="font-semibold text-foreground">{unreadCount}</span> unread{" "}
               {unreadCount === 1 ? "notification" : "notifications"}
             </span>
           ) : (
@@ -97,79 +67,82 @@ export function NotificationList({ initialNotifications }: NotificationListProps
 
         {unreadCount > 0 && (
           <button
-            onClick={handleMarkAllRead}
-            disabled={isMarkingAll}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-stone-700 bg-stone-800/80 px-3 py-1.5 text-xs font-medium text-stone-300 transition-colors hover:bg-stone-700 hover:text-white disabled:opacity-50"
+            type="button"
+            onClick={() => void markAll()}
+            disabled={isMarkAllDisabled}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-background disabled:opacity-60"
           >
-            <CheckCheck className="h-3.5 w-3.5 text-amber-500" />
+            <CheckCheck className="h-3.5 w-3.5 text-action-700 dark:text-action-300" aria-hidden="true" />
             <span>Mark all read</span>
           </button>
         )}
       </div>
 
+      {error ? <NotificationErrorNotice message={error} action={errorAction} /> : null}
+
       {notifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-stone-800 bg-stone-800/30 p-12 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-800 text-stone-500">
-            <Bell className="h-6 w-6" />
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-border bg-card p-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface text-muted dark:text-neutral-300">
+            <Bell className="h-6 w-6" aria-hidden="true" />
           </div>
-          <h3 className="mt-4 text-base font-semibold text-stone-200">No notifications yet</h3>
-          <p className="mt-1 text-sm text-stone-400">
+          <h3 className="mt-4 text-base font-semibold text-foreground">No notifications yet</h3>
+          <p className="mt-1 text-sm text-muted dark:text-neutral-300">
             When you receive inquiries, messages, or moderation updates, they will appear here.
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-stone-800/60 rounded-2xl border border-stone-800/80 bg-stone-800/40">
+        <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
           {notifications.map((n) => {
             const isUnread = !n.read_at;
-            const targetLink = getTargetLink(n);
+            const targetLink = resolveNotificationLink(n.link);
 
             return (
-              <div
+              <li
                 key={n.id}
-                className={`group flex items-start gap-4 p-5 transition-colors ${
-                  isUnread ? "bg-amber-950/10 hover:bg-amber-950/20" : "hover:bg-stone-800/30"
+                className={`flex items-start gap-4 p-4 transition-colors sm:p-5 ${
+                  isUnread ? "bg-action-50/60 dark:bg-action-900/20" : ""
                 }`}
               >
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-800/80 border border-stone-700/50">
-                  {getNotificationIcon(n.type)}
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-action-50 text-action-700 dark:bg-action-900/40 dark:text-action-300">
+                  <NotificationIcon type={n.type} />
                 </div>
 
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <h4
-                      className={`text-sm ${
-                        isUnread ? "font-semibold text-white" : "font-medium text-stone-300"
-                      }`}
+                      className={`text-sm text-foreground ${isUnread ? "font-semibold" : "font-medium"}`}
                     >
                       {n.title}
                     </h4>
-                    <span className="text-xs text-stone-400 shrink-0">
+                    <span className="shrink-0 text-xs text-muted dark:text-neutral-300">
                       {formatNotificationDateTime(n.created_at)}
                     </span>
                   </div>
 
-                  <p className="mt-1 text-sm text-stone-400 leading-relaxed">{n.body}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted dark:text-neutral-300">{n.body}</p>
 
-                  <div className="mt-3 flex items-center gap-3">
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4">
                     {targetLink && (
                       <Link
                         href={targetLink}
                         onClick={() => {
-                          if (isUnread) handleMarkOneRead(n.id);
+                          void markOne(n.id);
                         }}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-amber-400 hover:text-amber-300"
+                        className="inline-flex min-h-[44px] items-center gap-1 text-sm font-semibold text-brand-link hover:underline"
                       >
                         <span>View Details</span>
-                        <ArrowRight className="h-3 w-3" />
+                        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                       </Link>
                     )}
 
                     {isUnread && (
                       <button
-                        onClick={() => handleMarkOneRead(n.id)}
-                        className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-stone-300"
+                        type="button"
+                        onClick={() => void markOne(n.id)}
+                        disabled={isMarkOneDisabled(n.id)}
+                        className="inline-flex min-h-[44px] items-center gap-1 text-sm text-muted hover:text-foreground disabled:opacity-60 dark:text-neutral-300"
                       >
-                        <Check className="h-3 w-3" />
+                        <Check className="h-3.5 w-3.5" aria-hidden="true" />
                         <span>Mark read</span>
                       </button>
                     )}
@@ -177,12 +150,16 @@ export function NotificationList({ initialNotifications }: NotificationListProps
                 </div>
 
                 {isUnread && (
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500 mt-2" />
+                  <span
+                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-action-600"
+                    role="img"
+                    aria-label="Unread"
+                  />
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
     </div>
   );

@@ -4,7 +4,7 @@
  */
 
 export type NotificationType =
-  | 'message_received'
+  | 'new_message'
   | 'listing_approved'
   | 'listing_rejected'
   | 'report_update'
@@ -16,7 +16,6 @@ export interface Notification {
   type: NotificationType;
   title: string;
   body: string;
-  payload?: Record<string, unknown> | null;
   link?: string | null;
   read_at: string | null;
   created_at: string;
@@ -110,13 +109,9 @@ export interface Report {
   };
 }
 
-export type SupportTicketCategory =
-  | 'general'
-  | 'account'
-  | 'listing_issue'
-  | 'safety_concern'
-  | 'moderation_appeal'
-  | 'other';
+// Canonical categories live in `@/lib/support/tickets` (mirrors the Backend enum).
+export type { SupportTicketCategory } from '@/lib/support/tickets';
+import type { SupportTicketCategory } from '@/lib/support/tickets';
 
 export type SupportTicketStatus =
   | 'open'
@@ -129,7 +124,6 @@ export type SupportTicketPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 export interface SupportTicket {
   id: string;
-  ticket_number?: number;
   user_id: string | null;
   category: SupportTicketCategory;
   subject: string;
@@ -149,12 +143,6 @@ export interface SupportMessage {
   ticket_id: string;
   sender_id: string | null;
   content: string;
-  is_staff_reply?: boolean;
   is_internal_note: boolean;
   created_at: string;
-  sender?: {
-    id?: string;
-    display_name: string;
-    avatar_url?: string | null;
-  } | null;
 }
