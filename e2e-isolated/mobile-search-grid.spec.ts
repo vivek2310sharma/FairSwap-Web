@@ -13,6 +13,64 @@ const TARGET_VIEWPORTS = [
   { name: "1440px", width: 1440, height: 900, expectedCols: 3 },
 ];
 
+test.describe("SRCH-04 browser navigation regressions", () => {
+  test("mobile slow locality failure is retryable and distinct from empty", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    let requests = 0;
+    await page.route("**/api/discovery/localities?*", async (route) => {
+      requests += 1;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await route.fulfill({ status: requests === 1 ? 503 : 200, contentType: "application/json",
+        body: requests === 1 ? JSON.stringify({ error: "Unable to load areas" }) : "[]" });
+    });
+    await page.goto("/search");
+    await page.getByRole("button", { name: "Filter & Sort" }).click();
+    const drawer = page.getByRole("dialog");
+    await drawer.getByLabel("District", { exact: true }).selectOption("city-1");
+    await expect(drawer.getByLabel("Locality / Area")).toBeDisabled();
+    await expect(drawer.getByRole("alert")).toContainText("Unable to load areas");
+    await expect(drawer.getByText("No areas available in this district.")).not.toBeVisible();
+    await drawer.getByRole("button", { name: "Retry areas" }).click();
+    await expect(drawer.getByText("No areas available in this district.")).toBeVisible();
+    expect(requests).toBe(2);
+    await expect(page).toHaveURL(/\/search$/);
+  });
+
+  test("mobile Close discards drafts; Apply and history preserve filters and explicit newest", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/search?q=phone&sort=newest");
+    await page.getByRole("button", { name: "Filter & Sort" }).click();
+    const drawer = page.getByRole("dialog");
+    await drawer.getByLabel("Category", { exact: true }).selectOption("electronics");
+    await drawer.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page).toHaveURL(/q=phone&sort=newest$/);
+    await page.getByRole("button", { name: "Filter & Sort" }).click();
+    await expect(drawer.getByLabel("Category", { exact: true })).toHaveValue("");
+    await drawer.getByLabel("Category", { exact: true }).selectOption("electronics");
+    await drawer.getByRole("button", { name: "Apply Filters" }).click();
+    await expect(page).toHaveURL(/category=electronics.*sort=newest/);
+    await expect(drawer).not.toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(/q=phone&sort=newest$/);
+    await page.goForward();
+    await page.getByRole("button", { name: "Filter & Sort" }).click();
+    await expect(drawer.getByLabel("Category", { exact: true })).toHaveValue("electronics");
+    await expect(drawer.getByLabel("Sort By")).toHaveValue("newest");
+  });
+
+  test("desktop price blur followed by select retains both filters", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/search?q=phone&sort=newest");
+    await page.getByLabel("Minimum price in rupees").fill("500");
+    await page.getByLabel("Minimum price in rupees").press("Tab");
+    await page.getByLabel("Category", { exact: true }).selectOption("electronics");
+    await expect(page).toHaveURL(/category=electronics/);
+    await expect(page).toHaveURL(/price_min=500/);
+    await expect(page).toHaveURL(/sort=newest/);
+    await expect(page.getByTestId("search-results-grid")).toBeVisible();
+  });
+});
+
 test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Components)", () => {
   for (const vp of TARGET_VIEWPORTS) {
     test(`renders correct columns, real ListingCards and no overflow at ${vp.name} (${vp.width}px)`, async ({ page }) => {

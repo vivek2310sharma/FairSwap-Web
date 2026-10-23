@@ -2,13 +2,14 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { SearchFilters } from "@/components/listings/SearchFilters";
+import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
 import { Pagination } from "@/components/listings/Pagination";
 import {
   getPublicCategories,
   getPublicCities,
-  getPublicLocalities,
   searchPublicListings,
 } from "@/lib/discovery/queries";
+import { getAppliedLocality } from "@/lib/discovery/locality-page";
 import { searchFiltersSchema, getEffectiveSort } from "@/types/listing";
 import { serializeSearchFilters } from "@/lib/navigation/search-context";
 import { createClient } from "@/lib/supabase/server";
@@ -65,10 +66,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   };
   const searchContext = serializeSearchFilters(rawFilters);
 
+  // Only hydrate the selected district; further options use the bounded locality API.
   const [categories, cities, localities, searchResult] = await Promise.all([
     getPublicCategories(),
     getPublicCities(),
-    getPublicLocalities(filters.city || undefined),
+    filters.city && filters.locality
+      ? getAppliedLocality(filters.city, filters.locality)
+      : Promise.resolve([]),
     searchPublicListings(filters),
   ]);
 
@@ -128,6 +132,14 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             {/* Results Grid */}
             <div className="lg:col-span-3">
+              {/* Active Filter Chips */}
+              <ActiveFilterChips
+                filters={rawFilters}
+                categories={categories}
+                cities={cities}
+                localities={localities}
+              />
+
               {searchResult.items.length > 0 ? (
                 <>
                   <div
