@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { expect, it } from 'vitest';
 import type { Database } from '@/types/database';
 import { fetchMyListingCounts } from '@/lib/listings/my-ads';
+import { LEGAL_POLICY } from '@/lib/compliance/legal-policy';
 import { validateLocalTestEnvironment } from '../helpers/local-test-guard';
 
 const enabled = process.env.ADS01_RUN_DISPOSABLE_DB_TESTS === 'true';
@@ -31,7 +32,16 @@ it.skipIf(!enabled)('isolates actual ADS-01 row and exact-count paths between tw
     for (let owner = 0; owner < 2; owner++) {
       const email = `ads01-${randomUUID()}@example.invalid`;
       const password = `Synthetic-${randomUUID()}-aA1!`;
-      const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+      const created = await admin.auth.admin.createUser({
+        email, password, email_confirm: true,
+        // Exercise the ordinary provisioning trigger with valid synthetic consent.
+        user_metadata: {
+          display_name: 'ADS01 synthetic owner', terms_accepted: 'true', age_confirmed: 'true',
+          terms_version: LEGAL_POLICY.termsVersion,
+          privacy_policy_version: LEGAL_POLICY.privacyVersion,
+          acceptable_use_version: LEGAL_POLICY.acceptableUseVersion,
+        },
+      });
       expect(created.error).toBeNull();
       if (!created.data.user) throw new Error('Fixture user creation failed');
       owners.push(created.data.user.id);
