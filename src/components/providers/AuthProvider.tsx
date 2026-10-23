@@ -30,6 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshQueued = useRef(false);
   const rpcUnavailable = useRef(false);
   const pathname = usePathname();
+  const previousPathname = useRef(pathname);
+  const authRevision = useRef(0);
   const navigating = useRef(false);
   const discardPrivatePage = useCallback(() => {
     if (navigating.current) return;
@@ -82,31 +84,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { await request; } finally { if (pending.current === request) pending.current = null; }
   }, [supabase]);
 
+  const applyUser = useCallback((next: User | null) => {
+    if (!active.current) return;
+    const previousId = identity.current;
+    const nextId = next?.id ?? null;
+    const privateSessionChanged = previousId !== null && previousId !== nextId;
+    if (identity.current !== (next?.id ?? null)) {
+      generation.current++;
+      pending.current = null;
+      identity.current = next?.id ?? null;
+      setCounts({ messages: null, notifications: null });
+    }
+    if (privateSessionChanged) {
+      // Hide all old server-rendered children before leaving this document.
+      active.current = false;
+      setUser(null);
+      discardPrivatePage();
+      return;
+    }
+    setUser(next);
+    setIsLoading(false);
+  }, [discardPrivatePage]);
+
   useEffect(() => {
     active.current = true;
     // Keep the callback synchronous: Supabase invokes it while holding its auth lock.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!active.current) return;
-      const next = session?.user ?? null;
-      const previousId = identity.current;
-      const nextId = next?.id ?? null;
-      const privateSessionChanged = previousId !== null && previousId !== nextId;
-      if (identity.current !== (next?.id ?? null)) {
-        generation.current++;
-        pending.current = null;
-        identity.current = next?.id ?? null;
-        setCounts({ messages: null, notifications: null });
-      }
-      if (privateSessionChanged) {
-        // Hide all old server-rendered children before leaving this document.
-        active.current = false;
-        setUser(null);
-        discardPrivatePage();
-        return;
-      }
-      setUser(next);
-      setIsLoading(false);
-
+      authRevision.current++;
+      applyUser(session?.user ?? null);
     });
     return () => {
       active.current = false;
@@ -116,7 +121,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       pending.current = null;
       subscription.unsubscribe();
     };
-  }, [supabase, discardPrivatePage]);
+  }, [supabase, applyUser]);
+
+  useEffect(() => {
+    const previous = previousPathname.current;
+    previousPathname.current = pathname;
+    if (previous !== "/auth/sign-in" || pathname === previous) return;
+
+    // Server Action redirects update cookies without emitting a browser auth event.
+    // Read the SSR cookie storage once for either password or email OTP login.
+    // This is presentation state only; server authorization remains authoritative.
+    const revision = authRevision.current;
+    let cancelled = false;
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (!cancelled && active.current && authRevision.current === revision && !error) {
+        applyUser(data.session?.user ?? null);
+      }
+    }).catch(() => { /* Keep unknown session state on a failed read; never poll. */ });
+    return () => { cancelled = true; };
+  }, [pathname, supabase, applyUser]);
 
   const userId = user?.id;
   useEffect(() => {
@@ -141,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, userId, refreshUnreadCounts]);
 
   const signOut = useCallback(async () => {
+    authRevision.current++;
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     generation.current++;

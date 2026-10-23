@@ -1,18 +1,22 @@
 import { act, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/components/providers/AuthProvider";
+import { Header } from "@/components/header";
+import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 
 const mock = vi.hoisted(() => ({
   subscribe: vi.fn(), navigate: vi.fn(), events: [] as { config: Record<string, string>; callback: (payload?: unknown) => void }[],
   listener: null as null | ((event: string, session: unknown) => void),
-  rpc: vi.fn(), from: vi.fn(), signOut: vi.fn(), unsubscribe: vi.fn(),
+  rpc: vi.fn(), from: vi.fn(), signOut: vi.fn(), getSession: vi.fn(), unsubscribe: vi.fn(),
   channel: vi.fn(), removeChannel: vi.fn(), pathname: "/search",
 }));
 vi.mock("@/lib/navigation/session-change", () => ({ navigateAfterSessionChange: mock.navigate }));
 vi.mock("next/navigation", () => ({ usePathname: () => mock.pathname }));
+vi.mock("next/image", () => ({ default: () => null }));
+vi.mock("@/components/communication/NotificationBell", () => ({ NotificationBell: () => null }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({
   rpc: mock.rpc, from: mock.from, channel: mock.channel, removeChannel: mock.removeChannel,
-  auth: { signOut: mock.signOut, onAuthStateChange: (listener: typeof mock.listener) => {
+  auth: { signOut: mock.signOut, getSession: mock.getSession, onAuthStateChange: (listener: typeof mock.listener) => {
     mock.listener = listener;
     return { data: { subscription: { unsubscribe: mock.unsubscribe } } };
   } },
@@ -32,8 +36,73 @@ beforeEach(() => {
   mock.events = [];
   mock.rpc.mockResolvedValue({ data: { unread_messages: 3, unread_notifications: 25 }, error: null });
   mock.signOut.mockResolvedValue({ error: null });
+  mock.getSession.mockResolvedValue({ data: { session: null }, error: null });
   const channel = { on: vi.fn().mockImplementation((_kind, config, callback) => { mock.events.push({ config, callback }); return channel; }), subscribe: mock.subscribe.mockReturnThis() };
   mock.channel.mockReturnValue(channel);
+});
+
+describe("server sign-in navigation", () => {
+  it("updates desktop and mobile after the shared password/OTP server redirect without a browser auth event", async () => {
+    mock.pathname = "/auth/sign-in";
+    const view = render(<AuthProvider><Header /><MobileBottomNav /></AuthProvider>);
+    emit(null);
+    expect(screen.getByRole("link", { name: "Sign In" })).toBeInTheDocument();
+    expect(mock.getSession).not.toHaveBeenCalled();
+    mock.getSession.mockResolvedValue({ data: { session: { user: { id: "alice" } } }, error: null });
+    mock.pathname = "/account";
+    view.rerender(<AuthProvider><Header /><MobileBottomNav /></AuthProvider>);
+    await waitFor(() => expect(screen.getAllByRole("link", { name: "Account" })).toHaveLength(2));
+    expect(screen.queryByRole("link", { name: "Sign In" })).not.toBeInTheDocument();
+    expect(mock.getSession).toHaveBeenCalledOnce();
+    expect(mock.navigate).not.toHaveBeenCalled();
+    mock.pathname = "/search";
+    view.rerender(<AuthProvider><Header /><MobileBottomNav /></AuthProvider>);
+    expect(mock.getSession).toHaveBeenCalledOnce();
+  });
+
+  it("ignores a cookie read overtaken by a cross-tab sign-out", async () => {
+    let resolve!: (value: unknown) => void;
+    mock.getSession.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    mock.pathname = "/auth/sign-in";
+    const view = mount();
+    emit(null);
+    mock.pathname = "/account";
+    view.rerender(<AuthProvider><Consumer /></AuthProvider>);
+    emit(null);
+    await act(async () => { resolve({ data: { session: { user: { id: "alice" } } }, error: null }); });
+    expect(screen.getByText("guest")).toBeInTheDocument();
+    expect(mock.rpc).not.toHaveBeenCalled();
+  });
+
+  it("contains failed cookie reads without publishing an identity", async () => {
+    mock.getSession.mockRejectedValueOnce(new Error("offline"));
+    mock.pathname = "/auth/sign-in";
+    const view = mount();
+    emit(null);
+    mock.pathname = "/account";
+    await act(async () => { view.rerender(<AuthProvider><Consumer /></AuthProvider>); });
+    expect(screen.getByText("guest")).toBeInTheDocument();
+    expect(mock.rpc).not.toHaveBeenCalled();
+  });
+
+  it("disables the styled desktop sign-out button while pending and allows retry on failure", async () => {
+    let resolve!: (value: unknown) => void;
+    mock.signOut.mockImplementationOnce(() => new Promise(r => { resolve = r; }));
+    render(<AuthProvider><Header /></AuthProvider>);
+    emit("alice");
+    const button = screen.getByRole("button", { name: "Sign Out" });
+    expect(button).toHaveClass("border", "bg-surface", "disabled:opacity-50");
+    expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    fireEvent.click(button);
+    expect(screen.getByRole("button", { name: "Signing out…" })).toBeDisabled();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    fireEvent.click(button);
+    expect(mock.signOut).toHaveBeenCalledOnce();
+    await act(async () => { resolve({ error: new Error("offline") }); });
+    expect(screen.getByRole("button", { name: "Sign Out" })).toBeEnabled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Sign out failed");
+    expect(mock.navigate).not.toHaveBeenCalled();
+  });
 });
 describe("HDR-03 auth lifecycle", () => {
   it("hydrates without private guest reads and unsubscribes", async () => {
