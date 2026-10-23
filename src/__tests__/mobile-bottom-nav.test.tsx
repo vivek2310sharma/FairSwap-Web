@@ -220,3 +220,12 @@ describe("MobileBottomNav Component", () => {
     expect(container).toBeEmptyDOMElement();
   });
 });
+
+it("does not flash Sign In or Account while hydrating", () => {
+  mockUsePathname.mockReturnValue("/search");
+  mockUseAuth.mockReturnValue({ user: null, isLoading: true, unreadMessagesCount: null });
+  render(<MobileBottomNav />);
+  expect(screen.getByRole("status")).toHaveTextContent("Checking session");
+  expect(screen.queryByRole("link", { name: "Sign In" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Account" })).not.toBeInTheDocument();
+});

@@ -69,13 +69,13 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
         aria-controls="header-notifications"
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ""}`}
+        aria-label={`Notifications ${(unreadCount ?? 0) > 0 ? `(${unreadCount} unread)` : ""}`}
         className="relative rounded-full p-2 text-muted hover:bg-surface hover:text-foreground focus:outline-hidden focus:ring-2 focus:ring-action-500"
       >
         <Bell className="h-5 w-5" aria-hidden="true" />
-        {unreadCount > 0 && (
+        {(unreadCount ?? 0) > 0 && (
           <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-action-600 text-[10px] font-bold text-white">
-            {unreadCount > 9 ? "9+" : unreadCount}
+            {(unreadCount ?? 0) > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
@@ -90,7 +90,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
           <div id="header-notifications" className="absolute right-0 z-50 mt-2 w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-sm font-bold text-foreground">Notifications</h3>
-              {unreadCount > 0 && (
+              {(unreadCount ?? 0) > 0 && (
                 <button
                   type="button"
                   onClick={handleMarkAllRead}

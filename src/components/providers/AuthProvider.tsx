@@ -3,13 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+import { navigateAfterSessionChange } from "@/lib/navigation/session-change";
 import { createClient } from "@/lib/supabase/client";
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
-  unreadMessagesCount: number;
-  unreadNotificationsCount: number;
+  unreadMessagesCount: number | null;
+  unreadNotificationsCount: number | null;
   refreshUnreadCounts: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -20,7 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState(createClient);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [counts, setCounts] = useState({ messages: 0, notifications: 0 });
+  const [counts, setCounts] = useState<{ messages: number | null; notifications: number | null }>({ messages: null, notifications: null });
+  const [invalidating, setInvalidating] = useState(false);
   const identity = useRef<string | null>(null);
   const generation = useRef(0);
   const active = useRef(false);
@@ -32,9 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const discardPrivatePage = useCallback(() => {
     if (navigating.current) return;
     navigating.current = true;
-    // A document navigation intentionally discards cached private RSC/page state.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.assign("/");
+    setInvalidating(true);
+    navigateAfterSessionChange();
   }, []);
 
   const refreshUnreadCounts = useCallback(async () => {
@@ -45,8 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const request = (async () => {
       do {
         refreshQueued.current = false;
-        let messages = 0;
-        let notifications = 0;
+        let messages: number | null = null;
+        let notifications: number | null = null;
         try {
           if (!rpcUnavailable.current) {
             const { data, error } = await supabase.rpc("get_unread_counts");
@@ -87,16 +88,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active.current) return;
       const next = session?.user ?? null;
-      const signedOut = _event === "SIGNED_OUT" && identity.current !== null;
+      const previousId = identity.current;
+      const nextId = next?.id ?? null;
+      const privateSessionChanged = previousId !== null && previousId !== nextId;
       if (identity.current !== (next?.id ?? null)) {
         generation.current++;
         pending.current = null;
         identity.current = next?.id ?? null;
-        setCounts({ messages: 0, notifications: 0 });
+        setCounts({ messages: null, notifications: null });
+      }
+      if (privateSessionChanged) {
+        // Hide all old server-rendered children before leaving this document.
+        active.current = false;
+        setUser(null);
+        discardPrivatePage();
+        return;
       }
       setUser(next);
       setIsLoading(false);
-      if (signedOut) discardPrivatePage();
+
     });
     return () => {
       active.current = false;
@@ -115,12 +125,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!userId) return;
-    // One subscription for notification changes, including reads in other tabs.
-    const channel = supabase.channel(`unread-notifications:${userId}`).on("postgres_changes", {
-      event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}`,
-    }, () => { void refreshUnreadCounts(); }).on("postgres_changes", {
-      event: "*", schema: "public", table: "conversation_read_states", filter: `user_id=eq.${userId}`,
-    }, () => { void refreshUnreadCounts(); }).subscribe();
+    // INSERT/UPDATE only: Realtime DELETE events cannot enforce row SELECT RLS.
+    const channel = supabase.channel(`unread-notifications:${userId}`);
+    for (const table of ["notifications", "unread_count_signals"]) {
+      for (const event of ["INSERT", "UPDATE"] as const) {
+        channel.on("postgres_changes", { event, schema: "public", table,
+          filter: `user_id=eq.${userId}` }, () => { void refreshUnreadCounts(); });
+      }
+    }
+    channel.subscribe((status) => {
+      // Close the initial snapshot/subscription gap and recover missed events.
+      if (status === "SUBSCRIBED") void refreshUnreadCounts();
+    });
     return () => { void supabase.removeChannel(channel); };
   }, [supabase, userId, refreshUnreadCounts]);
 
@@ -131,9 +147,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     identity.current = null;
     pending.current = null;
     setUser(null);
-    setCounts({ messages: 0, notifications: 0 });
+    setCounts({ messages: null, notifications: null });
     discardPrivatePage();
   }, [supabase, discardPrivatePage]);
+
+  if (invalidating) return <p role="status" className="p-4">Updating session…</p>;
 
   return <AuthContext.Provider value={{ user, isLoading, unreadMessagesCount: counts.messages,
     unreadNotificationsCount: counts.notifications, refreshUnreadCounts, signOut }}>{children}</AuthContext.Provider>;

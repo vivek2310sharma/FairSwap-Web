@@ -135,3 +135,19 @@ describe("Header component", () => {
     expect(screen.getByRole("button", { name: "Sign Out" })).toBeEnabled();
   });
 });
+
+it("shows a neutral loading status instead of guest sign-in while hydrating", () => {
+  mockUseAuth.mockReturnValue({ user: null, isLoading: true, unreadMessagesCount: null, unreadNotificationsCount: null });
+  render(<Header />);
+  expect(screen.queryByRole("link", { name: "Sign In" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+  expect(screen.queryByRole("link", { name: "Sign In" })).not.toBeInTheDocument();
+  expect(screen.getAllByRole("status")).toHaveLength(2);
+});
+it("does not label unavailable chat counts as zero", () => {
+  mockUseAuth.mockReturnValue({ user: { id: "alice" }, isLoading: false, unreadMessagesCount: null, unreadNotificationsCount: 3 });
+  render(<Header />);
+  fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+  expect(within(screen.getByRole("navigation", { name: "Mobile navigation" })).getByRole("link", { name: "Messages" })).toBeInTheDocument();
+  expect(screen.queryByLabelText(/0 unread/)).not.toBeInTheDocument();
+});

@@ -45,3 +45,5 @@ Keep [CURRENT_STATE](CURRENT_STATE.md), [ROADMAP](ROADMAP.md) and affected opera
 
 
 HDR-03 local review (23 October 2026): the isolated staging cleanup centralizes navigation auth and unread badges, preserves server/RLS authorization, and refreshes counts after successful notification reads. This is local implementation evidence, not hosted acceptance. `get_unread_counts()` must enforce the caller identity and return non-negative integer `unread_messages` and `unread_notifications`; without it, notifications use an owner-scoped exact count and chat badges are omitted. No Backend, RLS or hosted changes are included.
+
+HDR-03 review 5627179716 follow-up: direct authenticated identity switches now discard private document/router state; loading auth and unavailable counts stay explicitly unknown. The companion Backend candidate defines individual inbound-message counts and owner-only `unread_count_signals` events for arrivals/read markers. Hosted installation and two-user/two-tab acceptance remain outstanding; source review does not authorize deployment.

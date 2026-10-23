@@ -233,3 +233,40 @@ for (const width of [1024, 1280]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
+
+test('HDR-03 direct account switch drops old document and private DOM', async ({ page }) => {
+  await mockAuthenticatedNavigation(page);
+  await page.setViewportSize({ width: 360, height: 844 });
+  await page.goto('/search');
+  await expect(page.getByRole('navigation', { name: 'Mobile bottom navigation' }).getByRole('link', { name: 'Account', exact: true })).toBeVisible();
+  await page.evaluate(() => {
+    const privatePayload = document.createElement('p');
+    privatePayload.id = 'old-private-payload'; privatePayload.textContent = 'Alice private page state';
+    document.body.append(privatePayload);
+    const channel = new BroadcastChannel('sb-127-auth-token');
+    channel.postMessage({ event: 'SIGNED_IN', session: { user: { id: '22222222-2222-4222-8222-222222222222' } } });
+    channel.close();
+  });
+  await expect(page).toHaveURL('/');
+  await expect(page.locator('#old-private-payload')).toHaveCount(0);
+});
+test('HDR-03 missing RPC never announces zero unread chats', async ({ page }) => {
+  await mockAuthenticatedNavigation(page);
+  await page.route('**/rest/v1/rpc/get_unread_counts', route => route.fulfill({ status: 404, json: { code: 'PGRST202' } }));
+  await page.route('**/rest/v1/notifications*', route => route.fulfill({ status: 200, headers: { 'content-range': '0-0/3' }, body: '' }));
+  await page.setViewportSize({ width: 360, height: 844 });
+  await page.goto('/search');
+  await expect(page.getByRole('navigation', { name: 'Mobile bottom navigation' }).getByRole('link', { name: 'Account', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  await expect(page.getByRole('navigation', { name: 'Mobile navigation' }).getByRole('link', { name: 'Messages', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Messages (0 unread)', exact: true })).toHaveCount(0);
+});
+test('HDR-03 server markup stays neutral before auth hydration', async ({ browser, baseURL }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1280, height: 900 } });
+  try {
+    const page = await context.newPage();
+    await page.goto(baseURL + '/search');
+    await expect(page.getByRole('link', { name: 'Sign In', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('status').filter({ hasText: 'Checking session' }).first()).toBeVisible();
+  } finally { await context.close(); }
+});

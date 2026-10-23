@@ -27,7 +27,7 @@ const navLinks = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, unreadMessagesCount, unreadNotificationsCount, signOut } =
+  const { user, isLoading, unreadMessagesCount, unreadNotificationsCount, signOut } =
     useAuth();
 
   const toggleMenu = useCallback(() => {
@@ -97,22 +97,22 @@ export function Header() {
 
         {/* Action buttons */}
         <div className="hidden items-center gap-3 lg:flex">
-          {user ? (
+          {isLoading ? <span role="status" className="px-3 text-xs">Checking session…</span> : user ? (
             <>
               <Link
                 href="/account/messages"
                 className="relative flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-foreground p-1.5 rounded-lg hover:bg-surface"
                 aria-label={`Messages ${
-                  unreadMessagesCount > 0
+                  (unreadMessagesCount ?? 0) > 0
                     ? `(${unreadMessagesCount} unread)`
                     : ""
                 }`}
                 title="Messages"
               >
                 <MessageSquare className="h-4 w-4" aria-hidden="true" />
-                {unreadMessagesCount > 0 && (
+                {(unreadMessagesCount ?? 0) > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-action-600 px-1 text-[10px] font-bold text-white">
-                    {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                    {(unreadMessagesCount ?? 0) > 9 ? "9+" : unreadMessagesCount}
                   </span>
                 )}
               </Link>
@@ -207,10 +207,10 @@ export function Header() {
               Post a Listing
             </Link>
 
-            {user ? (
+            {isLoading ? <p role="status" className="px-3 py-2 text-sm">Checking session…</p> : user ? (
               <>
                 <Link
-                  aria-label={`Messages (${unreadMessagesCount} unread)`}
+                  aria-label={unreadMessagesCount === null ? "Messages" : `Messages (${unreadMessagesCount} unread)`}
                   href="/account/messages"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center justify-between rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
@@ -219,14 +219,14 @@ export function Header() {
                     <MessageSquare className="h-4 w-4" aria-hidden="true" />
                     <span>Messages</span>
                   </div>
-                  {unreadMessagesCount > 0 && (
+                  {(unreadMessagesCount ?? 0) > 0 && (
                     <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-action-600 px-1.5 text-xs font-bold text-white">
-                      {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                      {(unreadMessagesCount ?? 0) > 9 ? "9+" : unreadMessagesCount}
                     </span>
                   )}
                 </Link>
                 <Link
-                  aria-label={`Notifications (${unreadNotificationsCount} unread)`}
+                  aria-label={unreadNotificationsCount === null ? "Notifications" : `Notifications (${unreadNotificationsCount} unread)`}
                   href="/account/notifications"
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center justify-between rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
@@ -235,9 +235,9 @@ export function Header() {
                     <Bell className="h-4 w-4" aria-hidden="true" />
                     <span>Notifications</span>
                   </div>
-                  {unreadNotificationsCount > 0 && (
+                  {(unreadNotificationsCount ?? 0) > 0 && (
                     <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-action-600 px-1.5 text-xs font-bold text-white">
-                      {unreadNotificationsCount > 9
+                      {(unreadNotificationsCount ?? 0) > 9
                         ? "9+"
                         : unreadNotificationsCount}
                     </span>

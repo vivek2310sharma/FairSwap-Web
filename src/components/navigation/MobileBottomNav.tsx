@@ -60,7 +60,7 @@ interface NavItem {
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const { user, unreadMessagesCount } = useAuth();
+  const { user, isLoading, unreadMessagesCount } = useAuth();
 
   if (!shouldShowBottomNav(pathname)) {
     return null;
@@ -71,7 +71,9 @@ export function MobileBottomNav() {
     { label: "Search", href: "/search", icon: Search },
     { label: "Sell", href: "/account/listings/new", icon: Plus, isPrimary: true },
     { label: "Chats", href: "/account/messages", icon: MessageCircle },
-    user
+    isLoading
+      ? { label: "Checking session…", href: "#session-loading", icon: UserRound }
+      : user
       ? { label: "Account", href: "/account", icon: UserRound }
       : { label: "Sign In", href: "/auth/sign-in", icon: UserRound },
   ];
@@ -90,6 +92,7 @@ export function MobileBottomNav() {
         <ul className="grid h-16 grid-cols-5 items-center px-1" role="list">
           {navItems.map((item) => {
             const active = isRouteActive(item.href, pathname);
+            if (item.href === "#session-loading") return <li key="session-loading" className="text-center text-[10px]" role="status">Checking session…</li>;
 
             if (item.isPrimary) {
               return (
@@ -117,7 +120,7 @@ export function MobileBottomNav() {
 
             const Icon = item.icon;
             const isChats = item.href === "/account/messages";
-            const showUnreadBadge = isChats && user && unreadMessagesCount > 0;
+            const showUnreadBadge = isChats && user && (unreadMessagesCount ?? 0) > 0;
 
             return (
               <li key={item.href} className="flex justify-center">
@@ -144,7 +147,7 @@ export function MobileBottomNav() {
                     />
                     {showUnreadBadge && (
                       <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-action-600 px-1 text-[9px] font-bold text-white shadow-xs">
-                        {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                        {(unreadMessagesCount ?? 0) > 9 ? "9+" : unreadMessagesCount}
                       </span>
                     )}
                   </div>
