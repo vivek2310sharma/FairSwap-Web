@@ -7,9 +7,9 @@ import { Pagination } from "@/components/listings/Pagination";
 import {
   getPublicCategories,
   getPublicCities,
-  getPublicLocalities,
   searchPublicListings,
 } from "@/lib/discovery/queries";
+import { getAppliedLocality } from "@/lib/discovery/locality-page";
 import { searchFiltersSchema, getEffectiveSort } from "@/types/listing";
 import { serializeSearchFilters } from "@/lib/navigation/search-context";
 import { createClient } from "@/lib/supabase/server";
@@ -66,12 +66,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   };
   const searchContext = serializeSearchFilters(rawFilters);
 
-  // Note: getPublicLocalities without city argument fetches all localities
-  // so localities for newly selected districts in mobile drawer are immediately available.
+  // Only hydrate the selected district; further options use the bounded locality API.
   const [categories, cities, localities, searchResult] = await Promise.all([
     getPublicCategories(),
     getPublicCities(),
-    getPublicLocalities(),
+    filters.city && filters.locality
+      ? getAppliedLocality(filters.city, filters.locality)
+      : Promise.resolve([]),
     searchPublicListings(filters),
   ]);
 

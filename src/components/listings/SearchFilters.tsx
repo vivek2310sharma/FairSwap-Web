@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useTransition, useId } from "react";
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 import { SlidersHorizontal, RotateCcw, Search, Loader2, AlertCircle } from "lucide-react";
 import { Category, City, Locality, SearchSortOption, getEffectiveSort } from "@/types/listing";
 
@@ -33,6 +34,9 @@ interface AppliedFilters {
 }
 
 const MAX_PRICE = 100000000;
+const localityOptionsSchema = z.array(z.object({
+  id: z.string(), city_id: z.string(), name: z.string(),
+})).max(100);
 
 export function SearchFilters({
   categories,
@@ -69,7 +73,20 @@ export function SearchFilters({
   );
 
   // Dynamic localities state
-  const [fetchedLocalities, setFetchedLocalities] = useState<{ cityId: string; items: Locality[] } | null>(null);
+  const [fetchedLocalities, setFetchedLocalities] = useState<{
+    cityId: string; items: Pick<Locality, "id" | "city_id" | "name">[]; nextOffset: number | null;
+  } | null>(null);
+  const [localityRequest, setLocalityRequest] = useState({ offset: 0, attempt: 0 });
+  const [localityError, setLocalityError] = useState(false);
+  const [settledLocalityRequest, setSettledLocalityRequest] = useState<{
+    city: string; request: typeof localityRequest;
+  } | null>(null);
+  const [previousCity, setPreviousCity] = useState(city);
+  if (previousCity !== city) {
+    setPreviousCity(city);
+    setLocalityRequest({ offset: 0, attempt: 0 });
+    setLocalityError(false);
+  }
 
   // Ref for debouncing query changes on desktop
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -119,48 +136,55 @@ export function SearchFilters({
   // Compute effective dynamic localities and loading status
   const propLocalitiesMatch = city ? localities.filter((loc) => loc.city_id === city) : [];
   const hasPropMatch = propLocalitiesMatch.length > 0;
-  const isFetchingLocalities = Boolean(
-    city && !hasPropMatch && (!fetchedLocalities || fetchedLocalities.cityId !== city)
-  );
+  const isFetchingLocalities = Boolean(city && (settledLocalityRequest?.city !== city ||
+    settledLocalityRequest.request !== localityRequest));
 
   const dynamicLocalities = (() => {
     if (!city) return localities;
+    if (fetchedLocalities && fetchedLocalities.cityId === city) {
+      const selected = propLocalitiesMatch.find((item) => item.id === locality);
+      return selected && !fetchedLocalities.items.some((item) => item.id === selected.id)
+        ? [selected, ...fetchedLocalities.items] : fetchedLocalities.items;
+    }
     if (hasPropMatch) return propLocalitiesMatch;
-    if (fetchedLocalities && fetchedLocalities.cityId === city) return fetchedLocalities.items;
     return [];
   })();
 
   // Lazy load localities for newly selected district with AbortController for stale request cancellation
   useEffect(() => {
     if (!city) return;
-    const matchesProp = localities.filter((loc) => loc.city_id === city);
-    if (matchesProp.length > 0) return;
-
     const controller = new AbortController();
-
-    fetch(`/api/discovery/localities?city_id=${encodeURIComponent(city)}`, {
+    const offset = localityRequest.offset;
+    fetch(`/api/discovery/localities?city_id=${encodeURIComponent(city)}${offset ? `&offset=${offset}` : ""}`, {
       signal: controller.signal,
     })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: Locality[]) => {
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Unable to load areas");
+        const data = localityOptionsSchema.parse(await res.json());
+        const header = res.headers.get("X-Next-Offset");
+        const nextOffset = header === null ? null : Number(header);
+        if (data.some((item) => item.city_id !== city) ||
+            (nextOffset !== null && (!Number.isSafeInteger(nextOffset) || nextOffset <= offset || nextOffset > 1000000))) {
+          throw new Error("Invalid areas response");
+        }
         if (!controller.signal.aborted) {
-          if (Array.isArray(data)) {
-            setFetchedLocalities({ cityId: city, items: data });
-          } else {
-            setFetchedLocalities({ cityId: city, items: [] });
-          }
+          setLocalityError(false);
+          setFetchedLocalities((previous) => ({ cityId: city, nextOffset,
+            items: offset && previous?.cityId === city ? [...previous.items, ...data] : data,
+          }));
         }
       })
-      .catch((err) => {
-        if (err.name !== "AbortError" && !controller.signal.aborted) {
-          setFetchedLocalities({ cityId: city, items: [] });
-        }
+      .catch(() => {
+        if (!controller.signal.aborted) setLocalityError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSettledLocalityRequest({ city, request: localityRequest });
       });
 
     return () => {
       controller.abort();
     };
-  }, [city, localities]);
+  }, [city, localityRequest]);
 
   // Price Range Validator
   const validatePriceInputs = (minStr: string, maxStr: string) => {
@@ -662,7 +686,7 @@ export function SearchFilters({
         </div>
 
         {/* Locality Selection (Only if district selected) */}
-        {city && (dynamicLocalities.length > 0 || isFetchingLocalities) && (
+        {city && (
           <div>
             <label htmlFor={`${formPrefix}-filter-locality`} className="block text-xs font-semibold uppercase tracking-wider text-muted">
               Locality / Area
@@ -689,6 +713,23 @@ export function SearchFilters({
                 </option>
               ))}
             </select>
+            {localityError && !isFetchingLocalities ? (
+              <div role="alert" className="mt-2 text-sm">
+                Unable to load areas. Please try again.
+                <button type="button" className="ml-2 underline"
+                  onClick={() => setLocalityRequest((value) => ({ ...value, attempt: value.attempt + 1 }))}>
+                  Retry areas
+                </button>
+              </div>
+            ) : !isFetchingLocalities && fetchedLocalities?.cityId === city && dynamicLocalities.length === 0 ? (
+              <p role="status" className="mt-2 text-sm text-muted">No areas available in this district.</p>
+            ) : null}
+            {!localityError && fetchedLocalities?.cityId === city && fetchedLocalities.nextOffset !== null && (
+              <button type="button" disabled={isFetchingLocalities} className="mt-2 text-sm underline"
+                onClick={() => setLocalityRequest({ offset: fetchedLocalities.nextOffset!, attempt: 0 })}>
+                {isFetchingLocalities ? "Loading areas..." : "Load more areas"}
+              </button>
+            )}
           </div>
         )}
 

@@ -1,10 +1,11 @@
-import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor, within } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import React from "react";
 import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
 import { SearchFilters } from "@/components/listings/SearchFilters";
 import { getEffectiveSort } from "@/types/listing";
 import { GET as localitiesRouteGET } from "@/app/api/discovery/localities/route";
+import { getLocalityPage } from "@/lib/discovery/locality-page";
 
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -13,10 +14,10 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/lib/discovery/queries", () => ({
-  getPublicLocalities: vi.fn(async (cityId: string) => [
+vi.mock("@/lib/discovery/locality-page", () => ({
+  getLocalityPage: vi.fn(async (cityId: string) => ({ items: [
     { id: "loc-1", city_id: cityId, name: "Vaishali Nagar", slug: "vaishali-nagar", is_active: true, created_at: "" },
-  ]),
+  ], nextOffset: null })),
 }));
 
 global.fetch = vi.fn();
@@ -32,6 +33,8 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(global.fetch).mockReset();
+    vi.mocked(global.fetch).mockImplementation(async () => new Response("[]"));
   });
 
   describe("SRCH-02 & Search Core Utilities", () => {
@@ -258,8 +261,10 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
     });
 
     it("fetches localities lazily when district is changed in mobile drawer with server-scoped localities prop", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify([mockData.loc1])));
       (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         ok: true,
+        headers: new Headers(),
         json: async () => [mockData.loc2],
       });
 
@@ -313,6 +318,21 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
   });
 
   describe("Locality API Endpoint Validation & Headers", () => {
+    it("rejects unbounded or invalid offsets before querying", async () => {
+      for (const offset of ["-1", "1.5", "1000001", "NaN"]) {
+        const res = await localitiesRouteGET(new Request(`http://localhost/api/discovery/localities?city_id=${mockData.city1.id}&offset=${offset}`));
+        expect(res.status).toBe(400);
+      }
+      expect(getLocalityPage).not.toHaveBeenCalled();
+    });
+
+    it("returns a non-cacheable retryable error without exposing backend details", async () => {
+      vi.mocked(getLocalityPage).mockRejectedValueOnce(new Error("private backend details"));
+      const res = await localitiesRouteGET(new Request(`http://localhost/api/discovery/localities?city_id=${mockData.city1.id}`));
+      expect(res.status).toBe(503);
+      expect(res.headers.get("Cache-Control")).toBe("no-store");
+      expect(await res.text()).not.toContain("private backend details");
+    });
     it("returns HTTP 400 Bad Request for malformed or missing city_id UUID", async () => {
       // 1. Missing city_id
       const req1 = new Request("http://localhost/api/discovery/localities");
@@ -335,11 +355,108 @@ describe("SRCH-04: Active Filter Chips & Search Filters Integration", () => {
       const res = await localitiesRouteGET(req);
 
       expect(res.status).toBe(200);
-      expect(res.headers.get("Cache-Control")).toContain("public");
+      expect(res.headers.get("Cache-Control")).toContain("private");
       const json = await res.json();
       expect(Array.isArray(json)).toBe(true);
       expect(json).toHaveLength(1);
       expect(json[0].name).toBe("Vaishali Nagar");
+    });
+  });
+
+  describe("SRCH-04 locality and navigation regressions", () => {
+    const view = (filters = {}) => <SearchFilters categories={[mockData.cat]} cities={[mockData.city1, mockData.city2]} localities={[]} initialFilters={filters} />;
+    const response = (items: unknown[], next?: number) => new Response(JSON.stringify(items), {
+      headers: next === undefined ? {} : { "X-Next-Offset": String(next) },
+    });
+
+    it("distinguishes failure from empty and retries without navigating", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(new Response("{}", { status: 503 }))
+        .mockResolvedValueOnce(response([]));
+      render(view({ city: mockData.city1.id }));
+      await screen.findByRole("alert");
+      expect(screen.queryByText(/No areas available/)).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Retry areas" }));
+      await screen.findByText(/No areas available/);
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it("loads additional pages only on demand, preserving prior options", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(response([mockData.loc1], 1))
+        .mockResolvedValueOnce(response([{ ...mockData.loc1, id: "extra", name: "दूसरा क्षेत्र" }]));
+      render(view({ city: mockData.city1.id }));
+      fireEvent.click(await screen.findByRole("button", { name: "Load more areas" }));
+      await screen.findByRole("option", { name: "दूसरा क्षेत्र" });
+      expect(screen.getByRole("option", { name: "Vaishali Nagar" })).toBeInTheDocument();
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(fetch).mock.calls[1][0]).toContain("offset=1");
+      expect(screen.queryByRole("button", { name: "Load more areas" })).not.toBeInTheDocument();
+    });
+
+    it("keeps an applied area beyond the first page visible", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(response([{ ...mockData.loc1, id: "another", name: "Another area" }], 100));
+      render(<SearchFilters categories={[mockData.cat]} cities={[mockData.city1]}
+        localities={[mockData.loc1]} initialFilters={{ city: mockData.city1.id, locality: mockData.loc1.id }} />);
+      await screen.findByRole("button", { name: "Load more areas" });
+      expect(screen.getByLabelText("Locality / Area")).toHaveValue(mockData.loc1.id);
+    });
+
+    it("retains earlier options after a later-page error and retries the same offset", async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(response([mockData.loc1], 1))
+        .mockResolvedValueOnce(new Response("{}", { status: 503 }))
+        .mockResolvedValueOnce(response([{ ...mockData.loc1, id: "extra", name: "Extra area" }]));
+      render(view({ city: mockData.city1.id }));
+      fireEvent.click(await screen.findByRole("button", { name: "Load more areas" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Retry areas" }));
+      await screen.findByRole("option", { name: "Extra area" });
+      expect(screen.getByRole("option", { name: "Vaishali Nagar" })).toBeInTheDocument();
+      expect(vi.mocked(fetch).mock.calls[2][0]).toContain("offset=1");
+    });
+
+    it("aborts stale requests and ignores a late response even if transport ignores abort", async () => {
+      let resolveOld!: (value: Response) => void;
+      vi.mocked(fetch).mockImplementationOnce(() => new Promise((resolve) => { resolveOld = resolve; }))
+        .mockResolvedValueOnce(response([mockData.loc2]));
+      const { unmount } = render(view({ city: mockData.city1.id }));
+      const oldSignal = vi.mocked(fetch).mock.calls[0][1]?.signal;
+      fireEvent.change(screen.getByLabelText("District"), { target: { value: mockData.city2.id } });
+      expect(oldSignal?.aborted).toBe(true);
+      await screen.findByRole("option", { name: "Hiran Magri" });
+      await act(async () => { resolveOld(response([mockData.loc1])); });
+      expect(screen.queryByRole("option", { name: "Vaishali Nagar" })).not.toBeInTheDocument();
+      const latestSignal = vi.mocked(fetch).mock.calls[1][1]?.signal;
+      unmount();
+      expect(latestSignal?.aborted).toBe(true);
+    });
+
+    it("accumulates price blur and rapid desktop selections", () => {
+      render(view());
+      const price = screen.getByLabelText("Minimum price in rupees");
+      fireEvent.change(price, { target: { value: "500" } });
+      fireEvent.blur(price);
+      fireEvent.change(screen.getByLabelText("Category"), { target: { value: "electronics" } });
+      fireEvent.change(screen.getByLabelText("Condition"), { target: { value: "good" } });
+      expect(mockPush).toHaveBeenLastCalledWith("/search?category=electronics&condition=good&price_min=500&page=1");
+    });
+
+    it("mobile Close discards drafts and Apply batches them; Back/Forward props restore state", () => {
+      const { rerender } = render(view({ q: "phone" }));
+      fireEvent.click(screen.getByRole("button", { name: /Filter & Sort/ }));
+      let drawer = within(screen.getByRole("dialog"));
+      fireEvent.change(drawer.getByLabelText("Category"), { target: { value: "electronics" } });
+      fireEvent.click(drawer.getByRole("button", { name: "Close" }));
+      expect(mockPush).not.toHaveBeenCalled();
+      expect(screen.getByLabelText("Category")).toHaveValue("");
+      fireEvent.click(screen.getByRole("button", { name: /Filter & Sort/ }));
+      drawer = within(screen.getByRole("dialog"));
+      fireEvent.change(drawer.getByLabelText("Category"), { target: { value: "electronics" } });
+      fireEvent.click(drawer.getByRole("button", { name: "Apply Filters" }));
+      expect(mockPush).toHaveBeenLastCalledWith("/search?q=phone&category=electronics&page=1");
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      rerender(view({ q: "phone", category: "electronics" }));
+      rerender(view({ q: "phone" }));
+      expect(screen.getByLabelText("Category")).toHaveValue("");
+      rerender(view({ q: "phone", category: "electronics" }));
+      expect(screen.getByLabelText("Category")).toHaveValue("electronics");
     });
   });
 });
