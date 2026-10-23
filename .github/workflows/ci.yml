@@ -95,7 +95,7 @@ jobs:
         run: pnpm vitest run tests/unit/share.test.tsx
 
       - name: Run ADS-01 Status, Counts and Production Dashboard Tests
-        run: pnpm vitest run tests/unit/my-ads-status-tabs.test.tsx tests/security/my-ads-counts.test.ts tests/unit/my-ads-production.test.ts tests/unit/action-matrix.test.ts tests/unit/post-ad-journey-dashboard.test.tsx tests/security/ads01-hosted-runner.test.ts
+        run: pnpm vitest run tests/unit/my-ads-status-tabs.test.tsx tests/security/my-ads-counts.test.ts tests/unit/my-ads-production.test.ts tests/unit/action-matrix.test.ts tests/unit/post-ad-journey-dashboard.test.tsx tests/security/ads01-hosted-runner.test.ts tests/security/ads01-release-authority.test.ts
 
       - name: Run ADS-01 Isolated Dashboard E2E
         run: pnpm exec playwright test --config=playwright.ads-01.config.ts

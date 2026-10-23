@@ -2,10 +2,11 @@
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { chromium } from '@playwright/test';
+import { checkoutRelease, verifyDeployment } from './ads01-release-authority.mjs';
 
 const testApi = 'https://wpppxlnbzqynvhpeuavd.supabase.co';
 const project = 'wpppxlnbzqynvhpeuavd';
-const release = 'e1737d965b55e8be599cf89b848e28007f2f0628';
+let release = null;
 const tabs = [['all','All',null],['active','Active',['active','reserved']],['pending_review','Under review',['pending_review']],
   ['draft','Drafts',['draft']],['rejected','Needs action',['rejected']],['paused','Paused',['paused']],['expired','Expired',['expired']],['sold','Sold',['sold']]];
 const results = [];
@@ -21,18 +22,23 @@ const report = () => {
 };
 
 async function main() {
+  release = checkoutRelease();
   const app = process.env.ADS01_TEST_APP_URL;
   const key = process.env.ADS01_TEST_PUBLISHABLE_KEY;
   const paths = [process.env.ADS01_TEST_SELLER_A_STATE,process.env.ADS01_TEST_SELLER_B_STATE];
   if (!app || !key || paths.some(x=>!x)) { blocked('Supply exact-commit Test preview, public key and two authorized seller storage states'); report(); return; }
   const origin = new URL(app);
   requireThat(origin.protocol==='https:' && origin.hostname.endsWith('.vercel.app') && !origin.username && !origin.password && !origin.search && !origin.hash && origin.pathname==='/');
-  // Operator must independently verify that this Preview represents the named SHA and Test configuration.
-  requireThat(process.env.ADS01_TEST_APP_VERIFIED_SHA===release);
-  requireThat(process.env.ADS01_TEST_APP_VERIFIED_PROJECT===project);
+  // Legacy assertions can veto a run, but never establish release/deployment authority.
+  requireThat(!process.env.ADS01_TEST_APP_VERIFIED_SHA || process.env.ADS01_TEST_APP_VERIFIED_SHA===release);
+  requireThat(!process.env.ADS01_TEST_APP_VERIFIED_PROJECT || process.env.ADS01_TEST_APP_VERIFIED_PROJECT===project);
   if (!key.startsWith('sb_publishable_')) {
     requireThat(key.startsWith('eyJ') && JSON.parse(Buffer.from(key.split('.')[1],'base64url')).role==='anon');
   }
+  if (!process.env.ADS01_TEST_VERCEL_TOKEN) {
+    blocked('Authenticated Vercel deployment metadata access required; environment attestations are insufficient'); report(); return;
+  }
+  await verifyDeployment(origin.hostname, release, process.env.ADS01_TEST_VERCEL_TOKEN);
   const sellers = [];
   for (const [index,path] of paths.entries()) {
     const state = JSON.parse(readFileSync(path,'utf8'));
