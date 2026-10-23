@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -78,8 +78,11 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
       await page.goto("/search");
 
       // Assert target results grid exists and contains real rendered cards
-      const resultsGrid = page.getByTestId("search-results-grid");
+      const resultsGrid = page.getByRole("main").getByTestId("search-results-grid");
       await expect(resultsGrid).toBeVisible({ timeout: 10000 });
+      // React may stream hidden replacement content during hydration. It must
+      // settle to one grid in the entire DOM, not merely one matching landmark.
+      await expect(page.getByTestId("search-results-grid")).toHaveCount(1);
 
       // Verify real listing title, long Indian price, Hindi Devanagari text, and locality
       await expect(resultsGrid.getByText("₹1,25,000")).toBeVisible();
@@ -117,8 +120,11 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
     await page.setViewportSize({ width: 360, height: 640 });
     await page.goto("/search");
 
-    const resultsGrid = page.getByTestId("search-results-grid");
+    const resultsGrid = page.getByRole("main").getByTestId("search-results-grid");
     await expect(resultsGrid).toBeVisible({ timeout: 10000 });
+      // React may stream hidden replacement content during hydration. It must
+      // settle to one grid in the entire DOM, not merely one matching landmark.
+      await expect(page.getByTestId("search-results-grid")).toHaveCount(1);
 
     // Target the thumbnail image link (first card link)
     const thumbnailLink = resultsGrid.locator("a[href*='/listings/iphone-15-pro-max-mumbai']").first();
@@ -137,8 +143,11 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
     await page.setViewportSize({ width: 360, height: 640 });
     await page.goto("/search");
 
-    const resultsGrid = page.getByTestId("search-results-grid");
+    const resultsGrid = page.getByRole("main").getByTestId("search-results-grid");
     await expect(resultsGrid).toBeVisible({ timeout: 10000 });
+      // React may stream hidden replacement content during hydration. It must
+      // settle to one grid in the entire DOM, not merely one matching landmark.
+      await expect(page.getByTestId("search-results-grid")).toHaveCount(1);
 
     // Find the real 44px favourite button rendered by React ListingCard
     const favBtn = resultsGrid.getByRole("button", { name: "Save to favourites" }).first();
@@ -154,3 +163,73 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
     expect(page.url()).not.toContain("/listings/iphone-15-pro-max-mumbai");
   });
 });
+
+test.describe("HDR-03 isolated navigation", () => {
+  for (const width of [320, 360, 390]) {
+    test(`guest navigation and keyboard menu at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/search");
+      const bottom = page.getByRole("navigation", { name: "Mobile bottom navigation" });
+      await expect(bottom).toHaveCount(1);
+      await expect(bottom.getByRole("link", { name: "Sign In" })).toHaveAttribute("href", "/auth/sign-in");
+      await expect(bottom.getByRole("link")).toHaveCount(5);
+      const menu = page.getByRole("button", { name: "Open menu" });
+      await menu.focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Sign Out" })).toHaveCount(0);
+      await page.keyboard.press("Escape");
+      await expect(menu).toHaveAttribute("aria-expanded", "false");
+      await expect(menu).toBeFocused();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expect(page.getByTestId("search-results-grid")).toHaveCount(1);
+    });
+
+    test(`authenticated badges and sign-out at ${width}px`, async ({ page }) => {
+      await mockAuthenticatedNavigation(page);
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/search");
+      const bottom = page.getByRole("navigation", { name: "Mobile bottom navigation" });
+      await expect(bottom.getByRole("link", { name: "Account", exact: true })).toBeVisible();
+      await expect(bottom.getByRole("link", { name: "Chats (12 unread)", exact: true })).toBeVisible();
+      await expect(bottom.getByText("9+")).toBeVisible();
+      await expect(bottom).toHaveCount(1);
+      await page.getByRole("button", { name: "Open menu" }).click();
+      const menu = page.getByRole("navigation", { name: "Mobile navigation" });
+      await expect(menu.getByRole("link", { name: /Notifications/ })).toContainText("9+");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await menu.getByRole("button", { name: "Sign Out" }).click();
+      await expect(page).toHaveURL("/");
+      await expect(page.getByRole("navigation", { name: "Mobile bottom navigation" }).getByRole("link", { name: "Sign In" })).toBeVisible();
+    });
+  }
+});
+
+async function mockAuthenticatedNavigation(page: Page) {
+  const user = { id: "11111111-1111-4111-8111-111111111111", aud: "authenticated", role: "authenticated", email: "fixture@example.invalid", app_metadata: {}, user_metadata: {}, created_at: "2026-01-01T00:00:00Z" };
+  const expires = Math.floor(Date.now() / 1000) + 3600;
+  const jwt = `${Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url")}.${Buffer.from(JSON.stringify({ sub: user.id, aud: "authenticated", exp: expires, role: "authenticated" })).toString("base64url")}.fixture`;
+  const session = { access_token: jwt, refresh_token: "fixture-refresh", token_type: "bearer", expires_in: 3600, expires_at: expires, user };
+  await page.addInitScript(value => {
+    if (!sessionStorage.getItem("hdr-fixture-initialized")) {
+      document.cookie = `sb-127-auth-token=base64-${value}; path=/; SameSite=Lax`;
+      sessionStorage.setItem("hdr-fixture-initialized", "true");
+    }
+  }, Buffer.from(JSON.stringify(session)).toString("base64url"));
+  await page.route("**/auth/v1/**", route => route.fulfill({ status: route.request().url().includes("logout") ? 204 : 200, contentType: "application/json", body: route.request().url().includes("logout") ? "" : JSON.stringify(user) }));
+  await page.route("**/rest/v1/rpc/get_unread_counts", route => route.fulfill({ json: { unread_messages: 12, unread_notifications: 25 } }));
+}
+
+for (const width of [1024, 1280]) {
+  test('HDR-03 desktop auth navigation at ' + width + 'px', async ({ page }) => {
+    await mockAuthenticatedNavigation(page);
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/search');
+    await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Messages (12 unread)', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Notifications (25 unread)', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sign Out' })).toHaveCount(1);
+    await expect(page.getByRole('navigation', { name: 'Mobile bottom navigation' })).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}

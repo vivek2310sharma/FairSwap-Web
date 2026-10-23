@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
 import Link from "next/link";
 import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -14,82 +15,58 @@ interface NotificationBellProps {
 }
 
 export function NotificationBell({ userId: propUserId, initialNotifications = [] }: NotificationBellProps) {
-  const [currentUserId, setCurrentUserId] = useState<string | undefined>(propUserId);
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const { user, unreadNotificationsCount: unreadCount, refreshUnreadCounts } = useAuth();
+  const currentUserId = user?.id;
+  const [supabase] = useState(createClient);
+  const [snapshot, setSnapshot] = useState<{ userId?: string; rows: Notification[] }>({
+    userId: propUserId, rows: initialNotifications,
+  });
+  const notifications = snapshot.userId === currentUserId ? snapshot.rows : [];
   const [isOpen, setIsOpen] = useState(false);
-  const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const latestUserId = useRef(currentUserId);
+  useEffect(() => { latestUserId.current = currentUserId; }, [currentUserId]);
 
   useEffect(() => {
-    if (!propUserId) {
-      supabase.auth.getUser().then(({ data }) => {
-        if (data.user) {
-          setCurrentUserId(data.user.id);
-          // Fetch initial notifications if none were passed
-          if (initialNotifications.length === 0) {
-            supabase
-              .from("notifications")
-              .select("id, user_id, type, title, body, link, read_at, created_at")
-              .eq("user_id", data.user.id)
-              .order("created_at", { ascending: false })
-              .limit(20)
-              .then(({ data: nData }) => {
-                if (nData) setNotifications(nData as unknown as Notification[]);
-              });
-          }
-        }
-      });
-    }
-  }, [propUserId, supabase, initialNotifications.length]);
+    if (!currentUserId || !isOpen) return;
+    let active = true;
+    void (async () => {
+      try {
+        const { data, error } = await supabase.from("notifications")
+          .select("id, user_id, type, title, body, link, read_at, created_at")
+          .eq("user_id", currentUserId).order("created_at", { ascending: false }).limit(20);
+        if (!active) return;
+        if (error) { setError("Unable to load notifications. Please try again."); return; }
+        setSnapshot({ userId: currentUserId, rows: (data ?? []) as Notification[] });
+        setError(null);
+      } catch { if (active) setError("Unable to load notifications. Please try again."); }
+    })();
+    return () => { active = false; };
+  }, [currentUserId, isOpen, supabase, unreadCount]);
 
-  // Calculate unread count
-  const unreadCount = notifications.filter((n) => !n.read_at).length;
-
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    // Subscribe to real-time notification events
-    const channel = supabase
-      .channel(`user-notifications:${currentUserId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${currentUserId}`,
-        },
-        (payload) => {
-          const newNotif = payload.new as Notification;
-          setNotifications((prev) => {
-            if (prev.some((n) => n.id === newNotif.id)) return prev;
-            return [newNotif, ...prev];
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentUserId, supabase]);
-
-  const handleMarkRead = async (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
-    );
-    await markNotificationReadAction(id);
+  const markRead = async (id?: string) => {
+    const owner = currentUserId;
+    try {
+      const result = id ? await markNotificationReadAction(id) : await markAllNotificationsReadAction();
+      if (latestUserId.current !== owner) return;
+      if (!result.success) { setError("Unable to mark notifications as read. Please try again."); return; }
+      setSnapshot(prev => ({ ...prev, rows: prev.rows.map(n => !id || n.id === id
+        ? { ...n, read_at: n.read_at || new Date().toISOString() } : n) }));
+      setError(null);
+      await refreshUnreadCounts();
+    } catch { if (latestUserId.current === owner) setError("Unable to mark notifications as read. Please try again."); }
   };
-
-  const handleMarkAllRead = async () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read_at: new Date().toISOString() }))
-    );
-    await markAllNotificationsReadAction();
-  };
+  const handleMarkRead = (id: string) => markRead(id);
+  const handleMarkAllRead = () => markRead();
+  if (!currentUserId) return null;
 
   return (
-    <div className="relative">
+    <div className="relative" onKeyDown={event => { if (event.key === "Escape") { setIsOpen(false); trigger.current?.focus(); } }}>
       <button
+        ref={trigger}
+        aria-expanded={isOpen}
+        aria-controls="header-notifications"
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ""}`}
@@ -110,7 +87,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute right-0 z-50 mt-2 w-80 sm:w-96 rounded-2xl border border-border bg-card p-4 shadow-xl">
+          <div id="header-notifications" className="absolute right-0 z-50 mt-2 w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card p-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-sm font-bold text-foreground">Notifications</h3>
               {unreadCount > 0 && (
@@ -125,6 +102,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
               )}
             </div>
 
+            {error && <p role="alert" className="py-2 text-xs">{error}</p>}
             <div className="mt-2 max-h-80 overflow-y-auto divide-y divide-border/50">
               {notifications.length === 0 ? (
                 <div className="py-8 text-center text-xs text-muted">

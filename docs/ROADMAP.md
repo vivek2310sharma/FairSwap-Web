@@ -46,3 +46,6 @@ Rank candidates using current issues and customer evidence, not an inherited `Ph
 - [Current state](CURRENT_STATE.md) is the dated reality check; [deployment runbook](operations/deployment-guide.md) describes environment safety.
 - [Post Ad evidence index](reference/post-ad/) records scoped historical Test results and blockers. These reports are not wholesale Production authorization.
 - [Historical milestone contracts](milestones/), [implementation plans](plans/), [original foundation design](FOUNDATION.md), [implementation ledger](PROGRESS.md), and [pre-production assessment](release/1.6-go-no-go-report.md) are retained for traceability **only**. They describe prior sequencing and past evidence, not a current roadmap gate.
+
+
+HDR-03 local review (23 October 2026): the isolated staging cleanup centralizes navigation auth and unread badges, preserves server/RLS authorization, and refreshes counts after successful notification reads. This is local implementation evidence, not hosted acceptance. `get_unread_counts()` must enforce the caller identity and return non-negative integer `unread_messages` and `unread_notifications`; without it, notifications use an owner-scoped exact count and chat badges are omitted. No Backend, RLS or hosted changes are included.

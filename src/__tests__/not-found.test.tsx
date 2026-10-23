@@ -1,6 +1,12 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import NotFound from "@/app/not-found";
+
+// These isolated page tests do not mount RootLayout's AuthProvider.
+vi.mock("@/components/providers/AuthProvider", () => ({
+  useAuth: () => ({ user: null, isLoading: false, unreadMessagesCount: 0,
+    unreadNotificationsCount: 0, refreshUnreadCounts: vi.fn(), signOut: vi.fn() }),
+}));
 
 describe("NotFound component", () => {
   it("renders 404 heading and message", () => {

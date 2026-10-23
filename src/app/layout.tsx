@@ -1,3 +1,4 @@
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import type { Metadata } from "next";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import "./globals.css";
@@ -41,8 +42,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
-        {children}
-        <MobileBottomNav />
+        <AuthProvider>
+          {children}
+          <MobileBottomNav />
+        </AuthProvider>
       </body>
     </html>
   );

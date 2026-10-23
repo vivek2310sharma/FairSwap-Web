@@ -84,3 +84,6 @@ See [contribution workflow](CONTRIBUTING.md), [deployment runbook](docs/operatio
 | Older milestone plans and test evidence | [Historical records](docs/README.md#historical-project-records) |
 
 **Operational caution:** Legal applicability decisions, backup/PITR limitations and public-launch approvals must be evaluated independently; read [operations readiness](docs/operations/public-beta-operations-readiness.md) before changing launch claims.
+
+
+HDR-03 local review (23 October 2026): the isolated staging cleanup centralizes navigation auth and unread badges, preserves server/RLS authorization, and refreshes counts after successful notification reads. This is local implementation evidence, not hosted acceptance. `get_unread_counts()` must enforce the caller identity and return non-negative integer `unread_messages` and `unread_notifications`; without it, notifications use an owner-scoped exact count and chat badges are omitted. No Backend, RLS or hosted changes are included.

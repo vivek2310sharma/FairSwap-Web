@@ -42,3 +42,6 @@ Refer to [VERIFICATION](VERIFICATION.md). Preview is useful but is **not** proof
 Use a brief walkthrough, code-review summary and dated evidence in the affected docs. Distinguish **implemented**, **tested locally**, **deployed to Test**, **deployed to Production**, **operator-confirmed acceptance**, **deferred**, and **blocked**. State remaining risks.
 
 Keep [CURRENT_STATE](CURRENT_STATE.md), [ROADMAP](ROADMAP.md) and affected operations docs accurate. Historical [PROGRESS](PROGRESS.md), [milestone files](milestones/) and old starter [prompts](../prompts/) remain read-only evidence. Never start those old prompt scripts as if this were a fresh scaffold.
+
+
+HDR-03 local review (23 October 2026): the isolated staging cleanup centralizes navigation auth and unread badges, preserves server/RLS authorization, and refreshes counts after successful notification reads. This is local implementation evidence, not hosted acceptance. `get_unread_counts()` must enforce the caller identity and return non-negative integer `unread_messages` and `unread_notifications`; without it, notifications use an owner-scoped exact count and chat badges are omitted. No Backend, RLS or hosted changes are included.
