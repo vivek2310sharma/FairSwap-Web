@@ -2,14 +2,15 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { SearchFilters } from "@/components/listings/SearchFilters";
+import { ActiveFilterChips } from "@/components/listings/ActiveFilterChips";
 import { Pagination } from "@/components/listings/Pagination";
 import {
   getPublicCategories,
   getPublicCities,
-  getPublicLocalities,
   searchPublicListings,
 } from "@/lib/discovery/queries";
 import { searchFiltersSchema, getEffectiveSort } from "@/types/listing";
+import { getAppliedLocality } from "@/lib/discovery/locality-page";
 import { serializeSearchFilters } from "@/lib/navigation/search-context";
 import { loadPublicFamilyDisplays } from "@/lib/discovery/public-family-query";
 import { createClient } from "@/lib/supabase/server";
@@ -69,7 +70,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const [categories, cities, localities, searchResult] = await Promise.all([
     getPublicCategories(),
     getPublicCities(),
-    getPublicLocalities(filters.city || undefined),
+    filters.city && filters.locality
+      ? getAppliedLocality(filters.city, filters.locality)
+      : Promise.resolve([]),
     searchPublicListings(filters),
   ]);
 
@@ -131,6 +134,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
             {/* Results Grid */}
             <div className="lg:col-span-3">
+              <ActiveFilterChips
+                filters={rawFilters}
+                categories={categories}
+                cities={cities}
+                localities={localities}
+              />
+
               {searchResult.items.length > 0 ? (
                 <>
                   <div
