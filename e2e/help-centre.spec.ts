@@ -38,6 +38,23 @@ test.describe("Independent public Help Centre integration", () => {
 
   test("mobile menu separates public help from ticket history", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile-chromium");
+    // Ticket history is authenticated navigation. Use a synthetic local session
+    // for this assertion; public contact/help tests above remain signed out.
+    expect(new URL(testInfo.project.use.baseURL!).hostname).toBe("localhost");
+    const user = { id: "11111111-1111-4111-8111-111111111111", aud: "authenticated",
+      role: "authenticated", email: "fixture@example.invalid", app_metadata: {},
+      user_metadata: {}, created_at: "2026-01-01T00:00:00Z" };
+    const expires = Math.floor(Date.now() / 1000) + 3600;
+    const token = `${Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url")}.${Buffer.from(JSON.stringify({ sub: user.id, aud: "authenticated", exp: expires, role: "authenticated" })).toString("base64url")}.fixture`;
+    const session = { access_token: token, refresh_token: "fixture-refresh",
+      token_type: "bearer", expires_in: 3600, expires_at: expires, user };
+    await page.context().addCookies([{ name: "sb-127-auth-token",
+      value: `base64-${Buffer.from(JSON.stringify(session)).toString("base64url")}`,
+      url: testInfo.project.use.baseURL! }]);
+    await page.route("http://127.0.0.1:54321/auth/v1/**",
+      route => route.fulfill({ json: user }));
+    await page.route("http://127.0.0.1:54321/rest/v1/rpc/get_unread_counts",
+      route => route.fulfill({ json: [{ unread_messages: 0, unread_notifications: 0 }] }));
     await page.route(HELP_CENTRE_URL, (route) =>
       route.fulfill({
         status: 200,

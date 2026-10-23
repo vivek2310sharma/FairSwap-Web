@@ -1,8 +1,21 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import ContactPage from "@/app/contact/page";
 import SafetyPage from "@/app/safety/page";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
+
+// These public-page renders omit RootLayout. Keep Header in a settled guest
+// session without starting Auth, count requests or Realtime in link tests.
+vi.mock("@/components/providers/AuthProvider", () => ({
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    unreadMessagesCount: null,
+    unreadNotificationsCount: null,
+    refreshUnreadCounts: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}));
 
 describe("Public assistance remains separate from account workflows", () => {
   it("lets signed-out visitors read help, email and WhatsApp support while preserving grievances and tickets", () => {
