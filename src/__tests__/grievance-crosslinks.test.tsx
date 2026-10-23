@@ -1,11 +1,24 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import TermsPage from "@/app/terms/page";
 import PrivacyPage from "@/app/privacy/page";
 import SafetyPage from "@/app/safety/page";
 import GrievancePage from "@/app/grievance/page";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import ContactPage from "@/app/contact/page";
+
+// These public-page renders omit RootLayout. Keep Header in a settled guest
+// session without starting Auth, count requests or Realtime in link tests.
+vi.mock("@/components/providers/AuthProvider", () => ({
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    unreadMessagesCount: null,
+    unreadNotificationsCount: null,
+    refreshUnreadCounts: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}));
 
 describe("Grievance Redressal cross-links on legal and help pages", () => {
   it("Terms page links to /grievance", () => {

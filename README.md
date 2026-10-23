@@ -86,3 +86,10 @@ See [contribution workflow](CONTRIBUTING.md), [deployment runbook](docs/operatio
 | Older milestone plans and test evidence | [Historical records](docs/README.md#historical-project-records) |
 
 **Operational caution:** Legal applicability decisions, backup/PITR limitations and public-launch approvals must be evaluated independently; read [operations readiness](docs/operations/public-beta-operations-readiness.md) before changing launch claims.
+
+
+HDR-03 local review (23 October 2026): the isolated staging cleanup centralizes navigation auth and unread badges, preserves server/RLS authorization, and refreshes counts after successful notification reads. This is local implementation evidence, not hosted acceptance. `get_unread_counts()` must enforce the caller identity and return non-negative integer `unread_messages` and `unread_notifications`; without it, notifications use an owner-scoped exact count and chat badges are omitted. No Backend, RLS or hosted changes are included.
+
+HDR-03 review 5627179716 follow-up: direct authenticated identity switches now discard private document/router state; loading auth and unavailable counts stay explicitly unknown. The companion Backend candidate defines individual inbound-message counts and owner-only `unread_count_signals` events for arrivals/read markers. Hosted installation and two-user/two-tab acceptance remain outstanding; source review does not authorize deployment.
+
+HDR-03 Production release preparation (23 October 2026): selected merged staging PR #234 onto main-based release/hdr-03-main-20261023 at bad68d0, without merging staging. Centralized session-aware navigation, owner-scoped unread refresh, unknown chat-count fallback, private-state invalidation on identity change, and newest-100/read-cursor corrections are included. Production category, ListingCard, moderation and SRCH-04 implementations remain unchanged. Backend installation and genuine two-account Test acceptance are separate release gates; no deployment is authorized. See [release evidence and owner acceptance steps](docs/operations/HDR03_PRODUCTION_RELEASE_20261023.md).

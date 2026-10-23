@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Info,
 } from "lucide-react";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import { type Conversation, type Message } from "@/types/communication";
 import { sendMessageAction, markConversationReadAction } from "@/app/account/messages/actions";
@@ -30,6 +31,9 @@ export function ChatThread({
   currentUserId,
   isBlockedInitial = false,
 }: ChatThreadProps) {
+  const { refreshUnreadCounts } = useAuth();
+  const [readError, setReadError] = useState(false);
+  const [readRetry, setReadRetry] = useState(0);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -47,7 +51,7 @@ export function ChatThread({
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const supabase = createClient();
+  const [supabase] = useState(createClient);
 
   const isBuyer = conversation.buyer_id === currentUserId;
   const counterparty = isBuyer ? conversation.seller : conversation.buyer;
@@ -77,16 +81,27 @@ export function ChatThread({
     scrollToBottom(false);
   }, []);
 
-  const hasMarkedInitialRead = useRef(false);
+  const latestDisplayedId = messages[messages.length - 1]?.id;
+  const readAttempt = useRef<{ key: string; request: ReturnType<typeof markConversationReadAction> } | null>(null);
   useEffect(() => {
-    if (!hasMarkedInitialRead.current && initialMessages.length > 0) {
-      hasMarkedInitialRead.current = true;
-      const latestMsg = initialMessages[initialMessages.length - 1];
-      if (latestMsg.sender_id !== currentUserId) {
-        markConversationReadAction(conversation.id, latestMsg.id);
-      }
+    if (!latestDisplayedId) return;
+    let active = true;
+    const key = `${conversation.id}:${currentUserId}:${latestDisplayedId}:${readRetry}`;
+    if (readAttempt.current?.key !== key) {
+      // Defer and retain the request so StrictMode/re-renders cannot duplicate it.
+      // The server resolves this ID's real (created_at,id) and enforces membership
+      // and monotonicity. The viewer's outgoing message is a valid read cursor.
+      readAttempt.current = { key, request: Promise.resolve().then(() =>
+        markConversationReadAction(conversation.id, latestDisplayedId)) };
     }
-  }, [conversation.id, currentUserId, initialMessages]);
+    void readAttempt.current.request.then(async result => {
+      if (!active) return;
+      if (!result.success) { setReadError(true); return; }
+      setReadError(false);
+      await refreshUnreadCounts();
+    }).catch(() => { if (active) setReadError(true); });
+    return () => { active = false; };
+  }, [conversation.id, currentUserId, latestDisplayedId, readRetry, refreshUnreadCounts]);
 
   useEffect(() => {
     // Subscribe to real-time message stream
@@ -107,11 +122,6 @@ export function ChatThread({
             if (prev.some((m) => m.id === newMsg.id)) return prev;
             return [...prev, newMsg];
           });
-
-          // If incoming message is from counterparty, mark read
-          if (newMsg.sender_id !== currentUserId) {
-            markConversationReadAction(conversation.id, newMsg.id);
-          }
 
           setTimeout(() => scrollToBottom(true), 50);
         }
@@ -330,6 +340,15 @@ export function ChatThread({
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {readError && (
+        <div role="alert" className="mx-4 mb-2 rounded-xl border border-border p-2.5 text-xs">
+          Read status could not be updated.
+          <button type="button" className="ml-2 underline" onClick={() => setReadRetry(value => value + 1)}>
+            Retry read status
+          </button>
+        </div>
+      )}
 
       {/* Error Notice */}
       {errorMessage && (
