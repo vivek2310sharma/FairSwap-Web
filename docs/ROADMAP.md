@@ -1,5 +1,7 @@
 # FairSwap product roadmap — workstreams and readiness
 
+> ADS-01 local review, 23 October 2026: eight My Ads status tabs, owner-scoped counts and URL pagination are prepared for review; hosted acceptance is pending. See [scope and verification](ADS-01-LOCAL-REVIEW.md).
+
 **Current planning model, reviewed 14 October 2026.** Prioritize work by **verified behavior, customer trust, security, operational risk, and explicit owner approval**. Historical numbered development phases and `1.1–1.6` milestones do **not** determine which tasks may now be started.
 
 This is a living **planning index**, not implementation permission. GitHub issues and reviewed PRs supply concrete scope and current acceptance criteria.
