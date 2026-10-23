@@ -15,6 +15,10 @@ vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }));
 
+vi.mock('@/lib/listings/my-ads', async importOriginal => ({
+  ...await importOriginal<typeof import('@/lib/listings/my-ads')>(),
+  fetchMyListingCounts: async () => ({all:0,active:0,pending_review:0,draft:0,rejected:0,paused:0,expired:0,sold:0}),
+}));
 vi.mock('@/lib/supabase/server',()=>({createClient:async()=>({auth:{getUser:async()=>({data:{user:{id:'owner'}}})},from:m.from,rpc:async()=>({data:false,error:null})})}));
 vi.mock('@/app/account/listings/actions',()=>({submitListingAction:m.submit,transitionListingAction:m.transition}));
 vi.mock('@/lib/listings/property/server',()=>({isPropertyEnabled:()=>m.flags.property}));
@@ -23,7 +27,7 @@ vi.mock('@/lib/listings/two-wheeler/server',()=>({isTwoWheelerEnabled:()=>m.flag
 const rows:Draft[]=[['goods','Electronics','electronics'],['legacy','Bicycles & Sports','bicycles-sports'],['tw','Commuter Bikes','tw-commuter-bikes'],['car','Hatchback','car-hatchback'],['pg','Boys PG','rental-boys-pg']].map(([id,name,slug])=>({id,category_id:id+'-category',title:`Synthetic ${id}`,status:'draft',revision:1,price_type:'fixed',price_paise:123450,updated_at:'2026-10-10',cover_photo_id:'cover-'+id,categories:{name,slug},cities:{name:'Isolated city'}}));
 const financial={currency:'INR',period:'month',basis:'per_bed',rent:{state:'known',amount_paise:123450}};
 
-beforeEach(()=>{vi.clearAllMocks();m.flags={property:true,tw:true,cars:true};m.rows=structuredClone(rows);m.errors={};m.reads=[];m.contexts={listing_property_contexts:[{listing_id:'pg',category_id:'pg-category',financial}]};m.from.mockImplementation(table=>{const q={select:m.select.mockImplementation(()=>q),eq:vi.fn(()=>q),order:()=>q,limit:async()=>({data:m.rows,error:null}),in:async(column:string,ids:string[])=>{m.reads.push({table,column,ids});if(m.errors[table])return {data:null,error:{message:'Reference read failed'}};return {data:m.contexts[table]??[],error:null};}};return q;});});
+beforeEach(()=>{vi.clearAllMocks();m.flags={property:true,tw:true,cars:true};m.rows=structuredClone(rows);m.errors={};m.reads=[];m.contexts={listing_property_contexts:[{listing_id:'pg',category_id:'pg-category',financial}]};m.from.mockImplementation(table=>{const q={select:m.select.mockImplementation(()=>q),eq:vi.fn(()=>q),order:()=>q,limit:async()=>({data:m.rows,error:null}),range:async()=>({data:m.rows,error:null}),in:async(column:string,ids:string[])=>{m.reads.push({table,column,ids});if(m.errors[table])return {data:null,error:{message:'Reference read failed'}};return {data:m.contexts[table]??[],error:null};}};return q;});});
 afterEach(cleanup);
 
 const card=(id:string)=>within(screen.getByRole('heading',{name:`Synthetic ${id}`}).closest('.rounded-lg')!);
@@ -113,7 +117,7 @@ it('listing projection supplies the category binding needed by owner fallbacks',
 
 it('thrown context reads leave the unresolved draft unavailable',async()=>{
   m.rows=[{...rows[2],categories:null}];
-  m.from.mockImplementation(table=>{if(table==='listing_vehicle_contexts')throw Error('Unavailable');const q={select:()=>q,eq:()=>q,order:()=>q,limit:async()=>({data:m.rows,error:null}),in:async()=>({data:[],error:null})};return q;});
+  m.from.mockImplementation(table=>{if(table==='listing_vehicle_contexts')throw Error('Unavailable');const q={select:()=>q,eq:()=>q,order:()=>q,limit:async()=>({data:m.rows,error:null}),range:async()=>({data:m.rows,error:null}),in:async()=>({data:[],error:null})};return q;});
   render(await ListingsDashboardPage());
   noSubmit('tw');
   expect(card('tw').getByText(/Category references could not be loaded/)).toBeInTheDocument();

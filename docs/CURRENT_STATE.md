@@ -1,5 +1,7 @@
 # Current FairSwap-Web state and boundaries
 
+> ADS-01 production release preparation (23 October 2026): local main-based port; release and hosted acceptance are pending. See [handoff and verification](ADS-01-PRODUCTION-HANDOFF.md).
+
 **Snapshot:** 14 October 2026. This is an **operational summary**, not a substitute for the live code, GitHub release checks, Supabase Dashboard or fresh legal advice. Update dated evidence when architecture or operational status changes.
 
 ## Product and audience
