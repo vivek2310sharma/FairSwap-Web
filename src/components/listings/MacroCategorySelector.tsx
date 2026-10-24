@@ -79,7 +79,7 @@ export default function MacroCategorySelector({
   const actions: ChooserActions = { caps, hrefForSection, onChooseSection, selectedSubId: subId, onSelectSub: setSubId };
 
   return (
-    <section aria-label="Listing categories" className="space-y-5">
+    <section aria-label="Ad categories" className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">What would you like to list?</h1>
         <p className="mt-1 text-sm text-gray-600">Step 1 of 3 · Choose a category</p>

@@ -89,7 +89,7 @@ export function SubNotice({ sub }: { sub: SubCategory | undefined }) {
     return (
       <div role="status" className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
         <p className="font-semibold">Not available</p>
-        <p>Live-animal listings are not available on FairSwap.</p>
+        <p>Live-animal ads are not available on FairSwap.</p>
       </div>
     );
   }
@@ -137,7 +137,7 @@ export default function PostAdSubcategoryChooser({ main, actions }: { main: Main
   return (
     <div className="space-y-3">
       {list}
-      {anyActionable && <p className="text-xs text-gray-600">Available options open the existing posting form, where you choose the exact category in the next step.</p>}
+      {anyActionable && <p className="text-xs text-gray-600">Available options open the existing posting form. You choose the exact category there; it is not preselected from this screen.</p>}
       <SubNotice sub={selectedSub && !resolveSub(selectedSub, actions.caps).macro ? selectedSub : undefined} />
     </div>
   );

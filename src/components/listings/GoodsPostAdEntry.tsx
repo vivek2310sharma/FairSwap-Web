@@ -1,7 +1,7 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import PostAdFlow from "./PostAdFlow";
-import type { FamilyState, PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
+import { goodsCategoryKey, type FamilyState, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
 import ListingForm from "./ListingForm";
 import { buildMacroCategoryUrl, parseMacroCategory } from "@/lib/listings/macro-category";
 import type { GoodsReferences } from "@/lib/listings/post-ad-server";
@@ -19,11 +19,11 @@ export default function GoodsPostAdEntry({references, vehicles, property, locati
   const usable = (v?: {categories: unknown[]; error?: string}) => !!v && !v.error && v.categories.length > 0;
   const family = (has: boolean, live?: boolean): FamilyState => !has ? "off" : live ? "live" : "draft";
   const capabilities: PostAdCapabilities = {
-    goods: references.status === "ready" && references.categories.length > 0,
+    goodsCategories: references.status === "ready" ? references.categories.map(c => goodsCategoryKey(c as {name: string; slug?: string | null})) : [],
     twoWheelers: family(!!vehicles && !vehicles.error && vehicles.categories.some(c => c.family !== "cars"), submission?.twoWheelers),
     cars: family(!!vehicles && !vehicles.error && vehicles.categories.some(c => c.family === "cars"), submission?.cars),
     property: family(usable(property), submission?.property),
-    propertyCategoryLabels: usable(property) ? property!.categories.map(c => c.path.join(" ")) : [],
+    propertyPaths: usable(property) ? property!.categories.map(c => c.path.slice(1).join("/")) : [],
   };
   return <div className="space-y-6">
     <PostAdFlow capabilities={capabilities} vehiclesAvailable={!!vehicles} propertyAvailable={!!property} macro={parsed.status === "valid" ? parsed.macroCategory : null} invalidQuery={parsed.status === "invalid"} hrefForSection={buildMacroCategoryUrl} navigate={(macro, replace) => { const url = macro ? buildMacroCategoryUrl(macro) : "/account/listings/new"; if (replace) router.replace(url); else router.push(url); }} renderForm={({section,...controls}) => {

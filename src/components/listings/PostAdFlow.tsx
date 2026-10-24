@@ -114,7 +114,7 @@ function PreviewPostAdFlow({macro: routeMacro, invalidQuery, data, hrefForSectio
         <ListingPricingFields priceType={priceType} priceRupees={priceRupees} setPriceType={setPriceType} setPriceRupees={setPriceRupees} />
         {macro === "property" && <p className="text-sm text-amber-800">Illustrative pricing only. Sale / rent intent and Property validation await integration; this is not a property posting contract.</p>}
         {priceType !== "free" && priceRupees && <p className="text-sm text-emerald-800">Sample amount: {new Intl.NumberFormat("en-IN", {style: "currency", currency: "INR", maximumFractionDigits: 2}).format(Number(priceRupees))}</p>}
-        <aside className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">Photos come after a real draft is saved on the listing edit screen. Uploads are unavailable in this preview.</aside>
+        <aside className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">Photos come after a real draft is saved on the ad edit screen. Uploads are unavailable in this preview.</aside>
         <button type="submit" disabled={!selected || data.status !== "ready"} className="rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white disabled:opacity-40">Preview draft data</button>
       </form>
     </>}

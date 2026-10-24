@@ -12,20 +12,22 @@ export const localize = (text: LocalizedText, locale: Locale = "en") => text[loc
 
 export type FamilyState = "off" | "draft" | "live";
 export interface PostAdCapabilities {
-  goods: boolean;
   twoWheelers: FamilyState;
   cars: FamilyState;
   property: FamilyState;
-  /** Joined path text of the loaded Property rental references (server-derived). */
-  propertyCategoryLabels: readonly string[];
+  /** Keys of loaded, eligible Goods categories (slug, else slugified name), e.g. "electronics". */
+  goodsCategories: readonly string[];
+  /** Exact loaded Property contract paths as "<group>/<leaf>", e.g. "PG & Co-living/Boys PG". */
+  propertyPaths: readonly string[];
 }
 
 export type Readiness = "available" | "draft-only" | "coming-soon" | "unavailable";
 
 export type SubRoute =
-  | { kind: "goods"; broad: string }
+  /** General (broad) Goods continuation only; the unchanged form is where the category is chosen. */
+  | { kind: "goods"; key: string }
   | { kind: "vehicles"; family: "two-wheelers" | "cars" }
-  | { kind: "property"; match: readonly RegExp[] }
+  | { kind: "property"; paths: readonly string[] }
   | { kind: "none" }
   /** Live-animal trade: no route, and no promise that one will exist. */
   | { kind: "blocked" };
@@ -59,8 +61,10 @@ export interface MainCategory {
 }
 
 const none = { kind: "none" } as const;
-const goods = (broad: string): SubRoute => ({ kind: "goods", broad });
-const rent = (...match: RegExp[]): SubRoute => ({ kind: "property", match });
+const goods = (key: string): SubRoute => ({ kind: "goods", key });
+const rent = (...paths: string[]): SubRoute => ({ kind: "property", paths });
+const RES = "Residential for Rent/";
+const PG = "PG & Co-living/";
 
 export const POST_AD_CATALOGUE: readonly MainCategory[] = [
   {
@@ -69,9 +73,10 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     aliases: ["phone", "smartphone", "cellphone"],
     trust: { status: "coming-soon", message: "IMEI and device authenticity checks", disclaimer: "FairSwap does not currently check IMEI or device authenticity." },
     subs: [
-      { id: "mobile-phones", label: "Mobile Phones", aliases: ["iphone", "samsung", "redmi", "oneplus", "vivo", "oppo", "realme", "android", "smartphone"], route: goods("Electronics") },
-      { id: "mobile-accessories", label: "Mobile Accessories", aliases: ["charger", "earphones", "earbuds", "cover", "case", "power bank"], route: goods("Electronics") },
-      { id: "tablets", label: "Tablets", aliases: ["ipad", "tab"], route: goods("Electronics") },
+      { id: "mobile-phones", label: "Mobile Phones", aliases: ["iphone", "samsung", "redmi", "oneplus", "vivo", "oppo", "realme", "android", "smartphone"], route: none },
+      { id: "mobile-accessories", label: "Mobile Accessories", aliases: ["charger", "earphones", "earbuds", "cover", "case", "power bank"], route: none },
+      { id: "tablets", label: "Tablets", aliases: ["ipad", "tab"], route: none },
+      { id: "general-electronics", label: "General Electronics", aliases: ["electronics", "phone", "mobile", "iphone", "samsung", "tablet", "ipad", "laptop", "camera", "tv"], route: goods("electronics") },
     ],
   },
   {
@@ -82,7 +87,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     subs: [
       { id: "cars", label: "Cars", aliases: ["car", "hatchback", "sedan", "suv", "maruti", "swift", "alto", "hyundai", "tata", "honda city"], route: { kind: "vehicles", family: "cars" } },
       { id: "two-wheelers", label: "Motorcycles & Scooters", aliases: ["activa", "royal enfield", "bullet", "bike", "scooter", "scooty", "motorcycle", "splendor", "pulsar", "two wheeler", "tvs", "bajaj", "hero"], route: { kind: "vehicles", family: "two-wheelers" } },
-      { id: "bicycles", label: "Bicycles", aliases: ["cycle", "bicycle", "mtb", "gear cycle"], route: goods("Bicycles & Sports") },
+      { id: "bicycles", label: "Bicycles", aliases: ["cycle", "bicycle", "mtb", "gear cycle"], route: none },
       { id: "vehicle-parts", label: "Spare Parts & Accessories", aliases: ["tyre", "tire", "helmet", "battery", "spare"], route: none },
       { id: "commercial-vehicles", label: "Commercial & Other Vehicles", aliases: ["truck", "auto", "rickshaw", "e-rickshaw", "tractor", "tempo", "van"], route: none },
     ],
@@ -93,11 +98,11 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     aliases: ["real estate", "flat", "house", "room", "rent", "to let"],
     trust: { status: "coming-soon", message: "Ownership and document verification", disclaimer: "FairSwap does not currently verify property ownership or documents." },
     subs: [
-      { id: "rent-houses", group: "For Rent", label: "Houses & Apartments", aliases: ["flat", "bhk", "1bhk", "2bhk", "apartment", "house", "rent"], route: rent(/house|apartment|flat|bhk/i) },
-      { id: "rent-commercial", group: "For Rent", label: "Shops & Offices", aliases: ["shop", "office", "showroom", "godown"], route: rent(/shop|office|commercial/i) },
-      { id: "rent-pg", group: "For Rent", label: "PG & Guest Houses", aliases: ["pg", "paying guest", "hostel", "guest house", "co-living"], route: rent(/\bpg\b|guest|co-?living|hostel/i) },
-      { id: "rent-land", group: "For Rent", label: "Land & Plots", aliases: ["plot", "land"], route: rent(/land|plot/i) },
-      { id: "rent-flatmates", group: "For Rent", label: "Flatmates & Shared Rooms", aliases: ["flatmate", "roommate", "shared room", "sharing"], route: rent(/flatmate|shared|room/i) },
+      { id: "rent-houses", group: "For Rent", label: "Houses & Apartments", aliases: ["flat", "bhk", "1bhk", "2bhk", "apartment", "house", "rent"], route: rent(RES + "Apartment or Flat", RES + "Independent House or Villa", RES + "Builder Floor", RES + "Studio Apartment") },
+      { id: "rent-commercial", group: "For Rent", label: "Shops & Offices", aliases: ["shop", "office", "showroom", "godown"], route: none },
+      { id: "rent-pg", group: "For Rent", label: "PG & Guest Houses", aliases: ["pg", "paying guest", "hostel", "guest house", "co-living"], route: rent(PG + "Boys PG", PG + "Girls PG", PG + "Co-living Spaces", PG + "Hostels") },
+      { id: "rent-land", group: "For Rent", label: "Land & Plots", aliases: ["plot", "land"], route: none },
+      { id: "rent-flatmates", group: "For Rent", label: "Flatmates & Shared Rooms", aliases: ["flatmate", "roommate", "shared room", "sharing"], route: rent(PG + "Flatmates & Shared Rooms") },
       { id: "sale-houses", group: "For Sale", label: "Houses & Apartments", aliases: ["buy flat", "sell house", "resale"], route: none },
       { id: "sale-commercial", group: "For Sale", label: "Shops & Offices", route: none },
       { id: "sale-land", group: "For Sale", label: "Land & Plots", route: none },
@@ -109,12 +114,14 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     aliases: ["appliance", "home appliance", "electronics"],
     trust: { status: "coming-soon", message: "Product authenticity checks", disclaimer: "FairSwap does not currently check product authenticity." },
     subs: [
-      { id: "tv-audio", label: "TVs & Audio", aliases: ["tv", "television", "led", "speaker", "home theatre", "soundbar"], route: goods("Electronics") },
-      { id: "kitchen", label: "Kitchen Appliances", aliases: ["mixer", "grinder", "microwave", "oven", "induction", "gas stove", "chimney"], route: goods("Home appliances") },
-      { id: "fridge", label: "Refrigerators", aliases: ["fridge", "refrigerator", "freezer", "godrej", "double door"], route: goods("Home appliances") },
-      { id: "ac", label: "Air Conditioners", aliases: ["ac", "air conditioner", "split ac", "window ac", "cooler"], route: goods("Home appliances") },
-      { id: "washing", label: "Washing Machines", aliases: ["washing machine", "washer", "front load", "top load"], route: goods("Home appliances") },
-      { id: "other-appliances", label: "Other Home Appliances", aliases: ["fan", "geyser", "heater", "iron", "vacuum", "water purifier", "ro"], route: goods("Home appliances") },
+      { id: "tv-audio", label: "TVs & Audio", aliases: ["tv", "television", "led", "speaker", "home theatre", "soundbar"], route: none },
+      { id: "kitchen", label: "Kitchen Appliances", aliases: ["mixer", "grinder", "microwave", "oven", "induction", "gas stove", "chimney"], route: none },
+      { id: "fridge", label: "Refrigerators", aliases: ["fridge", "refrigerator", "freezer", "godrej", "double door"], route: none },
+      { id: "ac", label: "Air Conditioners", aliases: ["ac", "air conditioner", "split ac", "window ac", "cooler"], route: none },
+      { id: "washing", label: "Washing Machines", aliases: ["washing machine", "washer", "front load", "top load"], route: none },
+      { id: "other-appliances", label: "Other Home Appliances", aliases: ["fan", "geyser", "heater", "iron", "vacuum", "water purifier", "ro"], route: none },
+      { id: "general-electronics-tv", label: "General Electronics", aliases: ["electronics", "tv", "television", "speaker"], route: goods("electronics") },
+      { id: "general-appliances", label: "General Home Appliances", aliases: ["home appliances", "appliance", "fridge", "refrigerator", "ac", "washing machine", "mixer", "microwave"], route: goods("home-appliances") },
     ],
   },
   {
@@ -123,12 +130,13 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     aliases: ["computer"],
     trust: { status: "coming-soon", message: "Device and serial-number checks", disclaimer: "FairSwap does not currently check device serial numbers." },
     subs: [
-      { id: "laptops", label: "Computers & Laptops", aliases: ["laptop", "macbook", "desktop", "pc", "dell", "hp", "lenovo", "notebook"], route: goods("Electronics") },
-      { id: "cameras", label: "Cameras & Lenses", aliases: ["camera", "dslr", "canon", "nikon", "lens", "gopro"], route: goods("Electronics") },
-      { id: "games", label: "Games & Entertainment", aliases: ["playstation", "ps4", "ps5", "xbox", "console", "video game"], route: goods("Hobbies") },
-      { id: "computer-accessories", label: "Computer Accessories", aliases: ["keyboard", "mouse", "webcam", "router", "pendrive"], route: goods("Electronics") },
-      { id: "storage", label: "Hard Disks & Storage", aliases: ["hard disk", "hdd", "ssd", "pen drive", "memory card"], route: goods("Electronics") },
-      { id: "printers-monitors", label: "Printers & Monitors", aliases: ["printer", "monitor", "scanner", "projector"], route: goods("Electronics") },
+      { id: "laptops", label: "Computers & Laptops", aliases: ["laptop", "macbook", "desktop", "pc", "dell", "hp", "lenovo", "notebook"], route: none },
+      { id: "cameras", label: "Cameras & Lenses", aliases: ["camera", "dslr", "canon", "nikon", "lens", "gopro"], route: none },
+      { id: "games", label: "Games & Entertainment", aliases: ["playstation", "ps4", "ps5", "xbox", "console", "video game"], route: none },
+      { id: "computer-accessories", label: "Computer Accessories", aliases: ["keyboard", "mouse", "webcam", "router", "pendrive"], route: none },
+      { id: "storage", label: "Hard Disks & Storage", aliases: ["hard disk", "hdd", "ssd", "pen drive", "memory card"], route: none },
+      { id: "printers-monitors", label: "Printers & Monitors", aliases: ["printer", "monitor", "scanner", "projector"], route: none },
+      { id: "general-electronics-pc", label: "General Electronics", aliases: ["electronics", "laptop", "computer", "camera", "printer", "monitor"], route: goods("electronics") },
     ],
   },
   {
@@ -137,12 +145,13 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     aliases: ["furniture", "household"],
     trust: { status: "coming-soon", message: "Better condition and pickup safeguards", disclaimer: "FairSwap does not currently inspect items or arrange pickup." },
     subs: [
-      { id: "sofa-dining", label: "Sofas & Dining", aliases: ["sofa", "couch", "dining table", "diwan"], route: goods("Furniture") },
-      { id: "beds-wardrobes", label: "Beds & Wardrobes", aliases: ["bed", "mattress", "wardrobe", "almirah", "cupboard", "cot"], route: goods("Furniture") },
+      { id: "sofa-dining", label: "Sofas & Dining", aliases: ["sofa", "couch", "dining table", "diwan"], route: none },
+      { id: "beds-wardrobes", label: "Beds & Wardrobes", aliases: ["bed", "mattress", "wardrobe", "almirah", "cupboard", "cot"], route: none },
       { id: "decor-garden", label: "Home Decor & Garden", aliases: ["decor", "plant", "pot", "garden", "painting", "curtain"], route: none },
-      { id: "kids-furniture", label: "Kids Furniture", aliases: ["cradle", "baby bed", "study table"], route: goods("Furniture") },
-      { id: "tables-chairs", label: "Tables & Chairs", aliases: ["table", "chair", "desk", "office chair", "stool"], route: goods("Furniture") },
+      { id: "kids-furniture", label: "Kids Furniture", aliases: ["cradle", "baby bed", "study table"], route: none },
+      { id: "tables-chairs", label: "Tables & Chairs", aliases: ["table", "chair", "desk", "office chair", "stool"], route: none },
       { id: "other-household", label: "Other Household Items", aliases: ["utensils", "household", "storage"], route: none },
+      { id: "general-furniture", label: "General Furniture", aliases: ["furniture", "sofa", "bed", "table", "chair", "wardrobe"], route: goods("furniture") },
     ],
   },
   {
@@ -160,13 +169,14 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     id: "hobbies", label: { en: "Books, Sports & Hobbies", hi: "किताबें, खेल और शौक" }, icon: "books",
     description: "Books, fitness, instruments and sports gear.",
     aliases: ["hobby", "sports"],
-    trust: { status: "coming-soon", message: "Better condition and listing-evidence guidance", disclaimer: "FairSwap does not currently verify item condition." },
+    trust: { status: "coming-soon", message: "Better condition and ad evidence guidance", disclaimer: "FairSwap does not currently verify item condition." },
     subs: [
-      { id: "books", label: "Books", aliases: ["textbook", "novel", "ncert", "study material", "notes"], route: goods("Books") },
+      { id: "books", label: "Books", aliases: ["textbook", "novel", "ncert", "study material", "notes"], route: goods("books") },
       { id: "gym", label: "Gym & Fitness", aliases: ["dumbbell", "treadmill", "gym", "exercise", "yoga mat"], route: none },
-      { id: "instruments", label: "Musical Instruments", aliases: ["guitar", "harmonium", "tabla", "keyboard piano", "piano", "violin", "drum"], route: goods("Hobbies") },
+      { id: "instruments", label: "Musical Instruments", aliases: ["guitar", "harmonium", "tabla", "keyboard piano", "piano", "violin", "drum"], route: none },
       { id: "sports-equipment", label: "Sports Equipment", aliases: ["cricket bat", "bat", "football", "badminton", "racket", "carrom"], route: none },
-      { id: "other-hobbies", label: "Other Hobbies", aliases: ["collectibles", "coins", "stamps", "craft"], route: goods("Hobbies") },
+      { id: "other-hobbies", label: "Other Hobbies", aliases: ["collectibles", "coins", "stamps", "craft"], route: none },
+      { id: "general-hobbies", label: "General Hobbies", aliases: ["hobbies", "guitar", "instrument", "games", "collectibles"], route: goods("hobbies") },
     ],
   },
   {
@@ -174,7 +184,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     description: "Pet food, accessories and supplies.",
     aliases: ["pet", "animal", "puppy", "cat", "bird"],
     hideComingSoonBadge: true,
-    trust: { status: "coming-soon", message: "Safer, policy-compliant pet-related listing safeguards", disclaimer: "FairSwap does not currently offer pet listings." },
+    trust: { status: "coming-soon", message: "Safer, policy-compliant pet-related ad safeguards", disclaimer: "FairSwap does not currently offer pet ads." },
     subs: [
       { id: "fish", label: "Fish & Aquariums", aliases: ["fish", "aquarium", "fish tank"], route: { kind: "blocked" } },
       { id: "pet-supplies", label: "Pet Food & Accessories", aliases: ["dog food", "cat food", "leash", "cage", "pet bed"], route: none },
@@ -203,7 +213,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     id: "jobs", label: { en: "Jobs", hi: "नौकरियाँ" }, icon: "jobs",
     description: "Job openings and hiring.",
     aliases: ["job", "hiring", "vacancy", "career", "work"],
-    trust: { status: "coming-soon", message: "Employer verification and fraud-resistant job listings", disclaimer: "FairSwap does not currently verify employers." },
+    trust: { status: "coming-soon", message: "Employer verification and fraud-resistant job ads", disclaimer: "FairSwap does not currently verify employers." },
     subs: [],
   },
 ];
@@ -217,14 +227,14 @@ const fromFamily = (state: FamilyState): Readiness =>
 export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readiness: Readiness; macro?: MacroCategory } {
   const r = sub.route;
   switch (r.kind) {
-    case "goods": return caps.goods ? { readiness: "available", macro: "goods" } : { readiness: "coming-soon" };
+    case "goods": return caps.goodsCategories.includes(r.key) ? { readiness: "available", macro: "goods" } : { readiness: "coming-soon" };
     case "vehicles": {
       const readiness = fromFamily(familyOf(caps, r.family));
       return readiness === "coming-soon" ? { readiness } : { readiness, macro: "vehicles" };
     }
     case "property": {
-      const readiness = caps.property === "off" || !caps.propertyCategoryLabels.some(l => r.match.some(m => m.test(l)))
-        ? "coming-soon" : fromFamily(caps.property);
+      const readiness = caps.property !== "off" && r.paths.some(x => caps.propertyPaths.includes(x))
+        ? fromFamily(caps.property) : "coming-soon";
       return readiness === "coming-soon" ? { readiness } : { readiness, macro: "property" };
     }
     case "blocked": return { readiness: "unavailable" };
@@ -259,13 +269,27 @@ export function searchCatalogue(query: string, catalogue: readonly MainCategory[
   return hits;
 }
 
-/** Derive capabilities for callers that only know the legacy per-macro booleans. */
+/** Static contract paths, used only by the isolated preview flow that has no loaded references. */
+export const PREVIEW_PROPERTY_PATHS = [
+  RES + "Apartment or Flat", RES + "Independent House or Villa", RES + "Builder Floor", RES + "Studio Apartment",
+  PG + "Boys PG", PG + "Girls PG", PG + "Co-living Spaces", PG + "Hostels", PG + "Flatmates & Shared Rooms",
+] as const;
+
+/**
+ * Fallback for callers that only know the legacy per-macro booleans. Presence is
+ * never treated as publication readiness: families are at most "draft".
+ */
 export function capabilitiesFromAvailability(a: { goods: boolean; vehicles: boolean; property: boolean }): PostAdCapabilities {
   return {
-    goods: a.goods,
-    twoWheelers: a.vehicles ? "live" : "off",
-    cars: a.vehicles ? "live" : "off",
-    property: a.property ? "live" : "off",
-    propertyCategoryLabels: a.property ? ["house apartment", "shop office", "pg guest house", "land plot", "flatmate shared room"] : [],
+    goodsCategories: a.goods ? ["electronics", "home-appliances", "furniture", "books", "hobbies"] : [],
+    twoWheelers: a.vehicles ? "draft" : "off",
+    cars: a.vehicles ? "draft" : "off",
+    property: a.property ? "draft" : "off",
+    propertyPaths: a.property ? PREVIEW_PROPERTY_PATHS : [],
   };
+}
+
+/** Goods category key: persisted slug when present, else the slugified name. */
+export function goodsCategoryKey(c: { name: string; slug?: string | null }): string {
+  return (c.slug ?? c.name).toLowerCase().replace(/&/g, " ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
