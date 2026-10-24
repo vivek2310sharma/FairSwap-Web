@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { Heart, LifeBuoy, Lock, MessageSquare, Settings, ShoppingBag, Sprout, Star, UserRound } from "lucide-react";
+import { Handshake, Heart, LifeBuoy, Lock, MessageSquare, Settings, ShoppingBag, Sprout, Star, UserRound } from "lucide-react";
 import { AccountIdentity } from "@/components/account/AccountIdentity";
 import { AccountTile } from "@/components/account/AccountTile";
 import { ComingSoonDialog } from "@/components/account/ComingSoonDialog";
@@ -77,6 +77,9 @@ export function AccountOverview({
             <AccountTile icon={ShoppingBag} href="/account/listings" title={t.listings.title} description={t.listings.description} />
           </li>
           <li>
+            <AccountTile icon={Handshake} href="/account/trades" title={t.trades.title} description={t.trades.description} badge={comingSoon} />
+          </li>
+          <li>
             <AccountTile icon={MessageSquare} href="/account/messages" title={t.chats.title} description={t.chats.description} />
           </li>
           <li>
@@ -106,15 +109,15 @@ export function AccountOverview({
           <li>
             <AccountTile icon={Lock} href="/account/privacy" title={t.privacy.title} description={t.privacy.description} />
           </li>
-          <li>
-            <AccountTile
-              icon={LifeBuoy}
-              href="/account/support"
-              title={t.help.title}
-              description={isRestricted ? copy.helpRestrictedDescription : t.help.description}
-            />
-          </li>
         </ul>
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card sm:border-0">
+          <AccountTile
+            icon={LifeBuoy}
+            href="/account/support"
+            title={t.help.title}
+            description={isRestricted ? copy.helpRestrictedDescription : t.help.description}
+          />
+        </div>
       </nav>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-2xl border border-border bg-card px-5 py-2 text-sm">
@@ -132,7 +135,7 @@ export function AccountOverview({
         </a>
       </div>
 
-      <SignOutButton className="sm:order-first sm:self-end lg:hidden" />
+      <SignOutButton className="sm:order-first sm:self-end" />
 
       <ComingSoonDialog
         open={preview !== null}

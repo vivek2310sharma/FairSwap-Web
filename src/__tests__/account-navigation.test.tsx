@@ -22,13 +22,14 @@ describe("AccountNav component", () => {
     expect(nav).toBeInTheDocument();
   });
 
-  it("renders exactly the six primary navigation items without Help Centre", () => {
+  it("renders exactly the seven primary navigation items without Help Centre", () => {
     mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
 
     const expectedLabels = [
       "Overview",
       "My Listings",
+      "My trades",
       "Favourites",
       "Messages",
       "Notifications",
@@ -41,7 +42,7 @@ describe("AccountNav component", () => {
 
     const nav = screen.getByRole("navigation", { name: "Account navigation" });
     const links = within(nav).getAllByRole("link");
-    expect(links).toHaveLength(6);
+    expect(links).toHaveLength(7);
     expect(screen.queryByRole("link", { name: /Help Centre/i })).toBeNull();
   });
 
@@ -134,6 +135,13 @@ describe("AccountNav component", () => {
     render(<AccountNav />);
     const notifLink = screen.getByRole("link", { name: /Notifications/ });
     expect(notifLink).toHaveAttribute("aria-current", "page");
+  });
+
+  it("marks My trades active on its page", () => {
+    mockUsePathname.mockReturnValue("/account/trades");
+    render(<AccountNav />);
+    expect(screen.getByRole("link", { name: "My trades" })).toHaveAttribute("href", "/account/trades");
+    expect(screen.getByRole("link", { name: "My trades" })).toHaveAttribute("aria-current", "page");
   });
 
   // --- Accessible semantics ---
