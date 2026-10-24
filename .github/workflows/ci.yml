@@ -338,7 +338,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pinned v4.2.2
         with:
           repository: vivek2310sharma/FairSwap-Backend
-          ref: 3cc2cc6ae2d654ba29c080441d4d5cf379e90e5d
+          ref: 135601cde6954672e6ec8f13f66c8d2121d66c2b
           token: ${{ steps.backend-token.outputs.token }}
           path: .fairswap-taxonomy-backend-ci-source
           persist-credentials: false
@@ -348,7 +348,7 @@ jobs:
         run: |
           set -euo pipefail
           source_root="$GITHUB_WORKSPACE/.fairswap-taxonomy-backend-ci-source"
-          expected_commit="3cc2cc6ae2d654ba29c080441d4d5cf379e90e5d"
+          expected_commit="135601cde6954672e6ec8f13f66c8d2121d66c2b"
           test "$(git -C "$source_root" rev-parse HEAD)" = "$expected_commit"
           candidate="$source_root/supabase/forward-migrations/india-taxonomy/20261024213147_india_goods_taxonomy.sql"
           activation="$source_root/supabase/forward-migrations/india-taxonomy/activation/20261024221855_activate_india_goods_taxonomy.sql"
@@ -374,7 +374,7 @@ jobs:
             tests/unit/submission-action-boundary.test.ts
           local_db="$(supabase status -o json | jq -er '.DB_URL')"
           # Seed only in the disposable database; never activate in the seed transaction.
-          psql "$local_db" -v ON_ERROR_STOP=1 -f "$candidate"
+          psql "$local_db" -v ON_ERROR_STOP=1 --single-transaction -f "$candidate"
           psql "$local_db" -v ON_ERROR_STOP=1 <<'SQL'
           DO $verify$
           BEGIN
@@ -425,7 +425,7 @@ jobs:
             END IF;
           END $verify$;
           SQL
-          } | psql "$local_db" -v ON_ERROR_STOP=1
+          } | psql "$local_db" -v ON_ERROR_STOP=1 --single-transaction
           # The deactivation rollback remains isolated and does not remove category IDs.
           psql "$local_db" -v ON_ERROR_STOP=1 -f "$deactivate"
           psql "$local_db" -v ON_ERROR_STOP=1 -Atc "select count(*) from public.categories where slug like 'fashion-%' and (is_active or new_listing_enabled)" | grep -qx 0
