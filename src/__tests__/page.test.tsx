@@ -21,7 +21,7 @@ describe("HomePage component", () => {
     render(<HomePage />);
     expect(screen.queryByText("Development Foundation")).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/Accounts, listings, and communication are not connected yet/i)
+      screen.queryByText(/Accounts, ads, and communication are not connected yet/i)
     ).not.toBeInTheDocument();
   });
 

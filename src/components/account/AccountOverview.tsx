@@ -7,7 +7,6 @@ import { AccountIdentity } from "@/components/account/AccountIdentity";
 import { AccountTile } from "@/components/account/AccountTile";
 import { ComingSoonDialog } from "@/components/account/ComingSoonDialog";
 import { VerificationBanner } from "@/components/account/VerificationBanner";
-import { SignOutButton } from "@/components/auth/SignOutButton";
 import { getAccountCopy, type PreviewKey } from "@/lib/account/copy";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
@@ -143,8 +142,6 @@ export function AccountOverview({
           Help Centre
         </a>
       </div>
-
-      <SignOutButton className="sm:order-first sm:self-end" />
 
       <ComingSoonDialog
         open={preview !== null}

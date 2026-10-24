@@ -103,7 +103,7 @@ export function evaluateReadiness(raw:unknown):ReadinessResult {
   add('photos.submission','photos','approved_completeness','approved',ready===null?'not_verified':ready>=1?'pass':'fail','Submission requires at least one ready photo.');
   add('photos.approval','photos','review','approved',ready===null?'not_verified':v.media!.length>0&&ready===v.media!.length?'pass':'fail','Approval requires a nonempty set with every photo ready.');
   add('photos.maximum','photos','draft','approved',ready===null?'not_verified':v.media!.length<=8?'pass':'fail','Maximum eight photos.');
-  add('photos.cover','cover photo','review','approved',ready===null?'not_verified':!l.cover_photo_id?'not_applicable':v.media!.some(m=>m.id===l.cover_photo_id&&m.processing_status==='ready')?'pass':'fail',!l.cover_photo_id?'No cover selected; existing submission can assign a ready photo.':'Cover must belong to this listing and be ready.');
+  add('photos.cover','cover photo','review','approved',ready===null?'not_verified':!l.cover_photo_id?'not_applicable':v.media!.some(m=>m.id===l.cover_photo_id&&m.processing_status==='ready')?'pass':'fail',!l.cover_photo_id?'No cover selected; existing submission can assign a ready photo.':'Cover must belong to this ad and be ready.');
   let answers:Record<string,unknown>={};
   let financial:z.infer<typeof propertyFinancialSchema>|null=null;
   const path=!supported?null:f==='cars'?carsV1.paths.find(x=>JSON.stringify(x.path)===JSON.stringify(ref?.path)):f==='two-wheelers'?twoWheelerV1.paths.find(x=>JSON.stringify(x.path)===JSON.stringify(ref?.path)):null;

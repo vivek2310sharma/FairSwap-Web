@@ -46,7 +46,7 @@ export async function validatePostAdSelection(supabase: SupabaseClient, form: Fo
   let savedContext: SavedContext | undefined;
   if (listingId) {
     const existing = await supabase.from("listings").select("category_id,seller_id").eq("id", listingId).maybeSingle();
-    if (existing.error || !existing.data || existing.data.seller_id !== userId) return "Listing is unavailable or you are not its owner.";
+    if (existing.error || !existing.data || existing.data.seller_id !== userId) return "Ad is unavailable or you are not its owner.";
     const persisted = await loadSavedCategoryContext(supabase,listingId);
     if (persisted.status!=="ready" || persisted.context.category.id!==existing.data.category_id) return "Saved category could not be verified.";
     savedContext=persisted.context;

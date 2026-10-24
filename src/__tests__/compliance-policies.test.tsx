@@ -1,11 +1,15 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import TermsPage from "@/app/terms/page";
 import PrivacyPage from "@/app/privacy/page";
 import AcceptableUsePage from "@/app/acceptable-use/page";
 import SafetyPage from "@/app/safety/page";
 import { Footer } from "@/components/footer";
 import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
+
+vi.mock("@/components/providers/AuthProvider", () => ({
+  useAuth: () => ({ user: null, isLoading: false, unreadMessagesCount: null, unreadNotificationsCount: null, signOut: vi.fn() }),
+}));
 
 describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
   describe("Terms of Service (/terms)", () => {
@@ -32,14 +36,14 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
 
     it("clarifies classifieds boundaries and disclaims payment/escrow/shipping", () => {
       render(<TermsPage />);
-      expect(screen.getByText(/classifieds listing, discovery, and communication service/i)).toBeInTheDocument();
+      expect(screen.getByText(/classifieds ad, discovery, and communication service/i)).toBeInTheDocument();
       expect(screen.getByText(/not the buyer or seller of user-listed items, a buyer-to-seller payment intermediary, an escrow provider, a shipping agent/i)).toBeInTheDocument();
       expect(screen.getByText(/All arrangements.*are made directly and independently between buyers and sellers/i)).toBeInTheDocument();
     });
 
     it("accurately describes pre-publication listing moderation while distinguishing other communications", () => {
       render(<TermsPage />);
-      expect(screen.getByText(/Listing Pre-Publication Review:/i)).toBeInTheDocument();
+      expect(screen.getByText(/Ad Pre-Publication Review:/i)).toBeInTheDocument();
       expect(screen.getByText(/pending_review/i)).toBeInTheDocument();
       expect(screen.getByText(/Direct messages, support tickets, and user reports are not universally pre-screened/i)).toBeInTheDocument();
     });
@@ -97,7 +101,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
       render(<PrivacyPage />);
       expect(screen.getByText(/A\. Account & Authentication Information/i)).toBeInTheDocument();
       expect(screen.getByText(/B\. Public Profile Attributes/i)).toBeInTheDocument();
-      expect(screen.getByText(/C\. Classified Listings & Media/i)).toBeInTheDocument();
+      expect(screen.getByText(/C\. Classified Ads & Media/i)).toBeInTheDocument();
       expect(screen.getByText(/D\. Platform Communications/i)).toBeInTheDocument();
       expect(screen.getByText(/E\. Safety, Moderation & Support Data/i)).toBeInTheDocument();
       expect(screen.getByText(/F\. Privacy Request Records/i)).toBeInTheDocument();
@@ -164,7 +168,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
     it("renders page with title, version, and status", () => {
       render(<AcceptableUsePage />);
       expect(
-        screen.getByRole("heading", { level: 1, name: "Acceptable Use & Prohibited Listings" })
+        screen.getByRole("heading", { level: 1, name: "Acceptable Use & Prohibited Ads" })
       ).toBeInTheDocument();
       expect(
         screen.getByText(/Classifieds standards, prohibited goods, and conduct policies for FairSwap\./i)
@@ -227,7 +231,7 @@ describe("Public Beta Legal Policies Baseline (Issue #38)", () => {
   describe("Safety Page Cross-Links", () => {
     it("cross-links to Acceptable Use and Grievance", () => {
       render(<SafetyPage />);
-      const acceptableUseLink = screen.getByRole("link", { name: /Acceptable Use & Prohibited Listings/i });
+      const acceptableUseLink = screen.getByRole("link", { name: /Acceptable Use & Prohibited Ads/i });
       expect(acceptableUseLink).toHaveAttribute("href", "/acceptable-use");
 
       const grievanceLinks = screen.getAllByRole("link", { name: "Grievance Redressal" });

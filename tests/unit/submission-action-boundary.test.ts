@@ -74,7 +74,7 @@ it.each([undefined,0,1.5])('invalid saved revision %s stops before mutation',asy
 it('valid eligibility is returned by the real loader',async()=>{
  const c=client();expect(await loadSubmissionState(c as unknown as SupabaseClient<Database>,id)).toEqual(valid);
 });
-it.each([['submitted','Listing submitted for review.'],['already_pending','Already awaiting review.']])('interprets actual %s result through the action return object',async(result,message)=>{
+it.each([['submitted','Ad submitted for review.'],['already_pending','Already awaiting review.']])('interprets actual %s result through the action return object',async(result,message)=>{
  client(undefined,{data:{result},error:null});
  expect(await submitListingAction(id,17)).toEqual({success:true,listingId:id,message});
 });

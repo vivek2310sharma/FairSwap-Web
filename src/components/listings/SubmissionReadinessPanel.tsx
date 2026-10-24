@@ -6,7 +6,7 @@ export default function SubmissionReadinessPanel({result,outdated=false}:{result
   const staff=result.packet?.reader==='staff';
   const pending=result.packet?.identity.status==='pending_review'&&['two-wheelers','cars','property'].includes(result.packet.family);
   const readOnly=staff||pending;
-  const heading=staff?'Saved record review assessment':pending?'Saved listing assessment':'Saved draft readiness';
+  const heading=staff?'Saved record review assessment':pending?'Saved ad assessment':'Saved draft readiness';
   const message=(id:string,text:string)=>{
     if(!readOnly)return text;
     if(id==='draft.common'&&text==='Correct invalid common draft values.')return 'Common saved values do not satisfy the draft validator.';
@@ -16,7 +16,7 @@ export default function SubmissionReadinessPanel({result,outdated=false}:{result
   };
   return <section aria-label={heading} className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
     <h2 className="text-lg font-semibold">{heading}</h2>
-    <p>{staff?'Based on the saved eligible review record.':pending?'Based on the saved listing awaiting review.':'Based on the last saved draft.'} This assessment does not save, submit or approve a listing.</p>
+    <p>{staff?'Based on the saved eligible review record.':pending?'Based on the saved ad awaiting review.':'Based on the last saved draft.'} This assessment does not save, submit or approve an ad.</p>
     {outdated&&<p role="status" className="font-semibold">Outdated — the editor was used after capture. The checks below still describe the last saved draft; refresh to reassess.</p>}
     {result.packet&&<p className="text-sm">Captured {result.packet.capturedAt} · {result.packet.identity.status} · revision {result.packet.identity.revision} · saved contract {result.packet.provenance.contract} / {result.packet.provenance.versionId??'existing category definitions'}</p>}
     <p className="text-sm">{staff?'Reviewer access is separate from seller readiness.':pending?'Awaiting review. Saved details and photos are read-only; the ad is not publicly visible.':'Draft saving remains permissive; submission checks use saved details.'} Approved Test submission requirements are separate from pending public pricing, evidence and approval policy. This assessment never grants transition permission.</p>

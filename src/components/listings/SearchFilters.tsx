@@ -595,7 +595,7 @@ export function SearchFilters({
           }
         }}
         className="space-y-5"
-        aria-label="Listing filters"
+        aria-label="Ad filters"
       >
         {/* Search Query Input */}
         <div>
@@ -896,7 +896,7 @@ export function SearchFilters({
       <div className="hidden lg:block rounded-xl border border-border bg-card p-5 shadow-xs">
         <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-bold text-foreground">Filter Listings</h2>
+            <h2 className="text-sm font-bold text-foreground">Filter Ads</h2>
             {isPending && (
               <Loader2 className="h-3.5 w-3.5 animate-spin text-action-600" aria-label="Loading..." />
             )}
@@ -920,7 +920,7 @@ export function SearchFilters({
           id="mobile-filter-drawer"
           role="dialog"
           aria-modal="true"
-          aria-label="Filter listings"
+          aria-label="Filter ads"
           className="lg:hidden fixed inset-0 z-50 flex bg-black/50 backdrop-blur-xs"
         >
           <div className="ml-auto w-full max-w-xs h-full overflow-y-auto bg-card p-6 shadow-xl">

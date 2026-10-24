@@ -7,13 +7,13 @@ import { Scale, Mail, ShieldAlert, AlertTriangle, CheckCircle2, FileText } from 
 export const metadata = {
   title: "Grievance Redressal — FairSwap",
   description:
-    "Contact FairSwap's Grievance Officer regarding account, listing, safety, privacy, content, or other platform-related concerns.",
+    "Contact FairSwap's Grievance Officer regarding account, ad, safety, privacy, content, or other platform-related concerns.",
 };
 
 export default function GrievancePage() {
   const categories = [
     { title: "Account or access", desc: "Issues accessing your account, authentication difficulties, or account status." },
-    { title: "Listing or content", desc: "Concerns regarding advertised items, descriptions, pricing accuracy, or prohibited content." },
+    { title: "Ad or content", desc: "Concerns regarding advertised items, descriptions, pricing accuracy, or prohibited content." },
     { title: "User behaviour / safety", desc: "Harassment, abusive communication, suspicious buyer or seller conduct, or safety risks." },
     { title: "Reporting or blocking", desc: "Inquiries or appeals regarding platform reports, blocked users, or moderation outcomes." },
     { title: "Privacy / personal data", desc: "Questions or requests regarding personal data handling, privacy rights, or data protection." },
@@ -48,7 +48,7 @@ export default function GrievancePage() {
               Contact the Grievance Officer
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              If you have a grievance relating to your FairSwap account, a listing, user-generated content,
+              If you have a grievance relating to your FairSwap account, an ad, user-generated content,
               safety, privacy, reporting, or use of the FairSwap platform, you may contact FairSwap&apos;s
               Grievance Officer.
             </p>
@@ -154,7 +154,7 @@ export default function GrievancePage() {
               </li>
               <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" aria-hidden="true" />
-                <span><strong className="text-foreground">Specific Identifier:</strong> Relevant listing URL, user profile, or conversation identifier.</span>
+                <span><strong className="text-foreground">Specific Identifier:</strong> Relevant ad URL, user profile, or conversation identifier.</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" aria-hidden="true" />
@@ -220,7 +220,7 @@ export default function GrievancePage() {
             <p className="mt-2 text-sm text-muted leading-relaxed">
               For active marketplace interactions, users should utilize FairSwap&apos;s existing{" "}
               <strong className="text-foreground">Report</strong> and <strong className="text-foreground">Block</strong>{" "}
-              controls available on listings, user profiles, and chat conversations.
+              controls available on ads, user profiles, and chat conversations.
             </p>
             <p className="mt-3 text-sm text-muted leading-relaxed">
               If you believe there is an immediate risk to someone&apos;s safety, contact the appropriate local

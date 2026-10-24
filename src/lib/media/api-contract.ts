@@ -53,12 +53,12 @@ export const ERROR_CODE_TO_HTTP_STATUS: Record<MediaErrorCode, number> = {
 
 export const DEFAULT_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
   UNAUTHENTICATED: "Authentication required.",
-  ACCOUNT_RESTRICTED: "Your account is currently restricted from managing listings.",
+  ACCOUNT_RESTRICTED: "Your account is currently restricted from managing ads.",
   POLICY_ACCEPTANCE_REQUIRED: "Policy acceptance required before managing media.",
-  LISTING_NOT_FOUND: "Listing not found.",
+  LISTING_NOT_FOUND: "Ad not found.",
   MEDIA_NOT_FOUND: "Media asset not found.",
-  LISTING_MEDIA_NOT_EDITABLE: "Photos cannot be modified in the listing's current status.",
-  PHOTO_LIMIT_REACHED: "Maximum 8 photos allowed per listing.",
+  LISTING_MEDIA_NOT_EDITABLE: "Photos cannot be modified in the ad's current status.",
+  PHOTO_LIMIT_REACHED: "Maximum 8 photos allowed per ad.",
   PAYLOAD_TOO_LARGE: "Payload too large. Maximum request size is 6 MB.",
   FILE_TOO_LARGE: "File size exceeds 5 MB limit.",
   INVALID_IMAGE_FORMAT: "Invalid image format. Only JPEG, PNG, and WebP images are allowed.",

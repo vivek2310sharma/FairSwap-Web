@@ -7,7 +7,7 @@ import {propertyV1,emptyPropertyFinancial} from '@/lib/listings/property/contrac
 const m=vi.hoisted(()=>({create:vi.fn(),update:vi.fn(),submit:vi.fn(),push:vi.fn(),media:vi.fn()}));
 vi.mock('next/navigation',()=>({useRouter:()=>({push:m.push,refresh:vi.fn()})}));
 vi.mock('@/app/account/listings/actions',()=>({createDraftListingAction:m.create,updateListingAction:m.update,submitListingAction:m.submit}));
-vi.mock('@/components/listings/MediaUploader',()=>({default:(p:unknown)=>{m.media(p);return <div>Saved listing photos</div>}}));
+vi.mock('@/components/listings/MediaUploader',()=>({default:(p:unknown)=>{m.media(p);return <div>Saved ad photos</div>}}));
 vi.mock('@/components/listings/PincodeLocationPicker',()=>({default:()=> <><input name='city_id' value='33333333-3333-4333-8333-333333333333' readOnly/><input name='pin_code' value='302021' readOnly/><input name='locality_id' value='44444444-4444-4444-8444-444444444444' readOnly/></>}));
 const category:Category={id:'11111111-1111-4111-8111-111111111111',name:'Existing category',slug:'existing',description:null,icon:null,sort_order:0,is_active:true,created_at:'',updated_at:''};
 const city:City={id:'33333333-3333-4333-8333-333333333333',name:'Jaipur',slug:'jaipur',state:'Rajasthan',is_active:true,created_at:''};

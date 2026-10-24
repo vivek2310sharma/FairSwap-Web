@@ -25,7 +25,7 @@ export function ModerationStatusBadge({
   );
   const [message, setMessage] = useState<string | null>(
     initialStatus === "pending_review" && isEnhancedActive
-      ? "Checking listing status..."
+      ? "Checking ad status..."
       : null
   );
   const [provenance, setProvenance] = useState<string | null>(null);

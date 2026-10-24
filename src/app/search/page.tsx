@@ -27,11 +27,11 @@ export async function generateMetadata({ searchParams }: SearchPageProps): Promi
   const q = typeof resolvedParams.q === "string" ? resolvedParams.q : "";
   const cat = typeof resolvedParams.category === "string" ? resolvedParams.category : "";
 
-  let title = "Browse & Search Local Listings — FairSwap";
+  let title = "Browse & Search Local Ads — FairSwap";
   if (q) {
-    title = `"${q}" — Search Listings | FairSwap`;
+    title = `"${q}" — Search Ads | FairSwap`;
   } else if (cat) {
-    title = `${cat.charAt(0).toUpperCase() + cat.slice(1)} Listings | FairSwap`;
+    title = `${cat.charAt(0).toUpperCase() + cat.slice(1)} Ads | FairSwap`;
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -110,12 +110,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                {filters.q ? `Search results for "${filters.q}"` : "Discover Local Listings"}
+                {filters.q ? `Search results for "${filters.q}"` : "Discover Local Ads"}
               </h1>
               <p className="mt-1 text-xs text-muted">
                 {searchResult.total_count === 1
-                  ? "1 listing available"
-                  : `${searchResult.total_count} listings available`}
+                  ? "1 ad available"
+                  : `${searchResult.total_count} ads available`}
               </p>
             </div>
           </div>
@@ -174,7 +174,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <SearchX className="h-7 w-7" aria-hidden="true" />
                   </div>
                   <h2 className="mt-4 text-lg font-bold text-foreground">
-                    No listings match your search
+                    No ads match your search
                   </h2>
                   <p className="mt-2 text-xs text-muted max-w-md mx-auto leading-relaxed">
                     We couldn&apos;t find any approved advertisements matching your exact filters.

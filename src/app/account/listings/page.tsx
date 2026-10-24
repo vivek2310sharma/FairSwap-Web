@@ -219,16 +219,16 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
               My Account
             </Link>
           </div>
-          <h1 className="mt-2 text-2xl font-bold text-gray-900">My Listings</h1>
+          <h1 className="mt-2 text-2xl font-bold text-gray-900">My ads</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Create, manage, track, and update your marketplace listings.
+            Create, manage, track, and update your marketplace ads.
           </p>
         </div>
         <Link
           href="/account/listings/new"
           className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-xs hover:bg-emerald-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
         >
-          + Create New Listing
+          + Post Ad
         </Link>
       </div>
 
@@ -236,7 +236,7 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
       {counts === null && <p role="status" className="mt-2 text-sm text-gray-600">Status counts are temporarily unavailable.</p>}
       {error && (
         <div className="mt-6 rounded-md bg-red-50 p-4 text-sm text-red-700 border border-red-200">
-          Failed to load listings: {error.message}
+          Failed to load ads: {error.message}
         </div>
       )}
 
@@ -245,15 +245,15 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
           <span className="text-4xl">📦</span>
           <h3 className="mt-2 text-base font-semibold text-gray-900">{currentTab.emptyLabel}</h3>
           <p className="mt-1 text-sm text-gray-500">
-            {activeTab === "all" ? "Get started by creating your first listing on FairSwap." : `You don’t have any listings in “${currentTab.label}”.`}
+            {activeTab === "all" ? "Get started by creating your first ad on FairSwap." : `You don’t have any ads in “${currentTab.label}”.`}
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            {activeTab !== "all" && <Link href="/account/listings" className="inline-flex min-h-11 items-center rounded-md border px-3.5 py-2 text-sm font-semibold">View All Listings</Link>}
+            {activeTab !== "all" && <Link href="/account/listings" className="inline-flex min-h-11 items-center rounded-md border px-3.5 py-2 text-sm font-semibold">View All Ads</Link>}
             <Link
               href="/account/listings/new"
               className="inline-flex items-center rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-emerald-500"
             >
-              + Create Listing
+              + Post Ad
             </Link>
           </div>
         </div>
@@ -357,7 +357,7 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
                           <span className="font-semibold">Rejection reason:</span>{" "}
                           {listing.rejection_reason}
                           <p className="mt-1 text-gray-600">
-                            Editing this listing will return it to draft so you can update and resubmit.
+                            Editing this ad will return it to draft so you can update and resubmit.
                           </p>
                         </div>
                       )}

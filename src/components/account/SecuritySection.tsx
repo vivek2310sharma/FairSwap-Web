@@ -24,7 +24,7 @@ export function SecuritySection({ email, account, isSuspended }: SecuritySection
         >
           <p className="font-bold">Account Suspended</p>
           <p className="mt-1">
-            Your account is currently suspended. You cannot post listings, send messages, or update your profile.
+            Your account is currently suspended. You cannot post ads, send messages, or update your profile.
             You can still review your security status and request your data or account deletion on the{" "}
             <Link href="/account/privacy" className="font-semibold underline">
               Privacy Requests

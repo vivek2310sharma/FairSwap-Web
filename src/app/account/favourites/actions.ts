@@ -62,7 +62,7 @@ export async function toggleFavouriteAction(listingId: string): Promise<Favourit
     });
 
     if (!isVisible) {
-      return { success: false, error: "This listing is no longer available to favourite" };
+      return { success: false, error: "This ad is no longer available to favourite" };
     }
 
     const { error: insertError } = await supabase
