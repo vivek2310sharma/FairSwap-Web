@@ -114,7 +114,7 @@ export default async function EditListingPage({
       let financial;try{financial=financialFromContext(result.data);}catch{return <p role="alert">Saved rental declarations could not be verified.</p>;}
       const {data:cities}=await supabase.from('cities').select('*').eq('is_active',true).order('name');
       const location=listing.pin_code?await lookupPincodeServer(listing.pin_code,supabase):null;
-      return <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6"><Link href="/account/listings" className="text-sm text-emerald-700">← Back to My Listings</Link><h1 className="my-4 text-2xl font-bold">Edit Property rental draft</h1><ListingForm submissionEnabled={submission?.enabled??false} readiness={readiness} postAdEntry="property" property={{references,initialFinancial:financial,initialSociety:result.data.society_name}} categories={references.categories.map(c=>({...c,name:`${c.path[1]} › ${c.path[2]}`}))} allAttributes={[]} cities={(cities as City[])||[]} initialListing={listing} initialMedia={(media as ListingMedia[])||[]} initialLocationLookup={location} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive?SELLER_WRITE_MAINTENANCE_MESSAGE:undefined}/></div>;
+      return <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6"><Link href="/account/listings" className="text-sm text-emerald-700">Back to My Listings</Link><h1 className="my-4 text-2xl font-bold">Edit Property rental draft</h1><ListingForm submissionEnabled={submission?.enabled??false} readiness={readiness} postAdEntry="property" property={{references,initialFinancial:financial,initialSociety:result.data.society_name}} categories={references.categories.map(c=>({...c,name:`${c.path[1]} › ${c.path[2]}`}))} allAttributes={[]} cities={(cities as City[])||[]} initialListing={listing} initialMedia={(media as ListingMedia[])||[]} initialLocationLookup={location} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive?SELLER_WRITE_MAINTENANCE_MESSAGE:undefined}/></div>;
     }
     const contract=await (supabase as SupabaseClient<Database>).from('property_category_contracts').select('category_id').eq('category_id',listing.category_id).limit(1);
     if(contract.error||contract.data?.length)return <p role="alert">Saved Property context is missing. Editing is unavailable.</p>;
@@ -137,7 +137,7 @@ export default async function EditListingPage({
     const references=await loadVehicleReferences(supabase as SupabaseClient<Database>,{listingId:id,categoryId:listing.category_id,context:vehicleContext},family);
     const {data:cities}=await supabase.from("cities").select("*").eq("is_active",true).order("name");
     const location=listing.pin_code?await lookupPincodeServer(listing.pin_code,supabase):null;
-    return <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6"><Link href="/account/listings" className="text-sm text-emerald-700">← Back to My Listings</Link><h1 className="my-4 text-2xl font-bold">Edit vehicle draft</h1>{references.error?<p role="alert">{references.error}</p>:<ListingForm submissionEnabled={submission?.enabled??false} readiness={readiness} postAdEntry="vehicle" vehicle={{references,initialResolution:resolutionFromContext(vehicleContext)}} categories={references.categories.map(c=>({...c,name:`${c.path[1]} › ${c.path[2]}`}))} allAttributes={[]} cities={(cities as City[])||[]} initialListing={listing} initialMedia={(media as ListingMedia[])||[]} initialLocationLookup={location} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive?SELLER_WRITE_MAINTENANCE_MESSAGE:undefined}/>}</div>;
+    return <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6"><Link href="/account/listings" className="text-sm text-emerald-700">Back to My Listings</Link><h1 className="my-4 text-2xl font-bold">Edit vehicle draft</h1>{references.error?<p role="alert">{references.error}</p>:<ListingForm submissionEnabled={submission?.enabled??false} readiness={readiness} postAdEntry="vehicle" vehicle={{references,initialResolution:resolutionFromContext(vehicleContext)}} categories={references.categories.map(c=>({...c,name:`${c.path[1]} › ${c.path[2]}`}))} allAttributes={[]} cities={(cities as City[])||[]} initialListing={listing} initialMedia={(media as ListingMedia[])||[]} initialLocationLookup={location} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive?SELLER_WRITE_MAINTENANCE_MESSAGE:undefined}/>}</div>;
   }
   // Saved category, never edit query parameters, determines the staging Goods context.
   const integrationEnabled = isGoodsPostAdEnabled();
@@ -188,7 +188,7 @@ export default async function EditListingPage({
           href="/account/listings"
           className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
         >
-          ← Back to My Listings
+          Back to My Listings
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">Edit Listing</h1>
         <p className="mt-1 text-sm text-gray-600">

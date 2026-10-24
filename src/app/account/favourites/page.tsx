@@ -45,7 +45,7 @@ export default async function FavouritesPage() {
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-link hover:underline"
             >
               <Search className="h-3.5 w-3.5" aria-hidden="true" />
-              Browse more listings &rarr;
+              Browse more listings
             </Link>
           </div>
 

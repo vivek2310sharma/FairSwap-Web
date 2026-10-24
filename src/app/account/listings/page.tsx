@@ -161,7 +161,7 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
               href="/account"
               className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
             >
-              ← My Account
+              My Account
             </Link>
           </div>
           <h1 className="mt-2 text-2xl font-bold text-gray-900">My Listings</h1>

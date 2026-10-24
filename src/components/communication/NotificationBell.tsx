@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import Link from "next/link";
-import { Bell, CheckCheck, ExternalLink } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type Notification } from "@/types/communication";
 import { markNotificationReadAction, markAllNotificationsReadAction } from "@/app/account/notifications/actions";
@@ -136,7 +136,6 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                           className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-link hover:underline"
                         >
                           <span>View</span>
-                          <ExternalLink className="h-3 w-3" />
                         </Link>
                       ) : (
                         <span />
@@ -162,7 +161,7 @@ export function NotificationBell({ userId: propUserId, initialNotifications = []
                 onClick={() => setIsOpen(false)}
                 className="text-xs font-semibold text-brand-link hover:underline"
               >
-                View all notifications &rarr;
+                View all notifications
               </Link>
             </div>
           </div>

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
 import { ChatThread } from "@/components/communication/ChatThread";
-import { ChevronLeft, ExternalLink } from "lucide-react";
 import type { Metadata } from "next";
 import { type Conversation, type Message } from "@/types/communication";
 
@@ -121,7 +120,6 @@ export default async function ConversationPage({
               href="/account/messages"
               className="inline-flex items-center gap-1 text-sm font-medium text-action-600 hover:text-brand-500 dark:text-brand-400"
             >
-              <ChevronLeft className="h-4 w-4" />
               Back to Inbox
             </Link>
 
@@ -131,7 +129,6 @@ export default async function ConversationPage({
                 className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground"
               >
                 <span>View Listing: <span className="font-semibold text-foreground">{conversation.listing.title}</span></span>
-                <ExternalLink className="h-3 w-3" />
               </Link>
             )}
           </div>

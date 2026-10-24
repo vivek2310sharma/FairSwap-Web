@@ -12,7 +12,6 @@ import {
   AlertTriangle,
   LifeBuoy,
   ShieldAlert,
-  ArrowRight,
 } from "lucide-react";
 import { type Notification } from "@/types/communication";
 import {
@@ -170,7 +169,6 @@ export function NotificationList({ initialNotifications }: NotificationListProps
                         className="inline-flex items-center gap-1 text-xs font-semibold text-amber-400 hover:text-amber-300"
                       >
                         <span>View Details</span>
-                        <ArrowRight className="h-3 w-3" />
                       </Link>
                     )}
 

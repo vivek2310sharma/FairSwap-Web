@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { type Profile, type UserAccount } from "@/types/account";
 import { ProfileSection } from "@/components/account/ProfileSection";
 import { SecuritySection } from "@/components/account/SecuritySection";
+import { AccountPageShell } from "@/components/account/AccountPageShell";
 import { PrivacyOverviewSection } from "@/components/account/PrivacyOverviewSection";
 
 export const metadata = {
@@ -54,28 +55,21 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const isSuspended = accountStatus === "suspended";
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6 flex flex-col gap-2 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between dark:border-stone-800">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-stone-100">
-            Account Settings
-          </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-stone-400">
-            Manage your personal profile, security credentials, and privacy rights.
-          </p>
-        </div>
-      </div>
-
+    <AccountPageShell
+      title="Account Settings"
+      description="Manage your personal profile, security credentials, and privacy rights."
+      width="lg"
+    >
       {/* Settings Navigation Tabs */}
-      <div className="mb-8 border-b border-gray-200 dark:border-stone-800">
+      <div className="mb-8 border-b border-border">
         <nav className="-mb-px flex gap-6 overflow-x-auto scrollbar-none" aria-label="Settings tabs">
           <Link
             href="/account/settings?tab=profile"
             aria-current={activeTab === "profile" ? "page" : undefined}
             className={`whitespace-nowrap border-b-2 py-3 px-1 text-sm font-semibold transition-colors ${
               activeTab === "profile"
-                ? "border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-stone-400 dark:hover:text-stone-200"
+                ? "border-action-600 text-action-700 dark:border-action-400 dark:text-action-300"
+                : "border-transparent text-muted hover:border-border hover:text-foreground"
             }`}
           >
             Public Profile
@@ -86,8 +80,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             aria-current={activeTab === "security" ? "page" : undefined}
             className={`whitespace-nowrap border-b-2 py-3 px-1 text-sm font-semibold transition-colors ${
               activeTab === "security"
-                ? "border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-stone-400 dark:hover:text-stone-200"
+                ? "border-action-600 text-action-700 dark:border-action-400 dark:text-action-300"
+                : "border-transparent text-muted hover:border-border hover:text-foreground"
             }`}
           >
             Account Security
@@ -98,8 +92,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             aria-current={activeTab === "privacy" ? "page" : undefined}
             className={`whitespace-nowrap border-b-2 py-3 px-1 text-sm font-semibold transition-colors ${
               activeTab === "privacy"
-                ? "border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-400"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-stone-400 dark:hover:text-stone-200"
+                ? "border-action-600 text-action-700 dark:border-action-400 dark:text-action-300"
+                : "border-transparent text-muted hover:border-border hover:text-foreground"
             }`}
           >
             Privacy & Data Rights
@@ -117,6 +111,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           <ProfileSection profile={profile} accountStatus={accountStatus} />
         )}
       </div>
-    </div>
+    </AccountPageShell>
   );
 }
