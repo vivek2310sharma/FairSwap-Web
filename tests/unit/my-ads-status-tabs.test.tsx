@@ -285,8 +285,8 @@ describe("ADS-01 — My Ads Status Tabs Domain Logic & UI", () => {
 
       render(pageComponent);
 
-      expect(screen.getByText(/No draft listings/i)).toBeInTheDocument();
-      expect(screen.getByText("View All Listings")).toBeInTheDocument();
+      expect(screen.getByText(/No draft ads/i)).toBeInTheDocument();
+      expect(screen.getByText("View All Ads")).toBeInTheDocument();
     });
   });
 });

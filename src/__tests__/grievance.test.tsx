@@ -1,6 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import GrievancePage, { metadata } from "@/app/grievance/page";
+
+vi.mock("@/components/providers/AuthProvider", () => ({
+  useAuth: () => ({ user: null, isLoading: false, unreadMessagesCount: null, unreadNotificationsCount: null, signOut: vi.fn() }),
+}));
 
 describe("Grievance Redressal page (/grievance)", () => {
   it("exports correct compliance and SEO metadata", () => {
@@ -46,7 +50,7 @@ describe("Grievance Redressal page (/grievance)", () => {
   it("presents understandable grievance categories", () => {
     render(<GrievancePage />);
     expect(screen.getByText("Account or access")).toBeInTheDocument();
-    expect(screen.getByText("Listing or content")).toBeInTheDocument();
+    expect(screen.getByText("Ad or content")).toBeInTheDocument();
     expect(screen.getByText("User behaviour / safety")).toBeInTheDocument();
     expect(screen.getByText("Reporting or blocking")).toBeInTheDocument();
     expect(screen.getByText("Privacy / personal data")).toBeInTheDocument();

@@ -7,7 +7,7 @@ import { NotificationList } from "@/components/communication/NotificationList";
 
 export const metadata: Metadata = {
   title: "Notifications — FairSwap",
-  description: "Stay updated on your listings, messages, and account status.",
+  description: "Stay updated on your ads, messages, and account status.",
 };
 
 export default async function NotificationsPage() {
@@ -37,7 +37,7 @@ export default async function NotificationsPage() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-stone-100">Notifications</h1>
               <p className="mt-1 text-sm text-stone-400">
-                Updates regarding your listings, conversations, reports, and support inquiries.
+                Updates regarding your ads, conversations, reports, and support inquiries.
               </p>
             </div>
           </div>

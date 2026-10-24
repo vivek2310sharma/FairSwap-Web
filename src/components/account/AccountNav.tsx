@@ -16,7 +16,7 @@ import { getAccountCopy } from "@/lib/account/copy";
 
 const accountNavItems = [
   { label: "Overview", href: "/account", icon: LayoutDashboard, exact: true },
-  { label: "My Listings", href: "/account/listings", icon: ShoppingBag, exact: false },
+  { label: "My ads", href: "/account/listings", icon: ShoppingBag, exact: false },
   { label: getAccountCopy().tiles.trades.title, href: "/account/trades", icon: Handshake, exact: false },
   { label: "Favourites", href: "/account/favourites", icon: Heart, exact: false },
   { label: "Messages", href: "/account/messages", icon: MessageSquare, exact: false },

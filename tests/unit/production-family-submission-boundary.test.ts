@@ -41,7 +41,7 @@ function owner(eligibility:unknown={data:valid,error:null},submit:unknown={data:
 it('calls the production RPC with a persisted eligible family and saved revision',async()=>{
   const c=owner();
   expect(await submitListingAction(listingId,12)).toEqual({
-    success:true,listingId,message:'Listing submitted for review.',
+    success:true,listingId,message:'Ad submitted for review.',
   });
   expect(c.rpc).toHaveBeenCalledWith('get_seller_production_submission_status',{listing_id:listingId});
   expect(c.rpc).toHaveBeenCalledWith('seller_submit_family_listing',{listing_id:listingId,expected_revision:12});

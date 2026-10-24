@@ -28,7 +28,7 @@ describe("AccountNav component", () => {
 
     const expectedLabels = [
       "Overview",
-      "My Listings",
+      "My ads",
       "My trades",
       "Favourites",
       "Messages",
@@ -107,13 +107,13 @@ describe("AccountNav component", () => {
     }
   });
 
-  // --- Active state: My Listings nested routes ---
+  // --- Active state: My ads nested routes ---
 
-  it("marks My Listings as active on /account/listings/new and /account/listings/123/edit", () => {
+  it("marks My ads as active on /account/listings/new and /account/listings/123/edit", () => {
     for (const route of ["/account/listings/new", "/account/listings/item-123/edit"]) {
       mockUsePathname.mockReturnValue(route);
       const { unmount } = render(<AccountNav />);
-      const listingsLink = screen.getByRole("link", { name: /My Listings/ });
+      const listingsLink = screen.getByRole("link", { name: /My ads/ });
       expect(listingsLink).toHaveAttribute("aria-current", "page");
       unmount();
     }

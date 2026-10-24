@@ -73,7 +73,7 @@ describe("New-listing page auth return only", () => {
     const cities = [{ id: "fixture-city" }];
     mocks.order.mockResolvedValueOnce({ data: categories }).mockResolvedValueOnce({ data: attributes }).mockResolvedValueOnce({ data: cities });
     render(await NewListingPage({ searchParams: Promise.resolve({ macro: ["goods", "vehicles"] }) }));
-    expect(screen.getByRole("heading", { name: "Create New Listing" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Post Ad" })).toBeVisible();
     expect(screen.getByTestId("existing-form")).toBeVisible();
     expect(screen.queryByText("What would you like to list?")).toBeNull();
     expect(mocks.from.mock.calls).toEqual([["categories"], ["category_attributes"], ["cities"]]);

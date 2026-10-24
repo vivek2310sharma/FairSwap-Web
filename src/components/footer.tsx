@@ -37,7 +37,7 @@ export function Footer() {
             <ul className="mt-3 space-y-2 text-xs text-muted">
               <li>
                 <Link href="/search" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
-                  Browse All Listings
+                  Browse All Ads
                 </Link>
               </li>
               <li>

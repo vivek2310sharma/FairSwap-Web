@@ -27,14 +27,14 @@ export interface MyAdsStatusTabMeta {
 }
 
 export const MY_ADS_TABS: MyAdsStatusTabMeta[] = [
-  { key: "all", label: "All", emptyLabel: "No listings yet", statuses: null },
-  { key: "active", label: "Active", emptyLabel: "No active listings", statuses: ["active", "reserved"] },
-  { key: "pending_review", label: "Under review", emptyLabel: "No listings under review", statuses: ["pending_review"] },
-  { key: "draft", label: "Drafts", emptyLabel: "No draft listings", statuses: ["draft"] },
-  { key: "rejected", label: "Needs action", emptyLabel: "No listings needing action", statuses: ["rejected"] },
-  { key: "paused", label: "Paused", emptyLabel: "No paused listings", statuses: ["paused"] },
-  { key: "expired", label: "Expired", emptyLabel: "No expired listings", statuses: ["expired"] },
-  { key: "sold", label: "Sold", emptyLabel: "No sold listings", statuses: ["sold"] },
+  { key: "all", label: "All", emptyLabel: "No ads yet", statuses: null },
+  { key: "active", label: "Active", emptyLabel: "No active ads", statuses: ["active", "reserved"] },
+  { key: "pending_review", label: "Under review", emptyLabel: "No ads under review", statuses: ["pending_review"] },
+  { key: "draft", label: "Drafts", emptyLabel: "No draft ads", statuses: ["draft"] },
+  { key: "rejected", label: "Needs action", emptyLabel: "No ads needing action", statuses: ["rejected"] },
+  { key: "paused", label: "Paused", emptyLabel: "No paused ads", statuses: ["paused"] },
+  { key: "expired", label: "Expired", emptyLabel: "No expired ads", statuses: ["expired"] },
+  { key: "sold", label: "Sold", emptyLabel: "No sold ads", statuses: ["sold"] },
 ];
 
 export type MyListingCounts = Record<MyAdsTabKey, number>;
@@ -71,7 +71,7 @@ export async function fetchMyListingCounts(
       let query = supabase.from("listings").select("id", { count: "exact", head: true }).eq("seller_id", sellerId);
       if (tab.statuses) query = query.in("status", tab.statuses);
       const { count, error } = await query;
-      if (error || count === null || !Number.isSafeInteger(count) || count < 0) throw new Error("Listing counts unavailable");
+      if (error || count === null || !Number.isSafeInteger(count) || count < 0) throw new Error("Ad counts unavailable");
       return [tab.key, count] as const;
     }));
     return Object.fromEntries(entries) as MyListingCounts;

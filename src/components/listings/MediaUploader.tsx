@@ -27,7 +27,7 @@ export default function MediaUploader({
     if (!files || files.length === 0) return;
 
     if (mediaList.length >= 8) {
-      setErrorMessage("Maximum 8 photos allowed per listing.");
+      setErrorMessage("Maximum 8 photos allowed per ad.");
       return;
     }
 

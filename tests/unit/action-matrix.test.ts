@@ -149,7 +149,7 @@ describe("resolveListingActions", () => {
     });
 
     expect(actions.primary.id).toBe("edit");
-    expect(actions.primary.label).toBe("Fix listing");
+    expect(actions.primary.label).toBe("Fix ad");
     expect(actions.secondary).toHaveLength(0);
   });
 

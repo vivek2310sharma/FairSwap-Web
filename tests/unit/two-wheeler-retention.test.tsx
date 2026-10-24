@@ -67,7 +67,7 @@ it('default-OFF edit acquires no vehicle schema or saved-category RPC dependency
   const c=client();m.client=c;await act(async()=>{render(await EditListingPage({params:Promise.resolve({id})}));});
   expect(c.from).not.toHaveBeenCalledWith('listing_vehicle_contexts');expect(c.from).not.toHaveBeenCalledWith('vehicle_category_contracts');
   expect(c.rpc).not.toHaveBeenCalledWith('get_seller_listing_category_context',expect.anything());
-  expect(screen.getByRole('heading',{name:'Edit Listing'})).toBeVisible();
+  expect(screen.getByRole('heading',{name:'Edit ad'})).toBeVisible();
 });
 it('renders retained actual fields and keeps answers/version/same ID after reference refresh',async()=>{
   m.client=client({active:false,posting:false,closed:true});

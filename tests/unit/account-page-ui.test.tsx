@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import AccountPage from "@/app/account/page";
+import { getAccountCopy } from "@/lib/account/copy";
 
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
@@ -242,14 +243,14 @@ describe("ACC-02 My Account Page UI Tests", () => {
 
     const options = within(screen.getByRole("navigation", { name: "Account options" }));
     const names = options.getAllByRole("listitem").map((li) => li.textContent ?? "");
-    const order = ["My profile", "My listings", "My trades", "Chats", "Favourites", "Saved searches & alerts", "Ratings", "FairSeeds", "Settings", "Privacy & your data", "Help & safety"];
+    const order = ["My profile", "My ads", "My trades", "Chats", "Favourites", "Saved searches & alerts", "Ratings", "FairSeeds", "Settings", "Privacy & your data", "Help & safety"];
     expect(names).toHaveLength(11);
     expect(options.getByRole("link", { name: /My trades/ })).toHaveAttribute("href", "/account/trades");
     expect(options.getByRole("link", { name: /My trades/ })).toHaveTextContent("Coming soon");
     expect(options.getByRole("link", { name: /Help & safety/ }).closest("li")).toHaveClass("lg:col-span-2");
     order.forEach((title, i) => expect(names[i]).toContain(title));
 
-    expect(options.getByRole("link", { name: /My listings/ })).toHaveAttribute("href", "/account/listings");
+    expect(options.getByRole("link", { name: /My ads/ })).toHaveAttribute("href", "/account/listings");
     expect(options.getByRole("link", { name: /Chats/ })).toHaveAttribute("href", "/account/messages");
     expect(options.getByRole("link", { name: /Favourites/ })).toHaveAttribute("href", "/account/favourites");
     expect(options.getByRole("link", { name: /Privacy & your data/ })).toHaveAttribute("href", "/account/privacy");
@@ -264,7 +265,8 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByText("Help us make FairSwap secure")).toBeInTheDocument();
     expect(screen.getByText("Planned launch offer - Coming soon")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Verify account/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /sign out/i })).not.toBeInTheDocument();
+    expect(options.getByRole("link", { name: /My ads/ })).toHaveTextContent("Manage the ads you've posted on FairSwap.");
 
     const savedSearches = options.getByRole("button", { name: /Saved searches & alerts/ });
     expect(savedSearches).toHaveTextContent("Coming soon");
@@ -280,4 +282,10 @@ describe("ACC-02 My Account Page UI Tests", () => {
     fireEvent.click(screen.getByRole("button", { name: "Got it" }));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+});
+
+ it("preserves English and Hindi ad copy with existing internal keys", () => {
+  expect(getAccountCopy().tiles.listings).toEqual({ title: "My ads", description: "Manage the ads you've posted on FairSwap." });
+  expect(getAccountCopy("hi").tiles.listings.title).toBe("मेरे विज्ञापन");
+  expect(getAccountCopy("hi").seller.searchLabel).toBe("इस विक्रेता के विज्ञापन खोजें");
 });

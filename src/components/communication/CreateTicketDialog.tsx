@@ -125,7 +125,7 @@ export function CreateTicketDialog({ isSuspended = false }: CreateTicketDialogPr
                 >
                   <option value="general">General Question</option>
                   <option value="account">Account & Privacy</option>
-                  <option value="listing_issue">Listing Help</option>
+                  <option value="listing_issue">Ad Help</option>
                   <option value="safety_concern">Safety & Security Concern</option>
                   <option value="moderation_appeal">Moderation Appeal</option>
                   <option value="other">Other Inquiry</option>

@@ -100,7 +100,7 @@ export function MobileBottomNav() {
                   <Link
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    aria-label="Sell - Post a listing"
+                    aria-label="Sell - Post an ad"
                     className="group flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500"
                   >
                     <div
