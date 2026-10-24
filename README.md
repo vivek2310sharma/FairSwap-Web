@@ -1,5 +1,7 @@
 # FairSwap — Web
 
+> India taxonomy local candidate (24 October 2026): bilingual discovery and 15 ordinary Goods migration candidates; safety-dependent categories remain unavailable. See [scope and release dependencies](docs/operations/INDIA_TAXONOMY_UPGRADE.md).
+
 > ADS-01 production release preparation (23 October 2026): local main-based port; release and hosted acceptance are pending. See [handoff and verification](docs/ADS-01-PRODUCTION-HANDOFF.md).
 
 **India-first, trust-first peer-to-peer classifieds.** FairSwap helps people discover, list and discuss second-hand items. Buyers and sellers arrange exchanges directly; FairSwap is **not** an item checkout, escrow, payout or delivery service.
