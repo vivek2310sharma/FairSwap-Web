@@ -1,11 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { POST_AD_CATALOGUE, resolveSub, searchCatalogue, type PostAdCapabilities } from '@/lib/listings/post-ad-category-catalogue';
-import { validateGoodsAnswerContract } from '@/lib/listings/post-ad-server';
+import { isEligibleGoodsCategory, validateGoodsAnswerContract } from '@/lib/listings/post-ad-server';
 
 const caps: PostAdCapabilities = { goodsCategories: [], cars: 'off', twoWheelers: 'off', property: 'off', propertyPaths: [] };
 const main = (id: string) => POST_AD_CATALOGUE.find(c => c.id === id)!;
 
 describe('India category contracts', () => {
+  it('keeps every seeded choice unavailable until both database activation flags are true', () => {
+    const existing = new Set(['electronics','home-appliances','furniture','books','hobbies']);
+    const seeded = POST_AD_CATALOGUE.flatMap(c => c.subs).filter(s => s.route.kind === 'goods' && !existing.has(s.route.key));
+    expect(seeded).toHaveLength(15);
+    for (const [is_active,new_listing_enabled] of [[false,false],[false,true],[true,false],[true,true]]) {
+      const categories = seeded.flatMap(sub => {
+        if (sub.route.kind !== 'goods') return [];
+        const row = { id: '11111111-1111-4111-8111-111111111111', macro_category: 'goods', is_active, new_listing_enabled };
+        return isEligibleGoodsCategory(row) ? [sub.route.key] : [];
+      });
+      for (const sub of seeded) expect(resolveSub(sub,{ ...caps, goodsCategories: categories }).macro).toBe(is_active && new_listing_enabled ? 'goods' : undefined);
+    }
+  });
   it('provides Hindi names for every main category and subcategory', () => {
     for (const category of POST_AD_CATALOGUE) {
       expect(category.label.hi).toBeTruthy();
