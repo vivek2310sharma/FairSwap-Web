@@ -1,5 +1,7 @@
 # FairSwap product roadmap — workstreams and readiness
 
+> India taxonomy local candidate (24 October 2026): bilingual discovery and 15 ordinary Goods migration candidates; safety-dependent categories remain unavailable. See [scope and release dependencies](operations/INDIA_TAXONOMY_UPGRADE.md).
+
 > ADS-01 production release preparation (23 October 2026): local main-based port; release and hosted acceptance are pending. See [handoff and verification](ADS-01-PRODUCTION-HANDOFF.md).
 
 **Current planning model, reviewed 14 October 2026.** Prioritize work by **verified behavior, customer trust, security, operational risk, and explicit owner approval**. Historical numbered development phases and `1.1–1.6` milestones do **not** determine which tasks may now be started.
