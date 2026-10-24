@@ -7,6 +7,8 @@ import {
   PublicListingCard,
   SearchFilters,
   SearchListingsResult,
+  SellerListingsResult,
+  SELLER_LISTINGS_PER_PAGE,
   ListingCondition,
   ListingPriceType,
   ListingStatus,
@@ -424,62 +426,56 @@ export async function getPublicListingBySlugOrId(slugOrId: string): Promise<{
   return { listing: detail, redirectSlug: null, isOwnerOrStaffPreview };
 }
 
+export interface SellerListingsPageQuery {
+  q?: string;
+  category?: string;
+  condition?: ListingCondition;
+  price_min?: number;
+  price_max?: number;
+  sort?: "newest" | "oldest" | "price_asc" | "price_desc";
+  page?: number;
+}
+
+/**
+ * Paginated public listings for one seller. Runs as the caller (anon/authenticated) through
+ * the visibility-enforcing RPC, so counts, search and filters cannot see non-public listings.
+ * Returns null on a query error so callers can render an error state instead of "no listings".
+ */
+export async function getSellerListingsPage(
+  sellerId: string,
+  query: SellerListingsPageQuery = {},
+  perPage: number = SELLER_LISTINGS_PER_PAGE
+): Promise<SellerListingsResult | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("search_seller_public_listings", {
+    seller_id: sellerId,
+    query: query.q ? query.q.trim() : undefined,
+    category_slug: query.category || undefined,
+    condition: query.condition || undefined,
+    price_min: query.price_min !== undefined ? Math.round(query.price_min * 100) : undefined,
+    price_max: query.price_max !== undefined ? Math.round(query.price_max * 100) : undefined,
+    sort: query.sort || "newest",
+    page: query.page || 1,
+    per_page: perPage,
+  });
+
+  if (error || !data) return null;
+
+  const result = data as unknown as SellerListingsResult;
+  return { ...result, categories: result.categories ?? [] };
+}
+
+/** Bounded "other listings by this seller" for the listing detail page (max 8). */
 export async function getSellerPublicListings(
   sellerId: string,
   excludeListingId?: string
 ): Promise<PublicListingCard[]> {
-  const serviceClient = createServiceRoleClient();
+  // Fetch one extra so excluding the current listing still leaves up to 8.
+  const result = await getSellerListingsPage(sellerId, { sort: "newest" }, 9);
+  if (!result) return [];
 
-  let query = serviceClient
-    .from("listings")
-    .select(`
-      id,
-      seller_id,
-      slug,
-      title,
-      description,
-      condition,
-      price_type,
-      price_paise,
-      category_attributes,
-      status,
-      created_at,
-      published_at,
-      category:categories(id, name, slug, icon),
-      city:cities(id, name, state),
-      locality:localities(id, name),
-      cover_photo:listing_media!listings_cover_photo_id_fkey(id, thumbnail_storage_path, medium_storage_path, width, height)
-    `)
-    .eq("seller_id", sellerId)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(8);
-
-  if (excludeListingId) {
-    query = query.neq("id", excludeListingId);
-  }
-
-  const { data } = await query;
-  if (!data) return [];
-
-  return (data as unknown as RawListingItem[]).map((item) => ({
-    id: item.id,
-    seller_id: item.seller_id,
-    slug: item.slug,
-    title: item.title,
-    description: item.description,
-    condition: item.condition,
-    price_type: item.price_type,
-    price_paise: item.price_paise,
-    category_attributes: item.category_attributes,
-    status: item.status,
-    created_at: item.created_at,
-    published_at: item.published_at,
-    category: Array.isArray(item.category) ? item.category[0] : item.category,
-    city: Array.isArray(item.city) ? item.city[0] : item.city,
-    locality: Array.isArray(item.locality) ? item.locality[0] : item.locality,
-    cover_photo: Array.isArray(item.cover_photo) ? item.cover_photo[0] : item.cover_photo,
-  }));
+  return result.items.filter((item) => item.id !== excludeListingId).slice(0, 8);
 }
 
 export async function getUserFavourites(userId: string): Promise<{

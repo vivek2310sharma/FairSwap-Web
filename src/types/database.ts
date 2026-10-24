@@ -2130,6 +2130,20 @@ export type Database = {
         }
         Returns: Json
       }
+      search_seller_public_listings: {
+        Args: {
+          category_slug?: string
+          condition?: string
+          page?: number
+          per_page?: number
+          price_max?: number
+          price_min?: number
+          query?: string
+          seller_id: string
+          sort?: string
+        }
+        Returns: Json
+      }
       seller_delete_listing_media: {
         Args: { listing_id: string; media_id: string }
         Returns: Json
