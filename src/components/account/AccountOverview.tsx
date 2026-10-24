@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { Handshake, Heart, LifeBuoy, Lock, MessageSquare, Settings, ShoppingBag, Sprout, Star, UserRound } from "lucide-react";
+import { BellRing, Handshake, Heart, LifeBuoy, Lock, MessageSquare, Settings, ShoppingBag, Sprout, Star, UserRound } from "lucide-react";
 import { AccountIdentity } from "@/components/account/AccountIdentity";
 import { AccountTile } from "@/components/account/AccountTile";
 import { ComingSoonDialog } from "@/components/account/ComingSoonDialog";
@@ -87,6 +87,15 @@ export function AccountOverview({
           </li>
           <li>
             <AccountTile
+              icon={BellRing}
+              onClick={() => open("savedSearches")}
+              title={t.savedSearches.title}
+              description={t.savedSearches.description}
+              badge={comingSoon}
+            />
+          </li>
+          <li>
+            <AccountTile
               icon={Star}
               onClick={() => open("ratings")}
               title={t.ratings.title}
@@ -109,15 +118,15 @@ export function AccountOverview({
           <li>
             <AccountTile icon={Lock} href="/account/privacy" title={t.privacy.title} description={t.privacy.description} />
           </li>
+          <li className="lg:col-span-2">
+            <AccountTile
+              icon={LifeBuoy}
+              href="/account/support"
+              title={t.help.title}
+              description={isRestricted ? copy.helpRestrictedDescription : t.help.description}
+            />
+          </li>
         </ul>
-        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card sm:border-0">
-          <AccountTile
-            icon={LifeBuoy}
-            href="/account/support"
-            title={t.help.title}
-            description={isRestricted ? copy.helpRestrictedDescription : t.help.description}
-          />
-        </div>
       </nav>
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-2xl border border-border bg-card px-5 py-2 text-sm">

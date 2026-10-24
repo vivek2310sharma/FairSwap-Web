@@ -1,6 +1,6 @@
 export type AccountLocale = "en" | "hi";
 
-export type PreviewKey = "verification" | "ratings" | "fairseeds";
+export type PreviewKey = "verification" | "ratings" | "fairseeds" | "savedSearches";
 
 export interface PreviewCopy {
   title: string;
@@ -62,7 +62,7 @@ export interface AccountCopy {
   backToAccount: string;
   readSafetyTips: string;
   tiles: Record<
-    "profile" | "listings" | "trades" | "chats" | "favourites" | "ratings" | "fairseeds" | "settings" | "privacy" | "help",
+    "profile" | "listings" | "trades" | "chats" | "favourites" | "savedSearches" | "ratings" | "fairseeds" | "settings" | "privacy" | "help",
     { title: string; description: string }
   >;
   helpRestrictedDescription: string;
@@ -102,6 +102,7 @@ const en: AccountCopy = {
     trades: { title: "My trades", description: "Track items you have sold and bought on FairSwap." },
     chats: { title: "Chats", description: "Your conversations with buyers and sellers." },
     favourites: { title: "Favourites", description: "Listings you have saved for later." },
+    savedSearches: { title: "Saved searches & alerts", description: "Get notified when new ads match what you're looking for." },
     ratings: { title: "Ratings", description: "Feedback from your FairSwap trades." },
     fairseeds: { title: "FairSeeds", description: "A new way to celebrate successful trades." },
     settings: { title: "Settings", description: "Manage account and security preferences." },
@@ -120,6 +121,10 @@ const en: AccountCopy = {
     cta: "Verify account",
   },
   previews: {
+    savedSearches: {
+      title: "Saved searches & alerts",
+      body: "Saved searches & alerts are coming soon.",
+    },
     verification: {
       title: "Lifetime verification is coming soon.",
       body: "Planned launch price: ₹10 instead of ₹99, as a one-time payment for lifetime validation. No payment is collected at this stage.",
@@ -206,6 +211,7 @@ const hi: AccountCopy = {
     trades: { title: "मेरे लेन-देन", description: "FairSwap पर बेची और खरीदी गई वस्तुओं का रिकॉर्ड देखें।" },
     chats: { title: "चैट", description: "खरीदारों और विक्रेताओं के साथ आपकी बातचीत।" },
     favourites: { title: "पसंदीदा", description: "बाद के लिए सहेजी गई लिस्टिंग।" },
+    savedSearches: { title: "सेव की गई खोजें और अलर्ट", description: "आपकी खोज से मेल खाने वाले नए विज्ञापनों की सूचना पाएँ।" },
     ratings: { title: "रेटिंग", description: "आपके FairSwap लेन-देन से मिली प्रतिक्रिया।" },
     fairseeds: { title: "FairSeeds", description: "सफल लेन-देन का जश्न मनाने का एक नया तरीका।" },
     settings: { title: "सेटिंग्स", description: "खाते और सुरक्षा प्राथमिकताएं प्रबंधित करें।" },
@@ -224,6 +230,10 @@ const hi: AccountCopy = {
     cta: "खाता सत्यापित करें",
   },
   previews: {
+    savedSearches: {
+      title: "सेव की गई खोजें और अलर्ट",
+      body: "सेव की गई खोजें और अलर्ट जल्द आ रहे हैं।",
+    },
     verification: {
       title: "आजीवन सत्यापन जल्द आ रहा है।",
       body: "प्रस्तावित लॉन्च मूल्य: ₹99 के बजाय ₹10, आजीवन सत्यापन के लिए एकमुश्त भुगतान। इस चरण में कोई भुगतान नहीं लिया जाता।",
