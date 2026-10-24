@@ -8,6 +8,7 @@ import { Category, CategoryAttribute, City } from "@/types/listing";
 import GoodsPostAdEntry from "@/components/listings/GoodsPostAdEntry";
 import { isGoodsPostAdEnabled, loadGoodsReferences } from "@/lib/listings/post-ad-server";
 import {loadPostAdLocations} from '@/lib/listings/post-ad-locations';
+import { isVerifiedProductionFamilyLaunchEnvironment, isVerifiedSubmissionTestEnvironment } from "@/lib/listings/test-runtime";
 import { isTwoWheelerEnabled, isCarsEnabled, loadVehicleReferences } from "@/lib/listings/two-wheeler/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -59,10 +60,16 @@ export default async function NewListingPage({
     const typed=supabase as SupabaseClient<Database>;
     const locationRequest=loadPostAdLocations(supabase);
     const [references,tw,cars,property,locations]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest]);
-    const vehicles=tw||cars ? {categories:[...(tw?.categories??[]),...(cars?.categories??[])],states:tw?.states.length?tw.states:cars?.states??[],error:tw?.error??cars?.error} : undefined;
+    // Each vehicle family is judged on its own loader result; a failing family is dropped
+    // so it can neither block nor enable the other. No healthy family => no vehicle form.
+    const healthy=(v?:{categories:unknown[];error?:string})=>!!v&&!v.error&&v.categories.length>0;
+    const twOk=healthy(tw)?tw:undefined,carsOk=healthy(cars)?cars:undefined;
+    const vehicles=twOk||carsOk ? {categories:[...(twOk?.categories??[]),...(carsOk?.categories??[])],states:twOk?.states.length?twOk.states:carsOk?.states??[]} : undefined;
+    const testSubmission=isVerifiedSubmissionTestEnvironment(process.env);
+    const submission={twoWheelers:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"two-wheelers"),cars:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"cars"),property:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"property")};
     return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <Link href="/account/listings" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">Back to My Listings</Link>
-      <div className="mt-6"><GoodsPostAdEntry references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
+      <Link href="/account/listings" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">Back to My ads</Link>
+      <div className="mt-6"><GoodsPostAdEntry submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
     </div>;
   }
 
@@ -91,9 +98,9 @@ export default async function NewListingPage({
           href="/account/listings"
           className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
         >
-          Back to My Listings
+          Back to My ads
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">Create New Listing</h1>
+        <h1 className="mt-2 text-2xl font-bold text-gray-900">Post Ad</h1>
         <p className="mt-1 text-sm text-gray-600">
           Fill in details for your item. Saving creates a draft; you can add photos on the next step.
         </p>
