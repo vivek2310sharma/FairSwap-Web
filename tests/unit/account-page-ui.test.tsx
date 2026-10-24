@@ -242,7 +242,11 @@ describe("ACC-02 My Account Page UI Tests", () => {
 
     const options = within(screen.getByRole("navigation", { name: "Account options" }));
     const names = options.getAllByRole("listitem").map((li) => li.textContent ?? "");
-    const order = ["My profile", "My listings", "Chats", "Favourites", "Ratings", "FairSeeds", "Settings", "Privacy & your data", "Help & safety"];
+    const order = ["My profile", "My listings", "My trades", "Chats", "Favourites", "Ratings", "FairSeeds", "Settings", "Privacy & your data"];
+    expect(names).toHaveLength(9);
+    expect(options.getByRole("link", { name: /My trades/ })).toHaveAttribute("href", "/account/trades");
+    expect(options.getByRole("link", { name: /My trades/ })).toHaveTextContent("Coming soon");
+    expect(options.getByRole("link", { name: /Help & safety/ }).closest("ul")).toBeNull();
     order.forEach((title, i) => expect(names[i]).toContain(title));
 
     expect(options.getByRole("link", { name: /My listings/ })).toHaveAttribute("href", "/account/listings");
