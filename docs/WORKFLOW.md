@@ -1,5 +1,7 @@
 # FairSwap change, review and release workflow
 
+> India taxonomy local candidate (24 October 2026): bilingual discovery and 15 ordinary Goods migration candidates; safety-dependent categories remain unavailable. See [scope and release dependencies](operations/INDIA_TAXONOMY_UPGRADE.md).
+
 > ADS-01 production release preparation (23 October 2026): local main-based port; release and hosted acceptance are pending. See [handoff and verification](ADS-01-PRODUCTION-HANDOFF.md).
 
 **Active workflow — 14 October 2026.** This replaces the old sequential milestone execution procedure for current development. There is no mandatory `Phase 1` / `Phase 2` transition and no `1.1` kickoff prompt. [CONTRIBUTING](../CONTRIBUTING.md) is the canonical Git/PR guide.
