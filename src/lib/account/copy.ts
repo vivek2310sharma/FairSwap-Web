@@ -62,7 +62,7 @@ export interface AccountCopy {
   backToAccount: string;
   readSafetyTips: string;
   tiles: Record<
-    "profile" | "listings" | "chats" | "favourites" | "ratings" | "fairseeds" | "settings" | "privacy" | "help",
+    "profile" | "listings" | "trades" | "chats" | "favourites" | "ratings" | "fairseeds" | "settings" | "privacy" | "help",
     { title: string; description: string }
   >;
   helpRestrictedDescription: string;
@@ -77,6 +77,7 @@ export interface AccountCopy {
     cta: string;
   };
   previews: Record<PreviewKey, PreviewCopy>;
+  trades: { title: string; subtitle: string; tabsLabel: string; sold: string; bought: string; soldTitle: string; soldBody: string; boughtTitle: string; boughtBody: string; unavailable: string; };
   seller: SellerProfileCopy;
 }
 
@@ -98,6 +99,7 @@ const en: AccountCopy = {
   tiles: {
     profile: { title: "My profile", description: "Manage your name, location and profile details." },
     listings: { title: "My listings", description: "Manage the items you have listed." },
+    trades: { title: "My trades", description: "Track items you have sold and bought on FairSwap." },
     chats: { title: "Chats", description: "Your conversations with buyers and sellers." },
     favourites: { title: "Favourites", description: "Listings you have saved for later." },
     ratings: { title: "Ratings", description: "Feedback from your FairSwap trades." },
@@ -130,6 +132,18 @@ const en: AccountCopy = {
       title: "FairSeeds",
       body: "FairSeeds are coming soon. When the feature launches, buyers and sellers will each earn 5 FairSeeds for a completed trade.",
     },
+  },
+  trades: {
+    title: "My trades",
+    subtitle: "Your history of sales and purchases confirmed on FairSwap.",
+    tabsLabel: "Trade history sections",
+    sold: "Sold",
+    bought: "Bought",
+    soldTitle: "Your completed sales will appear here",
+    soldBody: "Once a buyer confirms a transaction, its record will appear in this section.",
+    boughtTitle: "Your completed purchases will appear here",
+    boughtBody: "Once you and a seller confirm a transaction, its record will appear in this section.",
+    unavailable: "Trade confirmation has not launched yet. You cannot confirm trades on FairSwap yet.",
   },
   seller: {
     memberSince: "FairSwap member since {date}",
@@ -189,6 +203,7 @@ const hi: AccountCopy = {
   tiles: {
     profile: { title: "मेरी प्रोफ़ाइल", description: "अपना नाम, स्थान और प्रोफ़ाइल विवरण प्रबंधित करें।" },
     listings: { title: "मेरी लिस्टिंग", description: "आपके द्वारा सूचीबद्ध वस्तुओं को प्रबंधित करें।" },
+    trades: { title: "मेरे लेन-देन", description: "FairSwap पर बेची और खरीदी गई वस्तुओं का रिकॉर्ड देखें।" },
     chats: { title: "चैट", description: "खरीदारों और विक्रेताओं के साथ आपकी बातचीत।" },
     favourites: { title: "पसंदीदा", description: "बाद के लिए सहेजी गई लिस्टिंग।" },
     ratings: { title: "रेटिंग", description: "आपके FairSwap लेन-देन से मिली प्रतिक्रिया।" },
@@ -221,6 +236,18 @@ const hi: AccountCopy = {
       title: "FairSeeds",
       body: "FairSeeds जल्द आ रहे हैं। यह सुविधा शुरू होने पर खरीदार और विक्रेता, दोनों को पूर्ण हुए लेन-देन पर 5-5 FairSeeds मिलेंगे।",
     },
+  },
+  trades: {
+    title: "मेरे लेन-देन",
+    subtitle: "FairSwap पर पुष्टि की गई आपकी बिक्री और खरीद का इतिहास।",
+    tabsLabel: "लेन-देन के इतिहास के अनुभाग",
+    sold: "बेची गई",
+    bought: "खरीदी गई",
+    soldTitle: "आपकी पूरी हुई बिक्री यहां दिखाई देंगी",
+    soldBody: "जब कोई खरीदार लेन-देन की पुष्टि करेगा, तो उसका रिकॉर्ड इस अनुभाग में दिखाई देगा।",
+    boughtTitle: "आपकी पूरी हुई खरीद यहां दिखाई देंगी",
+    boughtBody: "जब आप और विक्रेता लेन-देन की पुष्टि करेंगे, तो उसका रिकॉर्ड इस अनुभाग में दिखाई देगा।",
+    unavailable: "लेन-देन की पुष्टि की सुविधा अभी शुरू नहीं हुई है। आप अभी FairSwap पर लेन-देन की पुष्टि नहीं कर सकते।",
   },
   seller: {
     memberSince: "FairSwap सदस्य {date} से",
