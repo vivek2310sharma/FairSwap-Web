@@ -88,11 +88,11 @@ describe("seller action category/context validation",()=>{
   it.each([{...goods,new_listing_enabled:false},{...goods,is_active:false}])("rejects changing to a different closed Goods category: %j",async selected=>{const other="22222222-2222-4222-8222-222222222222";const c=client([{data:{category_id:id,seller_id:"owner"},error:null},{data:goods,error:null},{data:{...selected,id:other},error:null}]);expect(await validatePostAdSelection(c.supabase,form("goods",other),listingId,"owner")).toMatch(/active, enabled/);});
   it("OFF preserves original path without metadata reads",async()=>{vi.stubEnv("POST_AD_GOODS_TEST_ENABLED","false");const c=client([]);expect(await validatePostAdSelection(c.supabase,form(null))).toBeNull();expect(c.from).not.toHaveBeenCalled();expect(await validatePostAdSelection(c.supabase,form())).toMatch(/unavailable/);});
   it("accepts verified new Goods but never permits a legacy bicycle creation",async()=>{
-    const c=client([{data:goods,error:null}]);
+    const c=client([{data:goods,error:null},{data:[],error:null}]);
     expect(await validatePostAdSelection(c.supabase,form())).toBeNull();
     expect(await validatePostAdSelection(c.supabase,form("legacy"))).toMatch(/Invalid/);
     expect(await validatePostAdSelection(c.supabase,form(null))).toMatch(/Choose Goods/);
-    expect(c.from).toHaveBeenCalledTimes(1);
+    expect(c.from.mock.calls.map(([table])=>table)).toEqual(['categories','category_attributes']);
   });
   it("retains previously saved legacy bicycle edits without offering new legacy listing creation",async()=>{
     const saved={...goods,macro_category:null,new_listing_enabled:false};
