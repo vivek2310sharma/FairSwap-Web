@@ -27,10 +27,21 @@ describe.each([['FairSwapTest','wpppxlnbzqynvhpeuavd'],['FairSwapProd','kriuhwpp
   async function attest(release = 'a'.repeat(40), target = project) {
     await db.query<Record<string, unknown>>(`select set_config('app.india_taxonomy_verified_web_release',$1,false),set_config('app.india_taxonomy_target_project',$2,false)`,[release,target]);
   }
-  async function activate() { await attest(); await db.exec(activation); }
+  // Model the migration runner: one outer transaction per migration, never
+  // transaction control inside the migration file or between its statements.
+  async function migrate(sql: string) {
+    await db.exec('begin');
+    try {
+      await db.exec(sql);
+      await db.exec('commit');
+    } catch (error) {
+      await db.exec('rollback');
+      throw error;
+    }
+  }
+  async function activate() { await attest(); await migrate(activation); }
   async function rejectedScript(sql: string, message: string) {
-    await expect(db.exec(sql)).rejects.toThrow(message);
-    await db.exec('rollback'); // Explicit script transaction, on this in-memory DB only.
+    await expect(migrate(sql)).rejects.toThrow(message);
   }
   async function draft(slug = 'fashion-men', answers: unknown = {}) {
     return (await db.query<{id: string}>(`insert into listings(category_id,category_attributes) select id,$2::jsonb from categories where slug=$1 returning id`,[slug,JSON.stringify(answers)])).rows[0].id;
@@ -104,7 +115,7 @@ describe.each([['FairSwapTest','wpppxlnbzqynvhpeuavd'],['FairSwapProd','kriuhwpp
       create trigger aaa_taxonomy_transition_fixture after insert or update on listings for each row execute function taxonomy_transition_fixture();
     `);
     originalGuards = await guards();
-    await db.exec(seed);
+    await migrate(seed);
     originalIds = (await db.query<Record<string, unknown>>('select slug,id from categories order by slug')).rows;
   },30000);
   beforeEach(async () => {
@@ -115,6 +126,37 @@ describe.each([['FairSwapTest','wpppxlnbzqynvhpeuavd'],['FairSwapProd','kriuhwpp
   });
   afterAll(async () => { await db.close(); });
 
+  it('leaves transaction ownership to the runner and keeps timeouts transaction-local',async () => {
+    for (const sql of [seed,activation]) {
+      expect(sql).not.toMatch(/^\s*(?:begin|start\s+transaction|commit|rollback)\s*;/im);
+      expect(sql).toContain("set local lock_timeout='5s';");
+      expect(sql).toContain("set local statement_timeout='30s';");
+    }
+    const settings = () => db.query<Record<string, unknown>>(`select current_setting('lock_timeout') as lock_timeout,current_setting('statement_timeout') as statement_timeout`);
+    const before=(await settings()).rows;
+    await activate();
+    expect((await settings()).rows).toEqual(before);
+  });
+  it('rolls back all seed DDL and data if the runner fails after the migration body',async () => {
+    // Reset/reseed only inside this disposable transaction, then inject a late
+    // runner failure. A migration-owned COMMIT would leak replacement UUIDs.
+    const reset=`drop trigger india_goods_listing_guard on listings;
+      drop function app_security.india_goods_listing_guard();
+      delete from category_attributes where category_id in (select id from categories where macro_category='goods' and slug<>'furniture');
+      delete from categories where macro_category='goods' and slug<>'furniture';`;
+    await rejectedScript(reset+'\n'+seed+'\nselect 1/0;','division by zero');
+    expect((await db.query<Record<string, unknown>>('select slug,id from categories order by slug')).rows).toEqual(originalIds);
+    expect((await db.query<Record<string, unknown>>('select count(*)::int as count from category_attributes')).rows[0].count).toBe(30);
+    expect((await db.query<Record<string, unknown>>(`select tgtype from pg_trigger where tgrelid='listings'::regclass and tgname='india_goods_listing_guard'`)).rows[0].tgtype).toBe(21);
+    expect(await guards()).toEqual(originalGuards);
+  });
+  it('rolls back activation flags and acknowledgement clearing on a late runner failure',async () => {
+    await attest();
+    await rejectedScript(activation+'\nselect 1/0;','division by zero');
+    expect((await db.query<Record<string, unknown>>(`select count(*)::int as count from categories where macro_category='goods' and slug<>'furniture' and (is_active or new_listing_enabled)`)).rows[0].count).toBe(0);
+    expect((await db.query<Record<string, unknown>>(`select current_setting('app.india_taxonomy_verified_web_release') as release`)).rows[0].release).toBe('a'.repeat(40));
+    expect((await db.query<Record<string, unknown>>('select slug,id from categories order by slug')).rows).toEqual(originalIds);
+  });
   it('seeds 15 hidden disabled identities and leaves unsupported categories absent',async () => {
     expect((await db.query<Record<string, unknown>>('select count(*)::int as count from categories')).rows[0].count).toBe(17);
     expect((await asRole('anon',() => db.query<Record<string, unknown>>('select slug from categories'))) as {rows: unknown[]}).toMatchObject({rows:[{slug:'furniture'}]});
