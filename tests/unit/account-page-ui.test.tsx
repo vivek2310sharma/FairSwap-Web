@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import AccountPage from "@/app/account/page";
 
 const mocks = vi.hoisted(() => ({
@@ -223,7 +223,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByText("active")).toBeNull();
   });
 
-  it("renders the nine tiles in order with real links and Coming soon previews", async () => {
+  it("renders account tiles in order with real links and Coming soon previews", async () => {
     const user = { id: "user-9tile-123", email: "user9@example.com" };
     const account = { user_id: "user-9tile-123", account_status: "active" };
 
@@ -242,11 +242,11 @@ describe("ACC-02 My Account Page UI Tests", () => {
 
     const options = within(screen.getByRole("navigation", { name: "Account options" }));
     const names = options.getAllByRole("listitem").map((li) => li.textContent ?? "");
-    const order = ["My profile", "My listings", "My trades", "Chats", "Favourites", "Ratings", "FairSeeds", "Settings", "Privacy & your data"];
-    expect(names).toHaveLength(9);
+    const order = ["My profile", "My listings", "My trades", "Chats", "Favourites", "Saved searches & alerts", "Ratings", "FairSeeds", "Settings", "Privacy & your data", "Help & safety"];
+    expect(names).toHaveLength(11);
     expect(options.getByRole("link", { name: /My trades/ })).toHaveAttribute("href", "/account/trades");
     expect(options.getByRole("link", { name: /My trades/ })).toHaveTextContent("Coming soon");
-    expect(options.getByRole("link", { name: /Help & safety/ }).closest("ul")).toBeNull();
+    expect(options.getByRole("link", { name: /Help & safety/ }).closest("li")).toHaveClass("lg:col-span-2");
     order.forEach((title, i) => expect(names[i]).toContain(title));
 
     expect(options.getByRole("link", { name: /My listings/ })).toHaveAttribute("href", "/account/listings");
@@ -265,5 +265,19 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByText("Planned launch offer - Coming soon")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Verify account/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+
+    const savedSearches = options.getByRole("button", { name: /Saved searches & alerts/ });
+    expect(savedSearches).toHaveTextContent("Coming soon");
+    expect(options.queryByRole("link", { name: /Saved searches & alerts/ })).toBeNull();
+    // jsdom does not implement the native dialog methods.
+    const dialog = screen.getByRole("dialog", { hidden: true }) as HTMLDialogElement;
+    Object.defineProperties(dialog, {
+      showModal: { value: () => dialog.setAttribute("open", "") },
+      close: { value: () => dialog.removeAttribute("open") },
+    });
+    fireEvent.click(savedSearches);
+    expect(screen.getByRole("dialog")).toHaveTextContent("Saved searches & alerts are coming soon.");
+    fireEvent.click(screen.getByRole("button", { name: "Got it" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
