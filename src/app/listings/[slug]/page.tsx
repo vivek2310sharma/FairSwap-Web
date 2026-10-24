@@ -27,7 +27,6 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 import {
   MapPin,
   Calendar,
-  ArrowLeft,
   User,
   AlertTriangle,
   Info,
@@ -210,7 +209,6 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
           {/* Breadcrumb Navigation */}
           <div className="mb-6 flex items-center gap-2 text-xs text-muted">
             <Link href={backHref} className="hover:text-foreground inline-flex items-center gap-1">
-              <ArrowLeft className="h-3 w-3" aria-hidden="true" />
               Back to search
             </Link>
             <span>/</span>
@@ -432,7 +430,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                   href={`/seller/${listing.seller.id}`}
                   className="text-xs font-semibold text-brand-link hover:underline"
                 >
-                  View all &rarr;
+                  View all
                 </Link>
               </div>
 

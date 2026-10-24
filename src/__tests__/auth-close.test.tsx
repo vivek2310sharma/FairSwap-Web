@@ -88,7 +88,7 @@ describe("Auth Entry Close Control (Issue #72)", () => {
 
   describe("AccountNav regression check", () => {
     it("does NOT contain a Close or Close Account control in authenticated AccountNav", () => {
-      mockUsePathname.mockReturnValue("/account");
+      mockUsePathname.mockReturnValue("/account/listings");
       render(<AccountNav />);
 
       // Should have the Account navigation landmark

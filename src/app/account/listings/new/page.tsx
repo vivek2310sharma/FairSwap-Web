@@ -61,7 +61,7 @@ export default async function NewListingPage({
     const [references,tw,cars,property,locations]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest]);
     const vehicles=tw||cars ? {categories:[...(tw?.categories??[]),...(cars?.categories??[])],states:tw?.states.length?tw.states:cars?.states??[],error:tw?.error??cars?.error} : undefined;
     return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <Link href="/account/listings" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">← Back to My Listings</Link>
+      <Link href="/account/listings" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">Back to My Listings</Link>
       <div className="mt-6"><GoodsPostAdEntry references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
     </div>;
   }
@@ -91,7 +91,7 @@ export default async function NewListingPage({
           href="/account/listings"
           className="text-sm font-medium text-emerald-600 hover:text-emerald-700"
         >
-          ← Back to My Listings
+          Back to My Listings
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">Create New Listing</h1>
         <p className="mt-1 text-sm text-gray-600">

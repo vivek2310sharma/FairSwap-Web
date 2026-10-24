@@ -39,11 +39,25 @@ function isActive(pathname: string, href: string, exact: boolean): boolean {
 export function AccountNav() {
   const pathname = usePathname();
 
+  // The overview already presents every destination as a tile.
+  if (pathname === "/account") return null;
+
   return (
-    <nav
-      aria-label="Account navigation"
-      className="border-b border-border bg-background"
-    >
+    <>
+      <nav aria-label="Back to Account" className="border-b border-border bg-background sm:hidden">
+        <div className="mx-auto max-w-7xl px-4">
+          <Link
+            href="/account"
+            className="inline-flex min-h-[44px] items-center text-sm font-semibold text-action-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 dark:text-action-300"
+          >
+            Back to Account
+          </Link>
+        </div>
+      </nav>
+      <nav
+        aria-label="Account navigation"
+        className="hidden border-b border-border bg-background sm:block"
+      >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ul
           className="flex gap-1 overflow-x-auto py-1.5 scrollbar-none"
@@ -75,6 +89,7 @@ export function AccountNav() {
           })}
         </ul>
       </div>
-    </nav>
+      </nav>
+    </>
   );
 }

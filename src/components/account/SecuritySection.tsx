@@ -11,8 +11,8 @@ export function SecuritySection({ email, account, isSuspended }: SecuritySection
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-stone-100">Security & Status</h2>
-        <p className="mt-1 text-sm text-gray-600 dark:text-stone-400">
+        <h2 className="text-xl font-bold text-foreground">Security & Status</h2>
+        <p className="mt-1 text-sm text-muted">
           Review your account status, credentials, and legal policy acceptance.
         </p>
       </div>
@@ -35,15 +35,15 @@ export function SecuritySection({ email, account, isSuspended }: SecuritySection
       )}
 
       <div className="space-y-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-stone-100">Account Credentials</h3>
-          <dl className="mt-4 divide-y divide-gray-100 text-sm dark:divide-stone-800">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-foreground">Account Credentials</h3>
+          <dl className="mt-4 divide-y divide-border text-sm">
             <div className="py-3 sm:grid sm:grid-cols-3">
-              <dt className="text-gray-500 dark:text-stone-400">Email Address</dt>
-              <dd className="font-semibold text-gray-900 sm:col-span-2 dark:text-stone-100">{email || "—"}</dd>
+              <dt className="text-muted">Email Address</dt>
+              <dd className="font-semibold text-foreground sm:col-span-2">{email || "—"}</dd>
             </div>
             <div className="py-3 sm:grid sm:grid-cols-3">
-              <dt className="text-gray-500 dark:text-stone-400">Account Status</dt>
+              <dt className="text-muted">Account Status</dt>
               <dd className="sm:col-span-2">
                 <span
                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -57,34 +57,34 @@ export function SecuritySection({ email, account, isSuspended }: SecuritySection
               </dd>
             </div>
             <div className="py-3 sm:grid sm:grid-cols-3">
-              <dt className="text-gray-500 dark:text-stone-400">Terms Accepted</dt>
-              <dd className="text-gray-700 sm:col-span-2 dark:text-stone-200">
+              <dt className="text-muted">Terms Accepted</dt>
+              <dd className="text-muted sm:col-span-2">
                 {account?.terms_version ? `${account.terms_version}` : "—"}
                 {account?.terms_accepted_at && (
-                  <span className="block text-xs text-gray-500 dark:text-stone-400">
+                  <span className="block text-xs text-muted">
                     Timestamp: {new Date(account.terms_accepted_at).toLocaleString()}
                   </span>
                 )}
               </dd>
             </div>
             <div className="py-3 sm:grid sm:grid-cols-3">
-              <dt className="text-gray-500 dark:text-stone-400">Privacy Policy</dt>
-              <dd className="text-gray-700 sm:col-span-2 dark:text-stone-200">
+              <dt className="text-muted">Privacy Policy</dt>
+              <dd className="text-muted sm:col-span-2">
                 {account?.privacy_policy_version ? `${account.privacy_policy_version}` : "—"}
               </dd>
             </div>
           </dl>
         </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-stone-100">Password Management</h3>
-          <p className="mt-1 text-sm text-gray-600 dark:text-stone-400">
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-foreground">Password Management</h3>
+          <p className="mt-1 text-sm text-muted">
             Need to change your password? Request a password reset link sent to your registered email.
           </p>
           <div className="mt-4">
             <Link
               href="/auth/forgot-password"
-              className="inline-block rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
+              className="inline-block rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-muted hover:bg-brand-50 dark:hover:bg-brand-800 focus:outline-none focus:ring-2 focus:ring-action-500 focus:ring-offset-2  dark:hover:bg-stone-700"
             >
               Request Password Reset
             </Link>

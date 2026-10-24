@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, AlertTriangle, ExternalLink, PhoneCall, ChevronDown } from "lucide-react";
+import { ShieldCheck, AlertTriangle, PhoneCall, ChevronDown } from "lucide-react";
 
 /**
  * Compact safety warning box displayed immediately above action buttons (e.g., Contact Seller button).
@@ -159,14 +159,13 @@ export function IndiaSafetyCard({ helpCentreHref }: { helpCentreHref?: string } 
             className="inline-flex items-center gap-1 font-semibold text-emerald-800 hover:text-emerald-950 dark:text-emerald-300 dark:hover:text-emerald-100"
           >
             <span>cybercrime.gov.in</span>
-            <ExternalLink className="h-3 w-3" aria-hidden="true" />
           </a>
 
           <Link
             href="/safety"
             className="font-semibold text-emerald-800 hover:text-emerald-950 dark:text-emerald-300 dark:hover:text-emerald-100"
           >
-            In-person safety tips &rarr;
+            In-person safety tips
           </Link>
           {helpCentreHref && (
             <a href={helpCentreHref} className="font-semibold text-emerald-800 hover:text-emerald-950 dark:text-emerald-300 dark:hover:text-emerald-100">Help Centre</a>

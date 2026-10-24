@@ -14,7 +14,7 @@ describe("AccountNav component", () => {
   });
 
   it("renders the account navigation landmark", () => {
-    mockUsePathname.mockReturnValue("/account");
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
     const nav = screen.getByRole("navigation", {
       name: "Account navigation",
@@ -23,7 +23,7 @@ describe("AccountNav component", () => {
   });
 
   it("renders exactly the six primary navigation items without Help Centre", () => {
-    mockUsePathname.mockReturnValue("/account");
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
 
     const expectedLabels = [
@@ -46,7 +46,7 @@ describe("AccountNav component", () => {
   });
 
   it("does NOT expose policy-review as a navigation item", () => {
-    mockUsePathname.mockReturnValue("/account");
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
 
     const nav = screen.getByRole("navigation", {
@@ -58,7 +58,7 @@ describe("AccountNav component", () => {
   });
 
   it("links Settings to /account/settings", () => {
-    mockUsePathname.mockReturnValue("/account");
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
     expect(screen.getByRole("link", { name: /Settings/ })).toHaveAttribute(
       "href",
@@ -68,11 +68,16 @@ describe("AccountNav component", () => {
 
   // --- Active state: exact match for Overview ---
 
-  it("marks Overview as active only on exact /account", () => {
+  it("renders nothing on the /account overview, which shows every destination as a tile", () => {
     mockUsePathname.mockReturnValue("/account");
+    const { container } = render(<AccountNav />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("offers a labelled route back to Account on sub-pages", () => {
+    mockUsePathname.mockReturnValue("/account/listings");
     render(<AccountNav />);
-    const overviewLink = screen.getByRole("link", { name: /Overview/ });
-    expect(overviewLink).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Back to Account" })).toHaveAttribute("href", "/account");
   });
 
   it("does NOT mark Overview as active on /account/listings", () => {

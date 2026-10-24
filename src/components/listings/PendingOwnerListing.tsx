@@ -6,7 +6,7 @@ import TypedReviewPacket from './TypedReviewPacket';
 /** Request-scoped owner page only; contains owner-private location details. */
 export default function PendingOwnerListing({listing,media,readiness,society}:{listing:Listing;media:ListingMedia[];readiness:ReadinessResult|null;society?:string|null}){
  return <div className="mx-auto max-w-4xl px-4 py-10 space-y-5">
-  <Link href="/account/listings">← My Listings</Link>
+  <Link href="/account/listings">My Listings</Link>
   <h1 className="text-2xl font-bold">Awaiting review</h1>
   <p>Your saved listing is read-only and remains private. Approval and publication are disabled for this Test submission.</p>
   <p>{listing.id} · submitted {listing.submitted_at} · revision {listing.revision}</p>
