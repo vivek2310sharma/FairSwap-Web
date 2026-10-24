@@ -332,69 +332,103 @@ jobs:
           fi
 
 
-      # This candidate is *not* part of the immutable, mirrored 58-migration baseline.
-      # It is checked out separately and exercised only against disposable CI state.
+      # Candidate SQL is outside the immutable 58-file baseline and must be
+      # reviewed/pinned independently. This job touches only disposable CI DB.
       - name: Checkout reviewed India taxonomy Backend candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # pinned v4.2.2
         with:
           repository: vivek2310sharma/FairSwap-Backend
-          ref: f5a2ccc96fd083599b5db22bec69997394076d18
+          ref: 3cc2cc6ae2d654ba29c080441d4d5cf379e90e5d
           token: ${{ steps.backend-token.outputs.token }}
           path: .fairswap-taxonomy-backend-ci-source
           persist-credentials: false
 
-      - name: Validate India taxonomy candidate in disposable local DB
+      - name: Rehearse disabled seed, activation and rollback in disposable Supabase
         shell: bash
         run: |
           set -euo pipefail
           source_root="$GITHUB_WORKSPACE/.fairswap-taxonomy-backend-ci-source"
-          expected_commit="f5a2ccc96fd083599b5db22bec69997394076d18"
+          expected_commit="3cc2cc6ae2d654ba29c080441d4d5cf379e90e5d"
           test "$(git -C "$source_root" rev-parse HEAD)" = "$expected_commit"
           candidate="$source_root/supabase/forward-migrations/india-taxonomy/20261024213147_india_goods_taxonomy.sql"
-          test -f "$candidate"
-          # The existing cross-repo Vitest uses a sibling path, not a published Web SQL mirror.
-          sibling="$(dirname "$GITHUB_WORKSPACE")/FairSwap-Backend/supabase/forward-migrations/india-taxonomy/20261024213147_india_goods_taxonomy.sql"
-          install -D -m 0644 "$candidate" "$sibling"
-          trap 'rm -f "$sibling"' EXIT
-          pnpm vitest run tests/unit/india-taxonomy.test.ts tests/security/india-taxonomy-migration.test.ts tests/unit/post-ad-selector.test.tsx tests/unit/post-ad-goods-server.test.ts
+          activation="$source_root/supabase/forward-migrations/india-taxonomy/activation/20261024221855_activate_india_goods_taxonomy.sql"
+          deactivate="$source_root/supabase/forward-migrations/india-taxonomy/deactivate.readwrite.sql"
+          for file in "$candidate" "$activation" "$deactivate"; do test -f "$file"; done
+          # The fixture references sibling Backend SQL. Use a link to the reviewed,
+          # immutable checkout; never copy candidate SQL into the pinned 58 baseline.
+          sibling_root="$(dirname "$GITHUB_WORKSPACE")/FairSwap-Backend"
+          test ! -e "$sibling_root" && test ! -L "$sibling_root"
+          ln -s "$source_root" "$sibling_root"
+          trap 'rm -f "$sibling_root"' EXIT
+          pnpm vitest run \
+            tests/security/india-taxonomy-migration.test.ts \
+            tests/unit/india-taxonomy.test.ts \
+            tests/unit/post-ad-selector.test.tsx \
+            tests/unit/post-ad-goods-server.test.ts \
+            tests/unit/post-ad-goods-actions.test.ts \
+            tests/unit/post-ad-goods-edit-retention.test.tsx \
+            tests/unit/post-ad-flow.test.tsx \
+            tests/unit/post-ad-form-payload.test.tsx \
+            tests/unit/post-ad-goods-entry.test.tsx \
+            tests/unit/production-family-submission-boundary.test.ts \
+            tests/unit/submission-action-boundary.test.ts
           local_db="$(supabase status -o json | jq -er '.DB_URL')"
+          # Seed only in the disposable database; never activate in the seed transaction.
           psql "$local_db" -v ON_ERROR_STOP=1 -f "$candidate"
           psql "$local_db" -v ON_ERROR_STOP=1 <<'SQL'
           DO $verify$
-          DECLARE guard_name text;
           BEGIN
-            IF (SELECT count(*) FROM public.categories
-                WHERE slug IN ('fashion-men','fashion-women','fashion-kids','fashion-watches','fashion-accessories',
-                               'strollers-prams','baby-furniture','baby-gear','toys-games','school-essentials',
-                               'tvs-video','audio-home-theatre','power-backup-solar','other-home-appliances',
-                               'kitchenware-utensils')) <> 15 THEN
-              RAISE EXCEPTION 'India taxonomy expected 15 Goods categories';
+            IF (SELECT count(*) FROM public.categories WHERE slug = ANY (ARRAY[
+              'fashion-men','fashion-women','fashion-kids','fashion-watches','fashion-accessories',
+              'strollers-prams','baby-furniture','baby-gear','toys-games','school-essentials',
+              'tvs-video','audio-home-theatre','power-backup-solar','other-home-appliances','kitchenware-utensils'
+            ]::text[]) AND macro_category='goods'
+              AND is_active=false AND new_listing_enabled=false) <> 15 THEN
+              RAISE EXCEPTION 'India taxonomy expected 15 hidden disabled categories';
             END IF;
-            IF (SELECT count(*) FROM public.category_attributes a JOIN public.categories c ON c.id=a.category_id
-                WHERE a.validation_rules->>'contract'='india_goods_v1') <> 30 THEN
-              RAISE EXCEPTION 'India taxonomy expected 30 category attributes';
+            IF (SELECT count(*) FROM public.category_attributes
+                WHERE validation_rules->>'contract'='india_goods_v1') <> 30 THEN
+              RAISE EXCEPTION 'India taxonomy expected 30 attributes';
             END IF;
             IF has_function_privilege('anon','app_security.india_goods_listing_guard()','EXECUTE')
-                OR has_function_privilege('authenticated','app_security.india_goods_listing_guard()','EXECUTE')
-                OR has_function_privilege('service_role','app_security.india_goods_listing_guard()','EXECUTE') THEN
-              RAISE EXCEPTION 'Client or service role may execute private listing guard';
+               OR has_function_privilege('authenticated','app_security.india_goods_listing_guard()','EXECUTE')
+               OR has_function_privilege('service_role','app_security.india_goods_listing_guard()','EXECUTE') THEN
+              RAISE EXCEPTION 'Client or service role can invoke the private validator';
             END IF;
-            SELECT tgname INTO guard_name FROM pg_trigger
-              WHERE tgrelid='public.listings'::regclass AND tgname LIKE '%india_goods_listing_guard'
-                AND NOT tgisinternal;
-            IF guard_name IS NULL THEN
-              RAISE EXCEPTION 'India taxonomy listing guard trigger missing';
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_catalog.pg_trigger t
+              WHERE t.tgrelid='public.listings'::regclass
+                AND t.tgname='india_goods_listing_guard' AND NOT t.tgisinternal
+                AND t.tgtype=21 AND t.tgenabled IN ('O','A') AND t.tgqual IS NULL
+            ) THEN
+              RAISE EXCEPTION 'India taxonomy final-row AFTER INSERT/UPDATE guard missing';
             END IF;
-            -- Validate the finalized row, after any preceding BEFORE lifecycle/contract trigger.
-            IF EXISTS (SELECT 1 FROM pg_trigger
-                       WHERE tgrelid='public.listings'::regclass AND NOT tgisinternal
-                         AND (tgtype & 2) <> 0 AND (tgtype & 20) <> 0
-                         AND tgname > guard_name) THEN
-              RAISE EXCEPTION 'India taxonomy guard must execute last among BEFORE listing triggers';
-            END IF;
-          END
-          $verify$;
+          END $verify$;
           SQL
+          # These attestations are disposable-CI fixtures only, NOT evidence that Web
+          # was deployed to a hosted environment. Hosted activation requires independently
+          # verified Vercel source and target evidence in its own operator session.
+          {
+            printf "select set_config('app.india_taxonomy_target_project','wpppxlnbzqynvhpeuavd',false);\n"
+            printf "select set_config('app.india_taxonomy_verified_web_release','%s',false);\n" "$GITHUB_SHA"
+            cat "$activation"
+            cat <<'SQL'
+          DO $verify$
+          BEGIN
+            IF (SELECT count(*) FROM public.categories
+                WHERE slug = ANY (ARRAY[
+                  'fashion-men','fashion-women','fashion-kids','fashion-watches','fashion-accessories',
+                  'strollers-prams','baby-furniture','baby-gear','toys-games','school-essentials',
+                  'tvs-video','audio-home-theatre','power-backup-solar','other-home-appliances','kitchenware-utensils'
+                ]::text[]) AND is_active AND new_listing_enabled) <> 15 THEN
+              RAISE EXCEPTION 'India taxonomy activation did not enable all 15 entries';
+            END IF;
+          END $verify$;
+          SQL
+          } | psql "$local_db" -v ON_ERROR_STOP=1
+          # The deactivation rollback remains isolated and does not remove category IDs.
+          psql "$local_db" -v ON_ERROR_STOP=1 -f "$deactivate"
+          psql "$local_db" -v ON_ERROR_STOP=1 -Atc "select count(*) from public.categories where slug like 'fashion-%' and (is_active or new_listing_enabled)" | grep -qx 0
 
   pg17-release-rehearsal:
     name: Isolated PostgreSQL 17 Release Rehearsal
