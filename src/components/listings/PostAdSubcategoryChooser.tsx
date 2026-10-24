@@ -57,7 +57,6 @@ export function SubChoice({ sub, parent, actions, visual = false, wide = false, 
       {visual && <VisualIcon id={sub.id} />}
       <span className="min-w-0 flex-1">
         <span className="block break-words">{sub.label}</span>
-        {sub.hi && <span lang="hi" className="block text-xs font-normal text-gray-600">{sub.hi}</span>}
         {showParent && <span className="block text-xs font-normal text-gray-500">in {parent.label.en}{sub.group ? ` · ${sub.group}` : ""}</span>}
         {wide && <span className="block text-xs font-normal text-gray-600">Trucks, autos, e-rickshaws, tractors and more</span>}
       </span>
