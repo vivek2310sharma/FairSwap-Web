@@ -89,12 +89,12 @@ export default function SafetyPage() {
             Reporting Suspicious Activity &amp; Grievances
           </h2>
           <p className="mt-2 text-sm text-muted leading-relaxed">
-            If you encounter suspicious listings, prohibited items, abusive communication, or fraudulent attempts,
+            If you encounter suspicious ads, prohibited items, abusive communication, or fraudulent attempts,
             use the in-app <strong className="text-foreground">Report</strong> and <strong className="text-foreground">Block</strong>{" "}
-            features directly on the relevant listing, user profile, or chat message. For full details on prohibited items
+            features directly on the relevant ad, user profile, or chat message. For full details on prohibited items
             and community standards, review our{" "}
             <Link href="/acceptable-use" className="font-medium text-brand-link underline hover:text-brand-hover">
-              Acceptable Use &amp; Prohibited Listings
+              Acceptable Use &amp; Prohibited Ads
             </Link>{" "}
             policy.
           </p>

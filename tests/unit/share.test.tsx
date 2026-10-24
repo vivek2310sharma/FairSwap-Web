@@ -242,7 +242,7 @@ describe("WhatsApp & Social Sharing Utilities (LIST-03)", () => {
         siteUrl: "https://fairswap.in",
       });
 
-      expect(message).toContain("Check out this listing on FairSwap!");
+      expect(message).toContain("Check out this ad on FairSwap!");
       expect(message).toContain("📦 IPhone 14 - शानदार स्थिति");
       expect(message).toContain("💰 ₹45,000");
       expect(message).toContain("https://fairswap.in/listings/iphone-14-123?utm_source=whatsapp&utm_medium=social&utm_campaign=listing_share");
@@ -284,13 +284,13 @@ describe("ShareButton Component (LIST-03)", () => {
       />
     );
 
-    const whatsappLink = screen.getByRole("link", { name: /share listing on whatsapp/i });
+    const whatsappLink = screen.getByRole("link", { name: /share ad on whatsapp/i });
     expect(whatsappLink).toBeInTheDocument();
     expect(whatsappLink).toHaveAttribute("target", "_blank");
     expect(whatsappLink.getAttribute("href")).toContain("https://wa.me/?text=");
     expect(whatsappLink.getAttribute("href")).toContain("utm_source%3Dwhatsapp");
 
-    const copyButton = screen.getByRole("button", { name: /copy listing link/i });
+    const copyButton = screen.getByRole("button", { name: /copy ad link/i });
     expect(copyButton).toBeInTheDocument();
   });
 
@@ -313,7 +313,7 @@ describe("ShareButton Component (LIST-03)", () => {
       />
     );
 
-    const copyButton = screen.getByRole("button", { name: /copy listing link/i });
+    const copyButton = screen.getByRole("button", { name: /copy ad link/i });
     await act(async () => {
       fireEvent.click(copyButton);
     });
@@ -348,7 +348,7 @@ describe("ShareButton Component (LIST-03)", () => {
       />
     );
 
-    const copyButton = screen.getByRole("button", { name: /copy listing link/i });
+    const copyButton = screen.getByRole("button", { name: /copy ad link/i });
     await act(async () => {
       fireEvent.click(copyButton);
     });

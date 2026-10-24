@@ -72,7 +72,7 @@ export default function ContactPage() {
               Formal Grievance Redressal
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              For grievances regarding your FairSwap account, listings, user conduct, safety, privacy,
+              For grievances regarding your FairSwap account, ads, user conduct, safety, privacy,
               intellectual property notices, or platform compliance, you may contact FairSwap&apos;s Grievance Officer directly:
             </p>
             <div className="mt-3 rounded-lg border border-border/70 bg-surface/50 p-4 text-sm space-y-1">
@@ -103,7 +103,7 @@ export default function ContactPage() {
               Account Support &amp; Moderation Appeals
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              Authenticated users can view and manage their support tickets, submit inquiries regarding listing
+              Authenticated users can view and manage their support tickets, submit inquiries regarding ad
               moderation decisions, or appeal account actions directly from the{" "}
               <Link href="/account/support" className="font-medium text-brand-link underline hover:text-brand-hover">
                 Support Tickets
@@ -119,9 +119,9 @@ export default function ContactPage() {
               Marketplace Safety &amp; Content Reporting
             </h2>
             <p className="mt-2 text-sm text-muted leading-relaxed">
-              To report suspicious listings, fraudulent behavior, harassment, or prohibited items, use the
+              To report suspicious ads, fraudulent behavior, harassment, or prohibited items, use the
               built-in <strong className="text-foreground">Report</strong> and <strong className="text-foreground">Block</strong>{" "}
-              controls available directly on listing detail pages, seller profiles, and message threads.
+              controls available directly on ad detail pages, seller profiles, and message threads.
             </p>
             <p className="mt-3 text-sm text-muted leading-relaxed">
               If you believe there is an immediate risk to someone&apos;s physical safety, please contact your

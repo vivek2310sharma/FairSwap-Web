@@ -38,7 +38,7 @@ export default function PrivacyForm() {
           <label htmlFor="export_data" className="ml-3 block text-sm text-gray-700">
             <span className="font-semibold">Export Account Data</span>
             <span className="block text-xs text-gray-500">
-              Request a portable copy of your account profile, listings, and message history.
+              Request a portable copy of your account profile, ads, and message history.
             </span>
           </label>
         </div>

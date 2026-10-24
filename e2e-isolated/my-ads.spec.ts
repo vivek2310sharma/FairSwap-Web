@@ -25,7 +25,7 @@ for(const width of [320,360,390,1280])test(`status navigation, fallback counts a
   await page.goForward();
   await expect(page.getByRole('heading',{name:'Synthetic Goods 10',exact:true})).toBeVisible();
   await nav.getByRole('link',{name:'Sold 0',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'No sold listings'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'No sold ads'})).toBeVisible();
   const overflowing = await page.evaluate(()=>Array.from(document.querySelectorAll('body *')).filter(el=>el.getBoundingClientRect().right>innerWidth+1 && getComputedStyle(el).position!=='fixed').map(el=>({tag:el.tagName,class:el.className,right:el.getBoundingClientRect().right})).slice(0,12));
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),JSON.stringify(overflowing)).toBe(true);
   await page.screenshot({path:`test-results/my-ads-${width}.png`,fullPage:true});
@@ -49,7 +49,7 @@ for (const status of ['expired', 'sold']) test(`mobile deep link reveals ${statu
     const link=el.getBoundingClientRect(),strip=el.parentElement!.getBoundingClientRect();
     return link.left>=strip.left-1 && link.right<=strip.right+1;
   })).toBe(true);
-  await expect(page.getByRole('heading',{name:`No ${status} listings`})).toBeVisible();
+  await expect(page.getByRole('heading',{name:`No ${status} ads`})).toBeVisible();
 });
 
 test('unauthenticated sellers cannot open the dashboard',async({page,context})=>{

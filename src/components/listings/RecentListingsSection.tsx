@@ -28,7 +28,7 @@ export async function RecentListingsSection() {
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-brand-link" aria-hidden="true" />
               <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-                Recent Verified Listings
+                Recent Verified Ads
               </h2>
             </div>
             <p className="mt-1 text-xs text-muted">

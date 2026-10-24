@@ -31,7 +31,7 @@ it.each([true,false,undefined])('draft availability copy follows the saved proje
 it.each(['two-wheelers','cars','property'] as const)('pending %s assessment has no locked-field editing instructions',family=>{
  const v=fixture(family);v.listing.status='pending_review';v.listing.category_attributes={year:{state:'known'}};
  render(<TypedReviewPacket packet={evaluateReadiness(v).packet!}/>);
- expect(screen.getByRole('heading',{name:'Saved listing assessment'})).toBeInTheDocument();
+ expect(screen.getByRole('heading',{name:'Saved ad assessment'})).toBeInTheDocument();
  expect(screen.getByText(/Saved details and photos are read-only; the ad is not publicly visible/)).toBeInTheDocument();
  expect(screen.queryByText(/Correct invalid|Complete description|Draft saving remains permissive/)).toBeNull();
  expect(screen.getByText(/not atomically verified or approval-ready/)).toBeInTheDocument();

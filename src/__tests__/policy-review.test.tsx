@@ -196,7 +196,7 @@ describe("Policy Review UI and Server Action", () => {
 
       expect(screen.getByText(/Unable to Verify Policy Status/i)).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /Retry/i })).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /Browse Public Listings/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /Browse Public Ads/i })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Sign out/i })).toBeInTheDocument();
       // Must NOT render the acceptance checkboxes when in error state
       expect(screen.queryByLabelText(/I accept the/i)).not.toBeInTheDocument();

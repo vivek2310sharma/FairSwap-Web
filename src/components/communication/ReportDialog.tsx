@@ -93,7 +93,7 @@ export function ReportDialog({
           </div>
           <div>
             <h3 id="report-modal-title" className="text-base font-bold text-foreground">
-              Report {targetType}
+              Report {targetType === "listing" ? "ad" : targetType}
             </h3>
             {targetName && (
               <p className="text-xs text-muted truncate max-w-xs">{targetName}</p>

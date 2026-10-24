@@ -35,7 +35,7 @@ export default async function PrivacyPage() {
 
           <div className="mt-3 rounded-lg border border-border bg-action-50 p-3 text-xs text-action-900 dark:bg-action-900/30 dark:text-action-100">
             <span className="font-semibold">Privacy Rights Active:</span> Data exports are generated as structured JSON
-            containing your account profile, listings, and messages. Account deletions permanently remove your Auth credentials
+            containing your account profile, ads, and messages. Account deletions permanently remove your Auth credentials
             and anonymize marketplace history.
           </div>
 

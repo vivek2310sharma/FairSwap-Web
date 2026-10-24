@@ -69,7 +69,7 @@ export default async function PolicyReviewPage({ searchParams }: PolicyReviewPag
               href="/"
               className="inline-flex justify-center items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50"
             >
-              Browse Public Listings
+              Browse Public Ads
             </Link>
           </div>
           <div className="mt-6 border-t border-amber-200/60 pt-4 flex flex-col items-center gap-2 text-xs text-gray-500">

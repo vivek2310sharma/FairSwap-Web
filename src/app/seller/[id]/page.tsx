@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: SellerPageProps): Promise<Met
 
   return {
     title: `${profile.display_name} — Seller Profile | FairSwap`,
-    description: profile.bio || `View listings posted by ${profile.display_name} on FairSwap.`,
+    description: profile.bio || `View ads posted by ${profile.display_name} on FairSwap.`,
   };
 }
 

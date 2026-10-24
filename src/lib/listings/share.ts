@@ -63,7 +63,7 @@ export function buildWhatsAppShareMessage(params: {
   const url = buildListingShareUrl(params.slug, params.siteUrl, "whatsapp");
   const priceText = params.price || "Price on request";
 
-  return `Check out this listing on FairSwap!\n\n📦 ${params.title}\n💰 ${priceText}\n\n🔗 ${url}\n\nDiscover more on FairSwap.`;
+  return `Check out this ad on FairSwap!\n\n📦 ${params.title}\n💰 ${priceText}\n\n🔗 ${url}\n\nDiscover more on FairSwap.`;
 }
 
 export function buildWhatsAppShareLink(params: {
