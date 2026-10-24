@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import AccountPage from "@/app/account/page";
 
 const mocks = vi.hoisted(() => ({
@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
+vi.mock("@/components/providers/AuthProvider", () => ({ useAuth: () => ({ signOut: vi.fn() }) }));
 
 describe("ACC-02 My Account Page UI Tests", () => {
   beforeEach(() => {
@@ -68,12 +69,9 @@ describe("ACC-02 My Account Page UI Tests", () => {
 
     render(await AccountPage());
 
-    // Security card header and subtitle
-    expect(screen.getByRole("heading", { name: "Account Security" })).toBeInTheDocument();
-    expect(screen.getByText("Manage your account security and sign-in details.")).toBeInTheDocument();
-
-    // User email
+    expect(screen.getByRole("heading", { level: 1, name: "John Doe" })).toBeInTheDocument();
     expect(screen.getByText("customer@example.com")).toBeInTheDocument();
+    expect(screen.getByText("Mumbai")).toBeInTheDocument();
 
     // Ensure raw status and terms version are NOT rendered
     expect(screen.queryByText("Terms Version:")).toBeNull();
@@ -81,17 +79,10 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByText("Status:")).toBeNull();
     expect(screen.queryByText("active")).toBeNull();
 
-    // Primary Manage Settings link exists
-    const settingsLink = screen.getByRole("link", { name: /Manage Settings/i });
-    expect(settingsLink).toHaveAttribute("href", "/account/settings");
-
-    // Edit Profile link exists for active account
-    const profileLink = screen.getByRole("link", { name: /Edit Profile/i });
-    expect(profileLink).toHaveAttribute("href", "/account/profile");
-
-    // Security Settings link exists
-    const securityLink = screen.getByRole("link", { name: /Security Settings/i });
-    expect(securityLink).toHaveAttribute("href", "/account/security");
+    expect(screen.getByRole("link", { name: /Settings/ })).toHaveAttribute("href", "/account/settings");
+    expect(screen.getAllByRole("link", { name: /Edit profile/i })[0]).toHaveAttribute("href", "/account/profile");
+    expect(screen.getByRole("link", { name: /Security settings/i })).toHaveAttribute("href", "/account/security");
+    expect(screen.getByRole("link", { name: "View public profile" })).toHaveAttribute("href", "/seller/user-active-123");
 
     // No alert banner shown for active account
     expect(screen.queryByRole("alert")).toBeNull();
@@ -133,15 +124,14 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByText("Account Suspended")).toBeInTheDocument();
     expect(screen.getByText(/Your account is currently suspended/i)).toBeInTheDocument();
 
-    // Public profile card shows View Profile link instead of Edit Profile for restricted account
-    const profileLink = screen.getByRole("link", { name: /View Profile/i });
-    expect(profileLink).toHaveAttribute("href", "/account/profile");
-    expect(screen.queryByRole("link", { name: /Edit Profile/i })).toBeNull();
+    // Restricted accounts cannot edit, have no public profile link and no verification preview
+    expect(screen.queryByRole("link", { name: /Edit profile/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: "View public profile" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Verify account/i })).toBeNull();
 
-    // Help & Support card shows appeal link
-    expect(screen.getByText("Appeals & Inquiries")).toBeInTheDocument();
-    const appealLink = screen.getByRole("link", { name: "Submit Appeal" });
-    expect(appealLink).toHaveAttribute("href", "/account/support");
+    // Help tile keeps support and appeals access
+    expect(screen.getByRole("link", { name: /Help & safety/ })).toHaveAttribute("href", "/account/support");
+    expect(screen.getByRole("link", { name: /My profile/ })).toHaveAttribute("href", "/account/profile");
 
     // Terms version and raw status string are still not exposed
     expect(screen.queryByText("Terms Version:")).toBeNull();
@@ -170,9 +160,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText("Account Deletion Pending")).toBeInTheDocument();
 
-    // View Profile link rendered instead of Edit Profile
-    expect(screen.getByRole("link", { name: /View Profile/i })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Edit Profile/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Edit profile/i })).toBeNull();
 
     // Raw enum string not displayed
     expect(screen.queryByText("deletion_pending")).toBeNull();
@@ -199,9 +187,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.getByText("Account Closed")).toBeInTheDocument();
 
-    // View Profile link rendered instead of Edit Profile
-    expect(screen.getByRole("link", { name: /View Profile/i })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Edit Profile/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Edit profile/i })).toBeNull();
 
     // Raw enum string not displayed
     expect(screen.queryByText("deleted")).toBeNull();
@@ -224,25 +210,22 @@ describe("ACC-02 My Account Page UI Tests", () => {
 
     render(await AccountPage());
 
-    expect(screen.getByRole("heading", { name: "Account Security" })).toBeInTheDocument();
     expect(screen.getByText("noaccount@example.com")).toBeInTheDocument();
 
     // Renders neutral warning banner for unavailable account status
     const alert = screen.getByRole("alert");
     expect(alert).toHaveTextContent("Account Information Unavailable");
 
-    // Profile card displays View Profile instead of Edit Profile
-    expect(screen.getByRole("link", { name: /View Profile/i })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Edit Profile/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Edit profile/i })).toBeNull();
 
     expect(screen.queryByText("Status:")).toBeNull();
     expect(screen.queryByText("unknown")).toBeNull();
     expect(screen.queryByText("active")).toBeNull();
   });
 
-  it("renders the streamlined four-card layout with primary Manage Settings link", async () => {
-    const user = { id: "user-4card-123", email: "user4card@example.com" };
-    const account = { user_id: "user-4card-123", account_status: "active" };
+  it("renders the nine tiles in order with real links and Coming soon previews", async () => {
+    const user = { id: "user-9tile-123", email: "user9@example.com" };
+    const account = { user_id: "user-9tile-123", account_status: "active" };
 
     mocks.getUser.mockResolvedValue({ data: { user } });
     mocks.from.mockImplementation((table: string) => {
@@ -257,22 +240,26 @@ describe("ACC-02 My Account Page UI Tests", () => {
 
     render(await AccountPage());
 
-    // Card 1: My Listings & Favourites
-    expect(screen.getByRole("heading", { name: "My Listings" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /View My Listings/i })).toHaveAttribute("href", "/account/listings");
-    expect(screen.getByRole("link", { name: /Favourites/i })).toHaveAttribute("href", "/account/favourites");
+    const options = within(screen.getByRole("navigation", { name: "Account options" }));
+    const names = options.getAllByRole("listitem").map((li) => li.textContent ?? "");
+    const order = ["My profile", "My listings", "Chats", "Favourites", "Ratings", "FairSeeds", "Settings", "Privacy & your data", "Help & safety"];
+    order.forEach((title, i) => expect(names[i]).toContain(title));
 
-    // Card 2: Messages & Activity
-    expect(screen.getByRole("heading", { name: "Messages & Activity" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /View Inbox/i })).toHaveAttribute("href", "/account/messages");
-    expect(screen.getByRole("link", { name: /Notifications/i })).toHaveAttribute("href", "/account/notifications");
+    expect(options.getByRole("link", { name: /My listings/ })).toHaveAttribute("href", "/account/listings");
+    expect(options.getByRole("link", { name: /Chats/ })).toHaveAttribute("href", "/account/messages");
+    expect(options.getByRole("link", { name: /Favourites/ })).toHaveAttribute("href", "/account/favourites");
+    expect(options.getByRole("link", { name: /Privacy & your data/ })).toHaveAttribute("href", "/account/privacy");
+    expect(options.getByRole("button", { name: /Ratings/ })).toBeInTheDocument();
+    expect(options.getByRole("button", { name: /FairSeeds/ })).toBeInTheDocument();
 
-    // Card 3: Account Security & Manage Settings
-    expect(screen.getByRole("heading", { name: "Account Security" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Manage Settings/i })).toHaveAttribute("href", "/account/settings");
+    // Neutral fallbacks, no placeholders, no decorative arrows
+    expect(screen.getByRole("heading", { level: 1, name: "FairSwap member" })).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/[←-⇿]|\[City\]|\[n\]/);
 
-    // Card 4: Help & Support
-    expect(screen.getByRole("heading", { name: "Help & Support" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Support Tickets/i })).toHaveAttribute("href", "/account/support");
+    // Verification preview copy
+    expect(screen.getByText("Help us make FairSwap secure")).toBeInTheDocument();
+    expect(screen.getByText("Planned launch offer - Coming soon")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Verify account/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
   });
 });

@@ -7,7 +7,6 @@ import {
   ShieldAlert,
   Flag,
   AlertCircle,
-  ExternalLink,
   Info,
 } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -230,7 +229,6 @@ export function ChatThread({
                 className="inline-flex items-center gap-1 text-xs text-muted hover:text-action-600 truncate max-w-xs sm:max-w-md"
               >
                 <span>Re: {conversation.listing.title}</span>
-                <ExternalLink className="h-3 w-3 shrink-0" />
               </Link>
             )}
           </div>

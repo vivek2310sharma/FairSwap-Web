@@ -6,7 +6,7 @@ import { ListingCard } from "@/components/listings/ListingCard";
 import { createClient } from "@/lib/supabase/server";
 import { getSellerPublicListings } from "@/lib/discovery/queries";
 import { type Profile } from "@/types/account";
-import { MapPin, Calendar, ShoppingBag, ArrowLeft, User } from "lucide-react";
+import { MapPin, Calendar, ShoppingBag, User } from "lucide-react";
 import { Metadata } from "next";
 
 interface SellerPageProps {
@@ -68,7 +68,6 @@ export default async function SellerProfilePage({ params }: SellerPageProps) {
               href="/search"
               className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-foreground"
             >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
               Back to listings
             </Link>
           </div>

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
-import { LifeBuoy, Clock, CheckCircle2, AlertCircle, ChevronRight } from "lucide-react";
+import { LifeBuoy, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import type { Metadata } from "next";
 import { type SupportTicket } from "@/types/communication";
 import { CreateTicketDialog } from "@/components/communication/CreateTicketDialog";
@@ -163,7 +163,7 @@ export default async function SupportPage() {
                       </p>
                     </div>
 
-                    <ChevronRight className="h-5 w-5 text-stone-500 shrink-0" />
+                    
                   </Link>
                 ))}
               </div>

@@ -70,7 +70,7 @@ export function RecentListingsSection() {
             href="/search"
             className="text-xs font-semibold text-brand-link hover:underline flex items-center gap-1"
           >
-            View all &rarr;
+            View all
           </Link>
         </div>
 

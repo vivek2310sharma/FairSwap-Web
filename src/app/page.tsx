@@ -12,7 +12,6 @@ import {
   Shield,
   Tag,
   BookOpen,
-  ArrowRight,
 } from "lucide-react";
 
 const categories = [
@@ -63,7 +62,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-action-700"
               >
                 <span>Search</span>
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                
               </button>
             </Form>
           </div>
@@ -126,7 +125,7 @@ export default function HomePage() {
               href="/search"
               className="text-xs font-semibold text-brand-link hover:underline"
             >
-              All Categories &rarr;
+              All Categories
             </Link>
           </div>
           <p className="mt-2 text-sm text-muted">
@@ -169,7 +168,7 @@ export default function HomePage() {
                   href="/safety"
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-surface"
                 >
-                  Read Safety Guidelines &rarr;
+                  Read Safety Guidelines
                 </Link>
               </div>
             </div>
