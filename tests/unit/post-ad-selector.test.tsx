@@ -2,7 +2,7 @@ import React, { type ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type Link from "next/link";
-import type { PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
+import { POST_AD_CATALOGUE, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
 import MacroCategorySelector, {
   type MacroCategoryAvailability,
 } from "@/components/listings/MacroCategorySelector";
@@ -60,6 +60,17 @@ describe("Post Ad category picker", () => {
     expect(mocks.database).not.toHaveBeenCalled();
     expect(mocks.action).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("presents every category and subcategory in English only", () => {
+    const { container } = render(<MacroCategorySelector availability={all} />);
+    expect(container.textContent).not.toMatch(/[\u0900-\u097f]/);
+    for (const category of POST_AD_CATALOGUE) {
+      open(category.label.en);
+      expect(screen.getByRole('heading', { level: 2, name: category.label.en })).toBeVisible();
+      expect(container.textContent).not.toMatch(/[\u0900-\u097f]/);
+      expect(container.querySelector('[lang="hi"]')).toBeNull();
+    }
   });
 
   const caps = (o: Partial<PostAdCapabilities> = {}): PostAdCapabilities => ({
@@ -142,7 +153,7 @@ describe("Post Ad category picker", () => {
     render(<MacroCategorySelector availability={all} capabilities={caps({ goodsCategories: ['fashion-men'] })} />);
     open('Fashion');
     expect(screen.getByRole('link', { name: /^Men/ })).toHaveAttribute('href', '/account/listings/new?macro=goods');
-    expect(screen.getByText('पुरुष')).toBeVisible();
+    expect(screen.queryByText('पुरुष')).toBeNull();
     expect(screen.queryByText(/it is not preselected from this screen/)).toBeNull();
     expect(screen.queryByRole('link', { name: /^Women/ })).toBeNull();
   });
@@ -175,6 +186,25 @@ describe("Post Ad category picker", () => {
     fireEvent.change(screen.getByLabelText("Search categories"), { target: { value: "fridge" } });
     expect(screen.queryByRole("link", { name: /Refrigerators/ })).toBeNull();
     expect(screen.getByRole("button", { name: /Refrigerators.*Coming soon/ })).toBeVisible();
+  });
+
+  it.each([
+    ['पुरुष', /^Men/, 'fashion-men'],
+    ['इन्वर्टर', /^Power Backup & Solar/, 'power-backup-solar'],
+  ])("Hindi search %s retains matching and navigation with English-only results", (query, name, key) => {
+    const { container } = render(<MacroCategorySelector availability={all} capabilities={caps({ goodsCategories: [key] })} />);
+    fireEvent.change(screen.getByLabelText('Search categories'), { target: { value: query } });
+    expect(screen.getByRole('link', { name })).toHaveAttribute('href', '/account/listings/new?macro=goods');
+    expect(container.textContent).not.toMatch(/[\u0900-\u097f]/);
+    expect(container.querySelector('[lang="hi"]')).toBeNull();
+  });
+
+  it("Hindi search preserves unavailable choices with English-only labels", () => {
+    const { container } = render(<MacroCategorySelector availability={all} />);
+    fireEvent.change(screen.getByLabelText('Search categories'), { target: { value: 'गोदाम' } });
+    expect(screen.getAllByRole('button', { name: /^Godowns & Warehouses.*Coming soon/ })).toHaveLength(2);
+    expect(screen.queryByRole('link', { name: /Godowns & Warehouses/ })).toBeNull();
+    expect(container.textContent).not.toMatch(/[\u0900-\u097f]/);
   });
 
   it("search respects availability and shows a no-results state", () => {
