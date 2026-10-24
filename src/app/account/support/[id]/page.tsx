@@ -2,7 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
-import { ChevronLeft, Clock, CheckCircle2, AlertCircle, Shield } from "lucide-react";
+import { Clock, CheckCircle2, AlertCircle, Shield } from "lucide-react";
 import type { Metadata } from "next";
 import { type SupportMessage } from "@/types/communication";
 import { SupportReplyForm } from "@/components/communication/SupportReplyForm";
@@ -150,7 +150,6 @@ export default async function SupportTicketPage({
               href="/account/support"
               className="inline-flex items-center gap-1 text-sm font-medium text-amber-500 hover:text-amber-400"
             >
-              <ChevronLeft className="h-4 w-4" />
               Back to Support Inquiries
             </Link>
           </div>

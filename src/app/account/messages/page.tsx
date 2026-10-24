@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
-import { MessageSquare, ArrowRight, Tag } from "lucide-react";
+import { MessageSquare, Tag } from "lucide-react";
 import { formatMessageDate } from "@/lib/formatters";
 import type { Metadata } from "next";
 
@@ -144,7 +144,6 @@ export default async function MessagesPage({
                     className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-action-700 shadow-xs"
                   >
                     <span>Browse Listings</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { AccountPageShell } from "@/components/account/AccountPageShell";
 import { createClient } from "@/lib/supabase/server";
 import { type Profile, type UserAccount } from "@/types/account";
 import ProfileForm from "./profile-form";
@@ -32,23 +32,14 @@ export default async function ProfilePage() {
   const canEdit = isActive && !isAccountUnavailable;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <div className="mb-6 flex items-center justify-between border-b border-gray-200 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {canEdit ? "Edit Public Profile" : "Public Profile"}
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            {canEdit
-              ? "This information is visible to other buyers and sellers on FairSwap."
-              : "Review your saved profile information. Editing is currently unavailable."}
-          </p>
-        </div>
-        <Link href="/account" className="text-sm font-semibold text-emerald-600 hover:text-emerald-500">
-          &larr; Back to Account
-        </Link>
-      </div>
-
+    <AccountPageShell
+      title={canEdit ? "Edit Public Profile" : "Public Profile"}
+      description={
+        canEdit
+          ? "This information is visible to other buyers and sellers on FairSwap."
+          : "Review your saved profile information. Editing is currently unavailable."
+      }
+    >
       {!canEdit ? (
         <div className="space-y-6">
           <div
@@ -67,26 +58,26 @@ export default async function ProfilePage() {
               ? "Your account is suspended. Profile edits are disabled."
               : "Account information is currently unavailable. Profile edits are disabled."}
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-3 text-sm">
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-3 text-sm">
             <div>
-              <span className="text-gray-500">Name: </span>
-              <span className="font-semibold text-gray-900">{profile?.display_name || "—"}</span>
+              <span className="text-muted">Name: </span>
+              <span className="font-semibold text-foreground">{profile?.display_name || "—"}</span>
             </div>
             <div>
-              <span className="text-gray-500">Location: </span>
-              <span className="text-gray-800">
+              <span className="text-muted">Location: </span>
+              <span className="text-foreground">
                 {profile?.city ? `${profile.city}, ${profile.state || ""}` : "Not set"}
               </span>
             </div>
             <div>
-              <span className="text-gray-500">Bio: </span>
-              <span className="text-gray-700">{profile?.bio || "No bio yet."}</span>
+              <span className="text-muted">Bio: </span>
+              <span className="text-muted">{profile?.bio || "No bio yet."}</span>
             </div>
           </div>
         </div>
       ) : (
         <ProfileForm profile={profile} />
       )}
-    </div>
+    </AccountPageShell>
   );
 }
