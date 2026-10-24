@@ -1,6 +1,6 @@
 import React, { type ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type Link from "next/link";
 import MacroCategorySelector, {
   type MacroCategoryAvailability,
@@ -16,8 +16,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("next/link", () => ({
   default: (props: ComponentProps<typeof Link>) => {
     mocks.link(props);
-    const { href, children, className } = props;
-    return <a href={String(href)} className={className}>{children}</a>;
+    const { href, children, className, onClick } = props;
+    return <a href={String(href)} className={className} onClick={onClick}>{children}</a>;
   },
 }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.database }));
@@ -32,62 +32,99 @@ vi.mock("@supabase/ssr", () => ({
   createServerClient: mocks.auth,
 }));
 
-const names = ["Goods", "Vehicles", "Property"];
-const descriptions = [
-  "Phones, electronics, furniture, appliances, fashion and kids' items.",
-  "Bikes and scooters, cars, bicycles and vehicle accessories.",
-  "Homes for sale or rent, PGs and rooms, shops and offices.",
+const names = [
+  "Mobiles & Tablets", "Vehicles", "Property", "Home Electronics & Appliances", "Computers & Cameras",
+  "Furniture & Home", "Fashion", "Books, Sports & Hobbies", "Pets", "Services", "Jobs",
 ];
+const on = { available: true } as const;
+const off = { available: false, reason: "fixture" } as const;
+const all: MacroCategoryAvailability = { goods: on, vehicles: on, property: on };
+const none: MacroCategoryAvailability = { goods: off, vehicles: off, property: off };
+const open = (name: string) => fireEvent.click(screen.getByRole("button", { name: new RegExp(name) }));
 
-// Synthetic presentation fixtures; they are not production readiness claims.
-function fixture(mask: number): MacroCategoryAvailability {
-  return {
-    goods: mask & 1 ? { available: true } : { available: false, reason: "Goods fixture unavailable." },
-    vehicles: mask & 2 ? { available: true } : { available: false, reason: "Vehicles fixture unavailable." },
-    property: mask & 4 ? { available: true } : { available: false, reason: "Property fixture unavailable." },
-  };
-}
-
-describe("Isolated Post Ad selector", () => {
+describe("Post Ad category picker", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Network forbidden in selector test"); }));
   });
-  afterEach(() => {
-    cleanup();
-    vi.unstubAllGlobals();
-  });
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-  it.each([0, 1, 2, 3, 4, 5, 6, 7])("renders explicit availability mask %i", (mask) => {
-    const availability = fixture(mask);
-    const { container } = render(<MacroCategorySelector availability={availability} />);
+  it("renders heading, step text, search and 11 categories in order", () => {
+    render(<MacroCategorySelector availability={all} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("What would you like to list?");
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(names);
-    const cards = screen.getAllByRole("listitem");
-    const macros = ["goods", "vehicles", "property"] as const;
-    macros.forEach((macro, index) => {
-      const card = within(cards[index]);
-      expect(card.getByText(descriptions[index])).toBeVisible();
-      const state = availability[macro];
-      if (state.available) {
-        const link = card.getByRole("link", { name: `${names[index]} ${descriptions[index]}` });
-        expect(link).toHaveAttribute("href", `/account/listings/new?macro=${macro}`);
-        expect(link.className).toContain("focus-visible:ring-2");
-      } else {
-        expect(card.queryByRole("link")).toBeNull();
-        expect(cards[index].querySelector("[href]")).toBeNull();
-        expect(card.getByText(`Unavailable: ${state.reason}`)).toBeVisible();
-      }
-    });
-    expect(container.querySelectorAll("svg")).toHaveLength(3);
-    container.querySelectorAll("svg").forEach((icon) => expect(icon).toHaveAttribute("aria-hidden", "true"));
-    for (const [props] of mocks.link.mock.calls) expect(props.prefetch).toBe(false);
-    expect(mocks.link).toHaveBeenCalledTimes(macros.filter((m) => availability[m].available).length);
+    expect(screen.getByText("Step 1 of 3 · Choose a category")).toBeVisible();
+    expect(screen.getByPlaceholderText("e.g. iPhone 13, Activa, fridge, sofa")).toBeVisible();
+    expect(screen.getAllByRole("listitem").map((li) => li.querySelector("button span.font-semibold")?.textContent)).toEqual(names);
+    expect(screen.getByText(/never need to enter a UPI PIN/)).toBeVisible();
     expect(mocks.database).not.toHaveBeenCalled();
-    expect(mocks.auth).not.toHaveBeenCalled();
     expect(mocks.action).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
-    expect(screen.getByRole("list").className).toContain("grid-cols-1");
-    expect(screen.getByRole("list").className).toContain("md:grid-cols-3");
+  });
+
+  it("links supported subcategories to the existing macro route only", () => {
+    render(<MacroCategorySelector availability={all} />);
+    open("Mobiles & Tablets");
+    expect(screen.getByRole("link", { name: /Mobile Phones/ })).toHaveAttribute("href", "/account/listings/new?macro=goods");
+    open("Vehicles");
+    expect(screen.getByRole("link", { name: /Cars/ })).toHaveAttribute("href", "/account/listings/new?macro=vehicles");
+    expect(screen.getByRole("button", { name: /Commercial & Other Vehicles/ })).toBeVisible();
+    expect(screen.getByText("RC and ownership verification — Coming soon.")).toBeVisible();
+    expect(screen.getByText("FairSwap does not currently verify vehicle ownership documents.")).toBeVisible();
+    for (const [props] of mocks.link.mock.calls) expect(props.prefetch).toBe(false);
+  });
+
+  it("derives per-family vehicle readiness independently", () => {
+    render(<MacroCategorySelector availability={all} capabilities={{ goods: true, twoWheelers: "off", cars: "draft", property: "off", propertyCategoryLabels: [] }} />);
+    open("Vehicles");
+    expect(screen.getByRole("link", { name: /Cars.*Draft only/ })).toBeVisible();
+    expect(screen.queryByRole("link", { name: /Motorcycles/ })).toBeNull();
+  });
+
+  it("keeps Property sale, Jobs, Fashion and live animals non-navigable", () => {
+    render(<MacroCategorySelector availability={all} />);
+    open("Property");
+    expect(screen.getByRole("link", { name: /PG & Guest Houses/ })).toBeVisible();
+    expect(screen.getAllByRole("button", { name: /Houses & Apartments/ })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: /Houses & Apartments/ }));
+    expect(screen.getByText("We're working on bringing this category to FairSwap.")).toBeVisible();
+    open("Jobs");
+    expect(screen.getByText("We're working on bringing this category to FairSwap.")).toBeVisible();
+    open("Pets");
+    expect(screen.queryByRole("link")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Dogs/ }));
+    expect(screen.getByText("Live-animal listings are not available on FairSwap.")).toBeVisible();
+    open("Fashion");
+    expect(screen.queryByRole("link")).toBeNull();
+  });
+
+  it("offers no links when nothing is available", () => {
+    render(<MacroCategorySelector availability={none} />);
+    for (const n of ["Mobiles & Tablets", "Vehicles", "Property"]) { open(n); expect(screen.queryByRole("link")).toBeNull(); }
+  });
+
+  it.each([
+    ["Activa", /Motorcycles & Scooters/], ["Royal Enfield", /Motorcycles & Scooters/], ["fridge", /Refrigerators/],
+    ["iphone", /Mobile Phones/], ["laptop", /Computers & Laptops/], ["pg", /PG & Guest Houses/], ["washing machine", /Washing Machines/],
+  ])("search %s finds its category", (q, match) => {
+    render(<MacroCategorySelector availability={all} />);
+    fireEvent.change(screen.getByLabelText("Search categories"), { target: { value: q } });
+    expect(screen.getByRole("link", { name: match })).toBeVisible();
+  });
+
+  it("search respects availability and shows a no-results state", () => {
+    render(<MacroCategorySelector availability={none} />);
+    const input = screen.getByLabelText("Search categories");
+    fireEvent.change(input, { target: { value: "activa" } });
+    expect(screen.queryByRole("link")).toBeNull();
+    fireEvent.change(input, { target: { value: "zzzzqq" } });
+    expect(screen.getByRole("status")).toHaveTextContent("No categories match");
+  });
+
+  it("calls onChooseSection instead of navigating", () => {
+    const choose = vi.fn();
+    render(<MacroCategorySelector availability={all} onChooseSection={choose} />);
+    open("Mobiles & Tablets");
+    fireEvent.click(screen.getByRole("link", { name: /Tablets/ }));
+    expect(choose).toHaveBeenCalledWith("goods");
   });
 });

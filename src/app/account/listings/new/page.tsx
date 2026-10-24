@@ -8,6 +8,7 @@ import { Category, CategoryAttribute, City } from "@/types/listing";
 import GoodsPostAdEntry from "@/components/listings/GoodsPostAdEntry";
 import { isGoodsPostAdEnabled, loadGoodsReferences } from "@/lib/listings/post-ad-server";
 import {loadPostAdLocations} from '@/lib/listings/post-ad-locations';
+import { isVerifiedProductionFamilyLaunchEnvironment, isVerifiedSubmissionTestEnvironment } from "@/lib/listings/test-runtime";
 import { isTwoWheelerEnabled, isCarsEnabled, loadVehicleReferences } from "@/lib/listings/two-wheeler/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -60,9 +61,11 @@ export default async function NewListingPage({
     const locationRequest=loadPostAdLocations(supabase);
     const [references,tw,cars,property,locations]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest]);
     const vehicles=tw||cars ? {categories:[...(tw?.categories??[]),...(cars?.categories??[])],states:tw?.states.length?tw.states:cars?.states??[],error:tw?.error??cars?.error} : undefined;
+    const testSubmission=isVerifiedSubmissionTestEnvironment(process.env);
+    const submission={twoWheelers:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"two-wheelers"),cars:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"cars"),property:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"property")};
     return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <Link href="/account/listings" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">Back to My Listings</Link>
-      <div className="mt-6"><GoodsPostAdEntry references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
+      <div className="mt-6"><GoodsPostAdEntry submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
     </div>;
   }
 
