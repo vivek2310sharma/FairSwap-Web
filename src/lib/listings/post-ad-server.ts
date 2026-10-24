@@ -13,6 +13,21 @@ export function isEligibleGoodsCategory(value: unknown): boolean {
   return parsed.success && parsed.data.is_active && parsed.data.new_listing_enabled && parsed.data.macro_category === "goods";
 }
 export type GoodsReferences = { status: "ready"; categories: ListingCategoryReference[]; attributes: ListingAttributeReference[]; cities: City[] } | { status: "error"; message: string };
+const indiaGoodsAnswers = z.object({ item_type: z.string().max(100).optional(), brand: z.string().max(100).optional() }).strict();
+/** The DB-owned attribute marker opts into the new contract; old drafts keep their answers. */
+export function validateGoodsAnswerContract(form: FormData, attributes: readonly { validation_rules?: unknown }[]): string | null {
+  const typed = attributes.some(a => {
+    const rule = z.object({ contract: z.literal('india_goods_v1') }).passthrough().safeParse(a.validation_rules);
+    return rule.success;
+  });
+  if (!typed) return null;
+  const values = form.getAll('category_attributes');
+  if (values.length > 1 || (values.length === 1 && typeof values[0] !== 'string')) return 'Invalid category answers.';
+  try {
+    const parsed = indiaGoodsAnswers.safeParse(values.length ? JSON.parse(values[0] as string) : {});
+    return parsed.success ? null : 'Item type and brand must be text of at most 100 characters; other fields are not accepted.';
+  } catch { return 'Invalid category answers.'; }
+}
 /** savedContext is the validated owner RPC result, never a submitted field. */
 export async function loadGoodsReferences(supabase: SupabaseClient, savedContext?: SavedContext, locations?: Promise<PostAdLocations>): Promise<GoodsReferences> {
   const saved=savedContext===undefined?null:savedContextSchema.safeParse(savedContext);
@@ -58,7 +73,7 @@ export async function validatePostAdSelection(supabase: SupabaseClient, form: Fo
   const ids = form.getAll("category_id");
   if (ids.length !== 1 || !z.string().uuid().safeParse(ids[0]).success) return "Select a valid Goods category.";
   // Retaining the authoritative saved category is not a new assignment.
-  if (listingId && ids[0] === savedCategoryId && classifyCategoryAssignment("update",savedCategoryId,null,savedContext)==="retention") return null;
+  if (listingId && ids[0] === savedCategoryId && classifyCategoryAssignment("update",savedCategoryId,null,savedContext)==="retention") return validateGoodsAnswerContract(form,savedContext?.attributes ?? []);
   const selected = await supabase.from("categories").select("*").eq("id", ids[0]).maybeSingle();
   if (selected.error) return "Category could not be verified. Please try again later.";
   // Retained legacy editing cannot exempt a newly assigned Goods category.
@@ -67,5 +82,8 @@ export async function validatePostAdSelection(supabase: SupabaseClient, form: Fo
     if (!parsed.success) return "Category metadata could not be verified.";
     if (parsed.data.macro_category !== "goods") return null;
   }
-  return isEligibleGoodsCategory(selected.data) ? null : "Select an active, enabled Goods category.";
+  if (!isEligibleGoodsCategory(selected.data)) return "Select an active, enabled Goods category.";
+  const attributes = await supabase.from('category_attributes').select('*').eq('category_id', ids[0]).order('sort_order', { ascending: true });
+  if (attributes.error || !Array.isArray(attributes.data)) return 'Category answers could not be verified.';
+  return validateGoodsAnswerContract(form,attributes.data);
 }

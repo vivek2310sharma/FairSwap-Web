@@ -23,7 +23,7 @@ export interface ChooserActions {
 }
 
 const badgeText: Record<Readiness, string | null> = {
-  available: null,
+  available: "Available",
   "draft-only": "Draft only",
   "coming-soon": "Coming soon",
   unavailable: "Not available",
@@ -57,6 +57,7 @@ export function SubChoice({ sub, parent, actions, visual = false, wide = false, 
       {visual && <VisualIcon id={sub.id} />}
       <span className="min-w-0 flex-1">
         <span className="block break-words">{sub.label}</span>
+        {sub.hi && <span lang="hi" className="block text-xs font-normal text-gray-600">{sub.hi}</span>}
         {showParent && <span className="block text-xs font-normal text-gray-500">in {parent.label.en}{sub.group ? ` · ${sub.group}` : ""}</span>}
         {wide && <span className="block text-xs font-normal text-gray-600">Trucks, autos, e-rickshaws, tractors and more</span>}
       </span>
@@ -85,6 +86,12 @@ export function SubChoice({ sub, parent, actions, visual = false, wide = false, 
 
 export function SubNotice({ sub }: { sub: SubCategory | undefined }) {
   if (!sub) return null;
+  if (sub.guidance) return (
+    <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      <p className="font-semibold">Posting unavailable</p>
+      <p>{sub.guidance}</p>
+    </div>
+  );
   if (sub.route.kind === "blocked") {
     return (
       <div role="status" className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
@@ -137,7 +144,9 @@ export default function PostAdSubcategoryChooser({ main, actions }: { main: Main
   return (
     <div className="space-y-3">
       {list}
-      {anyActionable && <p className="text-xs text-gray-600">Available options open the existing posting form. You choose the exact category there; it is not preselected from this screen.</p>}
+      {main.id === "property" && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Beware of fake landlords. Verify the property and the landlord&apos;s authority before paying any advance or security deposit. Never pay merely to arrange a viewing.</p>}
+      {main.id === "fashion" && <p className="text-xs text-gray-600">Men, Women and Kids include clothing and footwear.</p>}
+      {anyActionable && <p className="text-xs text-gray-600">Available options open the existing posting form.</p>}
       <SubNotice sub={selectedSub && !resolveSub(selectedSub, actions.caps).macro ? selectedSub : undefined} />
     </div>
   );
