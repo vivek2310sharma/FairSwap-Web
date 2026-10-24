@@ -154,7 +154,7 @@ describe("ChatThread & Timestamp Determinism", () => {
 
       // Verify safety notices are NOT displayed
       expect(screen.queryByText(/Messaging is currently unavailable/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/This conversation is closed because the listing was removed/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/This conversation is closed because the ad was removed/i)).not.toBeInTheDocument();
     });
 
     it("renders message composer textarea and Send button for the seller", () => {
@@ -228,7 +228,7 @@ describe("ChatThread & Timestamp Determinism", () => {
       ).not.toBeInTheDocument();
 
       expect(
-        screen.getByText("This conversation is closed because the listing was removed or rejected by moderation.")
+        screen.getByText("This conversation is closed because the ad was removed or rejected by moderation.")
       ).toBeInTheDocument();
     });
 
@@ -255,7 +255,7 @@ describe("ChatThread & Timestamp Determinism", () => {
       ).not.toBeInTheDocument();
 
       expect(
-        screen.getByText("This conversation is closed because the listing was removed or rejected by moderation.")
+        screen.getByText("This conversation is closed because the ad was removed or rejected by moderation.")
       ).toBeInTheDocument();
     });
   });

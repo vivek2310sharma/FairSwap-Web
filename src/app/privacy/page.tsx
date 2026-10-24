@@ -98,23 +98,23 @@ export default function PrivacyPage() {
               </div>
 
               <div className="border-l-2 border-brand-500 pl-4">
-                <h3 className="text-sm font-semibold text-foreground">C. Classified Listings &amp; Media</h3>
+                <h3 className="text-sm font-semibold text-foreground">C. Classified Ads &amp; Media</h3>
                 <p className="mt-1 text-xs">
-                  When posting an advertisement, we process listing titles, descriptions, category attributes, condition, pricing, locality, PIN code, and timestamps. Uploaded original photographs are stored in private cloud storage accessible only to you and platform moderators. Public visitors receive only metadata-stripped, resized derivative images (thumbnails and scaled WebP photos) for approved listings.
+                  When posting an advertisement, we process ad titles, descriptions, category attributes, condition, pricing, locality, PIN code, and timestamps. Uploaded original photographs are stored in private cloud storage accessible only to you and platform moderators. Public visitors receive only metadata-stripped, resized derivative images (thumbnails and scaled WebP photos) for approved ads.
                 </p>
               </div>
 
               <div className="border-l-2 border-brand-500 pl-4">
                 <h3 className="text-sm font-semibold text-foreground">D. Platform Communications</h3>
                 <p className="mt-1 text-xs">
-                  FairSwap processes direct chat messages exchanged between buyers and sellers, conversation participant records, listing references, and timestamps. Communications are processed to deliver in-app messaging and may be accessed in connection with abuse reports, safety investigations, or moderation reviews.
+                  FairSwap processes direct chat messages exchanged between buyers and sellers, conversation participant records, ad references, and timestamps. Communications are processed to deliver in-app messaging and may be accessed in connection with abuse reports, safety investigations, or moderation reviews.
                 </p>
               </div>
 
               <div className="border-l-2 border-brand-500 pl-4">
                 <h3 className="text-sm font-semibold text-foreground">E. Safety, Moderation &amp; Support Data</h3>
                 <p className="mt-1 text-xs">
-                  We process user-submitted reports, block lists, moderation audit transitions, reasons for listing rejection or account suspension, in-platform support tickets, and appeal submissions. Grievance correspondence sent to our public grievance email address (<a href="mailto:grievance@fairswap.in" className="text-brand-link underline">grievance@fairswap.in</a>) is handled through our email intake channel and is not automatically stored in the platform application database.
+                  We process user-submitted reports, block lists, moderation audit transitions, reasons for ad rejection or account suspension, in-platform support tickets, and appeal submissions. Grievance correspondence sent to our public grievance email address (<a href="mailto:grievance@fairswap.in" className="text-brand-link underline">grievance@fairswap.in</a>) is handled through our email intake channel and is not automatically stored in the platform application database.
                 </p>
               </div>
 
@@ -152,7 +152,7 @@ export default function PrivacyPage() {
               <li>To create, authenticate, and manage your user account.</li>
               <li>To publish, display, categorize, and facilitate discovery of local classified advertisements.</li>
               <li>To enable secure peer-to-peer messaging between buyers and sellers regarding advertisements.</li>
-              <li>To review and moderate listings prior to public display, and investigate reports of policy violations.</li>
+              <li>To review and moderate ads prior to public display, and investigate reports of policy violations.</li>
               <li>To detect, prevent, and mitigate fraud, scams, harassment, unauthorized access, and security threats.</li>
               <li>To respond to user support inquiries, appeals, and formal grievances.</li>
               <li>To fulfill voluntary platform privacy controls, including data export and account deletion workflows.</li>
@@ -175,7 +175,7 @@ export default function PrivacyPage() {
                 <strong className="text-foreground">Hosting &amp; Edge Delivery:</strong> Vercel Inc. provides frontend web hosting, serverless execution, and edge content delivery.
               </li>
               <li>
-                <strong className="text-foreground">Database, Auth &amp; Object Storage:</strong> Supabase Inc. provides managed PostgreSQL database hosting, GoTrue authentication services, and secure object storage for listing media.
+                <strong className="text-foreground">Database, Auth &amp; Object Storage:</strong> Supabase Inc. provides managed PostgreSQL database hosting, GoTrue authentication services, and secure object storage for ad media.
               </li>
               <li>
                 <strong className="text-foreground">Payment Services (only when enabled):</strong> An authorised Indian payment gateway, such as PhonePe Payment Gateway if approved and integrated, may process checkout and share payment status and limited transaction information needed to fulfil or refund an optional promotional purchase. The payment provider&apos;s own privacy and security notices also apply to its processing.
@@ -215,7 +215,7 @@ export default function PrivacyPage() {
             </p>
             <ul className="mt-2 list-disc pl-5 space-y-1.5">
               <li>
-                <strong className="text-foreground">Active Accounts:</strong> Account, profile, and listing data is retained for the duration of your active platform membership.
+                <strong className="text-foreground">Active Accounts:</strong> Account, profile, and ad data is retained for the duration of your active platform membership.
               </li>
               <li>
                 <strong className="text-foreground">Account Deletion Workflow:</strong> When an account-deletion request is fulfilled, FairSwap removes or anonymises account information according to the platform deletion workflow, deletes the authentication identity and associated private media where applicable, and may retain limited historical, moderation, security, grievance, audit, or legally required records.
@@ -246,7 +246,7 @@ export default function PrivacyPage() {
                 <strong className="text-foreground">Profile &amp; Settings Management:</strong> You can view and update your display name, bio, location, and notification preferences at any time in Account Settings.
               </li>
               <li>
-                <strong className="text-foreground">Data Export:</strong> You can generate and download a structured JSON archive of your personal data, including your profile attributes, active and historical listings, favourites, submitted reports, and support ticket history.
+                <strong className="text-foreground">Data Export:</strong> You can generate and download a structured JSON archive of your personal data, including your profile attributes, active and historical ads, favourites, submitted reports, and support ticket history.
               </li>
               <li>
                 <strong className="text-foreground">Account Deletion Request:</strong> You can submit an account deletion request to initiate the platform anonymisation and credential removal workflow.

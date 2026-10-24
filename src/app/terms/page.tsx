@@ -6,7 +6,7 @@ import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
 
 export const metadata = {
   title: "Terms of Service — FairSwap",
-  description: "Terms governing FairSwap classifieds and optional paid listing promotion services in India.",
+  description: "Terms governing FairSwap classifieds and optional paid ad promotion services in India.",
 };
 
 export default function TermsPage() {
@@ -58,7 +58,7 @@ export default function TermsPage() {
               The platform enables registered sellers to publish advertisements for items they wish to sell, exchange, or give away, and enables buyers to discover local advertisements and initiate communication.
             </p>
             <p className="mt-2">
-              FairSwap operates a classifieds listing, discovery, and communication service. It is not the buyer or seller of user-listed items, a buyer-to-seller payment intermediary, an escrow provider, a shipping agent, or a logistics provider. Separately, when optional paid promotion features become available, FairSwap may sell its own digital advertising services to sellers.
+              FairSwap operates a classifieds ad, discovery, and communication service. It is not the buyer or seller of user-listed items, a buyer-to-seller payment intermediary, an escrow provider, a shipping agent, or a logistics provider. Separately, when optional paid promotion features become available, FairSwap may sell its own digital advertising services to sellers.
             </p>
           </section>
 
@@ -87,12 +87,12 @@ export default function TermsPage() {
               3. Account Registration &amp; Security
             </h2>
             <p className="mt-3">
-              To publish listings, save favourites, or communicate with other users, you must register a FairSwap account. When registering, you agree to:
+              To publish ads, save favourites, or communicate with other users, you must register a FairSwap account. When registering, you agree to:
             </p>
             <ul className="mt-2 list-disc pl-5 space-y-1">
               <li>Provide accurate, current, and genuine registration details (including a valid email address).</li>
               <li>Maintain the confidentiality and security of your login credentials and authentication tokens.</li>
-              <li>Remain solely responsible for all activities, communications, and listing submissions conducted through your account.</li>
+              <li>Remain solely responsible for all activities, communications, and ad submissions conducted through your account.</li>
               <li>Promptly notify FairSwap through our support or grievance channels if you suspect unauthorized access or security compromise of your account.</li>
             </ul>
             <p className="mt-2">
@@ -125,19 +125,19 @@ export default function TermsPage() {
           {/* 4A. Optional paid promotions are a separate merchant service. */}
           <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="text-lg font-semibold text-foreground">
-              4A. Optional Plus/Premium Listing Promotions &amp; Service Payments
+              4A. Optional Plus/Premium Ad Promotions &amp; Service Payments
             </h2>
             <p className="mt-3">
-              Standard classifieds participation is separate from any optional Plus or Premium listing promotion. When these upgrades are launched, a seller may choose a paid digital advertising service to increase the visibility of an eligible listing within FairSwap. A paid upgrade is not a purchase of the advertised item and is never mandatory for a standard listing unless an explicit, separately disclosed category rule applies.
+              Standard classifieds participation is separate from any optional Plus or Premium ad promotion. When these upgrades are launched, a seller may choose a paid digital advertising service to increase the visibility of an eligible ad within FairSwap. A paid upgrade is not a purchase of the advertised item and is never mandatory for a standard ad unless an explicit, separately disclosed category rule applies.
             </p>
             <p className="mt-2">
               Before any payment is requested, FairSwap will display the available package, specific promotional benefits, duration, price in Indian rupees, applicable taxes, and total payable amount. No recurring charge or automatic renewal applies unless explicitly offered and separately authorised. If checkout is not available, selecting or enquiring about a plan does not create a payment obligation.
             </p>
             <p className="mt-2">
-              Every listing remains subject to the same content and safety moderation, regardless of promotion tier. Any paid promotion becomes active only after the listing is approved, payment is independently confirmed by the payment provider, and the purchased benefit is enabled. An upgrade does not verify a seller, endorse an item, bypass moderation, guarantee search rank at all times, or guarantee enquiries, sales, or buyer safety.
+              Every ad remains subject to the same content and safety moderation, regardless of promotion tier. Any paid promotion becomes active only after the ad is approved, payment is independently confirmed by the payment provider, and the purchased benefit is enabled. An upgrade does not verify a seller, endorse an item, bypass moderation, guarantee search rank at all times, or guarantee enquiries, sales, or buyer safety.
             </p>
             <p className="mt-2">
-              When online checkout is enabled, payment for FairSwap&apos;s own promotional services may be collected by an authorised third-party payment gateway. FairSwap does not ask sellers to pay a personal UPI ID, respond to a payment request from another user, or pay an advance delivery or courier fee to activate an upgrade. For cancellations, failed or duplicate charges, rejected listings, and non-delivery of a purchased promotion, please read our{" "}
+              When online checkout is enabled, payment for FairSwap&apos;s own promotional services may be collected by an authorised third-party payment gateway. FairSwap does not ask sellers to pay a personal UPI ID, respond to a payment request from another user, or pay an advance delivery or courier fee to activate an upgrade. For cancellations, failed or duplicate charges, rejected ads, and non-delivery of a purchased promotion, please read our{" "}
               <Link href="/refund-policy" className="font-medium text-brand-link underline hover:text-brand-hover">
                 Refund &amp; Cancellation Policy
               </Link>.
@@ -150,7 +150,7 @@ export default function TermsPage() {
           {/* 5. Seller & Listing Responsibilities */}
           <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="text-lg font-semibold text-foreground">
-              5. Seller Responsibilities &amp; Listing Accuracy
+              5. Seller Responsibilities &amp; Ad Accuracy
             </h2>
             <p className="mt-3">
               When submitting an advertisement on FairSwap, you represent and warrant that:
@@ -167,12 +167,12 @@ export default function TermsPage() {
           {/* 6. Acceptable Use Policy */}
           <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <h2 className="text-lg font-semibold text-foreground">
-              6. Acceptable Use &amp; Prohibited Listings
+              6. Acceptable Use &amp; Prohibited Ads
             </h2>
             <p className="mt-3">
               Your use of FairSwap is governed by our{" "}
               <Link href="/acceptable-use" className="font-medium text-brand-link underline hover:text-brand-hover">
-                Acceptable Use &amp; Prohibited Listings Policy
+                Acceptable Use &amp; Prohibited Ads Policy
               </Link>
               , which is incorporated into these Terms by reference.
             </p>
@@ -209,16 +209,16 @@ export default function TermsPage() {
             </p>
             <ul className="mt-2 list-disc pl-5 space-y-1.5">
               <li>
-                <strong className="text-foreground">Listing Pre-Publication Review:</strong> Advertisements submitted by sellers are placed into a pending review status (<code className="text-xs bg-surface px-1 py-0.5 rounded">pending_review</code>) and undergo human moderation before initial public visibility. Moderators may approve the listing for publication or reject submissions that violate platform policies.
+                <strong className="text-foreground">Ad Pre-Publication Review:</strong> Advertisements submitted by sellers are placed into a pending review status (<code className="text-xs bg-surface px-1 py-0.5 rounded">pending_review</code>) and undergo human moderation before initial public visibility. Moderators may approve the ad for publication or reject submissions that violate platform policies.
               </li>
               <li>
-                <strong className="text-foreground">Post-Publication Removal:</strong> Published listings may be reviewed, modified, unlisted, or removed at any time upon receipt of user reports, policy updates, or safety concerns.
+                <strong className="text-foreground">Post-Publication Removal:</strong> Published ads may be reviewed, modified, unlisted, or removed at any time upon receipt of user reports, policy updates, or safety concerns.
               </li>
               <li>
                 <strong className="text-foreground">Communications &amp; Support Material:</strong> Direct messages, support tickets, and user reports are not universally pre-screened prior to transmission, but are subject to review in response to user reports, abuse signals, automated security detections, or statutory requests.
               </li>
               <li>
-                <strong className="text-foreground">Enforcement Actions:</strong> FairSwap reserves the right to issue warnings, restrict account capabilities (such as listing creation or messaging), suspend accounts temporarily, terminate accounts permanently, and preserve necessary evidence where required by law.
+                <strong className="text-foreground">Enforcement Actions:</strong> FairSwap reserves the right to issue warnings, restrict account capabilities (such as ad creation or messaging), suspend accounts temporarily, terminate accounts permanently, and preserve necessary evidence where required by law.
               </li>
             </ul>
             <p className="mt-2 text-xs">
@@ -238,7 +238,7 @@ export default function TermsPage() {
               By uploading or posting content to FairSwap, you grant FairSwap a non-exclusive, worldwide, royalty-free licence, with the right to permit FairSwap&apos;s service providers to process the content solely as necessary to host, store, reproduce, resize, display, distribute, secure, and operate FairSwap.
             </p>
             <p className="mt-2">
-              This licence terminates when you delete your listing or delete your account, subject to technical backup lifecycles and retention required by law.
+              This licence terminates when you delete your ad or delete your account, subject to technical backup lifecycles and retention required by law.
             </p>
           </section>
 
@@ -251,7 +251,7 @@ export default function TermsPage() {
               FairSwap respects intellectual property rights and expects users to do the same. You must not upload photos, text, or logos that infringe copyrights, trademarks, or proprietary rights of others.
             </p>
             <p className="mt-2">
-              If you believe content on FairSwap infringes your copyright or trademark under Indian law, please submit a formal notice to FairSwap&apos;s Grievance Officer with the relevant listing URL, proof of ownership, and specific infringement details. Details are available on our{" "}
+              If you believe content on FairSwap infringes your copyright or trademark under Indian law, please submit a formal notice to FairSwap&apos;s Grievance Officer with the relevant ad URL, proof of ownership, and specific infringement details. Details are available on our{" "}
               <Link href="/grievance" className="font-medium text-brand-link underline hover:text-brand-hover">
                 Grievance Redressal
               </Link>{" "}
@@ -299,7 +299,7 @@ export default function TermsPage() {
             </p>
             <ul className="mt-2 list-disc pl-5 space-y-1">
               <li>The condition, quality, safety, genuineness, or legality of any item advertised on the platform.</li>
-              <li>The truth, completeness, or accuracy of any listing description, photograph, or user profile.</li>
+              <li>The truth, completeness, or accuracy of any ad description, photograph, or user profile.</li>
               <li>The identity, character, background, or creditworthiness of any buyer or seller.</li>
               <li>The willingness or ability of any counterparty to complete a transaction or fulfill agreed commitments.</li>
               <li>Uninterrupted, secure, or error-free operation of the platform.</li>
@@ -315,7 +315,7 @@ export default function TermsPage() {
               13. Grievance Redressal Mechanism
             </h2>
             <p className="mt-3">
-              In accordance with platform governance, FairSwap operates a dedicated grievance redressal process. If you have a grievance regarding accounts, listings, safety, privacy, content, or platform conduct, you may contact our Grievance Officer:
+              In accordance with platform governance, FairSwap operates a dedicated grievance redressal process. If you have a grievance regarding accounts, ads, safety, privacy, content, or platform conduct, you may contact our Grievance Officer:
             </p>
             <div className="mt-4 rounded-lg border border-border/80 bg-surface/50 p-4 text-xs space-y-1">
               <p><strong className="text-foreground">Officer:</strong> {LEGAL_POLICY.operatorName}</p>

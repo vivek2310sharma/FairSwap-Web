@@ -94,7 +94,7 @@ export function ShareButton({
           type="button"
           onClick={() => setShowMenu((prev) => !prev)}
           className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-xs hover:bg-white hover:text-emerald-600 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800/90 dark:text-gray-200 dark:hover:bg-gray-800 dark:hover:text-emerald-400"
-          aria-label="Share listing"
+          aria-label="Share ad"
           aria-expanded={showMenu}
         >
           <Share2 className="h-4 w-4" />
@@ -154,7 +154,7 @@ export function ShareButton({
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/80"
-          aria-label="Share listing on WhatsApp"
+          aria-label="Share ad on WhatsApp"
         >
           <WhatsAppIcon className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>WhatsApp</span>
@@ -164,7 +164,7 @@ export function ShareButton({
           type="button"
           onClick={handleCopyLink}
           className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-          aria-label="Copy listing link"
+          aria-label="Copy ad link"
         >
           {copied ? (
             <>

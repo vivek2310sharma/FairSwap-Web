@@ -52,7 +52,7 @@ export async function createDraftListingAction(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "You must be signed in to create a listing." };
+    return { error: "You must be signed in to create an ad." };
   }
 
   if (formData.get("post_ad_entry") === "vehicle") {
@@ -123,11 +123,11 @@ export async function createDraftListingAction(
       operation: "create_draft_listing",
       error_code: error?.code || "INSERT_ERROR",
     });
-    return { error: error?.message || "Failed to create draft listing." };
+    return { error: error?.message || "Failed to create draft ad." };
   }
 
   revalidatePath("/account/listings");
-  return { success: true, listingId: data.id, message: "Draft listing created successfully." };
+  return { success: true, listingId: data.id, message: "Draft ad created successfully." };
 }
 
 export async function updateListingAction(
@@ -228,7 +228,7 @@ export async function updateListingAction(
 
   revalidatePath(`/account/listings/${listingId}/edit`);
   revalidatePath("/account/listings");
-  return { success: true, listingId, message: "Listing updated successfully." };
+  return { success: true, listingId, message: "Ad updated successfully." };
 }
 
 export async function submitListingAction(listingId: string, expectedRevision?: number): Promise<ListingActionResult> {
@@ -260,7 +260,7 @@ export async function submitListingAction(listingId: string, expectedRevision?: 
       if(error)return {error:error.message};
       revalidatePath('/account/listings');revalidatePath(`/account/listings/${listingId}/edit`);
       const result=data as {result?:string}|null;
-      return {success:true,listingId,message:result?.result==='already_pending'?'Already awaiting review.':'Listing submitted for review.'};
+      return {success:true,listingId,message:result?.result==='already_pending'?'Already awaiting review.':'Ad submitted for review.'};
     }
   }catch(e){return {error:e instanceof Error?e.message:'Submission eligibility is unavailable'};}
 
@@ -268,10 +268,10 @@ export async function submitListingAction(listingId: string, expectedRevision?: 
   // including during the intermediate draft-only production release.
   try {
     if (await hasSavedSubmissionFamily(supabase as SupabaseClient<Database>,listingId)) {
-      return {error:'Vehicle and Property submission is not yet enabled for this saved listing.'};
+      return {error:'Vehicle and Property submission is not yet enabled for this saved ad.'};
     }
   } catch {
-    return {error:'Saved listing family could not be verified. Please reload.'};
+    return {error:'Saved ad family could not be verified. Please reload.'};
   }
 
   // Server-side location integrity check
@@ -295,7 +295,7 @@ export async function submitListingAction(listingId: string, expectedRevision?: 
   const pinCode = privateLoc?.pin_code;
 
   if (!pinCode || !/^\d{6}$/.test(pinCode)) {
-    return { error: "A valid 6-digit Indian PIN code is required to submit a listing." };
+    return { error: "A valid 6-digit Indian PIN code is required to submit an ad." };
   }
 
   if (listingData?.locality_id) {
@@ -335,7 +335,7 @@ export async function submitListingAction(listingId: string, expectedRevision?: 
   return {
     success: true,
     listingId,
-    message: "Listing submitted for review.",
+    message: "Ad submitted for review.",
   };
 }
 
@@ -373,7 +373,7 @@ export async function transitionListingAction(
   }
 
   revalidatePath("/account/listings");
-  return { success: true, listingId, message: `Listing transition '${action}' successful.` };
+  return { success: true, listingId, message: `Ad transition '${action}' successful.` };
 }
 
 export async function reorderMediaAction(

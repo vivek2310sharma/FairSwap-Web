@@ -277,7 +277,7 @@ export function ChatThread({
           </div>
           {isListingClosed && (
             <span className="text-amber-700 dark:text-amber-400 font-semibold text-[11px]">
-              Listing closed
+              Ad closed
             </span>
           )}
         </div>
@@ -363,7 +363,7 @@ export function ChatThread({
         </div>
       ) : isListingClosed ? (
         <div className="shrink-0 border-t border-border bg-surface p-4 text-center text-xs text-muted">
-          This conversation is closed because the listing was removed or rejected by moderation.
+          This conversation is closed because the ad was removed or rejected by moderation.
         </div>
       ) : (
         <form onSubmit={handleSend} className="shrink-0 border-t border-border bg-card p-3">

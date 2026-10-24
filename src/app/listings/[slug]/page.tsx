@@ -45,7 +45,7 @@ export async function generateMetadata({
 
   if (redirectSlug || !listing) {
     return {
-      title: "Listing Details — FairSwap",
+      title: "Ad details — FairSwap",
     };
   }
 
@@ -236,7 +236,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                 <span>Privileged Preview Mode</span>
               </div>
               <p className="mt-1 text-xs">
-                This listing has status <span className="font-bold uppercase">{listing.status}</span> and is
+                This ad has status <span className="font-bold uppercase">{listing.status}</span> and is
                 currently withheld from public visitors. You can inspect it because you are the seller or authorized staff.
               </p>
             </div>

@@ -65,7 +65,7 @@ describe("RecentListingsSection (Server Component)", () => {
     await renderServerComponent(RecentListingsSection);
 
     // Using `getByText` as the heading is rendered
-    expect(screen.getByText("Recent Verified Listings")).toBeInTheDocument();
+    expect(screen.getByText("Recent Verified Ads")).toBeInTheDocument();
     expect(screen.getByText("Listing 1")).toBeInTheDocument();
   });
 

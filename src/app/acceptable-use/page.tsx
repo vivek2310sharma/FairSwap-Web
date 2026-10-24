@@ -5,7 +5,7 @@ import { AlertOctagon, Clock, ShieldCheck, Ban, ShieldAlert, Flag } from "lucide
 import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
 
 export const metadata = {
-  title: "Acceptable Use & Prohibited Listings — FairSwap",
+  title: "Acceptable Use & Prohibited Ads — FairSwap",
   description:
     "Community safety rules, prohibited items, and acceptable use standards for the FairSwap classifieds platform.",
 };
@@ -22,7 +22,7 @@ export default function AcceptableUsePage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              Acceptable Use &amp; Prohibited Listings
+              Acceptable Use &amp; Prohibited Ads
             </h1>
             <p className="text-sm text-muted">
               Classifieds standards, prohibited goods, and conduct policies for FairSwap.
@@ -56,10 +56,10 @@ export default function AcceptableUsePage() {
             </h2>
             <p className="mt-3">
               {LEGAL_POLICY.operatorDescription} FairSwap is built to facilitate safe, honest, and lawful peer-to-peer local trade.
-              This Acceptable Use &amp; Prohibited Listings Policy sets out the rules governing all listings, messages, accounts, and interactions on the platform.
+              This Acceptable Use &amp; Prohibited Ads Policy sets out the rules governing all ads, messages, accounts, and interactions on the platform.
             </p>
             <p className="mt-2">
-              Every user who creates an account, submits an advertisement, or communicates on FairSwap agrees to comply with these rules in full. Violations may result in listing rejection, immediate removal, account restriction, or permanent termination.
+              Every user who creates an account, submits an advertisement, or communicates on FairSwap agrees to comply with these rules in full. Violations may result in ad rejection, immediate removal, account restriction, or permanent termination.
             </p>
           </section>
 
@@ -108,7 +108,7 @@ export default function AcceptableUsePage() {
           <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
             <div className="flex items-center gap-2 text-base font-semibold text-foreground">
               <ShieldAlert className="h-5 w-5 text-amber-600" aria-hidden="true" />
-              <span>3. Prohibited &amp; Restricted Listings</span>
+              <span>3. Prohibited &amp; Restricted Ads</span>
             </div>
             <p className="mt-3">
               FairSwap prohibits the advertising, sale, trade, or transfer of the following categories of items and services:
@@ -156,7 +156,7 @@ export default function AcceptableUsePage() {
             </div>
 
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-200">
-              <strong className="font-semibold">Illustrative Boundary:</strong> This list is illustrative rather than exhaustive. FairSwap reserves the right to reject, remove, or modify any listing that is unlawful, unsafe, deceptive, harmful, or incompatible with the platform&apos;s community standards.
+              <strong className="font-semibold">Illustrative Boundary:</strong> This list is illustrative rather than exhaustive. FairSwap reserves the right to reject, remove, or modify any ad that is unlawful, unsafe, deceptive, harmful, or incompatible with the platform&apos;s community standards.
             </div>
           </section>
 
@@ -170,13 +170,13 @@ export default function AcceptableUsePage() {
             </p>
             <ul className="mt-2 list-disc pl-5 space-y-1.5">
               <li>
-                <strong className="text-foreground">Pre-Publication Listing Review:</strong> All seller listing submissions are placed in a moderation review queue and reviewed before becoming publicly searchable. Submissions violating these policies are rejected with stated feedback.
+                <strong className="text-foreground">Pre-Publication Ad Review:</strong> All seller ad submissions are placed in a moderation review queue and reviewed before becoming publicly searchable. Submissions violating these policies are rejected with stated feedback.
               </li>
               <li>
-                <strong className="text-foreground">Listing Removal:</strong> Published advertisements reported or found to violate policies will be removed or unlisted promptly.
+                <strong className="text-foreground">Ad Removal:</strong> Published advertisements reported or found to violate policies will be removed or unlisted promptly.
               </li>
               <li>
-                <strong className="text-foreground">Account Sanctions:</strong> Violations may result in formal warnings, temporary feature restrictions (such as disabling messaging or listing capabilities), temporary account suspension, or permanent account termination.
+                <strong className="text-foreground">Account Sanctions:</strong> Violations may result in formal warnings, temporary feature restrictions (such as disabling messaging or ad capabilities), temporary account suspension, or permanent account termination.
               </li>
               <li>
                 <strong className="text-foreground">Evidence Preservation &amp; Law Enforcement:</strong> FairSwap preserves records and audit trails where reasonably necessary and cooperates with valid lawful orders from Indian law enforcement or regulatory authorities.
@@ -194,10 +194,10 @@ export default function AcceptableUsePage() {
               <span>5. Reporting Violations &amp; Safety</span>
             </div>
             <p className="mt-3">
-              If you discover a listing or user conduct that violates this policy, we urge you to report it immediately:
+              If you discover an ad or user conduct that violates this policy, we urge you to report it immediately:
             </p>
             <ul className="mt-2 list-disc pl-5 space-y-1">
-              <li>Use the in-app <strong className="text-foreground">Report</strong> button located on listing cards, user profiles, and chat conversations.</li>
+              <li>Use the in-app <strong className="text-foreground">Report</strong> button located on ad cards, user profiles, and chat conversations.</li>
               <li>Use the in-app <strong className="text-foreground">Block</strong> control to immediately prevent unwanted contact from any abusive user.</li>
               <li>Review our <Link href="/safety" className="font-medium text-brand-link underline hover:text-brand-hover">In-Person Safety Guidelines</Link> before meeting any user for trade.</li>
             </ul>

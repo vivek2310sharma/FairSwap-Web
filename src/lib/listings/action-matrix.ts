@@ -71,9 +71,9 @@ export function resolveListingActions(
     type: "transition_action",
     transitionAction: "mark_sold",
     requiresConfirmation: true,
-    confirmationTitle: "Mark Listing as Sold?",
+    confirmationTitle: "Mark Ad as Sold?",
     confirmationMessage:
-      "Are you sure you want to mark this listing as sold? It will no longer be visible to buyers on the marketplace.",
+      "Are you sure you want to mark this ad as sold? It will no longer be visible to buyers on the marketplace.",
   };
 
   const pauseAction: ListingAction = {
@@ -171,7 +171,7 @@ export function resolveListingActions(
       return {
         primary: {
           id: "edit",
-          label: "Fix listing",
+          label: "Fix ad",
           type: "link",
           href: editHref,
         },

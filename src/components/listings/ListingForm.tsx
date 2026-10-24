@@ -143,7 +143,7 @@ export default function ListingForm({
     if (isMaintenanceActive) {
       setFormError(
         maintenanceMessage ||
-          "Listing creation and editing are temporarily paused while we upgrade location reference data. Active listings and buyer messages remain accessible. Please try again shortly."
+          "Ad creation and editing are temporarily paused while we upgrade location reference data. Active ads and buyer messages remain accessible. Please try again shortly."
       );
       return;
     }
@@ -330,7 +330,7 @@ export default function ListingForm({
       {isMaterialEditNotice && (
         <div className="rounded-md bg-amber-50 p-4 border border-amber-200 text-sm text-amber-800">
           <span className="font-bold">⚠️ Re-review policy applies:</span> Any change to title,
-          description, category, condition, price, or photos while this listing is active, reserved,
+          description, category, condition, price, or photos while this ad is active, reserved,
           or paused will automatically submit it to staff review before changes take effect.
         </div>
       )}
@@ -339,7 +339,7 @@ export default function ListingForm({
         <div className="rounded-md bg-red-50 p-4 border border-red-200 text-sm text-red-800">
           <span className="font-bold">Rejection Note:</span> {initialListing?.rejection_reason}
           <p className="mt-1 text-xs">
-            Saving changes to this listing will return it to <strong>Draft</strong> state, where you
+            Saving changes to this ad will return it to <strong>Draft</strong> state, where you
             can complete your edits and submit again.
           </p>
         </div>
@@ -356,11 +356,11 @@ export default function ListingForm({
             <span className="text-xl" aria-hidden="true">⚠️</span>
             <div>
               <h2 className="text-sm font-semibold text-amber-900">
-                Listing Maintenance in Progress
+                Ad Maintenance in Progress
               </h2>
               <p className="mt-1 text-sm text-amber-800">
                 {maintenanceMessage ||
-                  "Listing creation and editing are temporarily paused while we upgrade location reference data. Active listings and buyer messages remain accessible. Please try again shortly."}
+                  "Ad creation and editing are temporarily paused while we upgrade location reference data. Active ads and buyer messages remain accessible. Please try again shortly."}
               </p>
             </div>
           </div>
@@ -474,7 +474,7 @@ export default function ListingForm({
       {postAdEntry==='property' ? propertyCategory&&<PropertyCharges category={propertyCategory} financial={financial} change={setFinancial}/> : <ListingPricingFields priceType={priceType} priceRupees={priceRupees} setPriceType={setPriceType} setPriceRupees={setPriceRupees} priceStep={postAdEntry==="vehicle"?"0.01":"1"} />}
 
       {/* Section 5: Photos */}
-      {!isEditing && postAdEntry === "goods" && <aside className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">Photos come after a real draft is saved on the listing edit screen.</aside>}
+      {!isEditing && postAdEntry === "goods" && <aside className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">Photos come after a real draft is saved on the ad edit screen.</aside>}
       {isEditing && initialListing && (
         <div className="space-y-4 border-t pt-6" onClickCapture={()=>{setSavedContentOutdated(true);if(readiness)setReadinessOutdated(true);}}>
           <h2 className="text-base font-semibold text-gray-900 border-b pb-2">5. Photos</h2>

@@ -4,7 +4,7 @@ import { z } from "zod";
 const maintenanceEnvSchema = z.enum(["true", "false"]).optional();
 
 export const SELLER_WRITE_MAINTENANCE_MESSAGE =
-  "Listing creation and editing are temporarily paused while we upgrade location reference data. Active listings and buyer messages remain accessible. Please try again shortly.";
+  "Ad creation and editing are temporarily paused while we upgrade location reference data. Active ads and buyer messages remain accessible. Please try again shortly.";
 
 /**
  * Checks whether seller listing writes (creation, draft updates, and submission)

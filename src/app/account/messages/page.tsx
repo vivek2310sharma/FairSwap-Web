@@ -135,15 +135,15 @@ export default async function MessagesPage({
                   {tab === "buying"
                     ? "You haven't contacted any sellers yet. Browse items and click 'Contact Seller'."
                     : tab === "selling"
-                    ? "You haven't received any inquiries on your listings yet."
-                    : "When you contact a seller or receive an inquiry on your listings, messages will appear here."}
+                    ? "You haven't received any inquiries on your ads yet."
+                    : "When you contact a seller or receive an inquiry on your ads, messages will appear here."}
                 </p>
                 <div className="mt-6">
                   <Link
                     href="/search"
                     className="inline-flex items-center gap-1.5 rounded-xl bg-action-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-action-700 shadow-xs"
                   >
-                    <span>Browse Listings</span>
+                    <span>Browse Ads</span>
                   </Link>
                 </div>
               </div>

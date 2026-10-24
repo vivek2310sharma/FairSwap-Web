@@ -33,7 +33,7 @@ export function PrivacyOverviewSection() {
               <span>Data Export Requests</span>
             </div>
             <p className="mt-2 text-xs text-muted">
-              Download structured JSON files containing your profile, active listings, and message records.
+              Download structured JSON files containing your profile, active ads, and message records.
             </p>
           </div>
 

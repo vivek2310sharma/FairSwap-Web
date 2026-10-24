@@ -7,7 +7,7 @@ export function RecentListingsSkeleton() {
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-brand-link" aria-hidden="true" />
           <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-            Recent Verified Listings
+            Recent Verified Ads
           </h2>
         </div>
         <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

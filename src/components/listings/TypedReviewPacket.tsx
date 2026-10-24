@@ -8,7 +8,7 @@ export default function TypedReviewPacket({packet}:{packet:ReviewPacket}){
   if(!validated.success)return <p role="alert">Review packet unavailable: invalid or unexpected data. No review decision is available.</p>;
   const p=validated.data;
   return <section aria-label="Typed review packet" className="space-y-4">
-    <h2>{p.reader==='staff'?'Read-only review packet — no approval controls':'Saved listing details — read-only assessment'}</h2>
+    <h2>{p.reader==='staff'?'Read-only review packet — no approval controls':'Saved ad details — read-only assessment'}</h2>
     <p>{p.identity.id} · {p.identity.status} · revision {p.identity.revision} · captured {p.capturedAt}</p>
     <p>{p.category.join(' › ')} · contract {p.provenance.contract} · version {p.provenance.versionId??'existing definitions'}</p>
     <p>{p.consistency==='statement_snapshot'?'Consistent calling-statement database snapshot.':p.consistency==='mismatch'?'Snapshot mismatch: refresh required.':'Multiple authorized reads; not atomically verified or approval-ready.'} Context/media revision coverage remains incomplete. Assessment only; not approval-ready.</p>

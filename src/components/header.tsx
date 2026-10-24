@@ -204,7 +204,7 @@ export function Header() {
               className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
             >
               <Search className="h-4 w-4" aria-hidden="true" />
-              Browse Listings
+              Browse Ads
             </Link>
             <Link
               href="/account/favourites"
@@ -220,7 +220,7 @@ export function Header() {
               className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-brand-link hover:bg-surface"
             >
               <PlusCircle className="h-4 w-4" aria-hidden="true" />
-              Post a Listing
+              Post Ad
             </Link>
 
             <a href={HELP_CENTRE_URL} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground">

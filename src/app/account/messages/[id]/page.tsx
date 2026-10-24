@@ -128,7 +128,7 @@ export default async function ConversationPage({
                 href={`/listings/${conversation.listing.slug || conversation.listing.id}`}
                 className="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground"
               >
-                <span>View Listing: <span className="font-semibold text-foreground">{conversation.listing.title}</span></span>
+                <span>View ad: <span className="font-semibold text-foreground">{conversation.listing.title}</span></span>
               </Link>
             )}
           </div>
