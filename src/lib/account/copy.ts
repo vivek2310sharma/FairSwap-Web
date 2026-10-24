@@ -7,6 +7,45 @@ export interface PreviewCopy {
   body: string;
 }
 
+export interface SellerProfileCopy {
+  memberSince: string; // "{date}" placeholder
+  share: string;
+  shareTitle: string;
+  linkCopied: string;
+  shareFailed: string;
+  backToListings: string;
+  tabsLabel: string;
+  listingsTab: string;
+  ratingsTab: string;
+  comingSoon: string;
+  aboutSeller: string;
+  searchLabel: string;
+  searchPlaceholder: string;
+  category: string;
+  allCategories: string;
+  condition: string;
+  anyCondition: string;
+  conditions: Record<"new" | "like_new" | "good" | "fair" | "poor", string>;
+  priceMin: string;
+  priceMax: string;
+  sort: string;
+  sorts: Record<"newest" | "oldest" | "price_asc" | "price_desc", string>;
+  apply: string;
+  clear: string;
+  emptyTitle: string;
+  emptyBody: string;
+  noMatchTitle: string;
+  noMatchBody: string;
+  errorTitle: string;
+  errorBody: string;
+  retry: string;
+  previous: string;
+  next: string;
+  pageOf: string; // "{page}" "{total}"
+  ratingsTitle: string;
+  ratingsBody: string;
+}
+
 export interface AccountCopy {
   accountTitle: string;
   memberFallback: string;
@@ -38,6 +77,7 @@ export interface AccountCopy {
     cta: string;
   };
   previews: Record<PreviewKey, PreviewCopy>;
+  seller: SellerProfileCopy;
 }
 
 const en: AccountCopy = {
@@ -90,6 +130,44 @@ const en: AccountCopy = {
       title: "FairSeeds",
       body: "FairSeeds are coming soon. When the feature launches, buyers and sellers will each earn 5 FairSeeds for a completed trade.",
     },
+  },
+  seller: {
+    memberSince: "FairSwap member since {date}",
+    share: "Share profile",
+    shareTitle: "Seller profile on FairSwap",
+    linkCopied: "Profile link copied",
+    shareFailed: "Could not share. Copy the link from the address bar.",
+    backToListings: "Back to listings",
+    tabsLabel: "Seller profile sections",
+    listingsTab: "Listings",
+    ratingsTab: "Ratings",
+    comingSoon: "Coming soon",
+    aboutSeller: "About this seller",
+    searchLabel: "Search this seller's listings",
+    searchPlaceholder: "Search listings",
+    category: "Category",
+    allCategories: "All categories",
+    condition: "Condition",
+    anyCondition: "Any condition",
+    conditions: { new: "Brand New", like_new: "Like New", good: "Good Condition", fair: "Fair", poor: "For Parts" },
+    priceMin: "Min price (₹)",
+    priceMax: "Max price (₹)",
+    sort: "Sort by",
+    sorts: { newest: "Newest first", oldest: "Oldest first", price_asc: "Price: low to high", price_desc: "Price: high to low" },
+    apply: "Apply",
+    clear: "Clear filters",
+    emptyTitle: "No active listings",
+    emptyBody: "This seller does not have any listings available right now.",
+    noMatchTitle: "No listings match",
+    noMatchBody: "Try a different search or clear the filters.",
+    errorTitle: "Could not load listings",
+    errorBody: "Something went wrong while loading this seller's listings. Please try again.",
+    retry: "Try again",
+    previous: "Previous",
+    next: "Next",
+    pageOf: "Page {page} of {total}",
+    ratingsTitle: "Ratings & Reviews",
+    ratingsBody: "Soon, FairSwap members will be able to share feedback about completed exchanges.",
   },
 };
 
@@ -144,6 +222,44 @@ const hi: AccountCopy = {
       body: "FairSeeds जल्द आ रहे हैं। यह सुविधा शुरू होने पर खरीदार और विक्रेता, दोनों को पूर्ण हुए लेन-देन पर 5-5 FairSeeds मिलेंगे।",
     },
   },
+  seller: {
+    memberSince: "FairSwap सदस्य {date} से",
+    share: "प्रोफ़ाइल साझा करें",
+    shareTitle: "FairSwap पर विक्रेता प्रोफ़ाइल",
+    linkCopied: "प्रोफ़ाइल लिंक कॉपी हो गया",
+    shareFailed: "साझा नहीं हो सका। एड्रेस बार से लिंक कॉपी करें।",
+    backToListings: "लिस्टिंग पर वापस जाएं",
+    tabsLabel: "विक्रेता प्रोफ़ाइल अनुभाग",
+    listingsTab: "लिस्टिंग",
+    ratingsTab: "रेटिंग",
+    comingSoon: "जल्द आ रहा है",
+    aboutSeller: "इस विक्रेता के बारे में",
+    searchLabel: "इस विक्रेता की लिस्टिंग खोजें",
+    searchPlaceholder: "लिस्टिंग खोजें",
+    category: "श्रेणी",
+    allCategories: "सभी श्रेणियां",
+    condition: "स्थिति",
+    anyCondition: "कोई भी स्थिति",
+    conditions: { new: "बिल्कुल नया", like_new: "नए जैसा", good: "अच्छी स्थिति", fair: "ठीक-ठाक", poor: "पुर्ज़ों के लिए" },
+    priceMin: "न्यूनतम कीमत (₹)",
+    priceMax: "अधिकतम कीमत (₹)",
+    sort: "क्रमबद्ध करें",
+    sorts: { newest: "नवीनतम पहले", oldest: "सबसे पुराना पहले", price_asc: "कीमत: कम से ज़्यादा", price_desc: "कीमत: ज़्यादा से कम" },
+    apply: "लागू करें",
+    clear: "फ़िल्टर हटाएं",
+    emptyTitle: "कोई सक्रिय लिस्टिंग नहीं",
+    emptyBody: "इस विक्रेता की कोई लिस्टिंग अभी उपलब्ध नहीं है।",
+    noMatchTitle: "कोई लिस्टिंग नहीं मिली",
+    noMatchBody: "कोई दूसरी खोज आज़माएं या फ़िल्टर हटाएं।",
+    errorTitle: "लिस्टिंग लोड नहीं हो सकीं",
+    errorBody: "इस विक्रेता की लिस्टिंग लोड करते समय कुछ गलत हो गया। कृपया फिर कोशिश करें।",
+    retry: "फिर कोशिश करें",
+    previous: "पिछला",
+    next: "अगला",
+    pageOf: "पृष्ठ {page} / {total}",
+    ratingsTitle: "रेटिंग और समीक्षाएं",
+    ratingsBody: "जल्द ही FairSwap सदस्य पूर्ण हुए लेन-देन के बारे में प्रतिक्रिया साझा कर सकेंगे।",
+  },
 };
 
 const COPY: Record<AccountLocale, AccountCopy> = { en, hi };
@@ -151,4 +267,17 @@ const COPY: Record<AccountLocale, AccountCopy> = { en, hi };
 /** The Web baseline has no locale mechanism yet, so callers default to English. */
 export function getAccountCopy(locale: AccountLocale = "en"): AccountCopy {
   return COPY[locale];
+}
+
+/** "FairSwap member since September 2026", from the real registration date. */
+export function formatMemberSince(createdAt: string, locale: AccountLocale = "en"): string {
+  const date = new Date(createdAt);
+  const label = Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleDateString(locale === "hi" ? "hi-IN" : "en-IN", {
+        year: "numeric",
+        month: "long",
+        timeZone: "Asia/Kolkata",
+      });
+  return label ? COPY[locale].seller.memberSince.replace("{date}", label) : COPY[locale].memberFallback;
 }

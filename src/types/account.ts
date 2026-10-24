@@ -17,6 +17,9 @@ export interface Profile {
   updated_at: string;
 }
 
+/** Public seller profile projection: never includes location or contact data. */
+export type PublicSellerProfile = Pick<Profile, "id" | "display_name" | "avatar_url" | "bio" | "created_at">;
+
 export interface UserAccount {
   user_id: string;
   account_status: AccountStatus;
@@ -55,4 +58,3 @@ export interface PolicyAcceptanceRecord {
   minimum_age_confirmed: number;
   accepted_at: string;
 }
-
