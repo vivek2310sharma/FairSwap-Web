@@ -35,7 +35,7 @@ vi.mock("@supabase/ssr", () => ({
 
 const names = [
   "Mobiles & Tablets", "Vehicles", "Property", "Home Electronics & Appliances", "Computers & Cameras",
-  "Furniture & Home", "Fashion", "Books, Sports & Hobbies", "Pets", "Services", "Jobs",
+  "Furniture & Home", "Fashion", "Kids & Baby", "Books, Sports & Hobbies", "Pets", "Services", "Jobs", "Other / Everything Else",
 ];
 const on = { available: true } as const;
 const off = { available: false, reason: "fixture" } as const;
@@ -50,7 +50,7 @@ describe("Post Ad category picker", () => {
   });
   afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-  it("renders heading, step text, search and 11 categories in order", () => {
+  it("renders heading, step text, search and categories in order", () => {
     render(<MacroCategorySelector availability={all} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("What would you like to list?");
     expect(screen.getByText("Step 1 of 3 · Choose a category")).toBeVisible();
@@ -136,6 +136,29 @@ describe("Post Ad category picker", () => {
   it("offers no links when nothing is available", () => {
     render(<MacroCategorySelector availability={none} />);
     for (const n of ["Mobiles & Tablets", "Vehicles", "Property"]) { open(n); expect(screen.queryByRole("link")).toBeNull(); }
+  });
+
+  it("opens enabled Fashion Goods without URL category preselection", () => {
+    render(<MacroCategorySelector availability={all} capabilities={caps({ goodsCategories: ['fashion-men'] })} />);
+    open('Fashion');
+    expect(screen.getByRole('link', { name: /^Men/ })).toHaveAttribute('href', '/account/listings/new?macro=goods');
+    expect(screen.getByText('पुरुष')).toBeVisible();
+    expect(screen.queryByText(/it is not preselected from this screen/)).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Women/ })).toBeNull();
+  });
+
+  it("shows car-seat and fallback safeguards without actionable posting links", () => {
+    render(<MacroCategorySelector availability={all} capabilities={caps()} />);
+    open('Kids & Baby');
+    fireEvent.click(screen.getByRole('button', { name: /^Car Seats/ }));
+    expect(screen.getByRole('status')).toHaveTextContent('crash-damaged');
+    expect(screen.getByRole('status')).toHaveTextContent('recalled');
+    expect(screen.getByRole('status')).toHaveTextContent('missing parts');
+    expect(screen.queryByRole('link', { name: /^Car Seats/ })).toBeNull();
+    open('Other / Everything Else');
+    fireEvent.click(screen.getByRole('button', { name: /^Other Items/ }));
+    expect(screen.getByRole('status')).toHaveTextContent('staff reclassification');
+    expect(screen.queryByRole('link')).toBeNull();
   });
 
   it.each([

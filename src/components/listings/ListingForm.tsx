@@ -455,6 +455,7 @@ export default function ListingForm({
       </div>
 
       <ListingDetailsFields initialListing={initialListing} isProperty={postAdEntry==='property'} propertyIntegrated={postAdEntry==='property'} />
+      {postAdEntry === 'property' && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Beware of fake landlords. Verify the property and the landlord&apos;s authority before paying any advance or security deposit. Never pay merely to arrange a viewing.</p>}
       {propertyCategory&&postAdEntry==='property'&&<PropertyDetails category={propertyCategory} answers={attributesState} change={handleAttributeChange} society={society} setSociety={setSociety}/>}
 
       {/* Section 3: Location */}

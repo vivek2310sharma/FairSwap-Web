@@ -145,8 +145,9 @@ export default function MacroCategorySelector({
                   >
                     <Icon aria-hidden="true" className="h-7 w-7 shrink-0 text-emerald-600" />
                     <span className="break-words text-sm font-semibold text-gray-900">{localize(c.label)}</span>
+                    {c.label.hi && <span lang="hi" className="break-words text-xs text-gray-600">{c.label.hi}</span>}
                     <span className="hidden text-xs leading-5 text-gray-600 sm:block">{c.description}</span>
-                    {soon && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">Coming soon</span>}
+                    {soon && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{c.id === 'everything-else' ? 'Not available' : 'Coming soon'}</span>}
                   </button>
                 </li>
               );
