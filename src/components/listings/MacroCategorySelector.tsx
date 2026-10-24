@@ -9,7 +9,6 @@ import {
   POST_AD_CATALOGUE,
   capabilitiesFromAvailability,
   isMainActionable,
-  localize,
   resolveSub,
   searchCatalogue,
   type MainCategory,
@@ -116,7 +115,7 @@ export default function MacroCategorySelector({
                     ) : (
                       <button type="button" onClick={() => { setQuery(""); setMainId(m.id); setSubId(null); }}
                         className="flex min-h-11 w-full items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm font-medium hover:border-emerald-500 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
-                        {localize(m.label)}
+                        {m.label.en}
                       </button>
                     )}
                   </li>
@@ -144,8 +143,7 @@ export default function MacroCategorySelector({
                     className={`flex h-full min-h-11 w-full min-w-0 flex-col items-start gap-2 rounded-xl border bg-white p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${selected ? "border-emerald-600 bg-emerald-50" : "border-gray-200 hover:border-emerald-500 hover:bg-emerald-50"}`}
                   >
                     <Icon aria-hidden="true" className="h-7 w-7 shrink-0 text-emerald-600" />
-                    <span className="break-words text-sm font-semibold text-gray-900">{localize(c.label)}</span>
-                    {c.label.hi && <span lang="hi" className="break-words text-xs text-gray-600">{c.label.hi}</span>}
+                    <span className="break-words text-sm font-semibold text-gray-900">{c.label.en}</span>
                     <span className="hidden text-xs leading-5 text-gray-600 sm:block">{c.description}</span>
                     {soon && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{c.id === 'everything-else' ? 'Not available' : 'Coming soon'}</span>}
                   </button>
@@ -156,7 +154,7 @@ export default function MacroCategorySelector({
           <div id="post-ad-subcategories" aria-live="polite">
             {main && (
               <div className="space-y-3 rounded-xl border border-emerald-200 bg-white p-4">
-                <h2 className="text-lg font-semibold text-gray-900">{localize(main.label)}</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{main.label.en}</h2>
                 <PostAdSubcategoryChooser main={main} actions={actions} />
                 <TrustNote main={main} />
               </div>
