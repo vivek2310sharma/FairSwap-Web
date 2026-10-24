@@ -320,6 +320,52 @@ export const searchFiltersSchema = z.object({
   page: z.coerce.number().int().min(1).max(1000).optional().default(1),
 });
 
+export const SELLER_LISTINGS_PER_PAGE = 12;
+
+const sellerListingsBaseSchema = z.object({
+  tab: z.enum(["listings", "ratings"]).catch("listings"),
+  sort: z.enum(["newest", "oldest", "price_asc", "price_desc"]).catch("newest"),
+  page: z.coerce.number().int().min(1).max(1000).catch(1),
+});
+
+// Filters are strict: a malformed filter must never silently widen the result set.
+export const sellerListingsParamsSchema = sellerListingsBaseSchema.extend({
+  q: z.string().trim().max(100).default(""),
+  category: z.string().trim().max(100).regex(/^[a-z0-9-]*$/).default(""),
+  condition: z.enum(["new", "like_new", "good", "fair", "poor"]).optional(),
+  price_min: z.coerce.number().min(0).max(100000000).optional(),
+  price_max: z.coerce.number().min(0).max(100000000).optional(),
+});
+
+export type SellerListingsParams = z.infer<typeof sellerListingsParamsSchema>;
+
+/**
+ * Parses seller-profile search params. Empty values are treated as absent; any malformed
+ * filter marks the request `invalid` so callers return no results instead of broadening them.
+ */
+export function parseSellerListingsParams(raw: Record<string, string | undefined>): {
+  params: SellerListingsParams;
+  invalid: boolean;
+} {
+  const cleaned = Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== undefined && v !== ""));
+  const parsed = sellerListingsParamsSchema.safeParse(cleaned);
+  if (parsed.success) {
+    const { price_min, price_max } = parsed.data;
+    const inverted = price_min !== undefined && price_max !== undefined && price_min > price_max;
+    return { params: parsed.data, invalid: inverted };
+  }
+  return { params: sellerListingsParamsSchema.parse({ tab: cleaned.tab, sort: cleaned.sort, page: cleaned.page }), invalid: true };
+}
+
+export interface SellerListingsResult {
+  items: PublicListingCard[];
+  total_count: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+  categories: Array<{ slug: string; name: string }>;
+}
+
 export type DraftListingInput = z.infer<typeof draftListingSchema>;
 export type SubmitListingInput = z.infer<typeof submitListingSchema>;
 export type SearchFilters = z.input<typeof searchFiltersSchema>;

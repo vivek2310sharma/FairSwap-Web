@@ -2,30 +2,54 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { ListingCard } from "@/components/listings/ListingCard";
+import { SellerProfileHeader } from "@/components/seller/SellerProfileHeader";
+import { SellerTabs } from "@/components/seller/SellerTabs";
+import { SellerListingsPanel } from "@/components/seller/SellerListingsPanel";
+import { SellerRatingsPlaceholder } from "@/components/seller/SellerRatingsPlaceholder";
 import { createClient } from "@/lib/supabase/server";
-import { getSellerPublicListings } from "@/lib/discovery/queries";
-import { type Profile } from "@/types/account";
-import { MapPin, Calendar, ShoppingBag, User } from "lucide-react";
+import { getSellerListingsPage } from "@/lib/discovery/queries";
+import { getAccountCopy } from "@/lib/account/copy";
+import { parseSellerListingsParams, type SellerListingsResult } from "@/types/listing";
+import type { PublicSellerProfile } from "@/types/account";
+import { z } from "zod";
 import { Metadata } from "next";
 
 interface SellerPageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const EMPTY_RESULT: SellerListingsResult = {
+  items: [],
+  total_count: 0,
+  page: 1,
+  per_page: 12,
+  total_pages: 0,
+  categories: [],
+};
+
+const sellerIdSchema = z.string().uuid();
+
+// Public profile fields only. Location, phone and email are never selected.
+const PUBLIC_PROFILE_COLUMNS = "id, display_name, avatar_url, bio, created_at";
+
+function firstValues(raw: Record<string, string | string[] | undefined>): Record<string, string | undefined> {
+  return Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, Array.isArray(value) ? value[0] : value]));
 }
 
 export async function generateMetadata({ params }: SellerPageProps): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
+  const fallback = { title: "Seller Profile — FairSwap" };
+  if (!sellerIdSchema.safeParse(id).success) return fallback;
 
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("display_name, bio")
     .eq("id", id)
     .maybeSingle();
 
-  if (!profile) {
-    return { title: "Seller Profile — FairSwap" };
-  }
+  if (!profile) return fallback;
 
   return {
     title: `${profile.display_name} — Seller Profile | FairSwap`,
@@ -33,121 +57,75 @@ export async function generateMetadata({ params }: SellerPageProps): Promise<Met
   };
 }
 
-export default async function SellerProfilePage({ params }: SellerPageProps) {
+export default async function SellerProfilePage({ params, searchParams }: SellerPageProps) {
   const { id } = await params;
+  if (!sellerIdSchema.safeParse(id).success) notFound();
+
+  const { params: query, invalid } = parseSellerListingsParams(firstValues(await searchParams));
+  const copy = getAccountCopy("en").seller;
   const supabase = await createClient();
 
-  const [{ data: profile, error }, activeListings] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, display_name, avatar_url, bio, city, state, created_at")
-      .eq("id", id)
-      .single<Profile>(),
-    getSellerPublicListings(id),
+  const hasFilters = invalid || Boolean(
+    query.q || query.category || query.condition || query.price_min !== undefined || query.price_max !== undefined
+  );
+  const listingsActive = query.tab === "listings";
+
+  // Profile visibility (suspended / deleted accounts) is enforced by the profiles RLS policy.
+  const [{ data: profile, error }, result] = await Promise.all([
+    supabase.from("profiles").select(PUBLIC_PROFILE_COLUMNS).eq("id", id).maybeSingle<PublicSellerProfile>(),
+    // Ratings tab only needs the total for the tab label.
+    invalid
+      ? Promise.resolve<SellerListingsResult>(EMPTY_RESULT)
+      : getSellerListingsPage(id, listingsActive ? query : {}, listingsActive ? undefined : 1),
   ]);
 
-  // If profile is not found, or hidden by RLS due to suspension/deletion, return 404
-  if (error || !profile) {
-    notFound();
-  }
+  if (error || !profile) notFound();
 
-  const memberSince = new Date(profile.created_at).toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "long",
-  });
+  // Tab label shows the seller's total visible listings, not the filtered count.
+  const totalResult = listingsActive && hasFilters ? await getSellerListingsPage(id, {}, 1) : result;
+  const showAsFiltered = hasFilters;
+  const totalCount = totalResult?.total_count ?? 0;
+
+  const basePath = `/seller/${id}`;
 
   return (
     <>
       <Header />
 
       <main className="flex-1 bg-surface/20">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          {/* Breadcrumbs */}
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
           <div className="mb-6">
             <Link
               href="/search"
               className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-foreground"
             >
-              Back to listings
+              {copy.backToListings}
             </Link>
           </div>
 
-          {/* Seller Profile Header */}
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-xs sm:p-8">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-5">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-100 text-brand-900 font-bold text-2xl dark:bg-brand-950 dark:text-brand-300 shadow-xs">
-                  {profile.display_name?.charAt(0).toUpperCase() || <User className="h-8 w-8" />}
-                </div>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-2xl font-bold text-foreground">
-                      {profile.display_name}
-                    </h1>
-                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                      Registered Seller
-                    </span>
-                  </div>
+          <SellerProfileHeader profile={profile} />
 
-                  <div className="mt-2 flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-muted">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span>Member since {memberSince}</span>
-                    </div>
+          <SellerTabs
+            active={query.tab}
+            listingsLabel={totalResult ? `${copy.listingsTab} (${totalCount})` : copy.listingsTab}
+            ratingsLabel={copy.ratingsTab}
+            comingSoonLabel={copy.comingSoon}
+            ariaLabel={copy.tabsLabel}
+            listingsHref={basePath}
+            ratingsHref={`${basePath}?tab=ratings`}
+          />
 
-                    {profile.city && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span>
-                          {profile.city}
-                          {profile.state ? `, ${profile.state}` : ""}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-sm font-medium text-muted sm:text-right">
-                <span className="text-lg font-bold text-foreground">{activeListings.length}</span>{" "}
-                active {activeListings.length === 1 ? "ad" : "ads"}
-              </div>
-            </div>
-
-            {profile.bio && (
-              <div className="mt-6 border-t border-border/60 pt-6">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted">
-                  About this seller
-                </h2>
-                <p className="mt-2 text-sm text-foreground/90 leading-relaxed">
-                  {profile.bio}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Seller's Active Listings Grid */}
-          <div className="mt-10">
-            <h2 className="text-xl font-bold tracking-tight text-foreground">
-              Active Listings ({activeListings.length})
-            </h2>
-
-            {activeListings.length > 0 ? (
-              <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {activeListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
-                ))}
-              </div>
+          <div
+            id="seller-tabpanel"
+            role="tabpanel"
+            aria-labelledby={`seller-tab-${query.tab}`}
+            tabIndex={0}
+            className="mt-6 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-action-600"
+          >
+            {listingsActive ? (
+              <SellerListingsPanel basePath={basePath} params={query} result={result} filtered={showAsFiltered} />
             ) : (
-              <div className="mt-6 rounded-2xl border border-border bg-card p-12 text-center">
-                <ShoppingBag className="mx-auto h-12 w-12 text-muted opacity-40" aria-hidden="true" />
-                <h3 className="mt-3 text-base font-semibold text-foreground">
-                  No active listings
-                </h3>
-                <p className="mt-1 text-xs text-muted max-w-sm mx-auto">
-                  This seller does not currently have any active advertisements available for sale.
-                </p>
-              </div>
+              <SellerRatingsPlaceholder />
             )}
           </div>
         </div>
