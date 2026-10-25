@@ -42,9 +42,9 @@ export function ListingCard({
   const isCompact = variant === "compact";
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all hover:border-brand-300 hover:shadow-md dark:hover:border-brand-700">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all hover:border-primary/50 hover:shadow-md">
       {/* Thumbnail Container */}
-      <div className="relative z-10 aspect-4/3 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+      <div className="relative z-10 aspect-4/3 w-full overflow-hidden bg-subtle">
         <Link href={listingHref} tabIndex={-1} aria-hidden="true" className="block h-full w-full focus:outline-hidden">
           {coverUrl ? (
             <Image
@@ -69,7 +69,7 @@ export function ListingCard({
         {/* Condition Tag */}
         {listing.condition && (
           <span
-            className={`absolute rounded-md bg-black/60 font-medium text-white backdrop-blur-xs truncate max-w-[calc(100%-3.25rem)] pointer-events-none ${
+            className={`absolute rounded-lg bg-black/65 font-semibold text-white backdrop-blur-xs truncate max-w-[calc(100%-3.25rem)] pointer-events-none ${
               isCompact
                 ? "top-1.5 left-1.5 px-1.5 py-0.5 text-[10px] sm:top-2 sm:left-2 sm:px-2 sm:text-xs"
                 : "top-2 left-2 px-2 py-0.5 text-xs"
@@ -88,7 +88,7 @@ export function ListingCard({
       {/* Card Content */}
       <div className={`relative z-0 flex flex-1 flex-col ${isCompact ? "p-2.5 sm:p-4" : "p-4"}`}>
         <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
-          <span className={`font-bold text-foreground ${isCompact ? "text-base sm:text-lg" : "text-lg"}`}>
+          <span className={`fs-price text-foreground ${isCompact ? "text-base min-[360px]:text-lg sm:text-xl" : "text-xl"}`}>
             {formattedPrice}
           </span>
           {listing.category?.name && (
@@ -109,8 +109,8 @@ export function ListingCard({
         ) : null}
 
         <h3
-          className={`line-clamp-2 font-semibold text-foreground group-hover:text-action-600 ${
-            isCompact ? "mt-1 sm:mt-1.5 text-xs sm:text-sm" : "mt-1.5 text-sm"
+          className={`line-clamp-2 font-semibold text-foreground group-hover:text-primary ${
+            isCompact ? "mt-1 sm:mt-1.5 text-sm" : "mt-1.5 text-sm"
           }`}
         >
           <Link href={listingHref} className="focus:outline-hidden">
