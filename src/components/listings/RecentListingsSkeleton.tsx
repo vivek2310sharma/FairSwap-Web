@@ -1,35 +1,22 @@
-import { Sparkles } from "lucide-react";
-
 export function RecentListingsSkeleton() {
   return (
-    <section className="border-t border-border py-8">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
-          <h2 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
-            Recently Approved Ads
-          </h2>
+    <section aria-label="Loading recently approved ads" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+      <div className="grid gap-6 lg:grid-cols-12 lg:gap-10">
+        <div className="space-y-3 motion-safe:animate-pulse lg:col-span-3">
+          <div className="h-3 w-20 rounded-md bg-border" />
+          <div className="h-8 w-3/4 rounded-md bg-border" />
+          <div className="h-4 w-full rounded-md bg-border" />
+          <div className="h-12 w-32 rounded-full bg-border" />
         </div>
-        <div className="mt-6 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 sm:gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <div
-              key={i}
-              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs"
-            >
-              <div className="relative aspect-4/3 w-full overflow-hidden bg-subtle motion-safe:animate-pulse" />
-              <div className="flex flex-1 flex-col p-4 motion-safe:animate-pulse">
-                <div className="flex items-baseline justify-between gap-2">
-                  <div className="h-6 w-20 rounded-md bg-border" />
-                  <div className="h-4 w-16 rounded-md bg-border" />
-                </div>
-                <div className="mt-2.5 space-y-2">
-                  <div className="h-4 w-full rounded-md bg-border" />
-                  <div className="h-4 w-2/3 rounded-md bg-border" />
-                </div>
-                <div className="mt-auto pt-3 flex items-center gap-1.5">
-                  <div className="h-3.5 w-3.5 rounded-sm bg-border" />
-                  <div className="h-3.5 w-24 rounded-md bg-border" />
-                </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:col-span-9 lg:grid-cols-3 lg:gap-5">
+          <div className="col-span-2 min-h-80 rounded-3xl bg-subtle motion-safe:animate-pulse sm:min-h-[26rem] lg:row-span-2" />
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="overflow-hidden rounded-3xl bg-card ring-1 ring-border motion-safe:animate-pulse">
+              <div className="aspect-4/5 w-full bg-subtle lg:aspect-square" />
+              <div className="space-y-2 p-3 sm:p-4">
+                <div className="h-6 w-20 rounded-md bg-border" />
+                <div className="h-4 w-full rounded-md bg-border" />
+                <div className="h-3.5 w-24 rounded-md bg-border" />
               </div>
             </div>
           ))}
