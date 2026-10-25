@@ -175,3 +175,36 @@ it("does not label unavailable chat counts as zero", () => {
   expect(within(screen.getByRole("navigation", { name: "Mobile navigation" })).getByRole("link", { name: "Messages" })).toBeInTheDocument();
   expect(screen.queryByLabelText(/0 unread/)).not.toBeInTheDocument();
 });
+
+describe("progressive header navigation", () => {
+  it("renders Browse and Post Ad medium shortcuts alongside the menu button", () => {
+    mockUseAuth.mockReturnValue({ user: null, isLoading: false, unreadMessagesCount: 0, unreadNotificationsCount: 0, signOut: vi.fn() });
+    const { container } = render(<Header />);
+    const medium = container.querySelector(".fs-medium-only") as HTMLElement;
+    expect(within(medium).getByRole("link", { name: "Browse" })).toHaveAttribute("href", "/search");
+    expect(within(medium).getByRole("link", { name: "Post Ad" })).toHaveAttribute("href", "/account/listings/new");
+    expect(screen.getByRole("button", { name: "Open menu" })).toBeInTheDocument();
+  });
+
+  it("closes the menu on Escape and returns focus to the trigger", () => {
+    mockUseAuth.mockReturnValue({ user: { id: "u" }, isLoading: false, unreadMessagesCount: 0, unreadNotificationsCount: 0, signOut: vi.fn() });
+    render(<Header />);
+    const button = screen.getByRole("button", { name: "Open menu" });
+    fireEvent.click(button);
+    const panel = screen.getByRole("navigation", { name: "Mobile navigation" });
+    fireEvent.keyDown(within(panel).getByRole("link", { name: "My Account" }), { key: "Escape" });
+    expect(screen.queryByRole("navigation", { name: "Mobile navigation" })).not.toBeInTheDocument();
+    expect(button).toHaveFocus();
+  });
+
+  it("keeps account, messages, notifications, favourites and sign out reachable from the menu", () => {
+    mockUseAuth.mockReturnValue({ user: { id: "u" }, isLoading: false, unreadMessagesCount: 1, unreadNotificationsCount: 1, signOut: vi.fn() });
+    render(<Header />);
+    fireEvent.click(screen.getByRole("button", { name: "Open menu" }));
+    const panel = within(screen.getByRole("navigation", { name: "Mobile navigation" }));
+    for (const name of ["My Account", "Saved Favourites", /Messages/, /Notifications/]) {
+      expect(panel.getByRole("link", { name })).toBeInTheDocument();
+    }
+    expect(panel.getByRole("button", { name: "Sign Out" })).toBeInTheDocument();
+  });
+});

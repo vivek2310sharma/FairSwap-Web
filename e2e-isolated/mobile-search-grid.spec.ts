@@ -220,11 +220,13 @@ async function mockAuthenticatedNavigation(page: Page) {
   await page.route("**/rest/v1/rpc/get_unread_counts", route => route.fulfill({ json: { unread_messages: 12, unread_notifications: 25 } }));
 }
 
-test('HDR-03 authenticated header at 1024px uses the compact menu instead of colliding', async ({ page }) => {
+test('HDR-03 authenticated header at 1024px keeps shortcuts plus the menu instead of colliding', async ({ page }) => {
   await mockAuthenticatedNavigation(page);
   await page.setViewportSize({ width: 1024, height: 900 });
   await page.goto('/search');
-  await expect(page.locator('header[data-nav="compact"]')).toBeAttached();
+  await expect(page.locator('header[data-nav="medium"]')).toBeAttached();
+  await expect(page.locator('header .fs-medium-only').getByRole('link', { name: 'Browse' })).toBeVisible();
+  await expect(page.locator('header .fs-medium-only').getByRole('link', { name: 'Post Ad' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeHidden();
   await page.getByRole('button', { name: 'Open menu' }).click();
   const menu = page.getByRole('navigation', { name: 'Mobile navigation' });
