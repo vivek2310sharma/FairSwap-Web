@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -19,49 +19,13 @@ import {
 import { NotificationBell } from "@/components/communication/NotificationBell";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useHeaderFit } from "@/components/navigation/useHeaderFit";
 
 const navLinks = [
   { label: "How It Works", href: "/#how-it-works" },
   { label: "Categories", href: "/#categories" },
   { label: "Safety", href: "/safety" },
 ];
-
-/**
- * Chooses the inline or compact header from real content width. It briefly sets
- * data-nav="inline", checks for overflow, then settles. This runs in
- * ResizeObserver callbacks (before paint), so no intermediate state is painted.
- */
-function useHeaderFit(
-  headerRef: React.RefObject<HTMLElement | null>,
-  barRef: React.RefObject<HTMLElement | null>,
-  contentKey: string,
-) {
-  const evaluateRef = useRef<() => void>(() => {});
-
-  useEffect(() => {
-    const header = headerRef.current;
-    const bar = barRef.current;
-    if (!header || !bar) return;
-    const evaluate = () => {
-      header.setAttribute("data-nav", "inline");
-      const overflows = bar.scrollWidth > bar.clientWidth + 1;
-      header.setAttribute("data-nav", overflows ? "compact" : "inline");
-    };
-    evaluateRef.current = evaluate;
-    evaluate();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(evaluate);
-    observer.observe(bar);
-    header.querySelectorAll(".fs-inline-only").forEach((el) => observer.observe(el));
-    document.fonts?.ready.then(evaluate).catch(() => {});
-    return () => observer.disconnect();
-  }, [headerRef, barRef]);
-
-  // Content that changes without resizing the bar (auth resolving, badges).
-  useEffect(() => {
-    evaluateRef.current();
-  }, [contentKey]);
-}
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -202,10 +166,28 @@ export function Header() {
           </Link>
         </div>
 
+        {/* Medium-width shortcuts: kept visible beside the menu button when they fit */}
+        <div className="fs-medium-only ml-auto shrink-0 items-center gap-3">
+          <Link
+            href="/search"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-brand-link hover:underline"
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
+            Browse
+          </Link>
+          <Link
+            href="/account/listings/new"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-action-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-action-700"
+          >
+            <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
+            Post Ad
+          </Link>
+        </div>
+
         {/* Mobile menu button */}
         <button
           type="button"
-          className="fs-compact-btn ml-auto items-center justify-center rounded-md p-2 text-muted hover:text-foreground"
+          className="fs-compact-btn ml-auto shrink-0 items-center justify-center rounded-md p-2 text-muted hover:text-foreground"
           ref={menuButton}
           onClick={toggleMenu}
           aria-expanded={mobileMenuOpen}
