@@ -7,11 +7,5 @@
       "main": true,
       "staging": true
     }
-  },
-  "crons": [
-    {
-      "path": "/api/internal/avatar-cleanup",
-      "schedule": "*/15 * * * *"
-    }
-  ]
+  }
 }
