@@ -65,12 +65,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: #0B1F38;
-    --color-foreground: #F4F9FE;
-    --color-muted: #a3a3a3;
-    --color-border: #404040;
-    --color-surface: #083f73;
-    --color-card: #083f73;
+    --color-background: #111418;
+    --color-foreground: #eef1f4;
+    --color-muted: #a1a9b3;
+    --color-border: #343b44;
+    --color-surface: #1a1e23;
+    --color-card: #1a1e23;
 
     --color-notice-bg: #451a03;
     --color-notice-border: #b45309;
@@ -95,6 +95,26 @@ body {
     "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
+
+/*
+ * Header: the full navigation shows only when it fits. Before hydration (or
+ * without JS) it needs a wide viewport; the header then measures real content
+ * and sets data-nav="inline" | "compact", so labels, auth controls, zoom and
+ * text size are all accounted for.
+ */
+.fs-header .fs-inline-only { display: none; }
+.fs-header .fs-compact-btn { display: inline-flex; }
+.fs-header .fs-compact-panel { display: block; }
+
+@media (min-width: 1280px) {
+  .fs-header:not([data-nav]) .fs-inline-only { display: flex; }
+  .fs-header:not([data-nav]) .fs-compact-btn,
+  .fs-header:not([data-nav]) .fs-compact-panel { display: none; }
+}
+
+.fs-header[data-nav="inline"] .fs-inline-only { display: flex; }
+.fs-header[data-nav="inline"] .fs-compact-btn,
+.fs-header[data-nav="inline"] .fs-compact-panel { display: none; }
 
 /* Accessible focus ring */
 :focus-visible {
