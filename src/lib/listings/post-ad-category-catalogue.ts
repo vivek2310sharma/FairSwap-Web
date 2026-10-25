@@ -55,7 +55,6 @@ export interface MainCategory {
   id: string;
   label: LocalizedText;
   description: string;
-  icon: "mobile" | "vehicle" | "property" | "appliance" | "computer" | "furniture" | "fashion" | "books" | "pets" | "services" | "jobs";
   aliases?: readonly string[];
   subs: readonly SubCategory[];
   trust: TrustInfo;
@@ -70,7 +69,7 @@ const PG = "PG & Co-living/";
 
 export const POST_AD_CATALOGUE: readonly MainCategory[] = [
   {
-    id: "mobiles", label: { en: "Mobiles & Tablets", hi: "मोबाइल और टैबलेट" }, icon: "mobile",
+    id: "mobiles", label: { en: "Mobiles & Tablets", hi: "मोबाइल और टैबलेट" },
     description: "Phones, accessories and tablets.",
     aliases: ["phone", "smartphone", "cellphone"],
     trust: { status: "coming-soon", message: "IMEI and device authenticity checks", disclaimer: "FairSwap does not currently check IMEI or device authenticity." },
@@ -82,7 +81,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "vehicles", label: { en: "Vehicles", hi: "वाहन" }, icon: "vehicle",
+    id: "vehicles", label: { en: "Vehicles", hi: "वाहन" },
     description: "Cars, bikes, scooters and more.",
     aliases: ["vehicle", "gaadi", "gadi"],
     trust: { status: "coming-soon", message: "RC and ownership verification", disclaimer: "FairSwap does not currently verify vehicle ownership documents." },
@@ -96,7 +95,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "property", label: { en: "Property", hi: "प्रॉपर्टी" }, icon: "property",
+    id: "property", label: { en: "Property", hi: "प्रॉपर्टी" },
     description: "Rent or sell homes, shops and land.",
     aliases: ["real estate", "flat", "house", "room", "rent", "to let"],
     trust: { status: "coming-soon", message: "Ownership and document verification", disclaimer: "FairSwap does not currently verify property ownership or documents." },
@@ -114,7 +113,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "appliances", label: { en: "Home Electronics & Appliances", hi: "होम इलेक्ट्रॉनिक्स और उपकरण" }, icon: "appliance",
+    id: "appliances", label: { en: "Home Electronics & Appliances", hi: "होम इलेक्ट्रॉनिक्स और उपकरण" },
     description: "TVs, fridges, ACs and kitchen appliances.",
     aliases: ["appliance", "home appliance", "electronics"],
     trust: { status: "coming-soon", message: "Product authenticity checks", disclaimer: "FairSwap does not currently check product authenticity." },
@@ -132,7 +131,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "computers", label: { en: "Computers & Cameras", hi: "कंप्यूटर और कैमरा" }, icon: "computer",
+    id: "computers", label: { en: "Computers & Cameras", hi: "कंप्यूटर और कैमरा" },
     description: "Laptops, cameras, games and accessories.",
     aliases: ["computer"],
     trust: { status: "coming-soon", message: "Device and serial-number checks", disclaimer: "FairSwap does not currently check device serial numbers." },
@@ -147,7 +146,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "furniture", label: { en: "Furniture & Home", hi: "फर्नीचर और घर" }, icon: "furniture",
+    id: "furniture", label: { en: "Furniture & Home", hi: "फर्नीचर और घर" },
     description: "Sofas, beds, tables and household items.",
     aliases: ["furniture", "household"],
     trust: { status: "coming-soon", message: "Better condition and pickup safeguards", disclaimer: "FairSwap does not currently inspect items or arrange pickup." },
@@ -163,7 +162,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "fashion", label: { en: "Fashion", hi: "फैशन" }, icon: "fashion",
+    id: "fashion", label: { en: "Fashion", hi: "फैशन" },
     description: "Clothing, footwear, watches and accessories.",
     aliases: ["clothes", "clothing", "dress", "saree", "kurta", "shoes", "jeans"],
     trust: { status: "coming-soon", message: "Brand authenticity checks", disclaimer: "FairSwap does not currently check brand authenticity." },
@@ -176,7 +175,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "kids-baby", label: { en: "Kids & Baby", hi: "बच्चे और शिशु" }, icon: "books",
+    id: "kids-baby", label: { en: "Kids & Baby", hi: "बच्चे और शिशु" },
     description: "Prams, baby furniture, toys and school essentials.",
     aliases: ["baby", "infant", "toddler", "शिशु", "बच्चे"],
     trust: { status: "planned", message: "Baby-product safety checks", disclaimer: "FairSwap does not verify product safety or recalls. Car-seat posting is unavailable." },
@@ -190,7 +189,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "hobbies", label: { en: "Books, Sports & Hobbies", hi: "किताबें, खेल और शौक" }, icon: "books",
+    id: "hobbies", label: { en: "Books, Sports & Hobbies", hi: "किताबें, खेल और शौक" },
     description: "Books, fitness, instruments and sports gear.",
     aliases: ["hobby", "sports"],
     trust: { status: "coming-soon", message: "Better condition and ad evidence guidance", disclaimer: "FairSwap does not currently verify item condition." },
@@ -204,7 +203,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "pets", label: { en: "Pets", hi: "पालतू जानवर" }, icon: "pets",
+    id: "pets", label: { en: "Pets", hi: "पालतू जानवर" },
     description: "Pet food, accessories and supplies.",
     aliases: ["pet", "animal", "puppy", "cat", "bird"],
     hideComingSoonBadge: true,
@@ -217,7 +216,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "services", label: { en: "Services", hi: "सेवाएँ" }, icon: "services",
+    id: "services", label: { en: "Services", hi: "सेवाएँ" },
     description: "Movers, classes, repairs and more.",
     aliases: ["service"],
     trust: { status: "coming-soon", message: "Service-provider verification", disclaimer: "FairSwap does not currently verify service providers." },
@@ -234,14 +233,14 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     ],
   },
   {
-    id: "jobs", label: { en: "Jobs", hi: "नौकरियाँ" }, icon: "jobs",
+    id: "jobs", label: { en: "Jobs", hi: "नौकरियाँ" },
     description: "Job openings and hiring.",
     aliases: ["job", "hiring", "vacancy", "career", "work"],
     trust: { status: "coming-soon", message: "Employer verification and fraud-resistant job ads", disclaimer: "FairSwap does not currently verify employers." },
     subs: [],
   },
   {
-    id: "everything-else", label: { en: "Other / Everything Else", hi: "अन्य सामान" }, icon: "books",
+    id: "everything-else", label: { en: "Other / Everything Else", hi: "अन्य सामान" },
     description: "Items without a suitable category. Posting unavailable.",
     aliases: ["other", "everything else", "miscellaneous", "अन्य"],
     trust: { status: "planned", message: "Mandatory staff review and category reassignment", disclaimer: "Other posting is unavailable until backend moderation and staff reclassification are supported." },

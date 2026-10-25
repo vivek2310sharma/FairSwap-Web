@@ -1,8 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import {
-  Armchair, BookOpen, Briefcase, Car, House, Laptop, PawPrint, Refrigerator,
-  Search, ShieldAlert, Shirt, Smartphone, Wrench,
+  Search, ShieldAlert,
 } from "lucide-react";
 import { buildMacroCategoryUrl, type MacroCategory } from "@/lib/listings/macro-category";
 import {
@@ -15,6 +14,7 @@ import {
   type PostAdCapabilities,
 } from "@/lib/listings/post-ad-category-catalogue";
 import PostAdSubcategoryChooser, { SubChoice, SubNotice, type ChooserActions } from "./PostAdSubcategoryChooser";
+import { getMainCategoryIcon } from "./post-ad-category-icons";
 
 export type MacroCategoryAvailability = Record<
   MacroCategory,
@@ -30,11 +30,6 @@ interface MacroCategorySelectorProps {
   onChooseSection?: (macro: MacroCategory) => void;
   integrated?: boolean;
 }
-
-const icons = {
-  mobile: Smartphone, vehicle: Car, property: House, appliance: Refrigerator, computer: Laptop,
-  furniture: Armchair, fashion: Shirt, books: BookOpen, pets: PawPrint, services: Wrench, jobs: Briefcase,
-} as const;
 
 function TrustNote({ main }: { main: MainCategory }) {
   const { status, message, disclaimer } = main.trust;
@@ -81,7 +76,7 @@ export default function MacroCategorySelector({
     <section aria-label="Ad categories" className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">What would you like to list?</h1>
-        <p className="mt-1 text-sm text-gray-600">Step 1 of 3 · Choose a category</p>
+        <p className="mt-1 text-sm text-gray-600">{main ? "Choose a subcategory to continue." : "Choose a category to continue."}</p>
       </div>
 
       <div className="relative">
@@ -108,18 +103,22 @@ export default function MacroCategorySelector({
             <>
               <p className="text-sm text-gray-600">{hits.length === 1 ? "1 match" : `${hits.length} matches`}. Choose the one that fits.</p>
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {hits.map(({ main: m, sub }) => (
-                  <li key={`${m.id}:${sub?.id ?? ""}`} className="min-w-0">
-                    {sub ? (
-                      <SubChoice sub={sub} parent={m} actions={actions} showParent />
-                    ) : (
-                      <button type="button" onClick={() => { setQuery(""); setMainId(m.id); setSubId(null); }}
-                        className="flex min-h-11 w-full items-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm font-medium hover:border-emerald-500 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
-                        {m.label.en}
-                      </button>
-                    )}
-                  </li>
-                ))}
+                {hits.map(({ main: m, sub }) => {
+                  const Icon = getMainCategoryIcon(m.id);
+                  return (
+                    <li key={`${m.id}:${sub?.id ?? ""}`} className="min-w-0">
+                      {sub ? (
+                        <SubChoice sub={sub} parent={m} actions={actions} showParent />
+                      ) : (
+                        <button type="button" onClick={() => { setQuery(""); setMainId(m.id); setSubId(null); }}
+                          className="flex min-h-11 w-full items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm font-medium hover:border-emerald-500 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600">
+                          <Icon aria-hidden="true" className="h-7 w-7 shrink-0 text-emerald-600" />
+                          {m.label.en}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
               <SubNotice sub={pickedHit && !resolveSub(pickedHit, caps).macro ? pickedHit : undefined} />
             </>
@@ -129,7 +128,7 @@ export default function MacroCategorySelector({
         <>
           <ul className="grid grid-cols-2 gap-3 min-[560px]:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
             {POST_AD_CATALOGUE.map(c => {
-              const Icon = icons[c.icon];
+              const Icon = getMainCategoryIcon(c.id);
               const selected = c.id === mainId;
               const soon = !c.hideComingSoonBadge && !isMainActionable(c, caps);
               return (
