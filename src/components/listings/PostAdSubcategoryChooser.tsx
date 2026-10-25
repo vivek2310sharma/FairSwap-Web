@@ -23,7 +23,7 @@ export interface ChooserActions {
 }
 
 const badgeText: Record<Readiness, string | null> = {
-  available: "Available",
+  available: null,
   "draft-only": "Draft only",
   "coming-soon": "Coming soon",
   unavailable: "Not available",
@@ -49,9 +49,9 @@ export function SubChoice({ sub, parent, actions, showParent = false }: {
   if (macro) {
     return (
       <Link
-        href={actions.hrefForSection(macro)}
+        href={sub.route.kind === "mobile-phones" ? "/account/listings/new?posting=mobile-phones" : actions.hrefForSection(macro)}
         prefetch={false}
-        onClick={actions.onChooseSection ? (e) => { e.preventDefault(); actions.onChooseSection?.(macro); } : undefined}
+        onClick={sub.route.kind !== "mobile-phones" && actions.onChooseSection ? (e) => { e.preventDefault(); actions.onChooseSection?.(macro); } : undefined}
         className={cls}
       >
         {body}
@@ -69,7 +69,7 @@ export function SubNotice({ sub }: { sub: SubCategory | undefined }) {
   if (!sub) return null;
   if (sub.guidance) return (
     <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-      <p className="font-semibold">Posting unavailable</p>
+      <p className="font-semibold">Coming soon</p>
       <p>{sub.guidance}</p>
     </div>
   );

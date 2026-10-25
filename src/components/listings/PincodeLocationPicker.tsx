@@ -2,8 +2,12 @@
 
 import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import type { City, PincodeLookupResult } from "@/types/listing";
+import { postingText, type PostingLocale } from "@/lib/listings/mobiles/locale";
 
 export interface PincodeLocationPickerProps {
+  locale?: PostingLocale;
+  hideLandmark?: boolean;
+  onResolvedChange?: (value: {pin_code:string;city_id:string;locality_id:string;area:string}) => void;
   initialPinCode?: string | null;
   initialCityId?: string | null;
   initialLocalityId?: string | null;
@@ -221,7 +225,11 @@ export default function PincodeLocationPicker({
   initialLookup,
   cities,
   isProperty = false,
+  locale = "en",
+  hideLandmark = false,
+  onResolvedChange,
 }: PincodeLocationPickerProps) {
+  const t=(text:string)=>postingText(locale,text);
   const initial = useMemo(
     () =>
       computeInitialLocationState(
@@ -254,6 +262,10 @@ export default function PincodeLocationPicker({
     Array<{ id: string; name: string; city_id: string; district?: string }>
   >(initial.availableLocalities);
   const [errorMsg, setErrorMsg] = useState<string | null>(initial.errorMsg);
+
+  useEffect(() => {
+    onResolvedChange?.({pin_code:pinCode,city_id:selectedCityId,locality_id:selectedLocalityId,area:[availableLocalities.find(l=>l.id===selectedLocalityId)?.name,cities.find(c=>c.id===selectedCityId)?.name].filter(Boolean).join(", ")});
+  },[onResolvedChange,pinCode,selectedCityId,selectedLocalityId,availableLocalities,cities]);
 
   const activeLookupSeq = useRef<number>(0);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -481,12 +493,12 @@ export default function PincodeLocationPicker({
       <input type="hidden" name="landmark" value={landmark} />
 
       <div className="rounded-lg border border-gray-200 bg-emerald-50/50 p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-emerald-900">{isProperty?'Where is the rental property?':'Where is the item?'}</h3>
+        <h3 className="text-sm font-semibold text-emerald-900">{t(isProperty?'Where is the rental property?':'Where is the item?')}</h3>
 
         {/* PIN Code Input */}
         <div>
           <label htmlFor="pincode_picker_input" className="block text-xs font-semibold text-gray-700">
-            PIN code *
+            {t("PIN code *")}
           </label>
           <div className="mt-1 flex items-center gap-2">
             <input
@@ -502,25 +514,25 @@ export default function PincodeLocationPicker({
             />
             {isLoading && (
               <span className="text-xs text-emerald-600 animate-pulse font-medium">
-                Searching location...
+                {t("Searching location...")}
               </span>
             )}
             {pinCode.length === 6 && !isLoading && !errorMsg && (derivedLocationText || resolvedState) && (
               <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
-                PIN matched
+                {t("PIN matched")}
               </span>
             )}
           </div>
           {errorMsg && (
             <div className="mt-2 flex items-center justify-between gap-2 rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
-              <span>{errorMsg}</span>
+              <span>{t(errorMsg)}</span>
               {pinCode.length === 6 && (
                 <button
                   type="button"
                   onClick={() => performLookup(pinCode)}
                   className="rounded border border-red-300 bg-white px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-50 cursor-pointer"
                 >
-                  Retry
+                  {t("Retry")}
                 </button>
               )}
             </div>
@@ -537,7 +549,7 @@ export default function PincodeLocationPicker({
         {/* State indicator (multi-district PIN) */}
         {resolvedState && !derivedLocationText && (
           <div className="text-sm font-semibold text-gray-900 bg-white px-3 py-2 rounded border border-emerald-200">
-            State: {resolvedState}
+            {t("State")}: {resolvedState}
           </div>
         )}
 
@@ -545,7 +557,7 @@ export default function PincodeLocationPicker({
         {availableDistricts.length > 1 && (
           <div>
             <label htmlFor="city_picker_select" className="block text-xs font-semibold text-gray-700">
-              District *
+              {t("District *")}
             </label>
             <select
               id="city_picker_select"
@@ -554,7 +566,7 @@ export default function PincodeLocationPicker({
               disabled={isLoading}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-400"
             >
-              <option value="">-- Select District --</option>
+              <option value="">{t("-- Select District --")}</option>
               {availableDistricts.map((d) => (
                 <option key={d.name} value={d.name}>
                   {d.name}
@@ -567,7 +579,7 @@ export default function PincodeLocationPicker({
         {/* Area / Locality Dropdown */}
         <div>
           <label htmlFor="locality_picker_select" className="block text-xs font-medium text-gray-700">
-            Area / Locality *
+            {t("Area / Locality *")}
           </label>
           <select
             id="locality_picker_select"
@@ -584,13 +596,13 @@ export default function PincodeLocationPicker({
             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-400"
           >
             <option value="">
-              {availableLocalities.length > 0
+              {t(availableLocalities.length > 0
                 ? "-- Select Area / Locality --"
                 : availableDistricts.length > 1 && !selectedDistrict
                 ? "-- Select District first --"
                 : pinCode.length === 6 && errorMsg
                 ? "-- Enter a valid PIN to view localities --"
-                : "-- Enter 6-digit PIN code first --"}
+                : "-- Enter 6-digit PIN code first --")}
             </option>
             {availableLocalities.map((loc) => (
               <option key={loc.id} value={loc.id}>
@@ -604,7 +616,7 @@ export default function PincodeLocationPicker({
         {!derivedLocationText && availableDistricts.length <= 1 && (
           <div className="pt-2 border-t border-gray-200">
             <label htmlFor="city_picker_select" className="block text-xs font-semibold text-gray-700">
-              District *
+              {t("District *")}
             </label>
             <select
               id="city_picker_select"
@@ -613,7 +625,7 @@ export default function PincodeLocationPicker({
               onChange={() => {}}
               className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:bg-gray-100 disabled:text-gray-400"
             >
-              <option value="">(Derived automatically from matched PIN code)</option>
+              <option value="">{t("(Derived automatically from matched PIN code)")}</option>
               {cities.map((city) => (
                 <option key={city.id} value={city.id}>
                   {city.name}, {city.state}
@@ -624,7 +636,7 @@ export default function PincodeLocationPicker({
         )}
 
         {/* Landmark (Optional) */}
-        <div>
+        {!hideLandmark && <div>
           <label htmlFor="landmark_picker_input" className="block text-xs font-medium text-gray-700">
             Landmark (optional)
           </label>
@@ -637,12 +649,11 @@ export default function PincodeLocationPicker({
             placeholder="e.g. Near Nexus Mall / Opposite Metro Station"
             className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
           />
-        </div>
-
+        </div>}
         {/* Privacy reassurance footnote */}
         <div className="pt-2 border-t border-emerald-100/60 text-xs text-gray-500 space-y-0.5">
-          <p className="font-medium text-gray-600">🔒 Privacy protection:</p>
-          {isProperty?<><p>Property drafts are not public. Society/building text is private to the owner.</p><p>Arrange viewing details in chat when appropriate.</p></>:<><p>Only your approximate area is shown publicly on FairSwap.</p><p>You can decide the exact pickup location later with the buyer in chat.</p></>}
+          <p className="font-medium text-gray-600">{t("🔒 Privacy protection:")}</p>
+          {isProperty?<><p>Property drafts are not public. Society/building text is private to the owner.</p><p>Arrange viewing details in chat when appropriate.</p></>:<><p>{t("Only your approximate area is shown publicly on FairSwap.")}</p><p>{t("You can decide the exact pickup location later with the buyer in chat.")}</p></>}
         </div>
       </div>
     </div>
