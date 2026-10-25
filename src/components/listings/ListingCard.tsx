@@ -9,7 +9,7 @@ interface ListingCardProps {
   listing: PublicListingCard;
   isFavourited?: boolean;
   searchContext?: string;
-  variant?: "default" | "compact";
+  variant?: "default" | "compact" | "editorial" | "feature";
   familyDisplay?: PublicFamilyDisplay;
 }
 
@@ -40,6 +40,56 @@ export function ListingCard({
     : null;
 
   const isCompact = variant === "compact";
+
+  if (variant === "editorial" || variant === "feature") {
+    const feature = variant === "feature";
+    const place = listing.locality?.name ? `${listing.locality.name}, ${listing.city?.name}` : listing.city?.name;
+    return (
+      <div className={`group relative flex h-full flex-col overflow-hidden rounded-3xl bg-card ring-1 ring-border transition-shadow hover:shadow-lg ${feature ? "min-h-80 sm:min-h-[26rem]" : ""}`}>
+        <div className={`z-10 w-full overflow-hidden bg-subtle ${feature ? "absolute inset-0" : "relative aspect-4/5 lg:aspect-square"}`}>
+          <Link href={listingHref} tabIndex={-1} aria-hidden="true" className="block h-full w-full focus:outline-hidden">
+          {coverUrl ? (
+            <Image
+              src={coverUrl}
+              alt={listing.title}
+              fill
+              sizes={feature ? "(max-width: 1024px) 100vw, 60vw" : "(max-width: 1024px) 50vw, 25vw"}
+              className="object-cover object-center motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
+              unoptimized={true}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-muted">
+              <Tag className="h-10 w-10 stroke-1 opacity-50" aria-hidden="true" />
+            </div>
+          )}
+          </Link>
+          {feature && <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent" aria-hidden="true" />}
+          {listing.condition && (
+            <span className="pointer-events-none absolute left-2.5 top-2.5 max-w-[calc(100%-3.75rem)] truncate rounded-full bg-black/65 px-2 py-1 text-[11px] sm:px-2.5 sm:text-xs font-semibold text-white backdrop-blur-xs">
+              {conditionLabels[listing.condition] || listing.condition}
+            </span>
+          )}
+        </div>
+        <div className="absolute right-2.5 top-2.5 z-30">
+          <FavouriteButton listingId={listing.id} initialIsFavourited={isFavourited} />
+        </div>
+        <div className={`relative z-20 flex flex-col ${feature ? "pointer-events-none mt-auto p-4 text-white sm:p-6" : "p-3 sm:p-4"}`}>
+          <span className={`fs-price ${feature ? "text-3xl sm:text-5xl" : "text-xl sm:text-2xl text-foreground"}`}>{formattedPrice}</span>
+          <h3 className={`mt-1 font-semibold ${feature ? "line-clamp-2 text-base sm:text-xl" : "line-clamp-2 text-sm text-foreground group-hover:text-primary"}`}>
+            <Link href={listingHref} className="pointer-events-auto focus:outline-hidden focus-visible:underline">
+              {!feature && <span className="absolute inset-0" aria-hidden="true" />}
+              {listing.title}
+            </Link>
+          </h3>
+          <p className={`mt-2 flex items-center gap-1.5 text-xs ${feature ? "text-white/85" : "text-muted"}`}>
+            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">{place}</span>
+            {listing.category?.name && <span className="ml-auto hidden max-w-[45%] truncate font-medium sm:inline">{listing.category.name}</span>}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all hover:border-primary/50 hover:shadow-md">

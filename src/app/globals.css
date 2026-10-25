@@ -84,6 +84,16 @@
   --fs-icon: #08704A;
   --fs-icon-surface: #E4F1EA;
   --fs-focus: #155D9A;
+
+  /* Home editorial surfaces: tile tones and the inverted safety band. */
+  --fs-tone-a: #E4F1EA;
+  --fs-tone-b: #F6EBD9;
+  --fs-tone-c: #E2EDF7;
+  --fs-ink: #0E2B22;
+  --fs-on-ink: #F1F7F4;
+  --fs-ink-muted: #B7CFC4;
+  --fs-ink-accent: #7BE0B0;
+  --fs-ink-line: rgba(241, 247, 244, 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -108,6 +118,11 @@
     --fs-icon: #5FD9A3;
     --fs-icon-surface: rgba(27, 164, 109, 0.16);
     --fs-focus: #8fd0ff;
+
+    --fs-tone-a: #16302A;
+    --fs-tone-b: #2B2418;
+    --fs-tone-c: #1A2733;
+    --fs-ink: #14382C;
   }
 }
 
@@ -172,6 +187,45 @@ body {
 
 .fs-header[data-nav="medium"] .fs-medium-only { display: flex; }
 .fs-header[data-nav="medium"] .fs-compact-btn { margin-left: 0; }
+
+/* Home hero: soft tinted glow behind the discovery desk. */
+.fs-hero {
+  background:
+    radial-gradient(55rem 26rem at 90% -10%, color-mix(in srgb, var(--fs-primary) 14%, transparent), transparent 70%),
+    radial-gradient(40rem 20rem at -10% 30%, color-mix(in srgb, var(--fs-link) 8%, transparent), transparent 70%);
+}
+
+/* Category bento tiles: tone drives the surface, text keeps AA contrast on each. */
+.fs-tile {
+  background: var(--fs-subtle);
+  color: var(--color-foreground);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.fs-tile[data-tone="a"] { background: var(--fs-tone-a); }
+.fs-tile[data-tone="b"] { background: var(--fs-tone-b); }
+.fs-tile[data-tone="c"] { background: var(--fs-tone-c); }
+.fs-tile[data-tone="ink"] { background: var(--fs-ink); color: var(--fs-on-ink); }
+.fs-tile-icon {
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  color: var(--fs-icon);
+}
+.fs-tile[data-tone="ink"] .fs-tile-icon { color: var(--fs-ink-accent); }
+.fs-ink-band {
+  background: var(--fs-ink);
+  color: var(--fs-on-ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fs-tile:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.35); }
+  .fs-rise { animation: fs-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 50ms); }
+  @keyframes fs-rise { from { opacity: 0; transform: translateY(10px); } }
+}
 
 /* Accessible focus ring */
 :focus-visible {
