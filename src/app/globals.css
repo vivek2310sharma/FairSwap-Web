@@ -205,6 +205,9 @@ body {
 .fs-tile[data-tone="b"] { background: var(--fs-tone-b); }
 .fs-tile[data-tone="c"] { background: var(--fs-tone-c); }
 .fs-tile[data-tone="ink"] { background: var(--fs-ink); color: var(--fs-on-ink); }
+/* Photo-backed tiles keep live HTML labels readable in both color schemes. */
+.fs-tile[data-image="true"] { background: #10251e; color: #fff; }
+.fs-tile[data-image="true"] .fs-tile-icon { color: #fff; background: rgba(255, 255, 255, 0.18); }
 .fs-tile-icon {
   display: flex;
   height: 2.5rem;
