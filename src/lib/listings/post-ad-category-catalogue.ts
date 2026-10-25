@@ -12,6 +12,7 @@ export const localize = (text: LocalizedText, locale: Locale = "en") => text[loc
 
 export type FamilyState = "off" | "draft" | "live";
 export interface PostAdCapabilities {
+  mobilePhones?: boolean;
   twoWheelers: FamilyState;
   cars: FamilyState;
   property: FamilyState;
@@ -24,6 +25,7 @@ export interface PostAdCapabilities {
 export type Readiness = "available" | "draft-only" | "coming-soon" | "unavailable";
 
 export type SubRoute =
+  | { kind: "mobile-phones" }
   /** General (broad) Goods continuation only; the unchanged form is where the category is chosen. */
   | { kind: "goods"; key: string }
   | { kind: "vehicles"; family: "two-wheelers" | "cars" }
@@ -72,12 +74,12 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     id: "mobiles", label: { en: "Mobiles & Tablets", hi: "मोबाइल और टैबलेट" },
     description: "Phones, accessories and tablets.",
     aliases: ["phone", "smartphone", "cellphone"],
-    trust: { status: "coming-soon", message: "IMEI and device authenticity checks", disclaimer: "FairSwap does not currently check IMEI or device authenticity." },
+    trust: { status: "available", message: "Have your bill and box ready — buyers trust them.", disclaimer: "FairSwap does not currently verify IMEI or device authenticity." },
     subs: [
-      { id: "mobile-phones", label: "Mobile Phones", hi: "मोबाइल फोन", aliases: ["iphone", "samsung", "redmi", "oneplus", "vivo", "oppo", "realme", "android", "smartphone"], route: none },
-      { id: "mobile-accessories", label: "Mobile Accessories", hi: "मोबाइल एक्सेसरीज़", aliases: ["charger", "earphones", "earbuds", "cover", "case", "power bank"], route: none },
+      { id: "mobile-phones", label: "Mobile Phones", hi: "मोबाइल फोन", aliases: ["iphone", "samsung", "redmi", "oneplus", "vivo", "oppo", "realme", "android", "smartphone"], route: {kind:"mobile-phones"} },
+      { id: "mobile-accessories", label: "Accessories", hi: "एक्सेसरीज़", aliases: ["charger", "earphones", "earbuds", "cover", "case", "power bank"], route: none },
       { id: "tablets", label: "Tablets", hi: "टैबलेट", aliases: ["ipad", "tab"], route: none },
-      { id: "general-electronics", label: "General Electronics", hi: "सामान्य इलेक्ट्रॉनिक्स", aliases: ["electronics", "phone", "mobile", "iphone", "samsung", "tablet", "ipad", "laptop", "camera", "tv"], route: goods("electronics") },
+      { id: "wearables", label: "Smartwatches & Wearables", hi: "स्मार्टवॉच और वियरेबल्स", aliases:["smartwatch","wearable"], route:none },
     ],
   },
   {
@@ -257,6 +259,7 @@ const fromFamily = (state: FamilyState): Readiness =>
 export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readiness: Readiness; macro?: MacroCategory } {
   const r = sub.route;
   switch (r.kind) {
+    case "mobile-phones": return caps.mobilePhones ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "goods": return caps.goodsCategories.includes(r.key) ? { readiness: "available", macro: "goods" } : { readiness: "coming-soon" };
     case "vehicles": {
       const readiness = fromFamily(familyOf(caps, r.family));
@@ -268,7 +271,7 @@ export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readin
       return readiness === "coming-soon" ? { readiness } : { readiness, macro: "property" };
     }
     case "blocked": return { readiness: "unavailable" };
-    case "none": return { readiness: sub.guidance ? "unavailable" : "coming-soon" };
+    case "none": return { readiness: "coming-soon" };
     default: return { readiness: "coming-soon" };
   }
 }

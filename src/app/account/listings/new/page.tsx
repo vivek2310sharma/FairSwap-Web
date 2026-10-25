@@ -1,4 +1,6 @@
 import Link from "next/link";
+import MobilePhoneForm from "@/components/listings/MobilePhoneForm";
+import { loadMobileCatalogue } from "@/lib/listings/mobiles/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
@@ -50,6 +52,13 @@ export default async function NewListingPage({
 
   const integrationEnabled = isGoodsPostAdEnabled();
   const query = await searchParams;
+  const mobileCatalogue = await loadMobileCatalogue(supabase);
+  if (query.posting !== undefined) {
+    if (query.posting !== "mobile-phones" || !mobileCatalogue) return <div className="mx-auto max-w-3xl p-6"><h1 className="text-2xl font-bold">Coming soon</h1><Link href="/account/listings/new">Choose a category</Link></div>;
+    const locations = await loadPostAdLocations(supabase);
+    if (locations.status !== "ready") return <p role="alert">{locations.message}</p>;
+    return <div className="mx-auto max-w-3xl space-y-5 px-4 py-8"><Link href="/account/listings/new">Back to categories (your phone posting is saved on this device)</Link><MobilePhoneForm key={user.id} ownerId={user.id} catalogue={mobileCatalogue} cities={locations.cities} maintenance={isMaintenanceActive}/></div>;
+  }
   // The former `?entry=legacy` creation route is retired wherever Post Ad is
   // active. Canonicalize every old/new `entry` variant so it cannot bypass
   // the main-category selector. Existing listing edit URLs are unaffected.
@@ -69,7 +78,7 @@ export default async function NewListingPage({
     const submission={twoWheelers:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"two-wheelers"),cars:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"cars"),property:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"property")};
     return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <Link href="/account/listings" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">Back to My ads</Link>
-      <div className="mt-6"><GoodsPostAdEntry submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
+      <div className="mt-6"><GoodsPostAdEntry mobilePhones={!!mobileCatalogue} submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
     </div>;
   }
 

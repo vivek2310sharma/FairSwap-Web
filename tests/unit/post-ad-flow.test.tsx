@@ -18,7 +18,24 @@ const props={data,hrefForSection:previewSectionUrl,navigate,onPreview:preview};
 beforeEach(()=>{vi.clearAllMocks();vi.stubGlobal('fetch',forbidden);HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','')};});
 afterEach(()=>{cleanup();vi.unstubAllGlobals()});
 describe('Reusable isolated Post Ad flow',()=>{
- it('shows the category picker, keeps URLs inside the preview and explicitly parses missing/invalid/repeated values',()=>{render(<PostAdFlow {...props} macro={null}/>);fireEvent.click(screen.getByRole('button',{name:/Mobiles & Tablets/}));expect(screen.getAllByRole('link').map(e=>e.getAttribute('href'))).toEqual(['/?macro=goods']);fireEvent.click(screen.getByRole('link',{name:/General Electronics/}));expect(navigate).toHaveBeenCalledWith('goods');for(const q of ['', 'macro=bogus','macro=goods&macro=goods'])expect(parsePreviewQuery(new URLSearchParams(q)).status).toBe(q?'invalid':'missing');expect(parsePreviewQuery(new URLSearchParams('macro=vehicles'))).toEqual({status:'valid',macroCategory:'vehicles'});});
+ it('keeps Mobiles default-off, contains supported URLs inside the preview and parses missing/invalid/repeated values',()=>{
+  render(<PostAdFlow {...props} macro={null}/>);
+  fireEvent.click(screen.getByRole('button',{name:/Mobiles & Tablets/}));
+  expect(screen.queryByText(/^General Electronics$/)).not.toBeInTheDocument();
+  expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:/^Mobile Phones Coming soon$/}));
+  expect(screen.getByRole('status')).toHaveTextContent('Coming soon');
+  expect(navigate).not.toHaveBeenCalled();
+  expect(preview).not.toHaveBeenCalled();
+  expect(forbidden).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:/Computers & Cameras/}));
+  const goodsLink=screen.getByRole('link',{name:/General Electronics/});
+  expect(goodsLink).toHaveAttribute('href','/?macro=goods');
+  fireEvent.click(goodsLink);
+  expect(navigate).toHaveBeenCalledWith('goods');
+  for(const q of ['', 'macro=bogus','macro=goods&macro=goods'])expect(parsePreviewQuery(new URLSearchParams(q)).status).toBe(q?'invalid':'missing');
+  expect(parsePreviewQuery(new URLSearchParams('macro=vehicles'))).toEqual({status:'valid',macroCategory:'vehicles'});
+ });
  it.each(['goods','vehicles','property'] as MacroCategory[])('filters %s with an explicit placeholder',macro=>{render(<PostAdFlow {...props} macro={macro}/>);expect(within(screen.getByLabelText('Category *')).getAllByRole('option').map(o=>o.textContent)).toEqual(['Select a category',...categories.filter(c=>c.macro===macro).map(c=>c.name)]);expect(screen.getByLabelText('Category *')).toHaveValue('');if(macro==='property'){expect(screen.queryByLabelText(/Condition/)).not.toBeInTheDocument();expect(screen.queryByText('New (Unopened)')).not.toBeInTheDocument();}expect(forbidden).not.toHaveBeenCalled();});
  it.each([{status:'loading'}, {status:'error',message:'Synthetic failure'}, {status:'ready',categories:[],attributes:[]}] as CategoryData[])('distinguishes $status and never selects an unrelated fallback',state=>{render(<PostAdFlow {...props} data={state} macro='goods'/>);expect(screen.getByLabelText('Category *')).toBeDisabled();expect(screen.getByRole('button',{name:'Preview draft data'})).toBeDisabled();expect(screen.getByRole(state.status==='error'?'alert':'status')).toBeInTheDocument();});
  it('confirms attribute clearing, cancels safely and preserves common values across section changes',()=>{const r=render(<PostAdFlow {...props} macro='goods'/>);fireEvent.change(screen.getByLabelText('Category *'),{target:{value:'goods-0'}});fireEvent.change(screen.getByLabelText('Material / specification (sample)'),{target:{value:'OLED'}});fireEvent.change(screen.getByLabelText(/Title/),{target:{value:'Sample phone'}});fireEvent.change(screen.getByLabelText('City / locality'),{target:{value:'Jaipur'}});fireEvent.change(screen.getByLabelText('Price (₹ Rupees) *'),{target:{value:'25000'}});fireEvent.click(screen.getByRole('button',{name:'Change section'}));fireEvent.click(screen.getByRole('button',{name:'Cancel / stay'}));expect(screen.getByLabelText('Material / specification (sample)')).toHaveValue('OLED');fireEvent.click(screen.getByRole('button',{name:'Change section'}));fireEvent.click(screen.getByRole('button',{name:'Remove details and continue'}));r.rerender(<PostAdFlow {...props} macro={null}/>);fireEvent.click(screen.getByRole('button',{name:/Vehicles/}));fireEvent.click(screen.getByRole('link',{name:/Cars/}));r.rerender(<PostAdFlow {...props} macro='vehicles'/>);expect(screen.getByLabelText(/Title/)).toHaveValue('Sample phone');expect(screen.getByLabelText('City / locality')).toHaveValue('Jaipur');expect(screen.getByLabelText('Price (₹ Rupees) *')).toHaveValue(25000);expect(screen.getByLabelText('Category *')).toHaveValue('');expect(screen.queryByLabelText('Material / specification (sample)')).not.toBeInTheDocument();});

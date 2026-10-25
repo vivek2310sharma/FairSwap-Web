@@ -48,7 +48,7 @@ export const MAIN_CATEGORY_ICONS: IconMap = {
 export const SUBCATEGORY_ICONS: Readonly<Record<string, IconMap>> = {
   mobiles: {
     "mobile-phones": Smartphone, "mobile-accessories": Cable, tablets: Tablet,
-    "general-electronics": CircuitBoard,
+    wearables: Watch,
   },
   vehicles: {
     cars: CarFront, "two-wheelers": Motorcycle, bicycles: Bike,

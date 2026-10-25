@@ -37,7 +37,7 @@ function TrustNote({ main }: { main: MainCategory }) {
   return (
     <aside aria-label={`${main.label.en} trust information`} className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3 text-sm text-gray-800">
       {status === "available" ? (
-        <p>{message}</p>
+        <><p className="font-semibold">{message}</p><p className="mt-1 text-xs text-gray-600">{disclaimer}</p></>
       ) : (
         <>
           <p className="font-semibold">Safer transactions are on the way</p>
@@ -144,7 +144,7 @@ export default function MacroCategorySelector({
                     <Icon aria-hidden="true" className="h-7 w-7 shrink-0 text-emerald-600" />
                     <span className="break-words text-sm font-semibold text-gray-900">{c.label.en}</span>
                     <span className="hidden text-xs leading-5 text-gray-600 sm:block">{c.description}</span>
-                    {soon && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{c.id === 'everything-else' ? 'Not available' : 'Coming soon'}</span>}
+                    {soon && <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">Coming soon</span>}
                   </button>
                 </li>
               );
