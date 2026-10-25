@@ -109,6 +109,7 @@ export async function searchPublicListings(filters: Partial<SearchFilters> = {})
 
   if (error || !data) {
     return {
+      unavailable: true,
       items: [],
       total_count: 0,
       page: 1,

@@ -17,6 +17,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Metadata } from "next";
 import { SearchX } from "lucide-react";
 import Link from "next/link";
+import { SearchLocation } from "@/components/listings/SearchLocation";
+import { discoveryHref } from "@/lib/location/discovery";
 
 interface SearchPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -59,6 +61,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   }
 
   const parsed = searchFiltersSchema.safeParse(flatParams);
+  const duplicateParams = Object.values(rawParams).some(Array.isArray);
   const rawFilters = parsed.success ? parsed.data : searchFiltersSchema.parse({});
   const effectiveSort = getEffectiveSort(rawFilters.q, rawFilters.sort);
   const filters = {
@@ -67,14 +70,30 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   };
   const searchContext = serializeSearchFilters(rawFilters);
 
-  const [categories, cities, localities, searchResult] = await Promise.all([
+  const [categories, cities, localities] = await Promise.all([
     getPublicCategories(),
     getPublicCities(),
     filters.city && filters.locality
       ? getAppliedLocality(filters.city, filters.locality)
       : Promise.resolve([]),
-    searchPublicListings(filters),
   ]);
+  const city = cities.find(c => c.id === filters.city);
+  const locality = localities.find(l => l.id === filters.locality && l.city_id === filters.city);
+  const invalidFilters = !parsed.success || duplicateParams ||
+    Boolean(filters.city && !city) || Boolean(filters.locality && (!city || !locality)) ||
+    Boolean(filters.category && !categories.some(c => c.slug === filters.category)) ||
+    (filters.price_min !== undefined && filters.price_max !== undefined && filters.price_min > filters.price_max);
+  const area = city ? {
+    city: city.id,
+    ...(locality ? { locality: locality.id } : {}),
+    label: `${locality ? `${locality.name}, ` : ""}${city.name} district, ${city.state}`,
+  } : null;
+  const searchResult = invalidFilters
+    ? { items: [], total_count: 0, page: 1, per_page: 12, total_pages: 0 }
+    : await searchPublicListings(filters);
+  const broaderHref = filters.locality && city
+    ? discoveryHref(rawFilters, { city: city.id, label: `${city.name} district, ${city.state}` })
+    : discoveryHref(rawFilters, null);
 
   const familyDisplays = await loadPublicFamilyDisplays(searchResult.items);
 
@@ -120,6 +139,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             </div>
           </div>
 
+          {invalidFilters && <p role="alert" className="mb-4 text-sm">Some search filters are invalid or unavailable. Change or clear them to continue.</p>}
+          <SearchLocation key={searchContext} filters={rawFilters} area={area} />
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
             {/* Filter Sidebar */}
             <div className="lg:col-span-1">
@@ -174,13 +195,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     <SearchX className="h-7 w-7" aria-hidden="true" />
                   </div>
                   <h2 className="mt-4 text-lg font-bold text-foreground">
-                    No ads match your search
+                    {searchResult.unavailable ? "Search is temporarily unavailable" : invalidFilters ? "Check your search filters" : "No listings match your search"}
                   </h2>
                   <p className="mt-2 text-xs text-muted max-w-md mx-auto leading-relaxed">
-                    We couldn&apos;t find any approved advertisements matching your exact filters.
-                    Try broadening your search keywords, expanding the price range, or selecting &ldquo;All Categories&rdquo;.
+                    {searchResult.unavailable ? "Please try again shortly. Your selected filters are preserved." : "Try changing your keywords or filters. Geographic scope changes only when you choose a wider search."}
                   </p>
                   <div className="mt-6 flex flex-wrap justify-center gap-3">
+                    {!invalidFilters && !searchResult.unavailable && filters.city && <Link href={broaderHref} className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-semibold text-brand-link">
+                      {filters.locality ? "No ads in this area yet. View ads across the district." : "No ads in this district yet. View ads across All India."}
+                    </Link>}
                     <Link
                       href="/search"
                       className="rounded-lg bg-action-600 px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-action-700"

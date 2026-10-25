@@ -8,32 +8,43 @@ vi.mock("@/components/providers/AuthProvider", () => ({
     unreadNotificationsCount: 0, refreshUnreadCounts: vi.fn(), signOut: vi.fn() }),
 }));
 
+vi.mock("@/lib/discovery/queries", () => ({
+  getPublicCategories: vi.fn(async () => [
+    { id: "1", slug: "electronics", name: "Electronics" },
+    { id: "2", slug: "furniture", name: "Furniture" },
+    { id: "3", slug: "books", name: "Books" },
+  ]),
+}));
+vi.mock("@/lib/location/public-areas", () => ({ resolvePublicArea: vi.fn() }));
+vi.mock("@/components/listings/RecentListingsSection", () => ({ RecentListingsSection: () => null }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 describe("HomePage component", () => {
-  it("renders main landmark and main heading", () => {
-    render(<HomePage />);
+  it("renders main landmark and main heading", async () => {
+    render(await HomePage());
     expect(screen.getByRole("main")).toBeInTheDocument();
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toBeInTheDocument();
     expect(heading).toHaveTextContent(/FairSwap/i);
   });
 
-  it("does not render the obsolete development foundation notice", () => {
-    render(<HomePage />);
+  it("does not render the obsolete development foundation notice", async () => {
+    render(await HomePage());
     expect(screen.queryByText("Development Foundation")).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Accounts, ads, and communication are not connected yet/i)
     ).not.toBeInTheDocument();
   });
 
-  it("renders the Trust Strip section", () => {
-    render(<HomePage />);
+  it("renders one compact safety reminder", async () => {
+    render(await HomePage());
     expect(
-      screen.getByRole("heading", { level: 2, name: /stay safe on fairswap/i })
+      screen.getByText(/Stay safe on FairSwap/)
     ).toBeInTheDocument();
   });
 
-  it("renders the How It Works section with 3 core steps and updated Exchange text", () => {
-    render(<HomePage />);
+  it("renders the How It Works section with 3 core steps and updated Exchange text", async () => {
+    render(await HomePage());
     expect(
       screen.getByRole("heading", { level: 2, name: /how it works/i })
     ).toBeInTheDocument();
@@ -45,8 +56,8 @@ describe("HomePage component", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the Browse Categories preview section", () => {
-    render(<HomePage />);
+  it("renders the Browse Categories preview section", async () => {
+    render(await HomePage());
     expect(
       screen.getByRole("heading", { level: 2, name: /browse categories/i })
     ).toBeInTheDocument();
@@ -55,13 +66,11 @@ describe("HomePage component", () => {
     expect(screen.getByText("Books")).toBeInTheDocument();
   });
 
-  it("renders the Safety section with peer-to-peer advice", () => {
-    render(<HomePage />);
+  it("does not claim verified ads and keeps inspect-before-payment advice", async () => {
+    render(await HomePage());
+    expect(screen.queryByText(/verified ads|verified advertisements/i)).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { level: 2, name: /your safety matters/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/buyers and sellers arrange payment and exchange independently/i)
+      screen.getByText(/inspect before paying/i)
     ).toBeInTheDocument();
   });
 });
