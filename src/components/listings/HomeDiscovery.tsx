@@ -55,8 +55,8 @@ export function HomeDiscovery({ categories, initialArea = null, initialFilters =
             const Icon = categoryIcon(category.slug);
             const visibility = expanded || index < 8 ? "" : index < 12 ? "hidden sm:block" : index < 14 ? "hidden lg:block" : "hidden";
             return <li key={category.id} className={visibility}>
-              <Link href={href(category.slug)} prefetch={false} className="flex min-h-24 flex-col items-center justify-start gap-2 rounded-lg px-1 py-3 text-center text-xs font-medium text-foreground hover:bg-surface focus-visible:outline-2 focus-visible:outline-action-500 sm:text-sm">
-                <Icon strokeWidth={1.5} className="h-7 w-7 shrink-0 text-brand-link" aria-hidden="true" />
+              <Link href={href(category.slug)} prefetch={false} className="flex min-h-28 flex-col items-center justify-start gap-2 rounded-lg px-1 py-3 text-center text-xs font-medium text-foreground hover:bg-surface focus-visible:outline-2 focus-visible:outline-action-500 sm:text-sm">
+                <span className="fs-category-icon shrink-0"><Icon strokeWidth={1.75} className="h-6 w-6" aria-hidden="true" /></span>
                 <span className="break-words">{category.name}</span>
               </Link>
             </li>;
