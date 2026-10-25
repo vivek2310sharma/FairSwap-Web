@@ -61,6 +61,12 @@
   --color-notice-bg: #fef3c7;
   --color-notice-border: #f59e0b;
   --color-notice-text: #92400e;
+
+  /* Accent roles: links, category icons and focus ring. */
+  --fs-link: #055CA8;
+  --fs-icon: #055CA8;
+  --fs-icon-surface: #e3f0fd;
+  --fs-focus: #0878E8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -75,17 +81,28 @@
     --color-notice-bg: #451a03;
     --color-notice-border: #b45309;
     --color-notice-text: #fde68a;
+
+    --fs-link: #8fd0ff;
+    --fs-icon: #8fd0ff;
+    --fs-icon-surface: rgba(125, 198, 252, 0.14);
+    --fs-focus: #8fd0ff;
   }
 }
 
 .text-brand-link {
-  color: #055CA8;
+  color: var(--fs-link);
 }
 
-@media (prefers-color-scheme: dark) {
-  .text-brand-link {
-    color: #7dc6fc;
-  }
+/* Category icon: subtle tinted tile so the icon keeps contrast on any surface. */
+.fs-category-icon {
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: var(--fs-icon-surface);
+  color: var(--fs-icon);
 }
 
 body {
@@ -99,10 +116,12 @@ body {
 /*
  * Header: the full navigation shows only when it fits. Before hydration (or
  * without JS) it needs a wide viewport; the header then measures real content
- * and sets data-nav="inline" | "compact", so labels, auth controls, zoom and
- * text size are all accounted for.
+ * and sets data-nav="inline" | "medium" | "compact", so labels, auth controls,
+ * zoom and text size are all accounted for. "medium" keeps the Browse and
+ * Post Ad shortcuts beside the menu button (sm and up only).
  */
-.fs-header .fs-inline-only { display: none; }
+.fs-header .fs-inline-only,
+.fs-header .fs-medium-only { display: none; }
 .fs-header .fs-compact-btn { display: inline-flex; }
 .fs-header .fs-compact-panel { display: block; }
 
@@ -116,9 +135,12 @@ body {
 .fs-header[data-nav="inline"] .fs-compact-btn,
 .fs-header[data-nav="inline"] .fs-compact-panel { display: none; }
 
+.fs-header[data-nav="medium"] .fs-medium-only { display: flex; }
+.fs-header[data-nav="medium"] .fs-compact-btn { margin-left: 0; }
+
 /* Accessible focus ring */
 :focus-visible {
-  outline: 2px solid var(--color-brand-500);
+  outline: 2px solid var(--fs-focus);
   outline-offset: 2px;
 }
 
