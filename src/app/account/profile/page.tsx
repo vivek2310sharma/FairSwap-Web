@@ -1,8 +1,13 @@
 import { redirect } from "next/navigation";
 import { AccountPageShell } from "@/components/account/AccountPageShell";
+import { ProfileEditor } from "@/components/account/profile/ProfileEditor";
 import { createClient } from "@/lib/supabase/server";
-import { type Profile, type UserAccount } from "@/types/account";
-import ProfileForm from "./profile-form";
+import { loadProfileEditorData } from "@/lib/profile/load";
+
+export const metadata = {
+  title: "My Profile — FairSwap",
+  description: "Manage your public profile and personal information.",
+};
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -12,31 +17,23 @@ export default async function ProfilePage() {
     redirect("/auth/sign-in?next=/account/profile");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userData.user.id)
-    .single<Profile>();
+  const { profile, accountStatus, isAccountUnavailable, privateDetails, values } = await loadProfileEditorData(
+    supabase,
+    userData.user
+  );
 
-  const { data: account, error: accountError } = await supabase
-    .from("user_accounts")
-    .select("account_status")
-    .eq("user_id", userData.user.id)
-    .single<UserAccount>();
-
-  const isAccountUnavailable = Boolean(accountError || !account);
-  const isSuspended = !isAccountUnavailable && account?.account_status === "suspended";
-  const isDeletionPending = !isAccountUnavailable && account?.account_status === "deletion_pending";
-  const isDeleted = !isAccountUnavailable && account?.account_status === "deleted";
-  const isActive = !isAccountUnavailable && account?.account_status === "active";
-  const canEdit = isActive && !isAccountUnavailable;
+  const isSuspended = accountStatus === "suspended";
+  const isDeletionPending = accountStatus === "deletion_pending";
+  const isDeleted = accountStatus === "deleted";
+  const canEdit = accountStatus === "active" && !isAccountUnavailable;
 
   return (
     <AccountPageShell
-      title={canEdit ? "Edit Public Profile" : "Public Profile"}
+      title="My Profile"
+      width="lg"
       description={
         canEdit
-          ? "This information is visible to other buyers and sellers on FairSwap."
+          ? "Choose what other members see, and keep your private details up to date."
           : "Review your saved profile information. Editing is currently unavailable."
       }
     >
@@ -58,25 +55,31 @@ export default async function ProfilePage() {
               ? "Your account is suspended. Profile edits are disabled."
               : "Account information is currently unavailable. Profile edits are disabled."}
           </div>
-          <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-3 text-sm">
+          <div className="space-y-3 rounded-xl border border-border bg-card p-6 text-sm shadow-sm">
             <div>
               <span className="text-muted">Name: </span>
               <span className="font-semibold text-foreground">{profile?.display_name || "—"}</span>
             </div>
             <div>
               <span className="text-muted">Location: </span>
-              <span className="text-foreground">
-                {profile?.city ? `${profile.city}, ${profile.state || ""}` : "Not set"}
-              </span>
+              <span className="text-foreground">{values.publicLocation ?? "Not set"}</span>
             </div>
             <div>
               <span className="text-muted">Bio: </span>
               <span className="text-muted">{profile?.bio || "No bio yet."}</span>
             </div>
+            {privateDetails?.exists && (
+              <div>
+                <span className="text-muted">Private details (only you can see these): </span>
+                <span className="text-foreground">
+                  {[privateDetails.full_name, privateDetails.pin_code].filter(Boolean).join(" · ") || "—"}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       ) : (
-        <ProfileForm profile={profile} />
+        <ProfileEditor mode="edit" values={values} />
       )}
     </AccountPageShell>
   );

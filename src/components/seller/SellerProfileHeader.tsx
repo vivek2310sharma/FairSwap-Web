@@ -1,11 +1,23 @@
 import Image from "next/image";
-import { Calendar } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
 import type { PublicSellerProfile } from "@/types/account";
 import { formatMemberSince, getAccountCopy } from "@/lib/account/copy";
 import { ShareProfileButton } from "./ShareProfileButton";
 
 interface SellerProfileHeaderProps {
   profile: PublicSellerProfile;
+  /** Public locality + district only (from public_profile_location). Never a PIN. */
+  location?: { locality: string | null; district: string | null } | null;
+}
+
+export function formatPublicLocation(
+  location: SellerProfileHeaderProps["location"]
+): string | null {
+  if (!location) return null;
+  const parts = [location.locality, location.district]
+    .map((part) => part?.trim())
+    .filter((part, index, all): part is string => Boolean(part) && all.indexOf(part) === index);
+  return parts.length > 0 ? parts.join(", ") : null;
 }
 
 function initialsOf(name: string): string {
@@ -16,9 +28,10 @@ function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function SellerProfileHeader({ profile }: SellerProfileHeaderProps) {
+export function SellerProfileHeader({ profile, location }: SellerProfileHeaderProps) {
   const copy = getAccountCopy("en");
   const name = profile.display_name || copy.memberFallback;
+  const locationText = formatPublicLocation(location);
 
   return (
     <section className="rounded-2xl border border-border bg-card p-5 shadow-xs sm:p-8" aria-labelledby="seller-name">
@@ -49,6 +62,13 @@ export function SellerProfileHeader({ profile }: SellerProfileHeaderProps) {
               <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>{formatMemberSince(profile.created_at)}</span>
             </p>
+            {locationText && (
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">
+                <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="sr-only">{copy.seller.locationLabel}: </span>
+                <span>{locationText}</span>
+              </p>
+            )}
           </div>
         </div>
 

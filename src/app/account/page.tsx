@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AccountOverview } from "@/components/account/AccountOverview";
-import { type Profile, type UserAccount } from "@/types/account";
+import { type MyPrivateDetails, type Profile, type UserAccount } from "@/types/account";
 
 function formatMemberSince(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -31,6 +31,16 @@ export default async function AccountPage() {
     .single<UserAccount>();
 
   const isAccountUnavailable = Boolean(accountError || !account);
+
+  // One owner-scoped read drives the completion banner. Legacy users keep full access;
+  // a failed read never blocks the dashboard (no banner is shown).
+  let privateDetails: MyPrivateDetails | null = null;
+  try {
+    const { data } = await supabase.rpc("get_my_private_details");
+    privateDetails = (data as unknown as MyPrivateDetails | null) ?? null;
+  } catch {
+    privateDetails = null;
+  }
   const isSuspended = !isAccountUnavailable && account?.account_status === "suspended";
   const isDeletionPending = !isAccountUnavailable && account?.account_status === "deletion_pending";
   const isDeleted = !isAccountUnavailable && account?.account_status === "deleted";
@@ -93,7 +103,8 @@ export default async function AccountPage() {
       email={userData.user.email ?? null}
       city={profile?.city?.trim() || null}
       memberSince={formatMemberSince(profile?.created_at)}
-      canEdit={isActive}
+      avatarUrl={profile?.avatar_url ?? null}
+      needsProfileCompletion={isActive && privateDetails !== null && !privateDetails.onboarding_completed}
       publicProfileHref={isActive ? `/seller/${userData.user.id}` : null}
       showVerification={isActive}
       isRestricted={isRestricted}

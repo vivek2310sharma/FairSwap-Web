@@ -30,6 +30,21 @@ const EMPTY_RESULT: SellerListingsResult = {
 
 const sellerIdSchema = z.string().uuid();
 
+const publicLocationRowSchema = z.object({
+  user_id: z.string(),
+  locality: z.string().nullable().optional(),
+  district: z.string().nullable().optional(),
+});
+
+// Fails closed: anything unexpected renders no location.
+function parsePublicLocation(data: unknown, sellerId: string) {
+  const rows = z.array(publicLocationRowSchema).safeParse(data);
+  if (!rows.success) return null;
+  const row = rows.data.find((r) => r.user_id === sellerId);
+  if (!row) return null;
+  return { locality: row.locality ?? null, district: row.district ?? null };
+}
+
 // Public profile fields only. Location, phone and email are never selected.
 const PUBLIC_PROFILE_COLUMNS = "id, display_name, avatar_url, bio, created_at";
 
@@ -71,8 +86,10 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
   const listingsActive = query.tab === "listings";
 
   // Profile visibility (suspended / deleted accounts) is enforced by the profiles RLS policy.
-  const [{ data: profile, error }, result] = await Promise.all([
+  const [{ data: profile, error }, locationRpc, result] = await Promise.all([
     supabase.from("profiles").select(PUBLIC_PROFILE_COLUMNS).eq("id", id).maybeSingle<PublicSellerProfile>(),
+    // Locality + district only, for active onboarded sellers. Never PIN, ids or state.
+    supabase.rpc("public_profile_location", { p_user_ids: [id] }),
     // Ratings tab only needs the total for the tab label.
     invalid
       ? Promise.resolve<SellerListingsResult>(EMPTY_RESULT)
@@ -80,6 +97,8 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
   ]);
 
   if (error || !profile) notFound();
+
+  const location = parsePublicLocation(locationRpc.error ? null : locationRpc.data, id);
 
   // Tab label shows the seller's total visible listings, not the filtered count.
   const totalResult = listingsActive && hasFilters ? await getSellerListingsPage(id, {}, 1) : result;
@@ -103,7 +122,7 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
             </Link>
           </div>
 
-          <SellerProfileHeader profile={profile} />
+          <SellerProfileHeader profile={profile} location={location} />
 
           <SellerTabs
             active={query.tab}

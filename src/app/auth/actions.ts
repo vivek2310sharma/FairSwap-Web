@@ -7,14 +7,12 @@ import { logger } from "@/lib/logger";
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
 import { LEGAL_POLICY } from "@/lib/compliance/legal-policy";
 import { NEUTRAL_OTP_ACKNOWLEDGEMENT } from "@/lib/auth/constants";
+import { DisplayNameSchema } from "@/lib/profile/validation";
 
 const SignUpSchema = z.object({
   email: z.string().email("Please provide a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters long."),
-  displayName: z
-    .string()
-    .min(2, "Display name must be at least 2 characters.")
-    .max(50, "Display name cannot exceed 50 characters."),
+  displayName: DisplayNameSchema,
   termsAccepted: z.literal("on", {
     errorMap: () => ({ message: "You must accept the Terms of Service and Acceptable Use Policy, and acknowledge the Privacy Policy." }),
   }),
@@ -67,7 +65,7 @@ export async function signUpAction(
         age_confirmed: "true",
         minimum_age_confirmed: LEGAL_POLICY.minimumAge,
       },
-      emailRedirectTo: `${siteUrl}/auth/callback?type=signup&next=/account`,
+      emailRedirectTo: `${siteUrl}/auth/callback?type=signup&next=/account/complete-profile`,
     },
   });
 

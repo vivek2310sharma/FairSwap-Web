@@ -8,7 +8,7 @@ describe("Light Form Controls Dark-Mode Contrast Invariant", () => {
     "src/app/auth/sign-up/page.tsx",
     "src/app/auth/forgot-password/page.tsx",
     "src/components/auth/PasswordInput.tsx",
-    "src/app/account/profile/profile-form.tsx",
+    // Profile editor inputs use theme tokens (text-foreground / bg-card) that follow dark mode.
   ];
 
   it.each(formFiles)("%s explicitly provides readable text-gray-900 and bg-white on text inputs", (filePath) => {

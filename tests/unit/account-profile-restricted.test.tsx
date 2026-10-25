@@ -5,6 +5,7 @@ import ProfilePage from "@/app/account/profile/page";
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   from: vi.fn(),
+  rpc: vi.fn(),
   createClient: vi.fn(),
   redirect: vi.fn((target: string): never => {
     throw new Error(`REDIRECT:${target}`);
@@ -13,8 +14,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
-vi.mock("@/app/account/profile/profile-form", () => ({
-  default: () => <div data-testid="profile-form-editable">Editable Profile Form</div>,
+vi.mock("@/components/account/profile/ProfileEditor", () => ({
+  ProfileEditor: () => <div data-testid="profile-form-editable">Editable Profile Form</div>,
 }));
 
 describe("Profile Page Account Status Restriction Tests", () => {
@@ -23,7 +24,9 @@ describe("Profile Page Account Status Restriction Tests", () => {
     mocks.createClient.mockResolvedValue({
       auth: { getUser: mocks.getUser },
       from: mocks.from,
+      rpc: mocks.rpc,
     });
+    mocks.rpc.mockResolvedValue({ data: { exists: false, onboarding_completed: false }, error: null });
   });
 
   afterEach(() => {
@@ -54,8 +57,8 @@ describe("Profile Page Account Status Restriction Tests", () => {
 
     render(await ProfilePage());
 
-    expect(screen.getByRole("heading", { name: "Edit Public Profile" })).toBeInTheDocument();
-    expect(screen.getByText("This information is visible to other buyers and sellers on FairSwap.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "My Profile" })).toBeInTheDocument();
+    expect(screen.getByText("Choose what other members see, and keep your private details up to date.")).toBeInTheDocument();
     expect(screen.getByTestId("profile-form-editable")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -78,7 +81,7 @@ describe("Profile Page Account Status Restriction Tests", () => {
 
     render(await ProfilePage());
 
-    expect(screen.getByRole("heading", { name: "Public Profile" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "My Profile" })).toBeInTheDocument();
     expect(screen.getByText("Review your saved profile information. Editing is currently unavailable.")).toBeInTheDocument();
     expect(screen.queryByTestId("profile-form-editable")).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent("Your account is suspended. Profile edits are disabled.");
@@ -103,7 +106,7 @@ describe("Profile Page Account Status Restriction Tests", () => {
 
     render(await ProfilePage());
 
-    expect(screen.getByRole("heading", { name: "Public Profile" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "My Profile" })).toBeInTheDocument();
     expect(screen.getByText("Review your saved profile information. Editing is currently unavailable.")).toBeInTheDocument();
     expect(screen.queryByTestId("profile-form-editable")).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent("Your account deletion request is pending. Profile edits are disabled.");
@@ -128,7 +131,7 @@ describe("Profile Page Account Status Restriction Tests", () => {
 
     render(await ProfilePage());
 
-    expect(screen.getByRole("heading", { name: "Public Profile" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "My Profile" })).toBeInTheDocument();
     expect(screen.getByText("Review your saved profile information. Editing is currently unavailable.")).toBeInTheDocument();
     expect(screen.queryByTestId("profile-form-editable")).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent("This account has been closed. Profile edits are disabled.");
@@ -152,7 +155,7 @@ describe("Profile Page Account Status Restriction Tests", () => {
 
     render(await ProfilePage());
 
-    expect(screen.getByRole("heading", { name: "Public Profile" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "My Profile" })).toBeInTheDocument();
     expect(screen.getByText("Review your saved profile information. Editing is currently unavailable.")).toBeInTheDocument();
     expect(screen.queryByTestId("profile-form-editable")).toBeNull();
     expect(screen.getByRole("alert")).toHaveTextContent("Account information is currently unavailable. Profile edits are disabled.");
