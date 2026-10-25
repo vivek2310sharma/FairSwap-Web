@@ -223,6 +223,7 @@ export interface PublicListingCard {
 }
 
 export interface SearchListingsResult {
+  unavailable?: boolean;
   items: PublicListingCard[];
   total_count: number;
   page: number;
@@ -309,7 +310,7 @@ export function getEffectiveSort(q?: string, sortParam?: string): SearchSortOpti
 }
 
 export const searchFiltersSchema = z.object({
-  q: z.string().max(100).optional().default(""),
+  q: z.string().trim().max(100).optional().default(""),
   category: z.string().max(100).optional().default(""),
   city: z.string().max(100).optional().default(""),
   locality: z.string().max(100).optional().default(""),
