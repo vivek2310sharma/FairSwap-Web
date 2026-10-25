@@ -21,6 +21,6 @@ test.describe("Homepage Performance & SSR Optimization", () => {
     expect(recentListingsApiCalled).toBe(false);
 
     // Verify the hero search bar exists to confirm the page has successfully loaded
-    await expect(page.getByPlaceholder("Search items, categories, or keywords...")).toBeVisible();
+    await expect(page.getByRole("searchbox", { name: "Search items", exact: true })).toBeVisible();
   });
 });
