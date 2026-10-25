@@ -15,6 +15,13 @@ async function settle() { await act(async () => { await vi.advanceTimersByTimeAs
 const mockResponse = (items = [area]) => ({ ok: true, json: async () => ({ items }) });
 
 describe("location-aware discovery", () => {
+  it("renders only a visually hidden H1 and omits the removed headline and subtitle", () => {
+    render(<HomeDiscovery categories={categories} initialArea={area} initialFilters={{}} restoreSaved={false} />);
+    const h1 = screen.getByRole("heading", { level: 1, name: "Buy & sell locally on FairSwap.in" });
+    expect(h1).toHaveClass("sr-only");
+    expect(screen.queryByText("Discover pre-loved finds on FairSwap")).toBeNull();
+    expect(screen.queryByText("Pre-loved things. A fresh start.")).toBeNull();
+  });
   it("submits trimmed keywords and preserves category and location, resetting page", () => {
     render(<HomeDiscovery categories={categories} initialArea={area} initialFilters={{ category: "electronics", page: 7 }} restoreSaved={false} />);
     fireEvent.change(screen.getByRole("searchbox", { name: "Search items" }), { target: { value: "  iPhone 13  " } });

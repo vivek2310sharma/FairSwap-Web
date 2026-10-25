@@ -37,9 +37,8 @@ export function HomeDiscovery({ categories, initialArea = null, initialFilters =
   const [expanded, setExpanded] = useState(false);
   const href = (category = initialFilters.category) => discoveryHref({ q: query, category }, area);
   return <section className="mx-auto max-w-7xl px-4 pb-6 pt-5 sm:px-6 sm:pt-8 lg:px-8">
-    <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-3xl">Discover pre-loved finds on FairSwap</h1>
-    <p className="mt-1 text-sm text-muted">Pre-loved things. A fresh start.</p>
-    <div className="mt-5 grid items-start gap-3 md:grid-cols-[minmax(0,1fr)_2fr]">
+    <h1 className="sr-only">Buy &amp; sell locally on FairSwap.in</h1>
+    <div className="grid items-start gap-3 md:grid-cols-[minmax(0,1fr)_2fr]">
       <DiscoveryLocationSelector area={area} restoreSaved={restoreSaved} onRestore={setArea} onConfirm={value => { setArea(value); router.push(discoveryHref({ q: query, category: initialFilters.category }, value)); }} />
       <form action="/search" onSubmit={event => { event.preventDefault(); router.push(href()); }} className="flex min-h-12 min-w-0 items-center rounded-lg border border-border bg-background focus-within:outline-2 focus-within:outline-action-500" role="search">
         {area && <><input type="hidden" name="city" value={area.city} />{area.locality && <input type="hidden" name="locality" value={area.locality} />}</>}
