@@ -220,7 +220,44 @@ async function mockAuthenticatedNavigation(page: Page) {
   await page.route("**/rest/v1/rpc/get_unread_counts", route => route.fulfill({ json: { unread_messages: 12, unread_notifications: 25 } }));
 }
 
-for (const width of [1024, 1280]) {
+test('HDR-03 authenticated header at 1024px uses the compact menu instead of colliding', async ({ page }) => {
+  await mockAuthenticatedNavigation(page);
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto('/search');
+  await expect(page.locator('header[data-nav="compact"]')).toBeAttached();
+  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeHidden();
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const menu = page.getByRole('navigation', { name: 'Mobile navigation' });
+  await expect(menu.getByRole('link', { name: 'Messages (12 unread)', exact: true })).toBeVisible();
+  await expect(menu.getByRole('link', { name: 'Notifications (25 unread)', exact: true })).toBeVisible();
+  await expect(menu.getByRole('button', { name: 'Sign Out' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+for (const width of [320, 360, 375, 390, 430, 640, 768, 960, 1024, 1152, 1280, 1440]) {
+  test('HDR-03 logo never overlaps navigation at ' + width + 'px', async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/search');
+    // Streaming can briefly leave a hidden duplicate header; wait for the settled DOM.
+    await expect(page.locator('header')).toHaveCount(1);
+    await expect(page.locator('header[data-nav]')).toBeAttached();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const logo = (await page.locator('header a[aria-label="FairSwap home"]').boundingBox())!;
+    const nav = page.getByRole('navigation', { name: 'Main navigation' });
+    if (await nav.isVisible()) {
+      const navBox = (await nav.boundingBox())!;
+      const postAd = (await page.locator('header a[href="/account/listings/new"]').first().boundingBox())!;
+      expect(logo.x + logo.width).toBeLessThanOrEqual(navBox.x + 0.5);
+      expect(navBox.x + navBox.width).toBeLessThanOrEqual(postAd.x + 0.5);
+      expect(postAd.height).toBeLessThanOrEqual(48);
+    } else {
+      const menu = (await page.getByRole('button', { name: 'Open menu' }).boundingBox())!;
+      expect(logo.x + logo.width).toBeLessThanOrEqual(menu.x + 0.5);
+    }
+  });
+}
+
+for (const width of [1280]) {
   test('HDR-03 desktop auth navigation at ' + width + 'px', async ({ page }) => {
     await mockAuthenticatedNavigation(page);
     await page.setViewportSize({ width, height: 900 });
