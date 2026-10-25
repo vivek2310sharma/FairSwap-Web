@@ -2407,7 +2407,7 @@ export type Database = {
           expected_revision: number
           expected_status: Database["public"]["Enums"]["listing_status_enum"]
           listing_id: string
-          reason: string
+          reason: string | null
         }
         Returns: Json
       }
@@ -2540,13 +2540,13 @@ export type Database = {
         Returns: Json
       }
       service_clear_profile_avatar: {
-        Args: { p_old_path: string; p_user_id: string }
+        Args: { p_old_path: string | null; p_user_id: string }
         Returns: Json
       }
       service_set_profile_avatar: {
         Args: {
           p_new_path: string
-          p_old_path: string
+          p_old_path: string | null
           p_public_url: string
           p_user_id: string
         }
