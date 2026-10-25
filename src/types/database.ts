@@ -10,10 +10,31 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
+      app_system_settings: {
+        Row: {
+          description: string | null
+          setting_key: string
+          setting_value: string
+          updated_at: string
+        }
+        Insert: {
+          description?: string | null
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+        }
+        Update: {
+          description?: string | null
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -706,6 +727,137 @@ export type Database = {
           },
         ]
       }
+      listing_moderation_requests: {
+        Row: {
+          attempt_count: number
+          claim_expires_at: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          created_at: string
+          evaluated_description: string | null
+          evaluated_title: string | null
+          generation_id: string
+          id: string
+          listing_id: string
+          listing_revision: number
+          max_attempts: number
+          next_attempt_at: string
+          status: Database["public"]["Enums"]["moderation_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          evaluated_description?: string | null
+          evaluated_title?: string | null
+          generation_id?: string
+          id?: string
+          listing_id: string
+          listing_revision: number
+          max_attempts?: number
+          next_attempt_at?: string
+          status?: Database["public"]["Enums"]["moderation_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          evaluated_description?: string | null
+          evaluated_title?: string | null
+          generation_id?: string
+          id?: string
+          listing_id?: string
+          listing_revision?: number
+          max_attempts?: number
+          next_attempt_at?: string
+          status?: Database["public"]["Enums"]["moderation_request_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_moderation_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_moderation_results: {
+        Row: {
+          actor_role: string
+          completed_rules: string[]
+          created_at: string
+          decision: Database["public"]["Enums"]["moderation_decision_state"]
+          errors: Json
+          failed_rules: string[]
+          flags: Json
+          generation_id: string
+          id: string
+          listing_id: string
+          listing_revision: number
+          outcome: Database["public"]["Enums"]["moderation_outcome_enum"]
+          request_id: string
+          ruleset_version: string
+          scope: string
+        }
+        Insert: {
+          actor_role?: string
+          completed_rules?: string[]
+          created_at?: string
+          decision: Database["public"]["Enums"]["moderation_decision_state"]
+          errors?: Json
+          failed_rules?: string[]
+          flags?: Json
+          generation_id: string
+          id?: string
+          listing_id: string
+          listing_revision: number
+          outcome: Database["public"]["Enums"]["moderation_outcome_enum"]
+          request_id: string
+          ruleset_version: string
+          scope: string
+        }
+        Update: {
+          actor_role?: string
+          completed_rules?: string[]
+          created_at?: string
+          decision?: Database["public"]["Enums"]["moderation_decision_state"]
+          errors?: Json
+          failed_rules?: string[]
+          flags?: Json
+          generation_id?: string
+          id?: string
+          listing_id?: string
+          listing_revision?: number
+          outcome?: Database["public"]["Enums"]["moderation_outcome_enum"]
+          request_id?: string
+          ruleset_version?: string
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_moderation_results_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_moderation_results_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "listing_moderation_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_property_contexts: {
         Row: {
           category_id: string
@@ -1231,6 +1383,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_path: string | null
           avatar_url: string | null
           bio: string | null
           city: string | null
@@ -1241,6 +1394,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_path?: string | null
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1251,6 +1405,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_path?: string | null
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1484,6 +1639,24 @@ export type Database = {
         }
         Relationships: []
       }
+      unread_count_signals: {
+        Row: {
+          id: string
+          revision: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          revision?: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          revision?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_accounts: {
         Row: {
           acceptable_use_version: string | null
@@ -1552,6 +1725,60 @@ export type Database = {
           reason?: string | null
         }
         Relationships: []
+      }
+      user_private_details: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          full_name: string | null
+          locality_id: string | null
+          onboarding_completed_at: string | null
+          pin_code: string | null
+          preferred_language: string
+          state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city_id?: string | null
+          created_at?: string
+          full_name?: string | null
+          locality_id?: string | null
+          onboarding_completed_at?: string | null
+          pin_code?: string | null
+          preferred_language?: string
+          state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city_id?: string | null
+          created_at?: string
+          full_name?: string | null
+          locality_id?: string | null
+          onboarding_completed_at?: string | null
+          pin_code?: string | null
+          preferred_language?: string
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_private_details_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_private_details_locality_id_fkey"
+            columns: ["locality_id"]
+            isOneToOne: false
+            referencedRelation: "localities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vehicle_brands: {
         Row: {
@@ -1781,6 +2008,10 @@ export type Database = {
       }
       admin_fulfill_data_export: { Args: { request_id: string }; Returns: Json }
       admin_get_report_evidence: { Args: { report_id: string }; Returns: Json }
+      admin_list_profile_text_violations: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       admin_manage_category: {
         Args: {
           action: string
@@ -1846,6 +2077,14 @@ export type Database = {
           role: Database["public"]["Enums"]["staff_role_enum"]
           user_id: string
         }[]
+      }
+      admin_update_ticket_state: {
+        Args: {
+          priority: Database["public"]["Enums"]["support_ticket_priority_enum"]
+          status: Database["public"]["Enums"]["support_ticket_status_enum"]
+          ticket_id: string
+        }
+        Returns: undefined
       }
       admin_update_ticket_status: {
         Args: {
@@ -1934,6 +2173,31 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_moderation_batch: {
+        Args: {
+          p_batch_size?: number
+          p_lease_seconds?: number
+          p_request_id?: string
+        }
+        Returns: {
+          attempt_count: number
+          claim_token: string
+          description: string
+          generation_id: string
+          listing_id: string
+          listing_revision: number
+          request_id: string
+          title: string
+        }[]
+      }
+      claim_moderation_v2_input: {
+        Args: {
+          p_lease_seconds?: number
+          p_worker_id: string
+          p_worker_secret: string
+        }
+        Returns: Json
+      }
       complete_email_outbox_job: {
         Args: {
           p_job_id: string
@@ -1941,6 +2205,16 @@ export type Database = {
           p_provider_message_id: string
         }
         Returns: boolean
+      }
+      complete_my_profile: {
+        Args: {
+          p_city_id?: string
+          p_full_name: string
+          p_locality_id: string
+          p_pin_code: string
+          p_preferred_language?: string
+        }
+        Returns: Json
       }
       create_report: {
         Args: {
@@ -1981,6 +2255,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      finalize_moderation_v2_input: {
+        Args: {
+          p_attempt_id: string
+          p_claim_token: string
+          p_request_id: string
+          p_result: Json
+          p_worker_secret: string
+        }
+        Returns: Json
+      }
+      get_listing_moderation_findings: {
+        Args: { listing_id: string }
+        Returns: Json
+      }
+      get_my_private_details: { Args: never; Returns: Json }
       get_my_reports: {
         Args: never
         Returns: {
@@ -2005,10 +2294,15 @@ export type Database = {
           pin_code: string
         }[]
       }
+      get_seller_moderation_workflow_status: {
+        Args: { listing_id: string }
+        Returns: Json
+      }
       get_seller_submission_status: {
         Args: { listing_id: string }
         Returns: Json
       }
+      get_staff_family_review: { Args: { listing_id: string }; Returns: Json }
       get_staff_listing_location_private: {
         Args: { p_listing_id: string }
         Returns: {
@@ -2017,7 +2311,42 @@ export type Database = {
           pin_code: string
         }[]
       }
+      get_staff_listing_review_context: {
+        Args: { p_listing_id: string }
+        Returns: Json
+      }
+      get_unread_counts: {
+        Args: never
+        Returns: {
+          unread_messages: number
+          unread_notifications: number
+        }[]
+      }
       has_current_policy_acceptance: { Args: never; Returns: boolean }
+      heartbeat_moderation_v2_input: {
+        Args: {
+          p_attempt_id: string
+          p_claim_token: string
+          p_extension_seconds?: number
+          p_request_id: string
+          p_worker_secret: string
+        }
+        Returns: Json
+      }
+      impl_finalize_moderation_result: {
+        Args: {
+          p_claim_token: string
+          p_completed_rules: string[]
+          p_errors?: Json
+          p_failed_rules: string[]
+          p_flags: Json
+          p_outcome: string
+          p_request_id: string
+          p_ruleset_version: string
+          p_scope: string
+        }
+        Returns: Json
+      }
       is_listing_publicly_visible: {
         Args: { listing_id: string }
         Returns: boolean
@@ -2058,6 +2387,16 @@ export type Database = {
         Args: { notification_id: string }
         Returns: undefined
       }
+      moderate_family_reviewed: {
+        Args: {
+          action: string
+          expected_fingerprint: string
+          expected_revision: number
+          listing_id: string
+          reason: string
+        }
+        Returns: Json
+      }
       moderate_listing: {
         Args: { action: string; listing_id: string; reason?: string }
         Returns: Json
@@ -2068,7 +2407,16 @@ export type Database = {
           expected_revision: number
           expected_status: Database["public"]["Enums"]["listing_status_enum"]
           listing_id: string
-          reason?: string | null
+          reason: string | null
+        }
+        Returns: Json
+      }
+      public_profile_location: { Args: { p_user_ids: string[] }; Returns: Json }
+      record_listing_openai_clear_evidence: {
+        Args: {
+          p_claim_token: string
+          p_media_digests: Json
+          p_request_id: string
         }
         Returns: Json
       }
@@ -2094,6 +2442,23 @@ export type Database = {
           p_version_id: string
         }
         Returns: string
+      }
+      save_my_profile_details: {
+        Args: {
+          p_bio?: string
+          p_city_id?: string
+          p_clear_full_name?: boolean
+          p_display_name: string
+          p_full_name?: string
+          p_locality_id?: string
+          p_pin_code?: string
+          p_preferred_language?: string
+        }
+        Returns: Json
+      }
+      save_my_public_profile: {
+        Args: { p_bio?: string; p_display_name: string }
+        Returns: Json
       }
       save_property_draft: {
         Args: {
@@ -2174,11 +2539,28 @@ export type Database = {
         }
         Returns: Json
       }
+      service_clear_profile_avatar: {
+        Args: { p_old_path: string | null; p_user_id: string }
+        Returns: Json
+      }
+      service_set_profile_avatar: {
+        Args: {
+          p_new_path: string
+          p_old_path: string | null
+          p_public_url: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       start_conversation: {
         Args: { client_request_id: string; content: string; listing_id: string }
         Returns: Json
       }
       unblock_user: { Args: { blocked_user_id: string }; Returns: undefined }
+      verify_moderation_worker_secret: {
+        Args: { p_candidate: string }
+        Returns: boolean
+      }
     }
     Enums: {
       account_status_enum:
@@ -2214,6 +2596,24 @@ export type Database = {
         | "processing"
         | "ready"
         | "failed"
+      moderation_decision_state:
+        | "auto_approved"
+        | "routed_to_admin"
+        | "awaiting_retry"
+        | "escalated_to_admin"
+        | "rejected_invalid"
+      moderation_outcome_enum:
+        | "no_review_flags"
+        | "needs_review"
+        | "checks_incomplete"
+        | "invalid_input"
+      moderation_request_status:
+        | "pending"
+        | "claimed"
+        | "completed"
+        | "retry"
+        | "failed"
+        | "superseded"
       notification_type_enum:
         | "new_message"
         | "listing_approved"
@@ -2411,6 +2811,27 @@ export const Constants = {
         "processing",
         "ready",
         "failed",
+      ],
+      moderation_decision_state: [
+        "auto_approved",
+        "routed_to_admin",
+        "awaiting_retry",
+        "escalated_to_admin",
+        "rejected_invalid",
+      ],
+      moderation_outcome_enum: [
+        "no_review_flags",
+        "needs_review",
+        "checks_incomplete",
+        "invalid_input",
+      ],
+      moderation_request_status: [
+        "pending",
+        "claimed",
+        "completed",
+        "retry",
+        "failed",
+        "superseded",
       ],
       notification_type_enum: [
         "new_message",

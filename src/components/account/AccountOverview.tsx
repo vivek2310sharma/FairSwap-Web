@@ -15,7 +15,8 @@ interface AccountOverviewProps {
   email: string | null;
   city: string | null;
   memberSince: string | null;
-  canEdit: boolean;
+  avatarUrl?: string | null;
+  needsProfileCompletion?: boolean;
   publicProfileHref: string | null;
   showVerification: boolean;
   isRestricted: boolean;
@@ -30,7 +31,8 @@ export function AccountOverview({
   email,
   city,
   memberSince,
-  canEdit,
+  avatarUrl,
+  needsProfileCompletion = false,
   publicProfileHref,
   showVerification,
   isRestricted,
@@ -60,10 +62,26 @@ export function AccountOverview({
         email={email}
         city={city}
         memberSince={memberSince}
-        canEdit={canEdit}
+        avatarUrl={avatarUrl}
         publicProfileHref={publicProfileHref}
         onOpenRatings={() => open("ratings")}
       />
+
+      {needsProfileCompletion && (
+        <section
+          aria-label={copy.profileCompletion.title}
+          className="rounded-2xl border border-action-200 bg-action-50 p-4 dark:border-action-800 dark:bg-action-950/40 sm:p-5"
+        >
+          <h2 className="text-base font-bold text-foreground">{copy.profileCompletion.title}</h2>
+          <p className="mt-1 text-sm text-muted">{copy.profileCompletion.body}</p>
+          <Link
+            href="/account/complete-profile"
+            className="mt-3 inline-flex min-h-[44px] items-center rounded-lg bg-action-600 px-4 text-sm font-semibold text-white hover:bg-action-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500"
+          >
+            {copy.profileCompletion.action}
+          </Link>
+        </section>
+      )}
 
       {showVerification && <VerificationBanner onOpen={() => open("verification")} />}
 

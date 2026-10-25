@@ -7,7 +7,7 @@ interface AccountIdentityProps {
   email: string | null;
   city: string | null;
   memberSince: string | null;
-  canEdit: boolean;
+  avatarUrl?: string | null;
   publicProfileHref: string | null;
   onOpenRatings: () => void;
 }
@@ -23,7 +23,7 @@ export function AccountIdentity({
   email,
   city,
   memberSince,
-  canEdit,
+  avatarUrl,
   publicProfileHref,
   onOpenRatings,
 }: AccountIdentityProps) {
@@ -38,9 +38,14 @@ export function AccountIdentity({
     <section aria-label={name} className="flex items-center gap-4 sm:gap-6">
       <div
         aria-hidden="true"
-        className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border border-border bg-brand-50 text-2xl font-bold text-brand-700 dark:bg-brand-800 dark:text-brand-100 sm:h-28 sm:w-28 sm:text-4xl"
+        className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-brand-50 text-2xl font-bold text-brand-700 dark:bg-brand-800 dark:text-brand-100 sm:h-28 sm:w-28 sm:text-4xl"
       >
-        {initials || <span className="text-brand-400">FS</span>}
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- small sanitized WebP from the public avatars bucket
+          <img src={avatarUrl} alt="" width={112} height={112} className="h-full w-full object-cover" />
+        ) : (
+          initials || <span className="text-brand-400">FS</span>
+        )}
       </div>
       <div className="min-w-0">
         <h1 className="break-words text-2xl font-bold tracking-tight text-foreground sm:text-4xl">{name}</h1>
@@ -70,11 +75,6 @@ export function AccountIdentity({
           </button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          {canEdit && (
-            <Link href="/account/profile" className={actionClass}>
-              {copy.editProfile}
-            </Link>
-          )}
           {publicProfileHref && (
             <Link href={publicProfileHref} className={actionClass}>
               {copy.viewPublicProfile}
