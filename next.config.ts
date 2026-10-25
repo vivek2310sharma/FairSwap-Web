@@ -1,5 +1,23 @@
 import type { NextConfig } from "next";
 
+/** Public avatar bucket host, derived from the environment's Supabase URL (no hardcoded hostnames). */
+function avatarRemotePatterns(): NonNullable<NonNullable<NextConfig["images"]>["remotePatterns"]> {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "");
+    const protocol = url.protocol === "http:" ? "http" : "https";
+    return [
+      {
+        protocol,
+        hostname: url.hostname,
+        port: url.port,
+        pathname: "/storage/v1/object/public/avatars/**",
+      },
+    ];
+  } catch {
+    return [];
+  }
+}
+
 const nextConfig: NextConfig = {
   // Admin URLs must reach the standard 404 without a slash redirect.
   skipTrailingSlashRedirect: true,
@@ -26,6 +44,7 @@ const nextConfig: NextConfig = {
         port: "3000",
         pathname: "/api/listings/**",
       },
+      ...avatarRemotePatterns(),
     ],
   },
   async headers() {

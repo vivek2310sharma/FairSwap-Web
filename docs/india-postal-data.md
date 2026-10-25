@@ -295,3 +295,7 @@ The smallest, production-safe mechanism blocks seller draft mutations while keep
      2. Set `MAINTENANCE_SELLER_WRITES="false"` (or remove the variable).
      3. Trigger/promote a deployment to restore live seller authoring capabilities.
 **Source status:** `src/lib/maintenance/seller-writes.ts` implements this server-only toggle, and listing actions/pages, readiness checks and media endpoints reference the guard. This does **not** prove the toggle is active on either deployed environment. Verify Vercel's effective environment and exercise a blocked write before relying on a maintenance window.
+
+## Profile onboarding use (My Profile / Complete profile)
+
+`/account/profile` and `/account/complete-profile` use `lookup_pincode` (via `/api/location/pincode/[pincode]`) to offer localities and, for multi-district PIN codes, an explicit district choice. The browser submits only the PIN, `localityId` and `cityId`; the `complete_my_profile` RPC re-runs `lookup_pincode`, requires the locality to be mapped to that PIN and the district to be one the PIN returns, and derives the state. Free-text district/state is never accepted. The PIN stays private to the owner; the public profile exposes only locality and district names through `public_profile_location`. See `FairSwap-Backend/docs/contracts/profile-public-private.md`.

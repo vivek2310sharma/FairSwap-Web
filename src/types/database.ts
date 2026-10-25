@@ -1229,8 +1229,47 @@ export type Database = {
         }
         Relationships: []
       }
+      // Hand-aligned with FairSwap-Backend profile-onboarding forward migrations (not generated).
+      // service_role only: no anon/authenticated grants. Never read from client code.
+      avatar_cleanup_queue: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          dead_lettered_at: string | null
+          id: string
+          last_error: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          path: string
+          queued_at: string
+          reason: string
+          user_id: string | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      // Owner-SELECT only under RLS; all writes go through RPCs. Insert/Update are never used by clients.
+      user_private_details: {
+        Row: {
+          city_id: string | null
+          created_at: string
+          full_name: string | null
+          locality_id: string | null
+          onboarding_completed_at: string | null
+          pin_code: string | null
+          preferred_language: string
+          state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       profiles: {
         Row: {
+          avatar_path: string | null
           avatar_url: string | null
           bio: string | null
           city: string | null
@@ -1241,6 +1280,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_path?: string | null
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -1251,6 +1291,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_path?: string | null
           avatar_url?: string | null
           bio?: string | null
           city?: string | null
@@ -2036,6 +2077,50 @@ export type Database = {
         Returns: Json
       }
       lookup_pincode: { Args: { p_pincode: string }; Returns: Json }
+      save_my_public_profile: {
+        Args: { p_bio?: string; p_display_name: string }
+        Returns: Json
+      }
+      complete_my_profile: {
+        Args: {
+          p_city_id?: string
+          p_full_name: string
+          p_locality_id: string
+          p_pin_code: string
+          p_preferred_language?: string
+        }
+        Returns: Json
+      }
+      save_my_profile_details: {
+        Args: {
+          p_bio?: string
+          p_city_id?: string
+          p_clear_full_name?: boolean
+          p_display_name: string
+          p_full_name?: string
+          p_locality_id?: string
+          p_pin_code?: string
+          p_preferred_language?: string
+        }
+        Returns: Json
+      }
+      admin_list_profile_text_violations: { Args: { p_limit?: number }; Returns: Json }
+      service_claim_avatar_cleanup: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
+      service_complete_avatar_cleanup: { Args: { p_ids: string[] }; Returns: Json }
+      service_fail_avatar_cleanup: { Args: { p_error?: string; p_id: string }; Returns: Json }
+      get_my_private_details: { Args: never; Returns: Json }
+      public_profile_location: { Args: { p_user_ids: string[] }; Returns: Json }
+      service_set_profile_avatar: {
+        Args: { p_new_path: string; p_old_path: string | null; p_public_url: string; p_user_id: string }
+        Returns: Json
+      }
+      service_clear_profile_avatar: {
+        Args: { p_old_path: string | null; p_user_id: string }
+        Returns: Json
+      }
       lookup_two_wheeler_catalogue: {
         Args: {
           p_brand_id?: string

@@ -6,6 +6,7 @@ import { getAccountCopy } from "@/lib/account/copy";
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   from: vi.fn(),
+  rpc: vi.fn(),
   createClient: vi.fn(),
   redirect: vi.fn((target: string): never => {
     throw new Error(`REDIRECT:${target}`);
@@ -22,7 +23,9 @@ describe("ACC-02 My Account Page UI Tests", () => {
     mocks.createClient.mockResolvedValue({
       auth: { getUser: mocks.getUser },
       from: mocks.from,
+      rpc: mocks.rpc,
     });
+    mocks.rpc.mockResolvedValue({ data: { exists: true, onboarding_completed: true }, error: null });
   });
 
   afterEach(() => {
@@ -36,7 +39,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(mocks.redirect).toHaveBeenCalledWith("/auth/sign-in?next=/account");
   });
 
-  it("renders active account without internal terms version or status badge, showing Edit Profile and Manage Settings links", async () => {
+  it("renders active account without internal terms version or status badge, showing My profile and Settings tiles and no duplicate Edit profile button", async () => {
     const user = { id: "user-active-123", email: "customer@example.com" };
     const profile = { display_name: "John Doe", city: "Mumbai", state: "Maharashtra", bio: "Hello world" };
     const account = {
@@ -81,7 +84,8 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.queryByText("active")).toBeNull();
 
     expect(screen.getByRole("link", { name: /Settings/ })).toHaveAttribute("href", "/account/settings");
-    expect(screen.getAllByRole("link", { name: /Edit profile/i })[0]).toHaveAttribute("href", "/account/profile");
+    expect(screen.queryByRole("link", { name: /Edit profile/i })).toBeNull();
+    expect(screen.getByRole("link", { name: /My profile/i })).toHaveAttribute("href", "/account/profile");
     expect(screen.getByRole("link", { name: /Security settings/i })).toHaveAttribute("href", "/account/security");
     expect(screen.getByRole("link", { name: "View public profile" })).toHaveAttribute("href", "/seller/user-active-123");
 
