@@ -91,7 +91,7 @@ describe("server sign-in navigation", () => {
     render(<AuthProvider><Header /></AuthProvider>);
     emit("alice");
     const button = screen.getByRole("button", { name: "Sign Out" });
-    expect(button).toHaveClass("border", "bg-surface", "disabled:opacity-50");
+    expect(button).toHaveClass("border", "border-border", "bg-card", "disabled:opacity-50");
     expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     fireEvent.click(button);
     expect(screen.getByRole("button", { name: "Signing out…" })).toBeDisabled();
