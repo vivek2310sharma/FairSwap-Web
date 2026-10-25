@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -26,6 +26,43 @@ const navLinks = [
   { label: "Safety", href: "/safety" },
 ];
 
+/**
+ * Chooses the inline or compact header from real content width. It briefly sets
+ * data-nav="inline", checks for overflow, then settles. This runs in
+ * ResizeObserver callbacks (before paint), so no intermediate state is painted.
+ */
+function useHeaderFit(
+  headerRef: React.RefObject<HTMLElement | null>,
+  barRef: React.RefObject<HTMLElement | null>,
+  contentKey: string,
+) {
+  const evaluateRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const header = headerRef.current;
+    const bar = barRef.current;
+    if (!header || !bar) return;
+    const evaluate = () => {
+      header.setAttribute("data-nav", "inline");
+      const overflows = bar.scrollWidth > bar.clientWidth + 1;
+      header.setAttribute("data-nav", overflows ? "compact" : "inline");
+    };
+    evaluateRef.current = evaluate;
+    evaluate();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(evaluate);
+    observer.observe(bar);
+    header.querySelectorAll(".fs-inline-only").forEach((el) => observer.observe(el));
+    document.fonts?.ready.then(evaluate).catch(() => {});
+    return () => observer.disconnect();
+  }, [headerRef, barRef]);
+
+  // Content that changes without resizing the bar (auth resolving, badges).
+  useEffect(() => {
+    evaluateRef.current();
+  }, [contentKey]);
+}
+
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isLoading, unreadMessagesCount, unreadNotificationsCount, signOut } =
@@ -38,6 +75,9 @@ export function Header() {
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  useHeaderFit(headerRef, barRef, `${isLoading}|${user?.id ?? ""}|${unreadMessagesCount}|${unreadNotificationsCount}|${signingOut}`);
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
     setSignOutError(null);
@@ -46,12 +86,13 @@ export function Header() {
   }, [signOut]);
 
   return (
-    <header onKeyDown={event => { if (event.key === "Escape" && mobileMenuOpen) { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xs">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+    <header ref={headerRef} onKeyDown={event => { if (event.key === "Escape" && mobileMenuOpen) { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className="fs-header sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xs">
+      <div className="px-4 sm:px-6 lg:px-8">
+      <div ref={barRef} className="mx-auto flex max-w-7xl items-center gap-4 py-3">
         {/* Wordmark */}
         <Link
           href="/"
-          className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm"
+          className="flex shrink-0 items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm"
           aria-label="FairSwap home"
         >
           <span className="rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5">
@@ -68,34 +109,34 @@ export function Header() {
 
         {/* Desktop navigation */}
         <nav
-          className="hidden items-center gap-6 lg:flex"
+          className="fs-inline-only shrink-0 items-center gap-6"
           aria-label="Main navigation"
         >
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+              className="whitespace-nowrap text-sm font-medium text-muted transition-colors hover:text-foreground"
             >
               {link.label}
             </Link>
           ))}
           <a
             href={HELP_CENTRE_URL}
-            className="text-sm font-medium text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className="whitespace-nowrap text-sm font-medium text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           >
             Help Centre
           </a>
           <Link
             href="/search"
-            className="flex items-center gap-1.5 text-sm font-medium text-brand-link hover:underline"
+            className="flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-brand-link hover:underline"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             Browse
           </Link>
           <Link
             href="/account/favourites"
-            className="flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-foreground"
+            className="flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-muted transition-colors hover:text-foreground"
           >
             <Heart className="h-4 w-4" aria-hidden="true" />
             Favourites
@@ -103,7 +144,7 @@ export function Header() {
         </nav>
 
         {/* Action buttons */}
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="fs-inline-only ml-auto shrink-0 items-center gap-3">
           {isLoading ? <span role="status" className="px-3 text-xs">Checking session…</span> : user ? (
             <>
               <Link
@@ -129,14 +170,14 @@ export function Header() {
                 disabled={signingOut}
                 aria-busy={signingOut}
                 onClick={handleSignOut}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                 {signingOut ? "Signing out…" : "Sign Out"}
               </button>
               <Link
                 href="/account"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
+                className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
               >
                 <User className="h-3.5 w-3.5" aria-hidden="true" />
                 Account
@@ -145,7 +186,7 @@ export function Header() {
           ) : (
             <Link
               href="/auth/sign-in"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
             >
               <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
               Sign In
@@ -154,7 +195,7 @@ export function Header() {
 
           <Link
             href="/account/listings/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-action-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-action-700"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-action-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-action-700"
           >
             <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
             Post Ad
@@ -164,7 +205,7 @@ export function Header() {
         {/* Mobile menu button */}
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-md p-2 text-muted hover:text-foreground lg:hidden"
+          className="fs-compact-btn ml-auto items-center justify-center rounded-md p-2 text-muted hover:text-foreground"
           ref={menuButton}
           onClick={toggleMenu}
           aria-expanded={mobileMenuOpen}
@@ -178,13 +219,14 @@ export function Header() {
           )}
         </button>
       </div>
+      </div>
 
       {signOutError && <p role="alert" className="px-4 py-2 text-sm">{signOutError}</p>}
       {/* Mobile menu panel */}
       {mobileMenuOpen && (
         <nav
           id="mobile-menu"
-          className="border-t border-border bg-background lg:hidden"
+          className="fs-compact-panel border-t border-border bg-background"
           aria-label="Mobile navigation"
         >
           <div className="space-y-2 px-4 py-3">
