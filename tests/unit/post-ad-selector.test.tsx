@@ -2,7 +2,14 @@ import React, { type ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type Link from "next/link";
-import { POST_AD_CATALOGUE, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
+import {
+  Armchair, Baby, BookOpen, BriefcaseBusiness, CarFront, House, Laptop, PawPrint,
+  Refrigerator, Shapes, Shirt, Smartphone, Wrench,
+} from "lucide-react";
+import { POST_AD_CATALOGUE, resolveSub, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
+import {
+  MAIN_CATEGORY_ICONS, SUBCATEGORY_ICONS, getMainCategoryIcon, getSubcategoryIcon,
+} from "@/components/listings/post-ad-category-icons";
 import MacroCategorySelector, {
   type MacroCategoryAvailability,
 } from "@/components/listings/MacroCategorySelector";
@@ -41,7 +48,7 @@ const on = { available: true } as const;
 const off = { available: false, reason: "fixture" } as const;
 const all: MacroCategoryAvailability = { goods: on, vehicles: on, property: on };
 const none: MacroCategoryAvailability = { goods: off, vehicles: off, property: off };
-const open = (name: string) => fireEvent.click(screen.getByRole("button", { name: new RegExp(name) }));
+const open = (name: string) => fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${name}`) }));
 
 describe("Post Ad category picker", () => {
   beforeEach(() => {
@@ -50,10 +57,11 @@ describe("Post Ad category picker", () => {
   });
   afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-  it("renders heading, step text, search and categories in order", () => {
+  it("renders heading, unnumbered prompt, search and categories in order", () => {
     render(<MacroCategorySelector availability={all} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("What would you like to list?");
-    expect(screen.getByText("Step 1 of 3 · Choose a category")).toBeVisible();
+    expect(screen.getByText("Choose a category to continue.")).toBeVisible();
+    expect(screen.queryByText(/Step \d+ of \d+/)).toBeNull();
     expect(screen.getByPlaceholderText("e.g. iPhone 13, Activa, fridge, sofa")).toBeVisible();
     expect(screen.getAllByRole("listitem").map((li) => li.querySelector("button span.font-semibold")?.textContent)).toEqual(names);
     expect(screen.getByText(/never need to enter a UPI PIN/)).toBeVisible();
@@ -76,6 +84,86 @@ describe("Post Ad category picker", () => {
   const caps = (o: Partial<PostAdCapabilities> = {}): PostAdCapabilities => ({
     goodsCategories: ["electronics", "home-appliances", "furniture", "books", "hobbies"],
     twoWheelers: "live", cars: "live", property: "live", propertyPaths: [], ...o,
+  });
+
+  it("explicitly maps all 13 main categories to distinct appropriate icons", () => {
+    const expected = [Smartphone, CarFront, House, Refrigerator, Laptop, Armchair,
+      Shirt, Baby, BookOpen, PawPrint, Wrench, BriefcaseBusiness, Shapes];
+    expect(Object.keys(MAIN_CATEGORY_ICONS).sort()).toEqual(POST_AD_CATALOGUE.map(m => m.id).sort());
+    expect(POST_AD_CATALOGUE.map(m => getMainCategoryIcon(m.id))).toEqual(expected);
+    expect(new Set(expected).size).toBe(13);
+    const { container } = render(<MacroCategorySelector availability={all} />);
+    const icons = container.querySelectorAll('button[aria-controls="post-ad-subcategories"] > svg');
+    expect(icons).toHaveLength(13);
+    for (const icon of icons) {
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(icon).toHaveClass('h-7', 'w-7', 'text-emerald-600');
+    }
+  });
+
+  it("explicitly maps every existing subcategory with parent-scoped keys and safe fallbacks", () => {
+    expect(Object.keys(SUBCATEGORY_ICONS).sort()).toEqual(POST_AD_CATALOGUE.map(m => m.id).sort());
+    for (const main of POST_AD_CATALOGUE) {
+      expect(Object.keys(SUBCATEGORY_ICONS[main.id]).sort()).toEqual(main.subs.map(s => s.id).sort());
+      for (const sub of main.subs) expect(getSubcategoryIcon(main.id, sub.id)).toBeDefined();
+    }
+    expect(getMainCategoryIcon('unknown')).toBe(Shapes);
+    expect(getSubcategoryIcon('unknown', 'cars')).toBe(Shapes);
+    expect(getSubcategoryIcon('mobiles', 'cars')).toBe(Shapes);
+    expect(getSubcategoryIcon('vehicles', 'toString')).toBe(Shapes);
+    expect(new Set(['two-wheelers', 'bicycles', 'electric-cycles'].map(id => getSubcategoryIcon('vehicles', id))).size).toBe(3);
+  });
+
+  it.each(POST_AD_CATALOGUE)("uses the same responsive cards and decorative icons for $id", (main) => {
+    const capabilities = caps();
+    const { container } = render(<MacroCategorySelector availability={all} capabilities={capabilities} />);
+    open(main.label.en);
+    expect(screen.getByText('Choose a subcategory to continue.')).toBeVisible();
+    expect(container.textContent).not.toMatch(/Step \d+ of \d+/);
+    const cards = container.querySelectorAll('#post-ad-subcategories li');
+    expect(cards).toHaveLength(main.subs.length);
+    cards.forEach((item, index) => {
+      expect(item.parentElement).toHaveClass('grid', 'grid-cols-1', 'min-[420px]:grid-cols-2', 'lg:grid-cols-3');
+      const card = item.firstElementChild!;
+      expect(card).toHaveClass('min-h-11', 'h-full', 'items-start', 'gap-3', 'p-3', 'focus-visible:ring-2');
+      const icon = card.querySelector('svg')!;
+      expect(icon).toHaveClass('h-6', 'w-6', 'text-emerald-600');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      const sub = main.subs[index];
+      const { readiness, macro } = resolveSub(sub, capabilities);
+      const badge = { available: 'Available', 'draft-only': 'Draft only', 'coming-soon': 'Coming soon', unavailable: 'Not available' }[readiness];
+      expect(card).toHaveAccessibleName(`${sub.label} ${badge}`);
+      expect(card.tagName).toBe(macro ? 'A' : 'BUTTON');
+    });
+    if (main.id === 'property') {
+      expect(screen.getByRole('heading', { name: 'For Rent' })).toBeVisible();
+      expect(screen.getByRole('heading', { name: 'For Sale' })).toBeVisible();
+    }
+  });
+
+  it("puts all six Vehicles choices, including Commercial Vehicles, in the same grid", () => {
+    render(<MacroCategorySelector availability={all} />);
+    open('Vehicles');
+    const commercial = screen.getByRole('button', { name: 'Commercial & Other Vehicles Coming soon' });
+    const cars = screen.getByRole('link', { name: 'Cars Draft only' });
+    expect(commercial.closest('ul')).toBe(cars.closest('ul'));
+    expect(commercial.closest('ul')?.children).toHaveLength(6);
+    expect(commercial.className).toBe(screen.getByRole('button', { name: 'Bicycles Coming soon' }).className);
+  });
+
+  it("reuses subcategory glyphs in compact search results and retains romanized aliases", () => {
+    render(<MacroCategorySelector availability={all} />);
+    open('Vehicles');
+    const glyph = screen.getByRole('link', { name: 'Motorcycles & Scooters Draft only' }).querySelector('svg')!.innerHTML;
+    fireEvent.change(screen.getByLabelText('Search categories'), { target: { value: 'Activa' } });
+    const result = screen.getByRole('link', { name: 'Motorcycles & Scooters in Vehicles Draft only' });
+    expect(result.querySelector('svg')!.innerHTML).toBe(glyph);
+    expect(result.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    fireEvent.change(screen.getByLabelText('Search categories'), { target: { value: 'gaadi' } });
+    expect(screen.getByRole('button', { name: 'Vehicles' })).toBeVisible();
+    fireEvent.change(screen.getByLabelText('Search categories'), { target: { value: '' } });
+    open('Vehicles');
+    expect(screen.getByText('Choose a category to continue.')).toBeVisible();
   });
 
   it("offers only explicit general Goods continuations, never unsupported leaves, and keeps Bicycles non-actionable", () => {
