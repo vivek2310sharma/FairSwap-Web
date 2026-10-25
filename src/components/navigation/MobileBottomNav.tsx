@@ -87,7 +87,7 @@ export function MobileBottomNav() {
       />
       <nav
         aria-label="Mobile bottom navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-surface/95 backdrop-blur-xs pb-[env(safe-area-inset-bottom)] sm:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-xs pb-[env(safe-area-inset-bottom)] sm:hidden"
       >
         <ul className="grid h-16 grid-cols-5 items-center px-1" role="list">
           {navItems.map((item) => {
@@ -101,16 +101,16 @@ export function MobileBottomNav() {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     aria-label="Sell - Post an ad"
-                    className="group flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500"
+                    className="group flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--fs-focus)"
                   >
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-action-600 text-white shadow-xs transition-transform hover:bg-action-700 active:scale-95 ${
-                        active ? "ring-2 ring-action-600 ring-offset-2" : ""
+                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-primary text-on-primary shadow-xs transition-transform hover:bg-primary-hover active:scale-95 ${
+                        active ? "ring-2 ring-primary ring-offset-2" : ""
                       }`}
                     >
                       <Plus className="h-5 w-5 stroke-[2.5]" aria-hidden="true" />
                     </div>
-                    <span className="mt-0.5 text-[10px] font-semibold text-action-700 dark:text-action-400">
+                    <span className="mt-0.5 text-[10px] font-semibold text-primary">
                       {item.label}
                     </span>
                   </Link>
@@ -132,21 +132,21 @@ export function MobileBottomNav() {
                       ? `${item.label} (${unreadMessagesCount} unread)`
                       : item.label
                   }
-                  className={`relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-lg py-1 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${
+                  className={`relative flex min-h-[44px] min-w-[44px] flex-1 flex-col items-center justify-center rounded-lg py-1 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--fs-focus) ${
                     active
-                      ? "font-semibold text-brand-600 dark:text-brand-300"
+                      ? "font-semibold text-primary"
                       : "font-medium text-muted hover:text-foreground"
                   }`}
                 >
                   <div className="relative">
                     <Icon
                       className={`h-5 w-5 ${
-                        active ? "text-brand-600 dark:text-brand-300" : "text-muted"
+                        active ? "text-primary" : "text-muted"
                       }`}
                       aria-hidden="true"
                     />
                     {showUnreadBadge && (
-                      <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-action-600 px-1 text-[9px] font-bold text-white shadow-xs">
+                      <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold text-on-primary shadow-xs">
                         {(unreadMessagesCount ?? 0) > 9 ? "9+" : unreadMessagesCount}
                       </span>
                     )}
