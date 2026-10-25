@@ -19,6 +19,7 @@ export interface SellerProfileCopy {
   ratingsTab: string;
   comingSoon: string;
   aboutSeller: string;
+  locationLabel: string;
   searchLabel: string;
   searchPlaceholder: string;
   category: string;
@@ -55,7 +56,8 @@ export interface AccountCopy {
   signOut: string;
   signingOut: string;
   signOutFailed: string;
-  editProfile: string;
+  profileCompletion: { title: string; body: string; action: string };
+  notificationPreferences: { title: string; body: string };
   viewPublicProfile: string;
   memberSince: string;
   ratings: string;
@@ -77,7 +79,18 @@ export interface AccountCopy {
     cta: string;
   };
   previews: Record<PreviewKey, PreviewCopy>;
-  trades: { title: string; subtitle: string; tabsLabel: string; sold: string; bought: string; soldTitle: string; soldBody: string; boughtTitle: string; boughtBody: string; unavailable: string; };
+  trades: {
+    title: string;
+    subtitle: string;
+    tabsLabel: string;
+    sold: string;
+    bought: string;
+    soldTitle: string;
+    soldBody: string;
+    boughtTitle: string;
+    boughtBody: string;
+    unavailable: string;
+  };
   seller: SellerProfileCopy;
 }
 
@@ -90,7 +103,15 @@ const en: AccountCopy = {
   signOut: "Sign out",
   signingOut: "Signing out…",
   signOutFailed: "Sign out failed. Please try again.",
-  editProfile: "Edit profile",
+  profileCompletion: {
+    title: "Complete your profile",
+    body: "Add your PIN code and area so buyers and sellers know roughly where you are. Your PIN is never shown publicly.",
+    action: "Complete profile",
+  },
+  notificationPreferences: {
+    title: "Notification preferences",
+    body: "Choose which updates you receive. Coming soon.",
+  },
   viewPublicProfile: "View public profile",
   memberSince: "Member since",
   ratings: "Ratings",
@@ -99,7 +120,7 @@ const en: AccountCopy = {
   tiles: {
     profile: { title: "My profile", description: "Manage your name, location and profile details." },
     listings: { title: "My ads", description: "Manage the ads you've posted on FairSwap." },
-    trades: { title: "My trades", description: "Track items you have sold and bought on FairSwap." },
+    trades: {title: "My trades",description: "Track items you have sold and bought on FairSwap."},
     chats: { title: "Chats", description: "Your conversations with buyers and sellers." },
     favourites: { title: "Favourites", description: "Ads you have saved for later." },
     savedSearches: { title: "Saved searches & alerts", description: "Get notified when new ads match what you're looking for." },
@@ -148,7 +169,7 @@ const en: AccountCopy = {
     soldBody: "Once a buyer confirms a transaction, its record will appear in this section.",
     boughtTitle: "Your completed purchases will appear here",
     boughtBody: "Once you and a seller confirm a transaction, its record will appear in this section.",
-    unavailable: "Trade confirmation has not launched yet. You cannot confirm trades on FairSwap yet.",
+    unavailable: "Trade confirmation has not launched yet. You cannot confirm trades on FairSwap yet."
   },
   seller: {
     memberSince: "FairSwap member since {date}",
@@ -162,6 +183,7 @@ const en: AccountCopy = {
     ratingsTab: "Ratings",
     comingSoon: "Coming soon",
     aboutSeller: "About this seller",
+    locationLabel: "Location",
     searchLabel: "Search this seller's ads",
     searchPlaceholder: "Search ads",
     category: "Category",
@@ -199,7 +221,15 @@ const hi: AccountCopy = {
   signOut: "साइन आउट",
   signingOut: "साइन आउट हो रहा है…",
   signOutFailed: "साइन आउट नहीं हो सका। कृपया फिर कोशिश करें।",
-  editProfile: "प्रोफ़ाइल संपादित करें",
+  profileCompletion: {
+    title: "अपनी प्रोफ़ाइल पूरी करें",
+    body: "अपना पिन कोड और इलाका जोड़ें ताकि खरीदार और विक्रेता मोटे तौर पर आपका स्थान जान सकें। आपका पिन कभी सार्वजनिक नहीं दिखता।",
+    action: "प्रोफ़ाइल पूरी करें",
+  },
+  notificationPreferences: {
+    title: "सूचना प्राथमिकताएं",
+    body: "चुनें कि आपको कौन से अपडेट मिलें। जल्द आ रहा है।",
+  },
   viewPublicProfile: "सार्वजनिक प्रोफ़ाइल देखें",
   memberSince: "सदस्य बने",
   ratings: "रेटिंग",
@@ -208,7 +238,7 @@ const hi: AccountCopy = {
   tiles: {
     profile: { title: "मेरी प्रोफ़ाइल", description: "अपना नाम, स्थान और प्रोफ़ाइल विवरण प्रबंधित करें।" },
     listings: { title: "मेरे विज्ञापन", description: "FairSwap पर आपके द्वारा पोस्ट किए गए विज्ञापनों को प्रबंधित करें।" },
-    trades: { title: "मेरे लेन-देन", description: "FairSwap पर बेची और खरीदी गई वस्तुओं का रिकॉर्ड देखें।" },
+    trades: {title: "मेरे लेन-देन",description: "FairSwap पर बेची और खरीदी गई वस्तुओं का रिकॉर्ड देखें।"},
     chats: { title: "चैट", description: "खरीदारों और विक्रेताओं के साथ आपकी बातचीत।" },
     favourites: { title: "पसंदीदा", description: "बाद के लिए सहेजे गए विज्ञापन।" },
     savedSearches: { title: "सेव की गई खोजें और अलर्ट", description: "आपकी खोज से मेल खाने वाले नए विज्ञापनों की सूचना पाएँ।" },
@@ -257,7 +287,7 @@ const hi: AccountCopy = {
     soldBody: "जब कोई खरीदार लेन-देन की पुष्टि करेगा, तो उसका रिकॉर्ड इस अनुभाग में दिखाई देगा।",
     boughtTitle: "आपकी पूरी हुई खरीद यहां दिखाई देंगी",
     boughtBody: "जब आप और विक्रेता लेन-देन की पुष्टि करेंगे, तो उसका रिकॉर्ड इस अनुभाग में दिखाई देगा।",
-    unavailable: "लेन-देन की पुष्टि की सुविधा अभी शुरू नहीं हुई है। आप अभी FairSwap पर लेन-देन की पुष्टि नहीं कर सकते।",
+    unavailable: "लेन-देन की पुष्टि की सुविधा अभी शुरू नहीं हुई है। आप अभी FairSwap पर लेन-देन की पुष्टि नहीं कर सकते।"
   },
   seller: {
     memberSince: "FairSwap सदस्य {date} से",
@@ -271,6 +301,7 @@ const hi: AccountCopy = {
     ratingsTab: "रेटिंग",
     comingSoon: "जल्द आ रहा है",
     aboutSeller: "इस विक्रेता के बारे में",
+    locationLabel: "स्थान",
     searchLabel: "इस विक्रेता के विज्ञापन खोजें",
     searchPlaceholder: "विज्ञापन खोजें",
     category: "श्रेणी",

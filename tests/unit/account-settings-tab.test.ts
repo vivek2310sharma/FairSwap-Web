@@ -1,29 +1,26 @@
 import { describe, it, expect } from "vitest";
-import { parseTab } from "@/app/account/settings/page";
+import { resolveSettingsTab } from "@/lib/account/settings-tabs";
 
-describe("parseTab utility for Settings Hub", () => {
-  it("defaults missing query parameters to 'profile'", () => {
-    expect(parseTab(undefined)).toBe("profile");
-    expect(parseTab("")).toBe("profile");
+describe("resolveSettingsTab legacy Settings tab links", () => {
+  it("redirects the old profile tab to My Profile", () => {
+    expect(resolveSettingsTab("profile")).toEqual({ kind: "redirect", href: "/account/profile" });
+    expect(resolveSettingsTab(" PROFILE ")).toEqual({ kind: "redirect", href: "/account/profile" });
   });
 
-  it("parses valid single tab parameters", () => {
-    expect(parseTab("profile")).toBe("profile");
-    expect(parseTab("security")).toBe("security");
-    expect(parseTab("privacy")).toBe("privacy");
-    expect(parseTab("SECURITY")).toBe("security");
-    expect(parseTab(" Privacy ")).toBe("privacy");
+  it("redirects the old privacy tab to Privacy & your data", () => {
+    expect(resolveSettingsTab("privacy")).toEqual({ kind: "redirect", href: "/account/privacy" });
+    expect(resolveSettingsTab("Privacy")).toEqual({ kind: "redirect", href: "/account/privacy" });
   });
 
-  it("safely falls back to 'profile' for invalid or unexpected tab values", () => {
-    expect(parseTab("invalid_tab")).toBe("profile");
-    expect(parseTab("admin")).toBe("profile");
-    expect(parseTab("<script>")).toBe("profile");
+  it("keeps security, missing and unknown tabs on Settings", () => {
+    expect(resolveSettingsTab("security")).toEqual({ kind: "settings" });
+    expect(resolveSettingsTab(undefined)).toEqual({ kind: "settings" });
+    expect(resolveSettingsTab("")).toEqual({ kind: "settings" });
+    expect(resolveSettingsTab("https://evil.example")).toEqual({ kind: "settings" });
   });
 
-  it("handles array/repeated query parameters by picking the first value", () => {
-    expect(parseTab(["security", "privacy"])).toBe("security");
-    expect(parseTab(["privacy", "profile"])).toBe("privacy");
-    expect(parseTab(["unknown", "security"])).toBe("profile");
+  it("uses the first value of repeated parameters", () => {
+    expect(resolveSettingsTab(["privacy", "profile"])).toEqual({ kind: "redirect", href: "/account/privacy" });
+    expect(resolveSettingsTab(["unknown", "profile"])).toEqual({ kind: "settings" });
   });
 });

@@ -10,11 +10,28 @@ export interface Profile {
   id: string;
   display_name: string;
   avatar_url: string | null;
+  /** Internal bucket-relative avatar path; clients render avatar_url only. */
+  avatar_path?: string | null;
   bio: string | null;
   city: string | null;
   state: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** Owner-only private details (RPC `get_my_private_details`). Never render another user's. */
+export interface MyPrivateDetails {
+  exists: boolean;
+  full_name?: string | null;
+  pin_code?: string | null;
+  locality_id?: string | null;
+  locality?: string | null;
+  city_id?: string | null;
+  district?: string | null;
+  state?: string | null;
+  preferred_language?: string | null;
+  onboarding_completed: boolean;
+  onboarding_completed_at?: string | null;
 }
 
 /** Public seller profile projection: never includes location or contact data. */
@@ -58,3 +75,4 @@ export interface PolicyAcceptanceRecord {
   minimum_age_confirmed: number;
   accepted_at: string;
 }
+
