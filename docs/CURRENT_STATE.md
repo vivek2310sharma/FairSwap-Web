@@ -1,5 +1,7 @@
 # Current FairSwap-Web state and boundaries
 
+> Posting V2 / Mobile Phones local candidate (25 October 2026): implemented source remains gated off pending release checks. See the parent workspace's `FairSwap-Backend/supabase/forward-migrations/posting-v2/README.md` for exact files, passing automated release checks, selective patches, migration order and cleanup. No hosted deployment occurred.
+
 > Homepage/location discovery local candidate (25 October 2026): compact live-category discovery, public-area/PIN selection and optional server geocoding; no database migration. GPS requires server configuration. See [implementation and release handoff](operations/HOMEPAGE_LOCATION_DISCOVERY.md). Hosted deployment and acceptance remain pending.
 
 > India taxonomy local candidate (24 October 2026): bilingual discovery and 15 ordinary Goods migration candidates; safety-dependent categories remain unavailable. See [scope and release dependencies](operations/INDIA_TAXONOMY_UPGRADE.md).

@@ -10,7 +10,7 @@ import type { VehicleReferences } from "@/lib/listings/two-wheeler/server";
 import type { PropertyReferences } from '@/lib/listings/property/server';
 import type { ListingCategoryReference, ListingAttributeReference } from '@/types/listing';
 
-export default function GoodsPostAdEntry({references, vehicles, property, locations, isMaintenanceActive, maintenanceMessage, submission}: {submission?: {twoWheelers: boolean; cars: boolean; property: boolean}; references: GoodsReferences; vehicles?: VehicleReferences; property?:PropertyReferences; locations?:PostAdLocations; isMaintenanceActive: boolean; maintenanceMessage?: string}) {
+export default function GoodsPostAdEntry({references, vehicles, property, locations, isMaintenanceActive, maintenanceMessage, submission, mobilePhones=false}: {mobilePhones?:boolean; submission?: {twoWheelers: boolean; cars: boolean; property: boolean}; references: GoodsReferences; vehicles?: VehicleReferences; property?:PropertyReferences; locations?:PostAdLocations; isMaintenanceActive: boolean; maintenanceMessage?: string}) {
   const router = useRouter();
   const query = useSearchParams();
   const values = query.getAll("macro");
@@ -19,6 +19,7 @@ export default function GoodsPostAdEntry({references, vehicles, property, locati
   const usable = (v?: {categories: unknown[]; error?: string}) => !!v && !v.error && v.categories.length > 0;
   const family = (has: boolean, live?: boolean): FamilyState => !has ? "off" : live ? "live" : "draft";
   const capabilities: PostAdCapabilities = {
+    mobilePhones,
     goodsCategories: references.status === "ready" ? references.categories.map(c => goodsCategoryKey(c as {name: string; slug?: string | null})) : [],
     twoWheelers: family(!!vehicles && !vehicles.error && vehicles.categories.some(c => c.family !== "cars"), submission?.twoWheelers),
     cars: family(!!vehicles && !vehicles.error && vehicles.categories.some(c => c.family === "cars"), submission?.cars),

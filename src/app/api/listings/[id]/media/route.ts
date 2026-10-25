@@ -145,14 +145,25 @@ export async function POST(
   }
 
   const arrayBuffer = await file.arrayBuffer();
-  const fileBuffer = Buffer.from(arrayBuffer);
+  let fileBuffer = Buffer.from(arrayBuffer);
 
   // 7. Magic-byte inspection using initial 12-byte slice
   const initialSlice = new Uint8Array(arrayBuffer, 0, Math.min(12, arrayBuffer.byteLength));
-  const detectedMime = detectImageMimeFromMagicBytes(initialSlice);
+  let detectedMime = detectImageMimeFromMagicBytes(initialSlice);
 
   if (!detectedMime) {
     return mediaApiError("INVALID_IMAGE_FORMAT");
+  }
+
+  // Sanitize before persistence, including later edits of Posting V2 phones.
+  // Keep the existing endpoint/auth/response contract used by native clients.
+  // A raw GPS-bearing original must never reach Storage.
+  try {
+    const sanitized = await processImageBuffer(fileBuffer);
+    fileBuffer = Buffer.from(sanitized.large);
+    detectedMime = "image/webp";
+  } catch {
+    return mediaApiError("MEDIA_PROCESSING_FAILED", "Image processing failed. Please try a different image.");
   }
 
   // 8. Storage authorization/bucket probe via service-role client
@@ -176,7 +187,7 @@ export async function POST(
       listing_id: listingId,
       original_filename: file.name.slice(0, 255),
       content_type: detectedMime,
-      file_size_bytes: file.size,
+      file_size_bytes: fileBuffer.length,
     })
     .select("id, display_order, processing_status")
     .single();
@@ -189,7 +200,7 @@ export async function POST(
   }
 
   const mediaId = mediaRecord.id;
-  const ext = detectedMime === "image/jpeg" ? "jpg" : detectedMime === "image/png" ? "png" : "webp";
+  const ext = "webp";
   const originalPath = `${listingId}/${mediaId}/original.${ext}`;
   const thumbPath = `${listingId}/${mediaId}/thumb.webp`;
   const mediumPath = `${listingId}/${mediaId}/medium.webp`;

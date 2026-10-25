@@ -7,6 +7,8 @@ import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { PhotoGallery } from "@/components/listings/PhotoGallery";
 import { FavouriteButton } from "@/components/listings/FavouriteButton";
 import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
+import MobileListingDetails from "@/components/listings/MobileListingDetails";
+import { loadPublicMobileDetails } from "@/lib/listings/mobiles/public";
 import { CompactSafetyNotice, IndiaSafetyCard } from "@/components/listings/IndiaSafetyAdvice";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ShareButton } from "@/components/listings/ShareButton";
@@ -106,6 +108,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
 
   // 3. Fetch seller's other active listings and favourite state
   const supabase = await createClient();
+  const mobileDetails = await loadPublicMobileDetails(supabase,listing.id);
   const [sellerOtherListings, { data: authData }] = await Promise.all([
     listing.seller_id
       ? getSellerPublicListings(listing.seller_id, listing.id)
@@ -355,6 +358,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                 </div>
               </div>
 
+              {mobileDetails&&<MobileListingDetails details={{...mobileDetails,condition:listing.condition}}/>}
               {/* Location disclaimer */}
               <div className="rounded-xl border border-border bg-surface p-4 flex items-start gap-3">
                 <Info className="h-4 w-4 shrink-0 text-muted mt-0.5" aria-hidden="true" />

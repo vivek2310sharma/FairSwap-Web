@@ -16,9 +16,14 @@ export const metadata = {
   description: "Buy and sell pre-loved items across India. Discover approved ads by category and public area on FairSwap.",
 };
 
-export default async function HomePage({ searchParams }: {
+type HomePageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
+};
+// Next infers the final overload's required props object; direct callers retain
+// the existing no-argument default without widening generated PageProps.
+export default function HomePage(): Promise<React.JSX.Element>;
+export default function HomePage(props: HomePageProps): Promise<React.JSX.Element>;
+export default async function HomePage({ searchParams }: HomePageProps = {}) {
   const params = await searchParams || {};
   const parsed = searchFiltersSchema.safeParse(params);
   const filters = parsed.success ? parsed.data : searchFiltersSchema.parse({});

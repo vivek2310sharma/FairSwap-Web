@@ -1,7 +1,7 @@
 # MOD-03A-R2: Submission-Triggered Automatic Moderation Architecture & Implementation
 
 > [!IMPORTANT]
-> **Security update (14 October 2026):** The deployed and checked-in moderation worker uses service-only Supabase Vault token verification; earlier designs or environment-secret assumptions in this report are historical. Refer to [CURRENT_STATE](CURRENT_STATE.md), the current `supabase/functions/process-listing-moderation/index.ts` and [Vault migration](../supabase/migrations/20261013235311_moderation_vault_dispatch_auth.sql) before making security changes.
+> **Security update (14 October 2026):** The deployed and checked-in moderation worker uses service-only Supabase Vault token verification; earlier designs or environment-secret assumptions in this report are historical. Refer to [CURRENT_STATE](CURRENT_STATE.md), the current `supabase/functions/process-listing-moderation/index.ts` and the authoritative Backend [Vault migration](https://github.com/vivek2310sharma/FairSwap-Backend/blob/2f26f839c3fa0ae690cf5c3795a983d62e1b6c47/supabase/migrations/20261013235311_moderation_vault_dispatch_auth.sql) before making security changes.
 
 
 ## 1. System Overview & Product Policy
