@@ -1987,6 +1987,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      posting_v2_media_ready: {
+        Args: { session_id: string; media_id: string; attempt_id: string; file_size: number; width: number; height: number }
+        Returns: boolean
+      }
       admin_add_ticket_internal_note: {
         Args: { content: string; ticket_id: string }
         Returns: string

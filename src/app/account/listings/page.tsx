@@ -61,9 +61,14 @@ function getStatusBadge(status: ListingStatus, testFamily = false) {
   );
 }
 
-export default async function ListingsDashboardPage({ searchParams = Promise.resolve({}) }: {
+type ListingsDashboardPageProps = {
   searchParams?: Promise<{ status?: string | string[]; page?: string | string[] }>;
-} = {}) {
+};
+// Keep direct no-argument callers and the existing default query, while exposing
+// a required props object to Next's generated page validator.
+export default function ListingsDashboardPage(): Promise<React.JSX.Element>;
+export default function ListingsDashboardPage(props: ListingsDashboardPageProps): Promise<React.JSX.Element>;
+export default async function ListingsDashboardPage({ searchParams = Promise.resolve({}) }: ListingsDashboardPageProps = {}) {
   const params = await searchParams;
   const activeTab = parseMyAdsTab(params.status);
   const currentPage = parseMyAdsPage(params.page);

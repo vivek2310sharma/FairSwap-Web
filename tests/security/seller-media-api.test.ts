@@ -211,7 +211,7 @@ let orderCalled = false;
   it("B2a: creates the original and all three derivatives without Storage upsert", async () => {
     const imageBuf = await sharp({
       create: { width: 50, height: 50, channels: 3, background: { r: 200, g: 100, b: 50 } },
-    }).jpeg().toBuffer();
+    }).jpeg().withMetadata({exif:{IFD0:{Artist:"private-fixture-owner"}}}).toBuffer();
 
     const file = new File([new Uint8Array(imageBuf)], "photo.jpg", { type: "image/jpeg" });
     file.arrayBuffer = async () => Uint8Array.from(imageBuf).buffer;
@@ -224,12 +224,12 @@ let orderCalled = false;
       "listing-derivatives",
       "listing-derivatives",
     ];
-    const uploads: Array<{ bucket: string; path: string; upsert: boolean | undefined }> = [];
+    const uploads: Array<{ bucket: string; path: string; bytes: Buffer; upsert: boolean | undefined }> = [];
 
     for (const bucket of buckets) {
       mockServiceStorage.from.mockReturnValueOnce({
         upload: vi.fn(async (path: string, _bytes: unknown, options: { upsert?: boolean }) => {
-          uploads.push({ bucket, path, upsert: options.upsert });
+          uploads.push({ bucket, path, bytes: _bytes as Buffer, upsert: options.upsert });
           return { data: { path }, error: null };
         }),
         remove: vi.fn().mockResolvedValue({ data: null, error: null }),
@@ -248,6 +248,11 @@ let orderCalled = false;
     expect(uploads.map((item) => item.bucket)).toEqual(buckets);
     expect(uploads.every((item) => item.upsert === false)).toBe(true);
     expect(uploads.every((item) => item.path.startsWith(`${listingId}/${mediaId2}/`))).toBe(true);
+    for (const upload of uploads) {
+      const metadata = await sharp(upload.bytes).metadata();
+      expect(metadata.exif).toBeUndefined();
+      expect(metadata.format).toBe("webp");
+    }
   });
 
   it("B2a: an existing original Storage key is never removed after create-only collision", async () => {
@@ -277,7 +282,7 @@ let orderCalled = false;
     expect(res.status).toBe(500);
     expect((await res.json()).code).toBe("MEDIA_UPLOAD_FAILED");
     expect(upload).toHaveBeenCalledWith(
-      `${listingId}/${mediaId2}/original.jpg`,
+      `${listingId}/${mediaId2}/original.webp`,
       expect.anything(),
       expect.objectContaining({ upsert: false })
     );

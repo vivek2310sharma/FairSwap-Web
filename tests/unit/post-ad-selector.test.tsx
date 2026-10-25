@@ -131,8 +131,8 @@ describe("Post Ad category picker", () => {
       expect(icon).toHaveAttribute('aria-hidden', 'true');
       const sub = main.subs[index];
       const { readiness, macro } = resolveSub(sub, capabilities);
-      const badge = { available: 'Available', 'draft-only': 'Draft only', 'coming-soon': 'Coming soon', unavailable: 'Not available' }[readiness];
-      expect(card).toHaveAccessibleName(`${sub.label} ${badge}`);
+      const badge = { available: '', 'draft-only': 'Draft only', 'coming-soon': 'Coming soon', unavailable: 'Not available' }[readiness];
+      expect(card).toHaveAccessibleName(`${sub.label}${badge ? ` ${badge}` : ''}`);
       expect(card.tagName).toBe(macro ? 'A' : 'BUTTON');
     });
     if (main.id === 'property') {
@@ -169,8 +169,8 @@ describe("Post Ad category picker", () => {
   it("offers only explicit general Goods continuations, never unsupported leaves, and keeps Bicycles non-actionable", () => {
     render(<MacroCategorySelector availability={all} capabilities={caps()} />);
     open("Mobiles & Tablets");
-    expect(screen.getByRole("link", { name: /General Electronics/ })).toHaveAttribute("href", "/account/listings/new?macro=goods");
-    for (const leaf of [/^Mobile Phones/, /^Mobile Accessories/, /^Tablets/]) {
+    expect(screen.queryByRole("link", { name: /General Electronics/ })).toBeNull();
+    for (const leaf of [/^Mobile Phones/, /^Accessories/, /^Tablets/, /^Smartwatches/]) {
       expect(screen.queryByRole("link", { name: leaf })).toBeNull();
       expect(screen.getByRole("button", { name: leaf })).toHaveTextContent("Coming soon");
     }
@@ -262,7 +262,7 @@ describe("Post Ad category picker", () => {
 
   it.each([
     ["Activa", /Motorcycles & Scooters/], ["Royal Enfield", /Motorcycles & Scooters/], ["fridge", /General Home Appliances/],
-    ["iphone", /General Electronics/], ["laptop", /General Electronics/], ["pg", /PG & Guest Houses/], ["washing machine", /General Home Appliances/],
+    ["laptop", /General Electronics/], ["pg", /PG & Guest Houses/], ["washing machine", /General Home Appliances/],
   ])("search %s offers an actionable category", (q, match) => {
     render(<MacroCategorySelector availability={all} />);
     fireEvent.change(screen.getByLabelText("Search categories"), { target: { value: q } });
@@ -307,8 +307,15 @@ describe("Post Ad category picker", () => {
   it("calls onChooseSection instead of navigating", () => {
     const choose = vi.fn();
     render(<MacroCategorySelector availability={all} onChooseSection={choose} />);
-    open("Mobiles & Tablets");
+    open("Computers & Cameras");
     fireEvent.click(screen.getByRole("link", { name: /General Electronics/ }));
     expect(choose).toHaveBeenCalledWith("goods");
+  });
+  it("opens Mobile Phones only with the loaded V2 capability, without an Available badge", () => {
+    render(<MacroCategorySelector availability={all} capabilities={caps({mobilePhones:true})}/>);
+    open("Mobiles & Tablets");
+    expect(screen.getByRole("link",{name:"Mobile Phones"})).toHaveAttribute("href","/account/listings/new?posting=mobile-phones");
+    expect(screen.queryByText("Available")).toBeNull();
+    expect(screen.queryByText("General Electronics")).toBeNull();
   });
 });
