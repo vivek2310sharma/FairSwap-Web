@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   upload: vi.fn(),
   remove: vi.fn(),
   rpc: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -32,6 +34,7 @@ vi.mock("@/lib/supabase/service", () => ({
   }),
 }));
 vi.mock("@/lib/compliance/policy-acceptance", () => ({ requireCurrentPolicyAcceptance: mocks.guard }));
+vi.mock("@/lib/logger", () => ({ logger: { warn: mocks.warn, error: mocks.error, info: vi.fn() } }));
 
 import { POST, DELETE } from "@/app/api/account/avatar/route";
 import { AvatarProcessingError, buildAvatarPath, processAvatarImage } from "@/lib/profile/avatar";
@@ -149,7 +152,52 @@ describe("/api/account/avatar", () => {
     const res = await POST(uploadRequest(await samplePng()));
     expect(res.status).toBe(409);
     const uploaded = mocks.upload.mock.calls[0][0];
+    expect(mocks.remove).toHaveBeenCalledTimes(1);
     expect(mocks.remove).toHaveBeenCalledWith([uploaded]);
+    // The previous photo is never deleted when the database update did not succeed.
+    expect(mocks.remove).not.toHaveBeenCalledWith([`${USER}/${"a".repeat(32)}.webp`]);
+  });
+
+  it("deletes the previous object only after the database update succeeded", async () => {
+    const order: string[] = [];
+    mocks.rpc.mockImplementation(async () => {
+      order.push("rpc");
+      return { data: { success: true, previous_path: `${USER}/${"a".repeat(32)}.webp`, avatar_url: "https://x/a.webp" }, error: null };
+    });
+    mocks.remove.mockImplementation(async () => {
+      order.push("remove");
+      return { error: null };
+    });
+    await POST(uploadRequest(await samplePng()));
+    expect(order).toEqual(["rpc", "remove"]);
+  });
+
+  it("logs a failed old-object deletion immediately and still succeeds", async () => {
+    mocks.remove.mockResolvedValue({ error: { message: "storage down" } });
+    const res = await POST(uploadRequest(await samplePng()));
+    expect(res.status).toBe(200);
+    expect(mocks.warn).toHaveBeenCalledWith(
+      "account.avatar_object_delete_failed",
+      expect.objectContaining({ error_code: "STORAGE_REMOVE" })
+    );
+    expect(JSON.stringify(mocks.warn.mock.calls)).not.toContain(USER);
+  });
+
+  it("DELETE removes the user's own previous object after clearing the row", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: { success: true, previous_path: `${USER}/${"a".repeat(32)}.webp` },
+      error: null,
+    });
+    const res = await DELETE();
+    expect(res.status).toBe(200);
+    expect(mocks.remove).toHaveBeenCalledWith([`${USER}/${"a".repeat(32)}.webp`]);
+  });
+
+  it("DELETE does not remove the object when the database clear fails", async () => {
+    mocks.rpc.mockResolvedValue({ data: { success: false, error: "AVATAR_CONFLICT" }, error: null });
+    const res = await DELETE();
+    expect(res.status).toBe(409);
+    expect(mocks.remove).not.toHaveBeenCalled();
   });
 
   it("rejects invalid images before any storage write", async () => {

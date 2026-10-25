@@ -63,6 +63,8 @@ async function authenticate(): Promise<AuthResult> {
   return { ok: true, userId: data.user.id, currentPath: (profile?.avatar_path as string | null | undefined) ?? null };
 }
 
+// Immediate, best-effort deletion; a failure is logged at once and never fails the request
+// (the profile row already points at the new state). No background retry exists.
 async function removeObject(path: string | null | undefined, userId: string) {
   // Defence in depth: only ever delete objects inside the verified user's own folder.
   if (!path || !path.startsWith(`${userId}/`)) return;
@@ -70,10 +72,10 @@ async function removeObject(path: string | null | undefined, userId: string) {
     const service = createServiceRoleClient();
     const { error } = await service.storage.from(AVATAR_BUCKET).remove([path]);
     if (error) {
-      logger.warn("account.avatar_cleanup_failed", { operation: "avatar.removeObject", error_code: "STORAGE_REMOVE" });
+      logger.warn("account.avatar_object_delete_failed", { operation: "avatar.removeObject", error_code: "STORAGE_REMOVE" });
     }
   } catch {
-    logger.warn("account.avatar_cleanup_failed", { operation: "avatar.removeObject", error_code: "EXCEPTION" });
+    logger.warn("account.avatar_object_delete_failed", { operation: "avatar.removeObject", error_code: "EXCEPTION" });
   }
 }
 

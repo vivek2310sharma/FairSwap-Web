@@ -1230,25 +1230,6 @@ export type Database = {
         Relationships: []
       }
       // Hand-aligned with FairSwap-Backend profile-onboarding forward migrations (not generated).
-      // service_role only: no anon/authenticated grants. Never read from client code.
-      avatar_cleanup_queue: {
-        Row: {
-          attempts: number
-          completed_at: string | null
-          dead_lettered_at: string | null
-          id: string
-          last_error: string | null
-          locked_until: string | null
-          next_attempt_at: string
-          path: string
-          queued_at: string
-          reason: string
-          user_id: string | null
-        }
-        Insert: never
-        Update: never
-        Relationships: []
-      }
       // Owner-SELECT only under RLS; all writes go through RPCs. Insert/Update are never used by clients.
       user_private_details: {
         Row: {
@@ -2105,12 +2086,6 @@ export type Database = {
         Returns: Json
       }
       admin_list_profile_text_violations: { Args: { p_limit?: number }; Returns: Json }
-      service_claim_avatar_cleanup: {
-        Args: { p_lease_seconds?: number; p_limit?: number }
-        Returns: Json
-      }
-      service_complete_avatar_cleanup: { Args: { p_ids: string[] }; Returns: Json }
-      service_fail_avatar_cleanup: { Args: { p_error?: string; p_id: string }; Returns: Json }
       get_my_private_details: { Args: never; Returns: Json }
       public_profile_location: { Args: { p_user_ids: string[] }; Returns: Json }
       service_set_profile_avatar: {
