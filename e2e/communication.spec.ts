@@ -22,6 +22,10 @@ const TARGET_CONFIG: TargetConfig = {
 };
 
 test.describe("Milestone 1.5 Communication & Safety Route Protection", () => {
+  test("conversation deep links preserve the sign-in guard", async ({ page }) => {
+    await page.goto("/account/messages/33333333-3333-4333-8333-333333333333?tab=buying");
+    await expect(page).toHaveURL(/\/auth\/sign-in\?next=/);
+  });
   test("unauthenticated user accessing /account/messages is redirected to sign-in", async ({ page }) => {
     await page.goto("/account/messages");
     await expect(page).toHaveURL(/\/auth\/sign-in\?next=(%2F|\/)account(%2F|\/)messages/);
