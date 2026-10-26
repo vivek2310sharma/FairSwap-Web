@@ -40,7 +40,7 @@ function isActive(pathname: string, href: string, exact: boolean): boolean {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function AccountNav() {
+export function AccountNav({ ratingsAvailable = false }: { ratingsAvailable?: boolean }) {
   const pathname = usePathname();
 
   // The overview already presents every destination as a tile.
@@ -67,7 +67,7 @@ export function AccountNav() {
           className="flex gap-1 overflow-x-auto py-1.5 scrollbar-none"
           role="list"
         >
-          {accountNavItems.map((item) => {
+          {[...accountNavItems, ...(ratingsAvailable ? [{ label: getAccountCopy().ratings, href: "/account/ratings", icon: Handshake, exact: false }] : [])].map((item) => {
             const active = isActive(pathname, item.href, item.exact);
             return (
               <li key={item.href} className="flex-shrink-0">

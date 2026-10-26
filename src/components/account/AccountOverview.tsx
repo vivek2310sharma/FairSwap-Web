@@ -11,6 +11,8 @@ import { getAccountCopy, type PreviewKey } from "@/lib/account/copy";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
 
 interface AccountOverviewProps {
+  ratingsAvailable?: boolean;
+  ratingsCount?: number | null;
   displayName: string | null;
   email: string | null;
   city: string | null;
@@ -27,6 +29,8 @@ const badgeClass =
   "rounded-full bg-action-100 px-2 py-0.5 text-xs font-semibold text-action-800 dark:bg-action-900 dark:text-action-100";
 
 export function AccountOverview({
+  ratingsAvailable = false,
+  ratingsCount = null,
   displayName,
   email,
   city,
@@ -39,6 +43,7 @@ export function AccountOverview({
   notices,
 }: AccountOverviewProps) {
   const copy = getAccountCopy();
+  const openRatings = () => open("ratings");
   const [preview, setPreview] = useState<PreviewKey | null>(null);
   // Remember the last preview so its copy stays rendered while the dialog closes.
   const [lastPreview, setLastPreview] = useState<PreviewKey>("verification");
@@ -64,7 +69,9 @@ export function AccountOverview({
         memberSince={memberSince}
         avatarUrl={avatarUrl}
         publicProfileHref={publicProfileHref}
-        onOpenRatings={() => open("ratings")}
+        onOpenRatings={openRatings}
+        ratingsHref={ratingsAvailable ? "/account/ratings" : undefined}
+        ratingsCount={ratingsCount}
       />
 
       {needsProfileCompletion && (
@@ -114,10 +121,11 @@ export function AccountOverview({
           <li>
             <AccountTile
               icon={Star}
-              onClick={() => open("ratings")}
+              onClick={openRatings}
+              href={ratingsAvailable ? "/account/ratings" : undefined}
               title={t.ratings.title}
               description={t.ratings.description}
-              badge={comingSoon}
+              badge={ratingsAvailable ? (ratingsCount !== null ? <span className={badgeClass}>{ratingsCount}</span> : undefined) : comingSoon}
             />
           </li>
           <li>

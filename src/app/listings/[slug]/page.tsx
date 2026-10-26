@@ -1,3 +1,5 @@
+import { PublicSummary } from "@/components/ratings/PublicRatings";
+import { ratingsLocale } from "@/lib/ratings/copy";
 import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { Metadata } from "next";
@@ -91,7 +93,8 @@ export async function generateMetadata({
 
 export default async function ListingDetailPage({ params, searchParams }: ListingDetailPageProps) {
   const { slug } = await params;
-  const ctxParam = searchParams ? (await searchParams).ctx : undefined;
+  const query = await searchParams;
+  const ctxParam = query?.ctx;
   const backHref = getBackToSearchHref(ctxParam);
   const { listing, redirectSlug, isOwnerOrStaffPreview } =
     await getPublicListingBySlugOrId(slug);
@@ -400,6 +403,8 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                     {listing.seller.bio}
                   </p>
                 )}
+
+                {listing.seller.id && <PublicSummary userId={listing.seller.id} locale={ratingsLocale(query?.lang)} />}
 
                 <div className="mt-6 space-y-3">
                   <CompactSafetyNotice />

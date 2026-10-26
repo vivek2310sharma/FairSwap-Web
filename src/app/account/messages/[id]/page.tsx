@@ -1,3 +1,5 @@
+import { TradeCards } from "@/components/ratings/TradeCards";
+import { ratingsLocale } from "@/lib/ratings/copy";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
@@ -140,6 +142,7 @@ export default async function ConversationPage({
             )}
           </div>
 
+          <TradeCards conversationId={conversationId} locale={ratingsLocale((await searchParams)?.lang)} />
           <div className="h-[calc(100vh-14rem)] min-h-[520px] max-h-[750px] overflow-hidden rounded-2xl">
             <ChatThread
               conversation={conversation}

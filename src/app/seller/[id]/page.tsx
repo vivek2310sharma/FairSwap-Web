@@ -5,7 +5,10 @@ import { Footer } from "@/components/footer";
 import { SellerProfileHeader } from "@/components/seller/SellerProfileHeader";
 import { SellerTabs } from "@/components/seller/SellerTabs";
 import { SellerListingsPanel } from "@/components/seller/SellerListingsPanel";
-import { SellerRatingsPlaceholder } from "@/components/seller/SellerRatingsPlaceholder";
+import { PublicRatings } from "@/components/ratings/PublicRatings";
+import { publicRatingsEnabled } from "@/lib/ratings/server";
+import { ratingsLocale } from "@/lib/ratings/copy";
+import { cursorSchema } from "@/lib/ratings/contracts";
 import { createClient } from "@/lib/supabase/server";
 import { getSellerListingsPage } from "@/lib/discovery/queries";
 import { getAccountCopy } from "@/lib/account/copy";
@@ -76,7 +79,11 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
   const { id } = await params;
   if (!sellerIdSchema.safeParse(id).success) notFound();
 
-  const { params: query, invalid } = parseSellerListingsParams(firstValues(await searchParams));
+  const raw = firstValues(await searchParams);
+  const locale = ratingsLocale(raw.lang);
+  const cursor = raw.before_at || raw.before_id ? cursorSchema.safeParse({ before_at: raw.before_at, before_id: raw.before_id }) : null;
+  const { params: query, invalid } = parseSellerListingsParams(raw);
+  if (query.tab === "ratings" && !publicRatingsEnabled()) notFound();
   const copy = getAccountCopy("en").seller;
   const supabase = await createClient();
 
@@ -128,7 +135,7 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
             active={query.tab}
             listingsLabel={totalResult ? `${copy.listingsTab} (${totalCount})` : copy.listingsTab}
             ratingsLabel={copy.ratingsTab}
-            comingSoonLabel={copy.comingSoon}
+            comingSoonLabel={publicRatingsEnabled() ? "" : copy.comingSoon}
             ariaLabel={copy.tabsLabel}
             listingsHref={basePath}
             ratingsHref={`${basePath}?tab=ratings`}
@@ -144,7 +151,7 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
             {listingsActive ? (
               <SellerListingsPanel basePath={basePath} params={query} result={result} filtered={showAsFiltered} />
             ) : (
-              <SellerRatingsPlaceholder />
+              cursor && !cursor.success ? <p>Ratings unavailable / रेटिंग उपलब्ध नहीं है</p> : <PublicRatings userId={id} locale={locale} cursor={cursor?.success ? cursor.data : null} />
             )}
           </div>
         </div>

@@ -10,6 +10,8 @@ interface AccountIdentityProps {
   avatarUrl?: string | null;
   publicProfileHref: string | null;
   onOpenRatings: () => void;
+  ratingsHref?: string;
+  ratingsCount?: number | null;
 }
 
 function initialsOf(name: string): string {
@@ -26,6 +28,8 @@ export function AccountIdentity({
   avatarUrl,
   publicProfileHref,
   onOpenRatings,
+  ratingsHref,
+  ratingsCount,
 }: AccountIdentityProps) {
   const copy = getAccountCopy();
   const name = displayName?.trim() || copy.memberFallback;
@@ -62,7 +66,7 @@ export function AccountIdentity({
               {copy.memberSince} {memberSince}
             </span>
           )}
-          <button
+          {ratingsHref ? <Link href={ratingsHref} className="inline-flex min-h-11 items-center gap-2 font-semibold text-action-700 underline dark:text-action-300">{copy.ratings}{ratingsCount !== null && ratingsCount !== undefined && <span>({ratingsCount})</span>}</Link> : <button
             type="button"
             onClick={onOpenRatings}
             aria-haspopup="dialog"
@@ -72,7 +76,7 @@ export function AccountIdentity({
             <span className="rounded-full bg-action-100 px-2 py-0.5 text-xs font-semibold text-action-800 dark:bg-action-900 dark:text-action-100">
               {copy.comingSoon}
             </span>
-          </button>
+          </button>}
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           {publicProfileHref && (
