@@ -5,6 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { ChatThread } from "@/components/communication/ChatThread";
 import type { Metadata } from "next";
 import { type Conversation, type Message } from "@/types/communication";
+import { isChatV2Enabled } from "@/lib/chat-v2/server";
+import { ChatV2Page, type ChatSearchParams } from "@/components/communication/ChatV2Page";
+import { Suspense } from "react";
+import { ChatV2Loading } from "@/components/communication/ChatV2Loading";
 
 export const metadata: Metadata = {
   title: "Conversation — FairSwap",
@@ -13,10 +17,13 @@ export const metadata: Metadata = {
 
 export default async function ConversationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<ChatSearchParams>;
 }) {
   const { id: conversationId } = await params;
+  if (isChatV2Enabled()) return <Suspense fallback={<ChatV2Loading />}><ChatV2Page conversationId={conversationId} searchParams={searchParams} /></Suspense>;
   const supabase = await createClient();
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
