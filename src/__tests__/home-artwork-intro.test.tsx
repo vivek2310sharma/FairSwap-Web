@@ -78,7 +78,9 @@ describe("FairSwapIntro", () => {
     expect(screen.queryByTestId("fairswap-intro")).toBeNull();
     cleanup(); sessionStorage.clear();
     render(<FairSwapIntro art={art} />);
-    act(() => { vi.advanceTimersByTime(4800); });
+    act(() => { vi.advanceTimersByTime(2499); });
+    expect(screen.queryByTestId("fairswap-intro")).not.toBeNull();
+    act(() => { vi.advanceTimersByTime(1); });
     expect(screen.queryByTestId("fairswap-intro")).toBeNull();
   });
   it("is bypassed for reduced motion", () => {
