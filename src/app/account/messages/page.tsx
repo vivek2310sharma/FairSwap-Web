@@ -5,6 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { MessageSquare, Tag } from "lucide-react";
 import { formatMessageDate } from "@/lib/formatters";
 import type { Metadata } from "next";
+import { isChatV2Enabled } from "@/lib/chat-v2/server";
+import { ChatV2Page, type ChatSearchParams } from "@/components/communication/ChatV2Page";
+import { Suspense } from "react";
+import { ChatV2Loading } from "@/components/communication/ChatV2Loading";
 
 export const metadata: Metadata = {
   title: "Messages — FairSwap",
@@ -14,8 +18,9 @@ export const metadata: Metadata = {
 export default async function MessagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<ChatSearchParams>;
 }) {
+  if (isChatV2Enabled()) return <Suspense fallback={<ChatV2Loading />}><ChatV2Page searchParams={searchParams} /></Suspense>;
   const { tab = "all" } = await searchParams;
   const supabase = await createClient();
 

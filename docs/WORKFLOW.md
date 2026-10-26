@@ -1,5 +1,8 @@
 # FairSwap change, review and release workflow
 
+> Chat V2 Web local candidate (26 October 2026): mobile inbox/thread navigation, backend pagination, seller enquiry groups and recipient-only safety display are behind server-only `FAIRSWAP_CHAT_V2_INBOX_ENABLED=false`. Legacy messaging remains the default. No database migration or hosted deployment. See [implementation and release handoff](operations/CHAT_V2_WEB_HANDOFF.md).
+
+
 > Posting V2 release (25 October 2026): keep `POST_AD_MOBILES_V2_ENABLED=false` until the compatible Backend foundation and Admin/Web consumers are deployed and automated gates pass. Release staging before production, using isolated environment-specific migration histories and a separate activation migration. Exact source/evidence/cleanup/rollback handoff: `FairSwap-Backend/supabase/forward-migrations/posting-v2/README.md` in the parent workspace. Coding agents performed no GitHub or hosted operation.
 
 > Homepage/location discovery local candidate (25 October 2026): compact live-category discovery, public-area/PIN selection and optional server geocoding; no database migration. GPS requires server configuration. See [implementation and release handoff](operations/HOMEPAGE_LOCATION_DISCOVERY.md). Hosted deployment and acceptance remain pending.
