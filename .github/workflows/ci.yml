@@ -775,3 +775,56 @@ jobs:
           echo "Tearing down isolated PG17 Supabase stack..."
           cd /tmp/sb-pg17-rehearsal && supabase stop || true
           rm -rf /tmp/sb-pg17-rehearsal
+
+  chat-v2-web-contracts:
+    name: Chat V2 Web isolated contracts (flag off)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:35431
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: fixture-publishable-key
+      FAIRSWAP_CHAT_V2_INBOX_ENABLED: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout immutable PR source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install pinned pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Require and run Chat V2 authenticated UI contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            tests/unit/chat-v2-contracts.test.ts
+            tests/unit/chat-v2-inbox.test.tsx
+            tests/unit/chat-v2-server.test.ts
+            tests/unit/chat-v2-thread.test.tsx
+          )
+          for f in "${required[@]}"; do test -f "$f"; done
+          pnpm vitest run "${required[@]}" --maxWorkers=2 --reporter=default --reporter=json --outputFile=chat-v2-unit-results.json
+          node --input-type=module -e 'import { readFileSync } from "node:fs"; const r=JSON.parse(readFileSync("chat-v2-unit-results.json", "utf8")); if (!r.success || r.numTotalTests < 10 || r.numFailedTests !== 0 || (r.numPendingTests??0)!==0 || (r.numTodoTests??0)!==0 || r.numPassedTests!==r.numTotalTests) { console.error("Chat V2 unit checks did not pass with zero skips"); process.exit(1); }'
+      - name: Build with synthetic loopback API and inactive Web flag
+        run: pnpm run build
+      - name: Install Chromium for isolated Chat V2 browser contracts
+        run: pnpm exec playwright install chromium
+      - name: Run isolated desktop and Android-size Web route contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f playwright.chat-v2.config.ts
+          test -f e2e-isolated/chat-v2.spec.ts
+          test -f tests/chat-v2/run-fixture.mjs
+          pnpm exec playwright test --config=playwright.chat-v2.config.ts --reporter=list
