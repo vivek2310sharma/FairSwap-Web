@@ -186,6 +186,12 @@ jobs:
           supabase stop || true
           supabase start -x studio,analytics,logflare,supavisor
 
+      - name: Probe V2 sealed Storage immutability in disposable local stack
+        env:
+          CI: "true"
+          FAIRSWAP_V2_STORAGE_GUARD_SPIKE: "1"
+        run: node scripts/ci/moderation-v2-storage-trigger-spike.mjs
+
       - name: Run Schema & Media Invalidation pgTAP Tests
         run: |
           # Required baseline pgTAP test suite (fail-closed if any expected file is missing)
