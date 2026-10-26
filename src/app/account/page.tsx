@@ -1,3 +1,4 @@
+import { pendingCount, ratingsEnabled } from "@/lib/ratings/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AccountOverview } from "@/components/account/AccountOverview";
@@ -97,8 +98,12 @@ export default async function AccountPage() {
   );
 
   // Pass only the display values the client overview needs.
+  const ratingsAvailable = ratingsEnabled() && isActive;
+  const ratingsCount = ratingsAvailable ? await pendingCount() : null;
   return (
     <AccountOverview
+      ratingsAvailable={ratingsAvailable}
+      ratingsCount={ratingsCount?.data ?? null}
       displayName={profile?.display_name ?? null}
       email={userData.user.email ?? null}
       city={profile?.city?.trim() || null}

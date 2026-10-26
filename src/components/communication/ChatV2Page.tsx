@@ -1,3 +1,5 @@
+import { TradeCards } from "@/components/ratings/TradeCards";
+import { ratingsLocale } from "@/lib/ratings/copy";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -14,7 +16,7 @@ const conversationSchema = z.object({ id: uuid, listing_id: uuid, buyer_id: uuid
   last_message_at: timestamp, created_at: timestamp,
   listing: z.object({ id: uuid, title: z.string(), slug: z.string(), status: z.string(), price_paise: z.number().nullable(), cover_photo_id: uuid.nullable() }).nullable(),
 });
-export type ChatSearchParams = { tab?: string; q?: string; unread?: string; listing_id?: string };
+export type ChatSearchParams = { tab?: string; q?: string; unread?: string; listing_id?: string; lang?: string };
 
 async function conversationDetails(id: string, userId: string): Promise<{ conversation: Conversation; blocked: boolean } | { error: ChatError }> {
   if (!uuid.safeParse(id).success) return { error: "invalid" };
@@ -71,7 +73,7 @@ export async function ChatV2Page({ conversationId, searchParams }: { conversatio
         <ChatV2Inbox key={`${auth.data.user.id}:${JSON.stringify(request)}`} initial={inbox} request={request} selectedId={conversationId} />
       </div>
       <div data-testid="chat-v2-thread-pane" className={`min-h-0 min-w-0 flex-col ${conversationId ? "flex" : "hidden lg:flex"}`}>
-        {conversationId ? <><Link href={chatHref(request)} className="border-b border-border px-3 py-2 text-sm text-action-600 underline">{copy.back}</Link><div className="min-h-0 flex-1">{thread}</div></> : <p className="m-auto p-6 text-sm text-muted">{copy.select}</p>}
+        {conversationId ? <><Link href={chatHref(request)} className="border-b border-border px-3 py-2 text-sm text-action-600 underline">{copy.back}</Link><TradeCards conversationId={conversationId} locale={ratingsLocale(params.lang)} /><div className="min-h-0 flex-1">{thread}</div></> : <p className="m-auto p-6 text-sm text-muted">{copy.select}</p>}
       </div>
     </div>
   </main>;

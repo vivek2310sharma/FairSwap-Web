@@ -1,3 +1,5 @@
+> Ratings V1 local candidate (26 October 2026): authenticated review, buyer selection/confirmation, public reputation and typed chat cards use the canonical Backend contract. Both server flags default OFF. No Web migrations or hosted changes. See [release and verification notes](operations/RATINGS_V1_WEB_HANDOFF.md).
+
 # FairSwap change, review and release workflow
 
 > Chat V2 Web local candidate (26 October 2026): mobile inbox/thread navigation, backend pagination, seller enquiry groups and recipient-only safety display are behind server-only `FAIRSWAP_CHAT_V2_INBOX_ENABLED=false`. Legacy messaging remains the default. No database migration or hosted deployment. See [implementation and release handoff](operations/CHAT_V2_WEB_HANDOFF.md).

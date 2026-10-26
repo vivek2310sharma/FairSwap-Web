@@ -10,11 +10,13 @@ import { submitListingAction, transitionListingAction } from "./actions";
 interface ListingActionsContainerProps {
   listingId: string;
   actions: ResolvedListingActions;
+  ratingsAvailable?: boolean;
 }
 
 export function ListingActionsContainer({
   listingId,
   actions,
+  ratingsAvailable = false,
 }: ListingActionsContainerProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -159,6 +161,12 @@ export function ListingActionsContainer({
 
     if (action.type === "link" && action.href) {
       router.push(action.href);
+      return;
+    }
+
+    if (action.transitionAction === "mark_sold" && ratingsAvailable) {
+      setMenuOpen(false);
+      router.push(`/account/ratings/sell?listing_id=${encodeURIComponent(listingId)}`);
       return;
     }
 

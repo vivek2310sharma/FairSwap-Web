@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ratingsEnabled } from "@/lib/ratings/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ListingStatus } from "@/types/listing";
@@ -412,6 +413,7 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
                       />
                     )}
                     <ListingActionsContainer
+                      ratingsAvailable={ratingsEnabled()}
                       listingId={listing.id}
                       actions={actions}
                     />
