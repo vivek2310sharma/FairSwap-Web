@@ -5,7 +5,7 @@ import { FAIRSWAP_ART, isCompleteArt, type FairSwapArt, type FairSwapArtImage } 
 import styles from "./FairSwapIntro.module.css";
 
 const SEEN_KEY = "fs-intro-seen";
-const DURATION_MS = 2500;
+const DURATION_MS = 4800;
 
 function readSeen(): boolean {
   try { return window.sessionStorage.getItem(SEEN_KEY) === "1"; } catch { return false; }

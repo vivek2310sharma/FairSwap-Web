@@ -1,4 +1,4 @@
-/* First-visit intro. Total runtime 2.5s: approach 0-0.7s, exchange 0.7-1.2s, handshake 1.2-1.7s, logo 1.7-2.2s, fade-out 2.2-2.5s. */
+/* First-visit intro. Total runtime 4.8s; logo fades in at 3.0s and is fully visible 3.4-4.4s. */
 .overlay {
   position: fixed;
   inset: 0;
@@ -20,7 +20,7 @@
     radial-gradient(50rem 30rem at 20% 10%, rgba(120, 200, 150, 0.35), transparent 70%),
     radial-gradient(40rem 26rem at 85% 90%, rgba(150, 210, 170, 0.3), transparent 70%),
     #eef7f1;
-  animation: fade-out 0.3s ease 2.2s forwards;
+  animation: fade-out 0.4s ease 4.4s forwards;
 }
 
 .overlay:not([open]) { display: none; }
@@ -42,15 +42,15 @@
   opacity: 0;
 }
 .person img { height: 100%; width: auto; max-width: none; }
-.left { left: 0; animation: from-left 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0s forwards, away 0.1s ease 1.2s forwards; }
-.right { right: 0; animation: from-right 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0s forwards, away 0.1s ease 1.2s forwards; }
+.left { left: 0; animation: from-left 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s forwards, away 0.3s ease 2.6s forwards; }
+.right { right: 0; animation: from-right 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s forwards, away 0.3s ease 2.6s forwards; }
 
 .item {
   position: absolute;
   top: 40%;
   width: min(14%, 9rem);
   opacity: 0;
-  animation: swap 0.5s ease 0.7s forwards, away 0.1s ease 1.15s forwards;
+  animation: swap 0.9s ease 1.7s forwards, away 0.3s ease 2.5s forwards;
 }
 .itemLeft { left: 38%; --dx: 20%; }
 .itemRight { right: 38%; --dx: -20%; }
@@ -62,7 +62,7 @@
   height: 72%;
   opacity: 0;
   transform: translateX(-50%);
-  animation: appear 0.15s ease 1.2s forwards, away 0.15s ease 1.6s forwards;
+  animation: appear 0.4s ease 2.5s forwards, away 0.4s ease 3.0s forwards;
 }
 
 .sparkle {
@@ -75,7 +75,7 @@
   border-radius: 9999px;
   opacity: 0;
   background: radial-gradient(circle, rgba(60, 200, 120, 0.55), transparent 65%);
-  animation: pulse 0.45s ease 1.25s forwards;
+  animation: pulse 0.8s ease 2.7s forwards;
 }
 
 .logo {
@@ -84,7 +84,7 @@
   display: grid;
   place-items: center;
   opacity: 0;
-  animation: appear 0.3s ease 1.7s forwards;
+  animation: appear 0.4s ease 3.0s forwards;
 }
 .logo img { width: min(60vw, 22rem); height: auto; }
 
