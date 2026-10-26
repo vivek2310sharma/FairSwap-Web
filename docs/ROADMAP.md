@@ -1,5 +1,8 @@
 # FairSwap product roadmap — workstreams and readiness
 
+> Chat V2 Web local candidate (26 October 2026): mobile inbox/thread navigation, backend pagination, seller enquiry groups and recipient-only safety display are behind server-only `FAIRSWAP_CHAT_V2_INBOX_ENABLED=false`. Legacy messaging remains the default. No database migration or hosted deployment. See [implementation and release handoff](operations/CHAT_V2_WEB_HANDOFF.md).
+
+
 > Posting V2 local candidate (25 October 2026): Mobile Phones is the first typed photo-first form. Tablets, wearables and accessories remain Coming soon; AI is a labelled placeholder without analysis. Source/release handoff: `FairSwap-Backend/supabase/forward-migrations/posting-v2/README.md` in the parent workspace. Activation and hosted acceptance are pending.
 
 > Homepage/location discovery local candidate (25 October 2026): compact live-category discovery, public-area/PIN selection and optional server geocoding; no database migration. GPS requires server configuration. See [implementation and release handoff](operations/HOMEPAGE_LOCATION_DISCOVERY.md). Hosted deployment and acceptance remain pending.
