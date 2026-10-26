@@ -15,10 +15,14 @@ async function settle() { await act(async () => { await vi.advanceTimersByTimeAs
 const mockResponse = (items = [area]) => ({ ok: true, json: async () => ({ items }) });
 
 describe("location-aware discovery", () => {
-  it("renders only a visually hidden H1 and omits the removed headline and subtitle", () => {
+  it("renders one visible H1 with concise search copy and no removed headline or subtitle", () => {
     render(<HomeDiscovery categories={categories} initialArea={area} initialFilters={{}} restoreSaved={false} />);
-    const h1 = screen.getByRole("heading", { level: 1, name: "Buy & sell locally on FairSwap.in" });
-    expect(h1).toHaveClass("sr-only");
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1).toHaveTextContent("Exchange. Share. Discover.");
+    expect(h1).not.toHaveClass("sr-only");
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("searchbox", { name: "Search items" })).toHaveAttribute("placeholder", "Phone, bike, sofa...");
+    expect(screen.queryByText("Search approved ads")).toBeNull();
     expect(screen.queryByText("Discover pre-loved finds on FairSwap")).toBeNull();
     expect(screen.queryByText("Pre-loved things. A fresh start.")).toBeNull();
   });

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test";
 
 test.describe("Milestone 1.4 Public Discovery, Search, and Favourites E2E", () => {
   test("search page renders filters, handles keyword queries, and keyboard interaction", async ({

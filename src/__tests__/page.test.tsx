@@ -25,7 +25,7 @@ describe("HomePage component", () => {
     expect(screen.getByRole("main")).toBeInTheDocument();
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toBeInTheDocument();
-    expect(heading).toHaveTextContent(/FairSwap/i);
+    expect(heading).toHaveTextContent("Exchange. Share. Discover.");
   });
 
   it("does not render the obsolete development foundation notice", async () => {

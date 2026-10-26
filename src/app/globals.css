@@ -191,8 +191,10 @@ body {
 /* Home hero: soft tinted glow behind the discovery desk. */
 .fs-hero {
   background:
-    radial-gradient(55rem 26rem at 90% -10%, color-mix(in srgb, var(--fs-primary) 14%, transparent), transparent 70%),
-    radial-gradient(40rem 20rem at -10% 30%, color-mix(in srgb, var(--fs-link) 8%, transparent), transparent 70%);
+    radial-gradient(34rem 22rem at 6% 8%, color-mix(in srgb, var(--fs-primary) 22%, transparent), transparent 70%),
+    radial-gradient(34rem 22rem at 94% 12%, color-mix(in srgb, var(--fs-primary) 18%, transparent), transparent 70%),
+    radial-gradient(30rem 16rem at 50% 0%, color-mix(in srgb, var(--fs-link) 10%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--fs-primary) 7%, var(--color-background)), var(--color-background) 85%);
 }
 
 /* Category bento tiles: tone drives the surface, text keeps AA contrast on each. */
@@ -204,21 +206,8 @@ body {
 .fs-tile[data-tone="a"] { background: var(--fs-tone-a); }
 .fs-tile[data-tone="b"] { background: var(--fs-tone-b); }
 .fs-tile[data-tone="c"] { background: var(--fs-tone-c); }
-.fs-tile[data-tone="ink"] { background: var(--fs-ink); color: var(--fs-on-ink); }
 /* Photo-backed tiles keep live HTML labels readable in both color schemes. */
 .fs-tile[data-image="true"] { background: #10251e; color: #fff; }
-.fs-tile[data-image="true"] .fs-tile-icon { color: #fff; background: rgba(255, 255, 255, 0.18); }
-.fs-tile-icon {
-  display: flex;
-  height: 2.5rem;
-  width: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  background: color-mix(in srgb, currentColor 10%, transparent);
-  color: var(--fs-icon);
-}
-.fs-tile[data-tone="ink"] .fs-tile-icon { color: var(--fs-ink-accent); }
 .fs-ink-band {
   background: var(--fs-ink);
   color: var(--fs-on-ink);

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -38,7 +38,7 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
 
     // 4. Content sections
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Buy & sell locally on FairSwap.in"
+      "Exchange. Share. Discover."
     );
     await expect(
       page.getByRole("heading", { level: 2, name: /how it works/i })
