@@ -1,0 +1,117 @@
+/* First-visit intro. Total runtime 4.8s; logo fades in at 3.0s and is fully visible 3.4-4.4s. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(50rem 30rem at 20% 10%, rgba(120, 200, 150, 0.35), transparent 70%),
+    radial-gradient(40rem 26rem at 85% 90%, rgba(150, 210, 170, 0.3), transparent 70%),
+    #eef7f1;
+  animation: fade-out 0.4s ease 4.4s forwards;
+}
+
+.overlay:not([open]) { display: none; }
+.overlay::backdrop { background: transparent; }
+
+.stage {
+  position: relative;
+  width: min(92vw, 56rem);
+  height: min(60vh, 28rem);
+}
+
+/* Characters are sized by stage height so tall poses never overflow on wide or short screens. */
+.person, .item, .handshake { display: block; }
+.person img, .item img, .handshake img { display: block; height: auto; max-width: 100%; }
+.person {
+  position: absolute;
+  bottom: 0;
+  height: min(100%, 68vw); /* two figures must fit a narrow phone stage */
+  opacity: 0;
+}
+.person img { height: 100%; width: auto; max-width: none; }
+.left { left: 0; animation: from-left 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s forwards, away 0.3s ease 2.6s forwards; }
+.right { right: 0; animation: from-right 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s forwards, away 0.3s ease 2.6s forwards; }
+
+.item {
+  position: absolute;
+  top: 40%;
+  width: min(14%, 9rem);
+  opacity: 0;
+  animation: swap 0.9s ease 1.7s forwards, away 0.3s ease 2.5s forwards;
+}
+.itemLeft { left: 38%; --dx: 20%; }
+.itemRight { right: 38%; --dx: -20%; }
+
+.handshake {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  height: 72%;
+  opacity: 0;
+  transform: translateX(-50%);
+  animation: appear 0.4s ease 2.5s forwards, away 0.4s ease 3.0s forwards;
+}
+
+.sparkle {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  width: 6rem;
+  height: 6rem;
+  margin-left: -3rem;
+  border-radius: 9999px;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(60, 200, 120, 0.55), transparent 65%);
+  animation: pulse 0.8s ease 2.7s forwards;
+}
+
+.logo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  animation: appear 0.4s ease 3.0s forwards;
+}
+.logo img { width: min(60vw, 22rem); height: auto; }
+
+.skip {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(8, 112, 74, 0.5);
+  background: #fff;
+  color: #08704a;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@keyframes from-left { from { opacity: 0; transform: translateX(-60vw); } to { opacity: 1; transform: translateX(8%); } }
+@keyframes from-right { from { opacity: 0; transform: translateX(60vw); } to { opacity: 1; transform: translateX(-8%); } }
+@keyframes swap { from { opacity: 0; } to { opacity: 1; transform: translateX(var(--dx)); } }
+@keyframes appear { to { opacity: 1; } }
+@keyframes away { to { opacity: 0; } }
+@keyframes pulse { 0% { opacity: 0; transform: scale(0.6); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes fade-out { to { opacity: 0; visibility: hidden; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay { display: none; }
+}

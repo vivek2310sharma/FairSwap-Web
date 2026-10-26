@@ -5,6 +5,7 @@ import { HomeDiscovery } from "@/components/listings/HomeDiscovery";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
 import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
 import { getPublicCategories } from "@/lib/discovery/queries";
+import { FairSwapIntro } from "@/components/home/FairSwapIntro";
 import { SafetyBand } from "@/components/home/SafetyBand";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { searchFiltersSchema } from "@/types/listing";
@@ -42,5 +43,6 @@ export default async function HomePage({ searchParams }: HomePageProps = {}) {
       <HowItWorks />
     </main>
     <Footer />
+    <FairSwapIntro />
   </>;
 }

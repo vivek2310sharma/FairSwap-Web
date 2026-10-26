@@ -8,6 +8,7 @@ import type { Category, SearchFilters } from "@/types/listing";
 import { discoveryHref, type PublicArea } from "@/lib/location/discovery";
 import { buttonVariants } from "@/components/ui/button";
 import { CategoryBento } from "@/components/home/CategoryBento";
+import { FairSwapHeroArtwork } from "@/components/home/FairSwapHeroArtwork";
 import { DiscoveryLocationSelector } from "./DiscoveryLocationSelector";
 
 export function HomeDiscovery({ categories, initialArea = null, initialFilters = {}, restoreSaved = true }: {
@@ -21,28 +22,30 @@ export function HomeDiscovery({ categories, initialArea = null, initialFilters =
   const [query, setQuery] = useState(initialFilters.q || "");
   const href = (category = initialFilters.category) => discoveryHref({ q: query, category }, area);
   return <section className="fs-hero">
-    <div className="mx-auto grid max-w-7xl gap-6 px-4 pb-10 pt-5 sm:px-6 sm:pt-8 lg:grid-cols-12 lg:gap-10 lg:px-8 lg:pb-14 lg:pt-12">
-      <h1 className="sr-only">Buy &amp; sell locally on FairSwap.in</h1>
-      <div className="lg:col-span-5 lg:pt-6">
-        <div className="rounded-4xl border border-border bg-card p-4 shadow-sm sm:p-7">
-          <p className="fs-eyebrow text-muted">Search approved ads</p>
-          <p className="mt-2 text-2xl font-extrabold leading-tight tracking-tight text-foreground sm:text-4xl">Search by item, then narrow to your area.</p>
-          <form action="/search" onSubmit={event => { event.preventDefault(); router.push(href()); }} className="mt-5 flex min-h-14 min-w-0 items-center rounded-2xl border border-border bg-background transition-colors focus-within:border-(--fs-focus) focus-within:outline-2 focus-within:outline-(--fs-focus)" role="search">
-            {area && <><input type="hidden" name="city" value={area.city} />{area.locality && <input type="hidden" name="locality" value={area.locality} />}</>}
-            <label htmlFor="home-keywords" className="sr-only">Search items</label>
-            <input id="home-keywords" type="search" name="q" maxLength={100} value={query} onChange={e => setQuery(e.target.value)} placeholder="Search mobiles, bikes, furniture and more" className="min-h-14 min-w-0 flex-1 rounded-l-2xl bg-transparent px-4 text-base text-foreground placeholder:text-muted focus:outline-none" />
-            <button type="submit" aria-label="Search" className={buttonVariants({ variant: "primary", size: "lg", className: "m-1.5 min-w-[48px] rounded-xl px-3 sm:px-5" })}><Search className="h-5 w-5" aria-hidden="true" /><span className="hidden sm:inline" aria-hidden="true">Search</span></button>
-          </form>
-          <div className="mt-3">
-            <DiscoveryLocationSelector area={area} restoreSaved={restoreSaved} onRestore={setArea} onConfirm={value => { setArea(value); router.push(discoveryHref({ q: query, category: initialFilters.category }, value)); }} />
+    <div className="mx-auto max-w-7xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pb-10 lg:pt-10">
+      <div className="flex items-end justify-center gap-6">
+        <FairSwapHeroArtwork side="left" />
+        <div className="w-full max-w-2xl pb-2 text-center">
+          <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-5xl">Exchange. Share. <span className="text-primary">Discover.</span></h1>
+          <div className="mt-5 rounded-3xl border border-border bg-card/95 p-3 text-left shadow-sm sm:p-4">
+            <form action="/search" onSubmit={event => { event.preventDefault(); router.push(href()); }} className="flex min-h-14 min-w-0 items-center rounded-2xl border border-border bg-background transition-colors focus-within:border-(--fs-focus) focus-within:outline-2 focus-within:outline-(--fs-focus)" role="search">
+              {area && <><input type="hidden" name="city" value={area.city} />{area.locality && <input type="hidden" name="locality" value={area.locality} />}</>}
+              <label htmlFor="home-keywords" className="sr-only">Search items</label>
+              <input id="home-keywords" type="search" name="q" maxLength={100} value={query} onChange={e => setQuery(e.target.value)} placeholder="Phone, bike, sofa..." className="min-h-14 min-w-0 flex-1 rounded-l-2xl bg-transparent px-4 text-base text-foreground placeholder:text-muted focus:outline-none" />
+              <button type="submit" aria-label="Search" className={buttonVariants({ variant: "primary", size: "lg", className: "m-1.5 min-w-[48px] rounded-xl px-3 sm:px-6" })}><Search className="h-5 w-5 sm:hidden" aria-hidden="true" /><span className="hidden sm:inline" aria-hidden="true">Search</span></button>
+            </form>
+            <div className="mt-2">
+              <DiscoveryLocationSelector area={area} restoreSaved={restoreSaved} onRestore={setArea} onConfirm={value => { setArea(value); router.push(discoveryHref({ q: query, category: initialFilters.category }, value)); }} />
+            </div>
           </div>
-          <p className="mt-4 flex items-start gap-2 border-t border-border pt-4 text-sm text-muted">
+          <p className="mt-3 flex items-start justify-center gap-2 text-left text-sm text-muted">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            <span>No advance UPI payments to someone you have not met.</span>
+            <span>No advance UPI payments, sharing OTPs or QR scans to receive money.</span>
           </p>
         </div>
+        <FairSwapHeroArtwork side="right" />
       </div>
-      <div id="categories" className="scroll-mt-20 lg:col-span-7">
+      <div id="categories" className="mt-6 scroll-mt-20 rounded-3xl border border-border bg-card/90 p-3 shadow-sm sm:p-5">
         <div className="flex items-end justify-between gap-3">
           <h2 className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">Browse Categories</h2>
           <Link href="/search" className={buttonVariants({ variant: "link", className: "shrink-0 px-2" })}>All ads</Link>

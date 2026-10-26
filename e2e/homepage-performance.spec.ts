@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test";
 
 test.describe("Homepage Performance & SSR Optimization", () => {
   test("loads initial recent listings via SSR without making a browser-side fetch", async ({ page }) => {

@@ -74,7 +74,7 @@ export function Header() {
 
         {/* Desktop navigation */}
         <nav
-          className="fs-inline-only shrink-0 items-center gap-6"
+          className="fs-inline-only mx-auto shrink-0 items-center gap-6"
           aria-label="Main navigation"
         >
           {navLinks.map((link) => (
@@ -94,22 +94,20 @@ export function Header() {
           </a>
           <Link
             href="/search"
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-md text-sm font-semibold text-link hover:underline"
+            className="whitespace-nowrap rounded-md text-sm font-semibold text-muted transition-colors hover:text-foreground"
           >
-            <Search className="h-4 w-4" aria-hidden="true" />
             Browse
           </Link>
           <Link
             href="/account/favourites"
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-md text-sm font-semibold text-muted transition-colors hover:text-foreground"
+            className="whitespace-nowrap rounded-md text-sm font-semibold text-muted transition-colors hover:text-foreground"
           >
-            <Heart className="h-4 w-4" aria-hidden="true" />
             Favourites
           </Link>
         </nav>
 
         {/* Action buttons */}
-        <div className="fs-inline-only ml-auto shrink-0 items-center gap-3">
+        <div className="fs-inline-only shrink-0 items-center gap-3">
           {isLoading ? <span role="status" className="px-3 text-xs">Checking session…</span> : user ? (
             <>
               <Link
