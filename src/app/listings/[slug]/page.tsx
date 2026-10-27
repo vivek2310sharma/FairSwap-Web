@@ -34,6 +34,7 @@ import {
   User,
   AlertTriangle,
   Info,
+  ShieldCheck,
 } from "lucide-react";
 
 interface ListingDetailPageProps {
@@ -109,15 +110,28 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
     notFound();
   }
 
-  // 3. Fetch seller's other active listings and favourite state
+  // 3. Fetch seller's other active listings, favourite state, and seller verification badge projection
   const supabase = await createClient();
   const mobileDetails = await loadPublicMobileDetails(supabase,listing.id);
-  const [sellerOtherListings, { data: authData }] = await Promise.all([
+  const [sellerOtherListings, { data: authData }, { data: sellerIdvData }] = await Promise.all([
     listing.seller_id
       ? getSellerPublicListings(listing.seller_id, listing.id)
       : Promise.resolve([]),
     supabase.auth.getUser(),
+    listing.seller_id
+      ? supabase
+          .from("user_identity_verifications")
+          .select("badge_issued, verification_status, valid_until")
+          .eq("user_id", listing.seller_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+
+  const isSellerVerified = Boolean(
+    sellerIdvData?.badge_issued === true &&
+    sellerIdvData?.verification_status === "verified" &&
+    (!sellerIdvData?.valid_until || new Date(sellerIdvData.valid_until).getTime() > Date.now())
+  );
 
   let isFavourited = false;
   if (authData?.user) {
@@ -386,14 +400,25 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                     {listing.seller.display_name?.charAt(0).toUpperCase() || <User className="h-6 w-6" />}
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-foreground">
-                      <Link
-                        href={`/seller/${listing.seller.id}`}
-                        className="hover:text-action-600 focus:outline-hidden"
-                      >
-                        {listing.seller.display_name}
-                      </Link>
-                    </h3>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <h3 className="text-base font-bold text-foreground">
+                        <Link
+                          href={`/seller/${listing.seller.id}`}
+                          className="hover:text-action-600 focus:outline-hidden"
+                        >
+                          {listing.seller.display_name}
+                        </Link>
+                      </h3>
+                      {isSellerVerified && (
+                        <span
+                          title="Verified Profile"
+                          className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
+                        >
+                          <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                          <span>Verified</span>
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted">Member since {memberSince}</p>
                   </div>
                 </div>

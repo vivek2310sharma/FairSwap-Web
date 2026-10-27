@@ -71,12 +71,38 @@ export interface AccountCopy {
   verification: {
     heading: string;
     body: string;
-    regularLabel: string;
-    regularSr: string;
-    offerSr: string;
-    terms: string;
     status: string;
     cta: string;
+    states: {
+      comingSoon: { title: string; body: string };
+      notVerified: { title: string; body: string };
+      consentRequired: { title: string; body: string };
+      redirecting: { title: string; body: string };
+      inProgress: { title: string; body: string };
+      verified: { title: string; body: string };
+      failed: { title: string; body: string };
+      cancelled: { title: string; body: string };
+      expired: { title: string; body: string };
+      revoked: { title: string; body: string };
+      unableToVerify: { title: string; body: string };
+    };
+    badges: {
+      verified: string;
+      notVerified: string;
+    };
+    consent: {
+      notice: string;
+      terms: string;
+      withdrawCta: string;
+      withdrawing: string;
+    };
+    actions: {
+      tryAgain: string;
+      activeBadge: string;
+      verifiedOn: string;
+      reasonLabel: string;
+      preparingNotice: string;
+    };
   };
   previews: Record<PreviewKey, PreviewCopy>;
   trades: {
@@ -132,14 +158,73 @@ const en: AccountCopy = {
   },
   helpRestrictedDescription: "Submit a moderation appeal and get support.",
   verification: {
-    heading: "Help us make FairSwap secure",
-    body: "We are preparing account verification to help buyers and sellers trade with more confidence.",
-    regularLabel: "Planned regular price",
-    regularSr: "Planned regular price: 99 rupees",
-    offerSr: "Planned launch offer: 10 rupees",
-    terms: "One-time payment. Lifetime validation.",
-    status: "Planned launch offer - Coming soon",
-    cta: "Verify account",
+    heading: "Identity verification",
+    body: "DigiLocker verification helps confirm real community members and build confidence when buying and selling.",
+    status: "Coming soon",
+    cta: "Verify identity",
+    states: {
+      comingSoon: {
+        title: "DigiLocker verification is coming soon",
+        body: "We are currently completing technical integrations and compliance reviews before launching verification in your region. Verification initiation is temporarily disabled.",
+      },
+      notVerified: {
+        title: "Account not verified",
+        body: "Verify your identity through DigiLocker to earn a verified member badge on your public listings.",
+      },
+      consentRequired: {
+        title: "Consent required",
+        body: "To initiate verification, you must authorize FairSwap to request government-issued identity confirmation via DigiLocker. You can withdraw your consent at any time.",
+      },
+      redirecting: {
+        title: "Redirecting to DigiLocker…",
+        body: "Please wait while we transfer you to the secure DigiLocker portal to complete authorization.",
+      },
+      inProgress: {
+        title: "Verification in progress",
+        body: "Your verification request is currently being confirmed by the provider. This typically takes only a few moments.",
+      },
+      verified: {
+        title: "Identity verified",
+        body: "Your identity has been verified via DigiLocker. A verified badge is now displayed on your public seller profile.",
+      },
+      failed: {
+        title: "Verification failed",
+        body: "The identity verification process could not be completed. Please ensure your official DigiLocker documents are valid and retry.",
+      },
+      cancelled: {
+        title: "Verification cancelled",
+        body: "The DigiLocker authorization session was cancelled before completion. No identity details were recorded.",
+      },
+      expired: {
+        title: "Verification session expired",
+        body: "Your verification session has timed out. Please initiate a new verification request to continue.",
+      },
+      revoked: {
+        title: "Verification revoked",
+        body: "Your identity verification has been revoked or withdrawn. Your public verified badge is no longer active.",
+      },
+      unableToVerify: {
+        title: "Unable to verify",
+        body: "We could not verify the document evidence provided. If you believe this is an error, please contact FairSwap support.",
+      },
+    },
+    badges: {
+      verified: "Verified Identity",
+      notVerified: "Not Verified",
+    },
+    consent: {
+      notice: "By proceeding, you authorize FairSwap to verify your government identity credentials via DigiLocker. FairSwap never stores your original identity documents.",
+      terms: "Verification confirms member authenticity; it is not a guarantee of goods or financial safety.",
+      withdrawCta: "Withdraw consent & remove badge",
+      withdrawing: "Withdrawing…",
+    },
+    actions: {
+      tryAgain: "Try again",
+      activeBadge: "Active",
+      verifiedOn: "Verified on {date}",
+      reasonLabel: "Reason: {reason}",
+      preparingNotice: "Identity verification will be released once regulatory and integration steps are finalized. Both staging and production environments currently display this status.",
+    },
   },
   previews: {
     savedSearches: {
@@ -147,8 +232,8 @@ const en: AccountCopy = {
       body: "Saved searches & alerts are coming soon.",
     },
     verification: {
-      title: "Lifetime verification is coming soon.",
-      body: "Planned launch price: ₹10 instead of ₹99, as a one-time payment for lifetime validation. No payment is collected at this stage.",
+      title: "Identity verification is coming soon.",
+      body: "DigiLocker verification will help buyers and sellers trade with more trust. The feature is currently in preparation.",
     },
     ratings: {
       title: "Ratings",
@@ -250,14 +335,73 @@ const hi: AccountCopy = {
   },
   helpRestrictedDescription: "मॉडरेशन अपील जमा करें और सहायता पाएं।",
   verification: {
-    heading: "FairSwap को सुरक्षित बनाने में हमारी मदद करें",
-    body: "हम खाता सत्यापन तैयार कर रहे हैं ताकि खरीदार और विक्रेता अधिक भरोसे के साथ लेन-देन कर सकें।",
-    regularLabel: "प्रस्तावित सामान्य मूल्य",
-    regularSr: "प्रस्तावित सामान्य मूल्य: 99 रुपये",
-    offerSr: "प्रस्तावित लॉन्च ऑफ़र: 10 रुपये",
-    terms: "एकमुश्त भुगतान। आजीवन सत्यापन।",
-    status: "प्रस्तावित लॉन्च ऑफ़र - जल्द आ रहा है",
-    cta: "खाता सत्यापित करें",
+    heading: "पहचान सत्यापन",
+    body: "DigiLocker सत्यापन वास्तविक समुदाय के सदस्यों की पुष्टि करने और सुरक्षित लेन-देन को बढ़ावा देने में मदद करता है।",
+    status: "जल्द आ रहा है",
+    cta: "पहचान सत्यापित करें",
+    states: {
+      comingSoon: {
+        title: "DigiLocker सत्यापन जल्द आ रहा है",
+        body: "हम वर्तमान में तकनीकी एकीकरण और कानूनी समीक्षा पूरी कर रहे हैं। सत्यापन शुरू करने की सुविधा अभी अक्षम है।",
+      },
+      notVerified: {
+        title: "खाता सत्यापित नहीं है",
+        body: "अपने सार्वजनिक विज्ञापनों पर सत्यापित सदस्य बैज प्राप्त करने के लिए DigiLocker के माध्यम से अपनी पहचान सत्यापित करें।",
+      },
+      consentRequired: {
+        title: "सहमति आवश्यक है",
+        body: "सत्यापन शुरू करने के लिए, आपको FairSwap को DigiLocker के माध्यम से सरकारी पहचान की पुष्टि करने की अनुमति देनी होगी। आप किसी भी समय अपनी सहमति वापस ले सकते हैं।",
+      },
+      redirecting: {
+        title: "DigiLocker पर भेजा जा रहा है…",
+        body: "कृपया प्रतीक्षा करें जब तक हम आपको प्रमाणीकरण पूरा करने के लिए सुरक्षित DigiLocker पोर्टल पर स्थानांतरित करते हैं।",
+      },
+      inProgress: {
+        title: "सत्यापन प्रगति पर है",
+        body: "आपके सत्यापन अनुरोध की जांच की जा रही है। इसमें आमतौर पर कुछ ही क्षण लगते हैं।",
+      },
+      verified: {
+        title: "पहचान सत्यापित हो गई",
+        body: "आपकी पहचान DigiLocker के माध्यम से सत्यापित हो गई है। आपकी सार्वजनिक प्रोफ़ाइल पर एक सत्यापित बैज प्रदर्शित हो गया है।",
+      },
+      failed: {
+        title: "सत्यापन विफल रहा",
+        body: "पहचान सत्यापन प्रक्रिया पूरी नहीं हो सकी। कृपया सुनिश्चित करें कि आपके DigiLocker दस्तावेज़ मान्य हैं और पुनः प्रयास करें।",
+      },
+      cancelled: {
+        title: "सत्यापन रद्द किया गया",
+        body: "DigiLocker सत्र पूरा होने से पहले रद्द कर दिया गया था। कोई पहचान विवरण दर्ज नहीं किया गया।",
+      },
+      expired: {
+        title: "सत्यापन सत्र समाप्त हो गया",
+        body: "आपके सत्यापन सत्र का समय समाप्त हो गया है। जारी रखने के लिए कृपया एक नया अनुरोध शुरू करें।",
+      },
+      revoked: {
+        title: "सत्यापन निरस्त कर दिया गया",
+        body: "आपकी पहचान का सत्यापन निरस्त या वापस ले लिया गया है। आपका सत्यापित बैज अब सक्रिय नहीं है।",
+      },
+      unableToVerify: {
+        title: "सत्यापित करने में असमर्थ",
+        body: "प्रदान किए गए दस्तावेज़ साक्ष्य को सत्यापित नहीं किया जा सका। यदि आपको लगता है कि यह कोई त्रुटि है, तो सहायता से संपर्क करें।",
+      },
+    },
+    badges: {
+      verified: "सत्यापित पहचान",
+      notVerified: "सत्यापित नहीं",
+    },
+    consent: {
+      notice: "आगे बढ़कर, आप FairSwap को DigiLocker के माध्यम से आपकी सरकारी पहचान की पुष्टि करने के लिए अधिकृत करते हैं। FairSwap कभी भी आपके मूल पहचान दस्तावेज़ संग्रहीत नहीं करता है।",
+      terms: "सत्यापन सदस्य की प्रामाणिकता की पुष्टि करता है; यह सामान या वित्तीय सुरक्षा की गारंटी नहीं है।",
+      withdrawCta: "सहमति वापस लें और बैज हटाएं",
+      withdrawing: "वापस लिया जा रहा है…",
+    },
+    actions: {
+      tryAgain: "पुनः प्रयास करें",
+      activeBadge: "सक्रिय",
+      verifiedOn: "सत्यापित तिथि: {date}",
+      reasonLabel: "कारण: {reason}",
+      preparingNotice: "नियामकीय और एकीकरण प्रक्रिया पूरी होने के बाद पहचान सत्यापन जारी किया जाएगा। वर्तमान में दोनों वातावरण में यही स्थिति दिखती है।",
+    },
   },
   previews: {
     savedSearches: {
@@ -265,8 +409,8 @@ const hi: AccountCopy = {
       body: "सेव की गई खोजें और अलर्ट जल्द आ रहे हैं।",
     },
     verification: {
-      title: "आजीवन सत्यापन जल्द आ रहा है।",
-      body: "प्रस्तावित लॉन्च मूल्य: ₹99 के बजाय ₹10, आजीवन सत्यापन के लिए एकमुश्त भुगतान। इस चरण में कोई भुगतान नहीं लिया जाता।",
+      title: "पहचान सत्यापन जल्द आ रहा है।",
+      body: "DigiLocker सत्यापन खरीदारों और विक्रेताओं को अधिक भरोसे के साथ लेन-देन करने में मदद करेगा। यह सुविधा अभी तैयार की जा रही है।",
     },
     ratings: {
       title: "रेटिंग",
