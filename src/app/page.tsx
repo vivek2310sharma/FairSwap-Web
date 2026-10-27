@@ -6,6 +6,7 @@ import { RecentListingsSection } from "@/components/listings/RecentListingsSecti
 import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
 import { getPublicCategories } from "@/lib/discovery/queries";
 import { FairSwapIntro } from "@/components/home/FairSwapIntro";
+import { IntroGate } from "@/components/home/IntroGate";
 import { SafetyBand } from "@/components/home/SafetyBand";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { searchFiltersSchema } from "@/types/listing";
@@ -35,6 +36,7 @@ export default async function HomePage({ searchParams }: HomePageProps = {}) {
     validIds.success ? resolvePublicArea(validIds.data.city, validIds.data.locality).catch(() => null) : Promise.resolve(null),
   ]);
   return <>
+    <IntroGate />
     <Header />
     <main className="flex-1">
       <HomeDiscovery key={JSON.stringify(params)} categories={categories.map(({ id, slug, name }) => ({ id, slug, name }))} initialArea={area} initialFilters={filters} restoreSaved={!hasExplicitLocation} />

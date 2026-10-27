@@ -28,6 +28,13 @@ describe("HomePage component", () => {
     expect(heading).toHaveTextContent("Exchange. Share. Discover.");
   });
 
+  it("includes the homepage-only first-paint gate script ahead of the page content", async () => {
+    const { container } = render(await HomePage());
+    const script = container.querySelector("script");
+    expect(script?.textContent).toContain("data-fs-intro");
+    expect(script!.compareDocumentPosition(screen.getByRole("main")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("does not render the obsolete development foundation notice", async () => {
     render(await HomePage());
     expect(screen.queryByText("Development Foundation")).not.toBeInTheDocument();

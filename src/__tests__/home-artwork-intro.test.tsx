@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { FairSwapIntro } from "@/components/home/FairSwapIntro";
-import { FairSwapHeroArtwork } from "@/components/home/FairSwapHeroArtwork";
+import { FairSwapHeroArtwork, FairSwapHeroPair } from "@/components/home/FairSwapHeroArtwork";
+import { IntroGate, INTRO_GATE_FAILSAFE_MS } from "@/components/home/IntroGate";
 import { FAIRSWAP_ART, isCompleteArt, type FairSwapArt } from "@/components/home/fairswap-art";
 import { CategoryBento } from "@/components/home/CategoryBento";
 
@@ -24,13 +25,18 @@ beforeEach(() => {
   HTMLDialogElement.prototype.showModal = showModal;
   HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers(); document.documentElement.removeAttribute("data-fs-intro"); });
 
 describe("art manifest", () => {
   it("ships a complete set whose files exist on disk", () => {
     expect(isCompleteArt(FAIRSWAP_ART)).toBe(true);
     for (const image of Object.values(FAIRSWAP_ART!)) {
       expect(existsSync(join(process.cwd(), "public", image.src))).toBe(true);
+    }
+    for (const image of Object.values(FAIRSWAP_ART!)) {
+      for (const candidate of (image.srcSet ?? "").split(",").filter(Boolean)) {
+        expect(existsSync(join(process.cwd(), "public", candidate.trim().split(" ")[0]))).toBe(true);
+      }
     }
     expect(isCompleteArt(art)).toBe(true);
     expect(isCompleteArt({ ...art, heroRight: undefined })).toBe(false);
@@ -78,8 +84,37 @@ describe("FairSwapIntro", () => {
     expect(screen.queryByTestId("fairswap-intro")).toBeNull();
     cleanup(); sessionStorage.clear();
     render(<FairSwapIntro art={art} />);
-    act(() => { vi.advanceTimersByTime(4800); });
+    act(() => { vi.advanceTimersByTime(5199); });
+    expect(screen.queryByTestId("fairswap-intro")).not.toBeNull();
+    act(() => { vi.advanceTimersByTime(1); });
     expect(screen.queryByTestId("fairswap-intro")).toBeNull();
+  });
+  it("keeps the pre-hydration gate until the dialog is open, then releases it", () => {
+    document.documentElement.setAttribute("data-fs-intro", "pending");
+    let gateAtShowModal: string | null = "unset";
+    showModal.mockImplementationOnce(function (this: HTMLDialogElement) {
+      gateAtShowModal = document.documentElement.getAttribute("data-fs-intro");
+      this.setAttribute("open", "");
+    });
+    render(<FairSwapIntro art={art} />);
+    expect(gateAtShowModal).toBe("pending"); // backdrop still present when the modal opens
+    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
+  });
+  it("releases the gate when the intro is not eligible (seen, reduced motion, no art)", () => {
+    sessionStorage.setItem("fs-intro-seen", "1");
+    document.documentElement.setAttribute("data-fs-intro", "pending");
+    render(<FairSwapIntro art={art} />);
+    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
+    cleanup(); sessionStorage.clear();
+    document.documentElement.setAttribute("data-fs-intro", "pending");
+    render(<FairSwapIntro art={null} />);
+    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
+  });
+  it("releases the gate if artwork fails", () => {
+    render(<FairSwapIntro art={art} />);
+    document.documentElement.setAttribute("data-fs-intro", "pending");
+    fireEvent.error(document.querySelector("picture img")!);
+    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
   });
   it("is bypassed for reduced motion", () => {
     stubMotion(true);
@@ -109,6 +144,45 @@ describe("FairSwapHeroArtwork", () => {
     expect(screen.getByTestId("hero-art-right")).toBeInTheDocument();
     fireEvent.error(document.querySelector("img")!);
     expect(screen.queryByTestId("hero-art-right")).toBeNull();
+  });
+});
+
+describe("FairSwapHeroPair", () => {
+  it("renders the compact below-lg pair with responsive sources and hides on failure", () => {
+    render(<FairSwapHeroPair art={art} />);
+    expect(screen.getByTestId("hero-art-pair")).toHaveClass("lg:hidden");
+    expect(document.querySelectorAll("img")).toHaveLength(2);
+    for (const el of document.querySelectorAll("img")) expect(el).toHaveAttribute("loading", "lazy");
+    fireEvent.error(document.querySelector("img")!);
+    expect(screen.queryByTestId("hero-art-pair")).toBeNull();
+  });
+  it("uses smaller responsive candidates for the shipped hero art", () => {
+    expect(FAIRSWAP_ART!.heroLeft.srcSet).toContain("man-hero-360w.webp 360w");
+    expect(FAIRSWAP_ART!.heroRight.srcSet).toContain("woman-hero-480w.webp 480w");
+  });
+});
+
+describe("IntroGate", () => {
+  const run = () => {
+    const { container } = render(<IntroGate />);
+    new Function(container.querySelector("script")!.textContent!)();
+  };
+  it("flags an eligible first visit and fails open after the timeout", () => {
+    vi.useFakeTimers();
+    run();
+    expect(document.documentElement.getAttribute("data-fs-intro")).toBe("pending");
+    vi.advanceTimersByTime(INTRO_GATE_FAILSAFE_MS - 1);
+    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
+  });
+  it("does nothing for a seen tab or reduced motion", () => {
+    sessionStorage.setItem("fs-intro-seen", "1");
+    run();
+    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
+    sessionStorage.clear(); stubMotion(true);
+    run();
+    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
   });
 });
 
