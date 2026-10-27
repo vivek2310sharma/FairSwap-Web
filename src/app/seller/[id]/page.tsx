@@ -75,6 +75,8 @@ export async function generateMetadata({ params }: SellerPageProps): Promise<Met
   };
 }
 
+import { isBadgeValid } from "@/lib/idv/server-helpers";
+
 export default async function SellerProfilePage({ params, searchParams }: SellerPageProps) {
   const { id } = await params;
   if (!sellerIdSchema.safeParse(id).success) notFound();
@@ -93,7 +95,7 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
   const listingsActive = query.tab === "listings";
 
   // Profile visibility (suspended / deleted accounts) is enforced by the profiles RLS policy.
-  const [{ data: profile, error }, locationRpc, result] = await Promise.all([
+  const [{ data: profile, error }, locationRpc, result, { data: idvProjection }] = await Promise.all([
     supabase.from("profiles").select(PUBLIC_PROFILE_COLUMNS).eq("id", id).maybeSingle<PublicSellerProfile>(),
     // Locality + district only, for active onboarded sellers. Never PIN, ids or state.
     supabase.rpc("public_profile_location", { p_user_ids: [id] }),
@@ -101,9 +103,21 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
     invalid
       ? Promise.resolve<SellerListingsResult>(EMPTY_RESULT)
       : getSellerListingsPage(id, listingsActive ? query : {}, listingsActive ? undefined : 1),
+    // Authoritative verification badge projection. Strictly public, non-PII.
+    supabase
+      .from("user_identity_verifications")
+      .select("badge_issued, verification_status, valid_until")
+      .eq("user_id", id)
+      .maybeSingle(),
   ]);
 
   if (error || !profile) notFound();
+
+  const isVerified = isBadgeValid(
+    idvProjection?.badge_issued,
+    idvProjection?.verification_status,
+    idvProjection?.valid_until
+  );
 
   const location = parsePublicLocation(locationRpc.error ? null : locationRpc.data, id);
 
@@ -129,7 +143,7 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
             </Link>
           </div>
 
-          <SellerProfileHeader profile={profile} location={location} />
+          <SellerProfileHeader profile={profile} location={location} isVerified={isVerified} />
 
           <SellerTabs
             active={query.tab}

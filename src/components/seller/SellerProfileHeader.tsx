@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar, MapPin, ShieldCheck } from "lucide-react";
 import type { PublicSellerProfile } from "@/types/account";
 import { formatMemberSince, getAccountCopy } from "@/lib/account/copy";
 import { ShareProfileButton } from "./ShareProfileButton";
@@ -8,6 +8,8 @@ interface SellerProfileHeaderProps {
   profile: PublicSellerProfile;
   /** Public locality + district only (from public_profile_location). Never a PIN. */
   location?: { locality: string | null; district: string | null } | null;
+  /** Server-verified badge from public.user_identity_verifications projection */
+  isVerified?: boolean;
 }
 
 export function formatPublicLocation(
@@ -28,7 +30,7 @@ function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function SellerProfileHeader({ profile, location }: SellerProfileHeaderProps) {
+export function SellerProfileHeader({ profile, location, isVerified = false }: SellerProfileHeaderProps) {
   const copy = getAccountCopy("en");
   const name = profile.display_name || copy.memberFallback;
   const locationText = formatPublicLocation(location);
@@ -55,9 +57,20 @@ export function SellerProfileHeader({ profile, location }: SellerProfileHeaderPr
             </div>
           )}
           <div className="min-w-0">
-            <h1 id="seller-name" className="wrap-break-word text-2xl font-bold text-foreground">
-              {name}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 id="seller-name" className="wrap-break-word text-2xl font-bold text-foreground">
+                {name}
+              </h1>
+              {isVerified && (
+                <span
+                  title={copy.verification.badges.verified}
+                  className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                  <span>{copy.verification.badges.verified}</span>
+                </span>
+              )}
+            </div>
             <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted">
               <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>{formatMemberSince(profile.created_at)}</span>
