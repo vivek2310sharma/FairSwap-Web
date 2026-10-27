@@ -70,3 +70,26 @@ export function validateProviderRedirectUrl(rawUrl: string): boolean {
     return false;
   }
 }
+
+/**
+ * Checks whether an identity verification badge projection is currently active and unexpired.
+ */
+export function isBadgeValid(
+  badgeIssued?: boolean | null,
+  status?: string | null,
+  validUntil?: string | null
+): boolean {
+  if (badgeIssued !== true || status !== "verified") return false;
+  if (!validUntil) return true;
+  const time = new Date(validUntil).getTime();
+  return Number.isFinite(time) && time > Date.now();
+}
+
+/**
+ * Checks whether an expiration timestamp has passed.
+ */
+export function checkIsExpired(validUntilStr: unknown): boolean {
+  if (!validUntilStr || typeof validUntilStr !== "string") return false;
+  const time = new Date(validUntilStr).getTime();
+  return Number.isFinite(time) && time <= Date.now();
+}

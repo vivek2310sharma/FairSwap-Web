@@ -75,12 +75,7 @@ export async function generateMetadata({ params }: SellerPageProps): Promise<Met
   };
 }
 
-function isBadgeValid(badgeIssued?: boolean | null, status?: string | null, validUntil?: string | null): boolean {
-  if (badgeIssued !== true || status !== "verified") return false;
-  if (!validUntil) return true;
-  const time = new Date(validUntil).getTime();
-  return Number.isFinite(time) && time > Date.now();
-}
+import { isBadgeValid } from "@/lib/idv/server-helpers";
 
 export default async function SellerProfilePage({ params, searchParams }: SellerPageProps) {
   const { id } = await params;

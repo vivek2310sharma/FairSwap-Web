@@ -117,13 +117,11 @@ export function VerificationHub({
 
     async function completeVerification() {
       try {
-        // Explicit consent-based category selection: bound to user explicit consent on attempt creation
-        // Only aadhaar_kyc is currently supported; keep all unsupported categories disabled until authenticity validation is approved
-        const resolvedCategory = selectedCategory;
+        // Authoritative category resolution: the backend resolves the consented category from the original attempt.
+        // Client-side React state is not relied upon across full-redirect returns.
         const payload: Record<string, unknown> = {
           state: callbackState,
           attemptId: activeAttemptId || undefined,
-          docCategory: resolvedCategory,
         };
 
         const res = await fetch("/api/idv/complete", {
@@ -170,7 +168,7 @@ export function VerificationHub({
     return () => {
       isSubscribed = false;
     };
-  }, [isFeatureEnabled, callbackState, selectedCategory, state, activeAttemptId]);
+  }, [isFeatureEnabled, callbackState, state, activeAttemptId]);
 
   // Status polling for in_progress sessions (including interrupted sessions)
   useEffect(() => {

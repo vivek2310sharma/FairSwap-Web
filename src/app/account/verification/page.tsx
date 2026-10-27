@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { VerificationHub, type VerificationState } from "@/components/account/VerificationHub";
+import { checkIsExpired } from "@/lib/idv/server-helpers";
 import type { AccountLocale } from "@/lib/account/copy";
 import type { Metadata } from "next";
 
@@ -17,12 +18,6 @@ interface VerificationPageProps {
     error?: string;
     lang?: string;
   }>;
-}
-
-function checkIsExpired(validUntilStr: unknown): boolean {
-  if (!validUntilStr || typeof validUntilStr !== "string") return false;
-  const time = new Date(validUntilStr).getTime();
-  return Number.isFinite(time) && time <= Date.now();
 }
 
 export default async function VerificationPage({ searchParams }: VerificationPageProps) {

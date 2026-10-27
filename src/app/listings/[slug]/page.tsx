@@ -28,6 +28,7 @@ import {reviewableField,reviewPacketSchema} from '@/lib/listings/submission-read
 import {propertyRentSummary,paiseToPropertyRupees} from '@/lib/listings/property/contract';
 import type {Database} from '@/types/database';
 import type {SupabaseClient} from '@supabase/supabase-js';
+import { isBadgeValid } from "@/lib/idv/server-helpers";
 import {
   MapPin,
   Calendar,
@@ -127,10 +128,10 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
       : Promise.resolve({ data: null }),
   ]);
 
-  const isSellerVerified = Boolean(
-    sellerIdvData?.badge_issued === true &&
-    sellerIdvData?.verification_status === "verified" &&
-    (!sellerIdvData?.valid_until || new Date(sellerIdvData.valid_until).getTime() > Date.now())
+  const isSellerVerified = isBadgeValid(
+    sellerIdvData?.badge_issued,
+    sellerIdvData?.verification_status,
+    sellerIdvData?.valid_until
   );
 
   let isFavourited = false;

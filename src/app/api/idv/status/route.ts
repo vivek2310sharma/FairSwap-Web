@@ -8,7 +8,6 @@ import {
 export const runtime = "nodejs";
 
 export async function GET() {
-  const isFeatureEnabled = process.env.FAIRSWAP_IDV_ENABLED === "true";
   const supabase = await createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
 

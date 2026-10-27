@@ -56,7 +56,6 @@ describe("VerificationHub Callback Completion Regression Tests", () => {
           body: JSON.stringify({
             state: "state-nonce-456",
             attemptId: "attempt-123",
-            docCategory: "aadhaar_kyc",
           }),
         })
       );
@@ -273,5 +272,130 @@ describe("VerificationHub Callback Completion Regression Tests", () => {
     // Start verification CTA is disabled and indicates Coming soon
     const cta = screen.getByRole("button", { name: /Verify identity \(Coming soon\)/i });
     expect(cta).toBeDisabled();
+  });
+
+  describe("Category recovery and callback regression tests", () => {
+    it("handles callback completion when backend resolves consented Aadhaar attempt", async () => {
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        if (url === "/api/idv/complete" && init?.method === "POST") {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ success: true, verified: true, category: "aadhaar_kyc" }),
+          } as Response);
+        }
+        if (url === "/api/idv/status") {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ status: "verified" }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+      });
+      global.fetch = fetchMock;
+
+      render(
+        <VerificationHub
+          isFeatureEnabled={true}
+          initialState="in_progress"
+          callbackState="state-aadhaar-consent-nonce"
+          locale="en"
+        />
+      );
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/idv/complete",
+          expect.objectContaining({
+            method: "POST",
+            body: JSON.stringify({ state: "state-aadhaar-consent-nonce" }),
+          })
+        );
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("Identity verified")).toBeInTheDocument();
+      });
+    });
+
+    it("handles callback return for PAN card attempt where authenticity verification is disabled", async () => {
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        if (url === "/api/idv/complete" && init?.method === "POST") {
+          return Promise.resolve({
+            ok: false,
+            status: 422,
+            json: () =>
+              Promise.resolve({
+                error: "AUTHENTICATION_UNSUPPORTED_FOR_CATEGORY",
+                message: "Badge issuance is currently disabled for pan_card.",
+                category: "pan_card",
+              }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+      });
+      global.fetch = fetchMock;
+
+      render(
+        <VerificationHub
+          isFeatureEnabled={true}
+          initialState="in_progress"
+          callbackState="state-pan-nonce"
+          locale="en"
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("Unable to verify")).toBeInTheDocument();
+      });
+    });
+
+    it("handles callback return for driving licence attempt where authenticity verification is disabled", async () => {
+      const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+        if (url === "/api/idv/complete" && init?.method === "POST") {
+          return Promise.resolve({
+            ok: false,
+            status: 422,
+            json: () =>
+              Promise.resolve({
+                error: "AUTHENTICATION_UNSUPPORTED_FOR_CATEGORY",
+                message: "Badge issuance is currently disabled for driving_licence.",
+                category: "driving_licence",
+              }),
+          } as Response);
+        }
+        return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+      });
+      global.fetch = fetchMock;
+
+      render(
+        <VerificationHub
+          isFeatureEnabled={true}
+          initialState="in_progress"
+          callbackState="state-dl-nonce"
+          locale="en"
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("Unable to verify")).toBeInTheDocument();
+      });
+    });
+
+    it("does not initiate completion when callback state nonce is missing", async () => {
+      const fetchMock = vi.fn();
+      global.fetch = fetchMock;
+
+      render(
+        <VerificationHub
+          isFeatureEnabled={true}
+          initialState="not_verified"
+          locale="en"
+        />
+      );
+
+      expect(fetchMock).not.toHaveBeenCalledWith("/api/idv/complete", expect.anything());
+    });
   });
 });
