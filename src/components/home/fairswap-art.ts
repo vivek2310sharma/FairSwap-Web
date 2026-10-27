@@ -11,6 +11,8 @@ export type FairSwapArtImage = {
   src: string;
   /** Optional AVIF source preferred over `src` by `<picture>`. */
   avif?: string;
+  /** Optional responsive WebP candidates (`path 480w, path 720w`) so small screens download less. */
+  srcSet?: string;
   width: number;
   height: number;
 };
@@ -31,13 +33,13 @@ export type FairSwapArt = {
 const DIR = "/animations/fairswap-intro";
 
 export const FAIRSWAP_ART: FairSwapArt | null = {
-  left: { src: `${DIR}/man-walk-01-720w.webp`, width: 720, height: 1188 },
-  right: { src: `${DIR}/woman-walk-01-720w.webp`, width: 720, height: 1245 },
-  handshake: { src: `${DIR}/handshake-duo-720w.webp`, width: 720, height: 856 },
+  left: { src: `${DIR}/man-walk-01-720w.webp`, srcSet: `${DIR}/man-walk-01-480w.webp 480w, ${DIR}/man-walk-01-720w.webp 720w`, width: 720, height: 1188 },
+  right: { src: `${DIR}/woman-walk-01-720w.webp`, srcSet: `${DIR}/woman-walk-01-480w.webp 480w, ${DIR}/woman-walk-01-720w.webp 720w`, width: 720, height: 1245 },
+  handshake: { src: `${DIR}/handshake-duo-720w.webp`, srcSet: `${DIR}/handshake-duo-480w.webp 480w, ${DIR}/handshake-duo-720w.webp 720w`, width: 720, height: 856 },
   itemLeft: { src: `${DIR}/laptop-720w.webp`, width: 720, height: 474 },
   itemRight: { src: `${DIR}/headphones-720w.webp`, width: 425, height: 479 },
-  heroLeft: { src: `${DIR}/man-hero-720w.webp`, width: 720, height: 1405 },
-  heroRight: { src: `${DIR}/woman-hero-720w.webp`, width: 704, height: 1521 },
+  heroLeft: { src: `${DIR}/man-hero-720w.webp`, srcSet: `${DIR}/man-hero-360w.webp 360w, ${DIR}/man-hero-480w.webp 480w, ${DIR}/man-hero-720w.webp 720w`, width: 720, height: 1405 },
+  heroRight: { src: `${DIR}/woman-hero-720w.webp`, srcSet: `${DIR}/woman-hero-360w.webp 360w, ${DIR}/woman-hero-480w.webp 480w, ${DIR}/woman-hero-720w.webp 720w`, width: 704, height: 1521 },
 };
 
 const REQUIRED: (keyof FairSwapArt)[] = ["left", "right", "handshake", "itemLeft", "itemRight", "heroLeft", "heroRight"];

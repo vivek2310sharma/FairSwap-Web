@@ -8,7 +8,7 @@ import type { Category, SearchFilters } from "@/types/listing";
 import { discoveryHref, type PublicArea } from "@/lib/location/discovery";
 import { buttonVariants } from "@/components/ui/button";
 import { CategoryBento } from "@/components/home/CategoryBento";
-import { FairSwapHeroArtwork } from "@/components/home/FairSwapHeroArtwork";
+import { FairSwapHeroArtwork, FairSwapHeroPair } from "@/components/home/FairSwapHeroArtwork";
 import { DiscoveryLocationSelector } from "./DiscoveryLocationSelector";
 
 export function HomeDiscovery({ categories, initialArea = null, initialFilters = {}, restoreSaved = true }: {
@@ -22,10 +22,10 @@ export function HomeDiscovery({ categories, initialArea = null, initialFilters =
   const [query, setQuery] = useState(initialFilters.q || "");
   const href = (category = initialFilters.category) => discoveryHref({ q: query, category }, area);
   return <section className="fs-hero">
-    <div className="mx-auto max-w-7xl px-4 pb-8 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pb-10 lg:pt-10">
-      <div className="flex items-end justify-center gap-6">
+    <div className="mx-auto max-w-[90rem] px-4 pb-8 pt-6 sm:px-6 sm:pt-8 lg:px-8 lg:pb-10 lg:pt-10">
+      <div className="grid items-end gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,38rem)_minmax(0,1fr)]">
         <FairSwapHeroArtwork side="left" />
-        <div className="w-full max-w-2xl pb-2 text-center">
+        <div className="mx-auto w-full max-w-2xl pb-2 text-center lg:max-w-none">
           <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-5xl">Exchange. Share. <span className="text-primary">Discover.</span></h1>
           <div className="mt-5 rounded-3xl border border-border bg-card/95 p-3 text-left shadow-sm sm:p-4">
             <form action="/search" onSubmit={event => { event.preventDefault(); router.push(href()); }} className="flex min-h-14 min-w-0 items-center rounded-2xl border border-border bg-background transition-colors focus-within:border-(--fs-focus) focus-within:outline-2 focus-within:outline-(--fs-focus)" role="search">
@@ -42,6 +42,7 @@ export function HomeDiscovery({ categories, initialArea = null, initialFilters =
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
             <span>No advance UPI payments, sharing OTPs or QR scans to receive money.</span>
           </p>
+          <FairSwapHeroPair />
         </div>
         <FairSwapHeroArtwork side="right" />
       </div>
