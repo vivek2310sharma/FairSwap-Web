@@ -74,6 +74,7 @@ export function NotificationList({ initialNotifications }: NotificationListProps
   };
 
   const getTargetLink = (n: Notification): string | null => {
+    if (n.link === "/account/ratings") return "/account/ratings";
     if (n.type === "message_received" && n.payload?.conversation_id) {
       return `/account/messages/${n.payload.conversation_id}`;
     }
