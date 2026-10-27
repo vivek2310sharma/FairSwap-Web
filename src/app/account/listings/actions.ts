@@ -1,5 +1,7 @@
 "use server";
 
+import { ratingsEnabled } from "@/lib/ratings/server";
+import { ratingsSellAction } from "@/app/account/ratings/actions";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
@@ -358,6 +360,11 @@ export async function transitionListingAction(
     operation: "transition_listing",
     extra: { listing_id: listingId, action },
   });
+
+  if (action === "mark_sold" && ratingsEnabled()) {
+    const result = await ratingsSellAction({ listing_id: listingId, choice: "pending", conversation_id: null });
+    return result.error ? { error: "Ratings sale is unavailable. Please try again later." } : { success: true, listingId };
+  }
 
   const { error } = await supabase.rpc("seller_transition_listing", {
     listing_id: listingId,
