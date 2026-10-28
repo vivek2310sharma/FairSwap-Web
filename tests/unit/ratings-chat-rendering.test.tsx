@@ -45,10 +45,10 @@ for (const route of routes) {
     vi.stubEnv("FAIRSWAP_RATINGS_V1_ENABLED", flag);
     render(await route.page()); expect(screen.getByText(route.message)).toBeInTheDocument(); expect(m.cards).not.toHaveBeenCalled();
   });
-  it(`${route.name}: Ratings ON renders the separate card with the conversation and locale`, async () => {
+  it(`${route.name}: Ratings ON renders the separate card in English despite the Hindi query parameter`, async () => {
     vi.stubEnv("FAIRSWAP_RATINGS_V1_ENABLED", "true"); render(await route.page());
     expect(screen.getByText("Trade card")).toBeInTheDocument(); expect(screen.getByText(route.message)).toBeInTheDocument();
-    expect(m.cards).toHaveBeenCalledWith({ conversationId: ids.conversation, locale: "hi" });
+    expect(m.cards).toHaveBeenCalledWith({ conversationId: ids.conversation, locale: "en" });
   });
   it(`${route.name}: pending trade cards do not suspend chat and can stream afterward`, async () => {
     vi.stubEnv("FAIRSWAP_RATINGS_V1_ENABLED", "true"); let ready = false; let release: () => void = () => {};

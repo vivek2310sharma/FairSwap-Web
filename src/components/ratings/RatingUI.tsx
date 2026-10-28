@@ -76,7 +76,7 @@ export function AccountRatingList({ tab, initial, viewerId, locale }: { tab: "pe
     const page = c.pageSchema(c.pendingSchema).safeParse(initial); if (!page.success) return <p role="alert">{t.unavailable}</p>;
     return <PagedList initial={page.data} schema={c.pendingSchema} locale={locale} load={cursor => ratingsPageAction("ratings_pending", { cursor })} render={row => <article className="rounded-xl border border-border bg-card p-4">
       <p>{t.states[row.state]}</p><p className="text-sm">{t.deadline}: <DateLabel value={row.deadline} locale={locale} /></p>
-      <Link className={buttonClass} href={`/account/ratings/${row.id}?lang=${locale}`}>{row.action === "select_buyer" ? t.selectBuyer : row.action === "confirm_and_rate" ? t.confirm : t.rate}</Link>
+      <Link className={buttonClass} href={`/account/ratings/${row.id}`}>{row.action === "select_buyer" ? t.selectBuyer : row.action === "confirm_and_rate" ? t.confirm : t.rate}</Link>
     </article>} />;
   }
   if (tab === "received") {
@@ -114,7 +114,7 @@ export function BuyerSelection({ listingId, locale, onDone }: { listingId: strin
       try {
         const selecting = choice !== "pending" && choice !== "none";
         const result = await ratingsSellAction({ listing_id: listingId, choice: selecting ? "select" : choice, conversation_id: selecting ? choice : null });
-        if (result.error) setError(true); else { onDone?.(); router.push(`/account/ratings/${result.data.trade_id}?lang=${locale}`); router.refresh(); }
+        if (result.error) setError(true); else { onDone?.(); router.push(`/account/ratings/${result.data.trade_id}`); router.refresh(); }
       } catch { setError(true); }
     })}>{pending ? t.loading : t.sold}</button>
     <Safety locale={locale} />
