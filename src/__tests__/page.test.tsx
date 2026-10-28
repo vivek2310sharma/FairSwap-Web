@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import HomePage from "@/app/page";
 
@@ -28,7 +28,7 @@ describe("HomePage component", () => {
     expect(screen.getByRole("main")).toBeInTheDocument();
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toBeInTheDocument();
-    expect(heading).toHaveTextContent("Find more. Share more. Trust more.");
+    expect(heading).toHaveTextContent("Good things, closer to you.");
   });
 
   it("places Fresh Finds before the safety band and defaults the feed to All India", async () => {
@@ -90,21 +90,25 @@ describe("HomePage component", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the Browse Categories preview section", async () => {
+  it("renders the Explore categories rail", async () => {
     render(await HomePage());
     expect(
-      screen.getByRole("heading", { level: 2, name: /browse categories/i })
+      screen.getByRole("heading", { level: 2, name: /explore categories/i })
     ).toBeInTheDocument();
     expect(screen.getByText("Electronics")).toBeInTheDocument();
     expect(screen.getByText("Furniture")).toBeInTheDocument();
-    expect(screen.getByText("Books")).toBeInTheDocument();
+    // "books" has no curated photo: not a featured shortcut, but still in the full directory.
+    expect(screen.queryByRole("link", { name: "Books" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "View all categories" }));
+    expect(screen.getByRole("link", { name: "Books" })).toBeInTheDocument();
   });
 
   it("does not claim verified ads and keeps inspect-before-payment advice", async () => {
     render(await HomePage());
     expect(screen.queryByText(/verified ads|verified advertisements/i)).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/inspect before paying/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText("Meet in a public place")).toBeInTheDocument();
+    expect(screen.getByText("Inspect before paying")).toBeInTheDocument();
+    expect(screen.getByText("Avoid advance UPI payments")).toBeInTheDocument();
+    expect(screen.queryByText(/pre-loved|second life|second hand/i)).not.toBeInTheDocument();
   });
 });

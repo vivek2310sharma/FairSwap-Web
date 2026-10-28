@@ -5,7 +5,7 @@ import { HomeDiscovery } from "@/components/listings/HomeDiscovery";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
 import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
 import { getPublicCategories } from "@/lib/discovery/queries";
-import { FairSwapIntro } from "@/components/home/FairSwapIntro";
+import { NeighbourhoodMapIntro } from "@/components/home/NeighbourhoodMapIntro";
 import { IntroGate } from "@/components/home/IntroGate";
 import { SafetyBand } from "@/components/home/SafetyBand";
 import { HowItWorks } from "@/components/home/HowItWorks";
@@ -15,7 +15,7 @@ import { z } from "zod";
 
 export const metadata = {
   title: "FairSwap.in — India's Local Classifieds Marketplace",
-  description: "Buy and sell pre-loved items across India. Discover approved ads by category and public area on FairSwap.",
+  description: "Discover useful finds from people around you. Buy, sell and explore locally, with approved ads by category and public area on FairSwap.",
 };
 
 type HomePageProps = {
@@ -45,6 +45,6 @@ export default async function HomePage({ searchParams }: HomePageProps = {}) {
       <HowItWorks />
     </main>
     <Footer />
-    <FairSwapIntro />
+    <NeighbourhoodMapIntro />
   </>;
 }

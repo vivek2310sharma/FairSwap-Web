@@ -19,7 +19,11 @@ describe("location-aware discovery", () => {
   it("renders one visible H1 with concise search copy and no removed headline or subtitle", () => {
     render(<HomeDiscovery categories={categories} initialArea={area} initialFilters={{}} restoreSaved={false} />);
     const h1 = screen.getByRole("heading", { level: 1 });
-    expect(h1).toHaveTextContent("Find more. Share more. Trust more.");
+    expect(h1).toHaveTextContent("Good things, closer to you.");
+    expect(screen.getByText("Discover useful finds from people around you. Buy, sell and explore locally.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore nearby" })).toHaveAttribute("href", "#fresh-finds");
+    expect(screen.queryByText("Find more. Share more. Trust more.")).toBeNull();
+    expect(document.querySelector("img[src*='second-life']")).toBeNull();
     expect(h1).not.toHaveClass("sr-only");
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("searchbox", { name: "Search items" })).toHaveAttribute("placeholder", "Phone, bike, sofa...");
