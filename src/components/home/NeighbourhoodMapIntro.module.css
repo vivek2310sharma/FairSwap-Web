@@ -1,0 +1,152 @@
+/*
+ * Neighbourhood Discovery Flow V4. Motion is driven by Web Animations from neighbourhood-intro.ts
+ * (3300ms desktop, 2600ms mobile). This file only holds the resting state of each layer: everything
+ * that animates in starts transparent so nothing flashes before the first animation frame.
+ * The forest scrim matches the pre-hydration gate in globals.css, so the hand-over is invisible.
+ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: hidden;
+  /* CSS-only safety net: even if the timer never fires the dialog is invisible well before the 4s fail-open. */
+  animation: hide 0.01s linear 3.6s forwards;
+}
+.overlay:not([open]) { display: none; }
+.overlay::backdrop { background: transparent; }
+
+.scrim { position: absolute; inset: 0; background: #0e2b22; }
+
+/* Cover-fit stage matching the asset viewBox, so marker percentages stay pinned to the artwork. */
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100vw, calc(100dvh * var(--vb-w) / var(--vb-h)));
+  height: max(100dvh, calc(100vw * var(--vb-h) / var(--vb-w)));
+  transform: translate(-50%, -50%);
+}
+
+.map { position: absolute; inset: 0; display: block; width: 100%; height: 100%; opacity: 0.65; will-change: opacity; }
+
+.sweep {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgba(123, 224, 176, 0.28) 50%, transparent 70%);
+}
+
+.rule {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 62%;
+  height: 1px;
+  opacity: 0;
+  background: rgba(123, 224, 176, 0.6);
+}
+
+.ring, .halo {
+  position: absolute;
+  border-radius: 9999px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.ring { width: 22%; aspect-ratio: 1; border: 1.5px solid rgba(123, 224, 176, 0.7); }
+.halo {
+  width: 17%;
+  aspect-ratio: 1;
+  background: conic-gradient(from 0deg, rgba(123, 224, 176, 0), rgba(123, 224, 176, 0.55) 30%, rgba(123, 224, 176, 0) 60%);
+  -webkit-mask: radial-gradient(circle, transparent 38%, #000 40%, #000 70%, transparent 72%);
+  mask: radial-gradient(circle, transparent 38%, #000 40%, #000 70%, transparent 72%);
+}
+
+.slot { position: absolute; width: 0; height: 0; }
+
+.token, .tracer { position: absolute; left: 0; top: 0; opacity: 0; transform: translate(-50%, -50%) scale(0.82); will-change: transform, opacity; }
+
+.token {
+  z-index: 3;
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 0 0 1.5px rgba(247, 248, 246, 0.85);
+  background: #14352c;
+}
+.photo { display: block; width: 100%; height: 100%; object-fit: cover; }
+.aura { position: absolute; left: 50%; top: 50%; width: 170%; height: 170%; transform: translate(-50%, -50%); opacity: 0.5; pointer-events: none; z-index: -1; }
+.label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 6px 5px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #fff;
+  background: linear-gradient(to top, rgba(8, 24, 18, 0.88), transparent);
+}
+.tracer { z-index: 2; width: 7px; height: 7px; border-radius: 9999px; background: #7be0b0; box-shadow: 0 0 10px 3px rgba(123, 224, 176, 0.55); }
+
+.logo {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 12px 22px;
+  border-radius: 9999px;
+  background: #f7f8f6;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.92);
+}
+.logo img { display: block; width: min(52vw, 240px); height: auto; }
+
+.skip {
+  position: absolute;
+  z-index: 10;
+  top: max(1rem, env(safe-area-inset-top));
+  right: max(1rem, env(safe-area-inset-right));
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(123, 224, 176, 0.6);
+  background: #f7f8f6;
+  color: #08704a;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.skip:focus-visible { outline: 3px solid #7be0b0; outline-offset: 2px; }
+
+@media (max-width: 639px) {
+  .token { width: 56px; height: 56px; border-radius: 11px; }
+  .label { display: none; }
+  .logo { padding: 9px 16px; }
+}
+
+@keyframes hide { to { opacity: 0; visibility: hidden; } }
+
+/* Reduced motion is a full bypass (no gate, no dialog), never an opacity-only variant. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay { display: none; }
+}

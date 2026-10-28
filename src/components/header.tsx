@@ -19,6 +19,8 @@ import {
 import { NotificationBell } from "@/components/communication/NotificationBell";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useHeaderFit } from "@/components/navigation/useHeaderFit";
+import { buttonVariants } from "@/components/ui/button";
 
 const navLinks = [
   { label: "How It Works", href: "/#how-it-works" },
@@ -38,6 +40,9 @@ export function Header() {
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  useHeaderFit(headerRef, barRef, `${isLoading}|${user?.id ?? ""}|${unreadMessagesCount}|${unreadNotificationsCount}|${signingOut}`);
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
     setSignOutError(null);
@@ -46,12 +51,13 @@ export function Header() {
   }, [signOut]);
 
   return (
-    <header onKeyDown={event => { if (event.key === "Escape" && mobileMenuOpen) { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-xs">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+    <header ref={headerRef} onKeyDown={event => { if (event.key === "Escape" && mobileMenuOpen) { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className="fs-header sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xs">
+      <div className="px-4 sm:px-6 lg:px-8">
+      <div ref={barRef} className="mx-auto flex max-w-7xl items-center gap-4 py-2.5">
         {/* Wordmark */}
         <Link
           href="/"
-          className="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm"
+          className="flex shrink-0 items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--fs-focus) rounded-md"
           aria-label="FairSwap home"
         >
           <span className="rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5">
@@ -68,47 +74,45 @@ export function Header() {
 
         {/* Desktop navigation */}
         <nav
-          className="hidden items-center gap-6 lg:flex"
+          className="fs-inline-only mx-auto shrink-0 items-center gap-6"
           aria-label="Main navigation"
         >
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+              className="whitespace-nowrap rounded-md text-sm font-semibold text-muted transition-colors hover:text-foreground"
             >
               {link.label}
             </Link>
           ))}
           <a
             href={HELP_CENTRE_URL}
-            className="text-sm font-medium text-muted transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+            className="whitespace-nowrap rounded-md text-sm font-semibold text-muted transition-colors hover:text-foreground"
           >
             Help Centre
           </a>
           <Link
             href="/search"
-            className="flex items-center gap-1.5 text-sm font-medium text-brand-link hover:underline"
+            className="whitespace-nowrap rounded-md text-sm font-semibold text-muted transition-colors hover:text-foreground"
           >
-            <Search className="h-4 w-4" aria-hidden="true" />
             Browse
           </Link>
           <Link
             href="/account/favourites"
-            className="flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-foreground"
+            className="whitespace-nowrap rounded-md text-sm font-semibold text-muted transition-colors hover:text-foreground"
           >
-            <Heart className="h-4 w-4" aria-hidden="true" />
             Favourites
           </Link>
         </nav>
 
         {/* Action buttons */}
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="fs-inline-only shrink-0 items-center gap-3">
           {isLoading ? <span role="status" className="px-3 text-xs">Checking session…</span> : user ? (
             <>
               <Link
                 href="/account/messages"
-                className="relative flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-foreground p-1.5 rounded-lg hover:bg-surface"
+                className="relative flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-xl text-xs font-semibold text-muted hover:bg-subtle hover:text-foreground"
                 aria-label={`Messages ${
                   (unreadMessagesCount ?? 0) > 0
                     ? `(${unreadMessagesCount} unread)`
@@ -118,7 +122,7 @@ export function Header() {
               >
                 <MessageSquare className="h-4 w-4" aria-hidden="true" />
                 {(unreadMessagesCount ?? 0) > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-action-600 px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-on-primary">
                     {(unreadMessagesCount ?? 0) > 9 ? "9+" : unreadMessagesCount}
                   </span>
                 )}
@@ -129,34 +133,52 @@ export function Header() {
                 disabled={signingOut}
                 aria-busy={signingOut}
                 onClick={handleSignOut}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-foreground shadow-xs transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className={buttonVariants({ variant: "secondary", className: "gap-1.5" })}
               >
-                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+                <LogOut className="h-4 w-4" aria-hidden="true" />
                 {signingOut ? "Signing out…" : "Sign Out"}
               </button>
               <Link
                 href="/account"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
+                className={buttonVariants({ variant: "secondary", className: "gap-1.5" })}
               >
-                <User className="h-3.5 w-3.5" aria-hidden="true" />
+                <User className="h-4 w-4" aria-hidden="true" />
                 Account
               </Link>
             </>
           ) : (
             <Link
               href="/auth/sign-in"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface"
+              className={buttonVariants({ variant: "secondary", className: "gap-1.5" })}
             >
-              <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
+              <LogIn className="h-4 w-4" aria-hidden="true" />
               Sign In
             </Link>
           )}
 
           <Link
             href="/account/listings/new"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-action-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-action-700"
+            className={buttonVariants({ variant: "primary", className: "gap-1.5" })}
           >
-            <PlusCircle className="h-3.5 w-3.5" aria-hidden="true" />
+            <PlusCircle className="h-4 w-4" aria-hidden="true" />
+            Post Ad
+          </Link>
+        </div>
+
+        {/* Medium-width shortcuts: kept visible beside the menu button when they fit */}
+        <div className="fs-medium-only ml-auto shrink-0 items-center gap-3">
+          <Link
+            href="/search"
+            className="inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-md text-sm font-semibold text-link hover:underline"
+          >
+            <Search className="h-4 w-4" aria-hidden="true" />
+            Browse
+          </Link>
+          <Link
+            href="/account/listings/new"
+            className={buttonVariants({ variant: "primary", className: "gap-1.5" })}
+          >
+            <PlusCircle className="h-4 w-4" aria-hidden="true" />
             Post Ad
           </Link>
         </div>
@@ -164,7 +186,7 @@ export function Header() {
         {/* Mobile menu button */}
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-md p-2 text-muted hover:text-foreground lg:hidden"
+          className="fs-compact-btn ml-auto min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl text-muted hover:bg-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--fs-focus)"
           ref={menuButton}
           onClick={toggleMenu}
           aria-expanded={mobileMenuOpen}
@@ -178,13 +200,14 @@ export function Header() {
           )}
         </button>
       </div>
+      </div>
 
       {signOutError && <p role="alert" className="px-4 py-2 text-sm">{signOutError}</p>}
       {/* Mobile menu panel */}
       {mobileMenuOpen && (
         <nav
           id="mobile-menu"
-          className="border-t border-border bg-background lg:hidden"
+          className="fs-compact-panel border-t border-border bg-card"
           aria-label="Mobile navigation"
         >
           <div className="space-y-2 px-4 py-3">
@@ -193,7 +216,7 @@ export function Header() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+                className="block rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground"
               >
                 {link.label}
               </Link>
@@ -201,7 +224,7 @@ export function Header() {
             <Link
               href="/search"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground"
             >
               <Search className="h-4 w-4" aria-hidden="true" />
               Browse Ads
@@ -209,7 +232,7 @@ export function Header() {
             <Link
               href="/account/favourites"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground"
             >
               <Heart className="h-4 w-4" aria-hidden="true" />
               Saved Favourites
@@ -217,13 +240,13 @@ export function Header() {
             <Link
               href="/account/listings/new"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-brand-link hover:bg-surface"
+              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-link hover:bg-subtle"
             >
               <PlusCircle className="h-4 w-4" aria-hidden="true" />
               Post Ad
             </Link>
 
-            <a href={HELP_CENTRE_URL} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground">
+            <a href={HELP_CENTRE_URL} onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground">
               <LifeBuoy className="h-4 w-4" aria-hidden="true" />
               Help Centre
             </a>
@@ -233,14 +256,14 @@ export function Header() {
                   aria-label={unreadMessagesCount === null ? "Messages" : `Messages (${unreadMessagesCount} unread)`}
                   href="/account/messages"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+                  className="flex items-center justify-between rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground"
                 >
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" aria-hidden="true" />
                     <span>Messages</span>
                   </div>
                   {(unreadMessagesCount ?? 0) > 0 && (
-                    <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-action-600 px-1.5 text-xs font-bold text-white">
+                    <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">
                       {(unreadMessagesCount ?? 0) > 9 ? "9+" : unreadMessagesCount}
                     </span>
                   )}
@@ -249,14 +272,14 @@ export function Header() {
                   aria-label={unreadNotificationsCount === null ? "Notifications" : `Notifications (${unreadNotificationsCount} unread)`}
                   href="/account/notifications"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+                  className="flex items-center justify-between rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground"
                 >
                   <div className="flex items-center gap-2">
                     <Bell className="h-4 w-4" aria-hidden="true" />
                     <span>Notifications</span>
                   </div>
                   {(unreadNotificationsCount ?? 0) > 0 && (
-                    <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-action-600 px-1.5 text-xs font-bold text-white">
+                    <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-on-primary">
                       {(unreadNotificationsCount ?? 0) > 9
                         ? "9+"
                         : unreadNotificationsCount}
@@ -266,7 +289,7 @@ export function Header() {
                 <Link
                   href="/account/support"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground"
                 >
                   <LifeBuoy className="h-4 w-4" aria-hidden="true" />
                   Support Tickets
@@ -274,7 +297,7 @@ export function Header() {
                 <Link
                   href="/account"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-muted hover:bg-surface hover:text-foreground"
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground"
                 >
                   <User className="h-4 w-4" aria-hidden="true" />
                   My Account
@@ -283,7 +306,7 @@ export function Header() {
                   type="button"
                   disabled={signingOut}
                   onClick={handleSignOut}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-red-600 hover:bg-surface dark:text-red-400"
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-red-600 hover:bg-subtle dark:text-red-400"
                 >
                   <LogOut className="h-4 w-4" aria-hidden="true" />
                   Sign Out
@@ -295,7 +318,7 @@ export function Header() {
                 <Link
                   href="/auth/sign-in"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-md px-3 py-2 text-base font-medium text-brand-link hover:bg-surface"
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-link hover:bg-subtle"
                 >
                   <LogIn className="h-4 w-4" aria-hidden="true" />
                   Sign In

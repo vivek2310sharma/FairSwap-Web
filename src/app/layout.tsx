@@ -1,7 +1,18 @@
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import type { Metadata } from "next";
+import { Manrope, Noto_Sans_Devanagari } from "next/font/google";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
 import "./globals.css";
+
+// Self-hosted by next/font. Variable fonts, Latin / Devanagari subsets only. Devanagari is not
+// preloaded: the browser fetches it only when Hindi glyphs are on the page.
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap" });
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari"],
+  variable: "--font-devanagari",
+  display: "swap",
+  preload: false,
+});
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 const isProductionSite =
@@ -40,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className={`${manrope.variable} ${notoDevanagari.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <AuthProvider>
           {children}

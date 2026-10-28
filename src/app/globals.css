@@ -20,8 +20,8 @@
   --color-action-300: #86efac;
   --color-action-400: #4ade80;
   --color-action-500: #22c55e;
-  --color-action-600: #0B7A33;
-  --color-action-700: #15803d;
+  --color-action-600: #08704A;
+  --color-action-700: #065c3c;
   --color-action-800: #166534;
   --color-action-900: #14532d;
 
@@ -38,12 +38,24 @@
   --color-neutral-800: #262626;
   --color-neutral-900: #171717;
 
-  --color-background: var(--color-background, #F4F9FE);
-  --color-foreground: var(--color-foreground, #0B1F38);
-  --color-muted: var(--color-muted, #525252);
-  --color-border: var(--color-border, #e5e5e5);
+  --color-background: var(--color-background, #F7F8F6);
+  --color-foreground: var(--color-foreground, #1B272C);
+  --color-muted: var(--color-muted, #475B60);
+  --color-border: var(--color-border, #DDE3DF);
   --color-surface: var(--color-surface, #ffffff);
   --color-card: var(--color-card, #FFFFFF);
+
+  /* Design A semantic roles (values switch with the colour scheme below). */
+  --color-primary: var(--fs-primary);
+  --color-primary-hover: var(--fs-primary-hover);
+  --color-on-primary: var(--fs-on-primary);
+  --color-link: var(--fs-link);
+  --color-subtle: var(--fs-subtle);
+
+  --font-sans: var(--font-manrope), var(--font-devanagari), ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
 
   --color-notice-bg: var(--color-notice-bg, #fef3c7);
   --color-notice-border: var(--color-notice-border, #f59e0b);
@@ -51,54 +63,178 @@
 }
 
 :root {
-  --color-background: #F4F9FE;
-  --color-foreground: #0B1F38;
-  --color-muted: #525252;
-  --color-border: #e5e5e5;
+  --color-background: #F7F8F6;
+  --color-foreground: #1B272C;
+  --color-muted: #475B60;
+  --color-border: #DDE3DF;
   --color-surface: #ffffff;
   --color-card: #FFFFFF;
+  --fs-subtle: #EEF2EF;
+
+  --fs-primary: #08704A;
+  --fs-primary-hover: #065C3C;
+  --fs-on-primary: #FFFFFF;
 
   --color-notice-bg: #fef3c7;
   --color-notice-border: #f59e0b;
   --color-notice-text: #92400e;
+
+  /* Accent roles: links, category icons and focus ring. */
+  --fs-link: #155D9A;
+  --fs-icon: #08704A;
+  --fs-icon-surface: #E4F1EA;
+  --fs-focus: #155D9A;
+
+  /* Home editorial surfaces: tile tones and the inverted safety band. */
+  --fs-tone-a: #E4F1EA;
+  --fs-tone-b: #F6EBD9;
+  --fs-tone-c: #E2EDF7;
+  --fs-ink: #0E2B22;
+  --fs-on-ink: #F1F7F4;
+  --fs-ink-muted: #B7CFC4;
+  --fs-ink-accent: #7BE0B0;
+  --fs-ink-line: rgba(241, 247, 244, 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-background: #0B1F38;
-    --color-foreground: #F4F9FE;
-    --color-muted: #a3a3a3;
-    --color-border: #404040;
-    --color-surface: #083f73;
-    --color-card: #083f73;
+    --color-background: #111418;
+    --color-foreground: #F1F5F7;
+    --color-muted: #9EB1C0;
+    --color-border: #2E3640;
+    --color-surface: #1B2026;
+    --color-card: #1B2026;
+    --fs-subtle: #242B33;
+
+    --fs-primary: #1BA46D;
+    --fs-primary-hover: #2FBF84;
+    --fs-on-primary: #04140D;
 
     --color-notice-bg: #451a03;
     --color-notice-border: #b45309;
     --color-notice-text: #fde68a;
+
+    --fs-link: #8fd0ff;
+    --fs-icon: #5FD9A3;
+    --fs-icon-surface: rgba(27, 164, 109, 0.16);
+    --fs-focus: #8fd0ff;
+
+    --fs-tone-a: #16302A;
+    --fs-tone-b: #2B2418;
+    --fs-tone-c: #1A2733;
+    --fs-ink: #14382C;
   }
 }
 
 .text-brand-link {
-  color: #055CA8;
+  color: var(--fs-link);
 }
 
-@media (prefers-color-scheme: dark) {
-  .text-brand-link {
-    color: #7dc6fc;
-  }
+/* Category icon: subtle tinted tile so the icon keeps contrast on any surface. */
+.fs-category-icon {
+  display: flex;
+  height: 3.25rem;
+  width: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: var(--fs-icon-surface);
+  color: var(--fs-icon);
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Type scale: strong price hierarchy, tabular figures so prices align. */
+.fs-price {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.fs-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/*
+ * Header: the full navigation shows only when it fits. Before hydration (or
+ * without JS) it needs a wide viewport; the header then measures real content
+ * and sets data-nav="inline" | "medium" | "compact", so labels, auth controls,
+ * zoom and text size are all accounted for. "medium" keeps the Browse and
+ * Post Ad shortcuts beside the menu button (sm and up only).
+ */
+.fs-header .fs-inline-only,
+.fs-header .fs-medium-only { display: none; }
+.fs-header .fs-compact-btn { display: inline-flex; }
+.fs-header .fs-compact-panel { display: block; }
+
+@media (min-width: 1280px) {
+  .fs-header:not([data-nav]) .fs-inline-only { display: flex; }
+  .fs-header:not([data-nav]) .fs-compact-btn,
+  .fs-header:not([data-nav]) .fs-compact-panel { display: none; }
+}
+
+.fs-header[data-nav="inline"] .fs-inline-only { display: flex; }
+.fs-header[data-nav="inline"] .fs-compact-btn,
+.fs-header[data-nav="inline"] .fs-compact-panel { display: none; }
+
+.fs-header[data-nav="medium"] .fs-medium-only { display: flex; }
+.fs-header[data-nav="medium"] .fs-compact-btn { margin-left: 0; }
+
+/* Home hero: soft tinted glow behind the discovery desk. */
+.fs-hero {
+  background:
+    radial-gradient(36rem 20rem at 92% 0%, color-mix(in srgb, var(--fs-primary) 14%, transparent), transparent 70%),
+    radial-gradient(30rem 16rem at 0% 0%, color-mix(in srgb, var(--fs-primary) 8%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--fs-primary) 4%, var(--color-background)), var(--color-background) 90%);
+}
+
+/* First-frame gate for the Neighbourhood intro. `IntroGate` (home page only) sets data-fs-intro on <html> before
+   content paints; the intro removes it once its dialog is open (or on any failure / after 4s). The backdrop is the
+   intro's forest scrim (.scrim in NeighbourhoodMapIntro.module.css). Never set without JS, so no-JS users see the page. */
+html[data-fs-intro="pending"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #0e2b22;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-fs-intro="pending"] body::before { display: none; }
+}
+
+/* Category bento tiles: tone drives the surface, text keeps AA contrast on each. */
+.fs-tile {
+  background: var(--fs-subtle);
+  color: var(--color-foreground);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.fs-tile[data-tone="a"] { background: var(--fs-tone-a); }
+.fs-tile[data-tone="b"] { background: var(--fs-tone-b); }
+.fs-tile[data-tone="c"] { background: var(--fs-tone-c); }
+/* Photo-backed tiles keep live HTML labels readable in both color schemes. */
+.fs-tile[data-image="true"] { background: #10251e; color: #fff; }
+.fs-ink-band {
+  background: var(--fs-ink);
+  color: var(--fs-on-ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fs-tile:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.35); }
+  .fs-rise { animation: fs-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--i, 0) * 50ms); }
+  @keyframes fs-rise { from { opacity: 0; transform: translateY(10px); } }
 }
 
 /* Accessible focus ring */
 :focus-visible {
-  outline: 2px solid var(--color-brand-500);
+  outline: 2px solid var(--fs-focus);
   outline-offset: 2px;
 }
 

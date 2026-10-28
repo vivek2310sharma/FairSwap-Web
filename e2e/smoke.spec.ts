@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -38,13 +38,13 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
 
     // 4. Content sections
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Buy & sell locally on FairSwap.in"
+      "Good things, closer to you."
     );
     await expect(
       page.getByRole("heading", { level: 2, name: /how it works/i })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { level: 2, name: /browse categories/i })
+      page.getByRole("heading", { level: 2, name: /explore categories/i })
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { level: 2, name: /your safety matters/i })
@@ -213,8 +213,9 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
 
       // 3. Activate navigation link via Enter key
       await page.keyboard.press("Enter");
-      await expect(page).toHaveURL(/#safety$/);
-      await expect(page.locator("#safety")).toBeVisible();
+      // The header Safety link opens the dedicated /safety page (the on-page band is #safety).
+      await expect(page).toHaveURL(/\/safety$/);
+      await expect(page.getByRole("heading", { level: 1, name: /safety guidelines/i })).toBeVisible();
     }
   });
 
