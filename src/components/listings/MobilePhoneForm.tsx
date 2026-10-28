@@ -17,7 +17,7 @@ const draftSchema=mobileSchema.innerType().extend({session_id:z.string(),brand_i
 const recoverySchema=z.object({version:z.literal(2),owner:z.string().uuid(),updated:z.number(),draft:draftSchema,manualTitle:z.boolean(),area:z.string(),priceText:z.string().max(20),photos:z.array(z.object({id:z.string().uuid(),state:z.enum(["pending","uploading","ready","failed"]),blob:z.instanceof(Blob).optional()})).max(8)});
 type Issue={field:string;message:string};
 export default function MobilePhoneForm({catalogue,ownerId,cities,maintenance=false}:{catalogue:MobileCatalogue;ownerId:string;cities:City[];maintenance?:boolean}) {
- const [locale,setLocale]=useState<PostingLocale>("en");const t=(text:string)=>postingText(locale,text);
+ const locale: PostingLocale = "en";const t=(text:string)=>postingText(locale,text);
  const router=useRouter();const form=useRef<HTMLFormElement>(null);const summary=useRef<HTMLDivElement>(null);
  const [draft,setDraft]=useState(blank);const [photos,setPhotos]=useState<PostingPhoto[]>([]);const [manualTitle,setManualTitle]=useState(false);
  const [phase,setPhase]=useState<"edit"|"preview"|"plan">("edit");const [loaded,setLoaded]=useState(false);const [sessionReady,setSessionReady]=useState(false);const [frozen,setFrozen]=useState(false);
@@ -89,7 +89,6 @@ export default function MobilePhoneForm({catalogue,ownerId,cities,maintenance=fa
  const uniqueIssues=Array.from(new Map(issues.map(issue=>[issue.field,issue])).values());
  if(!loaded)return <p role="status">{t("Restoring your posting…")}</p>;
  return <div className="space-y-5" lang={locale}>
-  <div className="flex gap-3" aria-label="Posting language"><button type="button" aria-pressed={locale==="en"} onClick={()=>setLocale("en")} className="min-h-11 rounded border px-4" lang="en">English</button><button type="button" aria-pressed={locale==="hi"} onClick={()=>setLocale("hi")} className="min-h-11 rounded border px-4" lang="hi">हिंदी</button></div>
   <h1 className="text-2xl font-bold">{t("Mobile Phones")}</h1><p>{t("Have your bill and box ready — buyers trust them.")}</p><p className="text-sm">{t("Pickup only. FairSwap does not currently verify IMEI or device authenticity.")}</p>
   {message&&<p role="alert" className="rounded-lg border border-amber-300 p-3">{phoneErrorText(locale,message)}</p>}
   {!sessionReady&&<button type="button" className="rounded-lg border px-4 py-3" onClick={async()=>{

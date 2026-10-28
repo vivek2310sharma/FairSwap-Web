@@ -1,7 +1,6 @@
 import { TradeCards } from "@/components/ratings/TradeCards";
 import { ratingsEnabled } from "@/lib/ratings/server";
 import { Suspense } from "react";
-import { ratingsLocale } from "@/lib/ratings/copy";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -79,7 +78,7 @@ export async function ChatV2Page({ conversationId, searchParams }: { conversatio
           <Link href={chatHref(request)} className="border-b border-border px-3 py-2 text-sm text-action-600 underline">{copy.back}</Link>
           {ratingsEnabled() && (
             <Suspense fallback={null}>
-              <TradeCards conversationId={conversationId} locale={ratingsLocale(params.lang)} />
+              <TradeCards conversationId={conversationId} locale="en" />
             </Suspense>
           )}
           <div className="min-h-0 flex-1">{thread}</div>
