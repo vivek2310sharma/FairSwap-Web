@@ -38,13 +38,13 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
 
     // 4. Content sections
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Find more. Share more. Trust more."
+      "Good things, closer to you."
     );
     await expect(
       page.getByRole("heading", { level: 2, name: /how it works/i })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { level: 2, name: /browse categories/i })
+      page.getByRole("heading", { level: 2, name: /explore categories/i })
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { level: 2, name: /your safety matters/i })

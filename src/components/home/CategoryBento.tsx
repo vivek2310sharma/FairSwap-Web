@@ -1,73 +1,82 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { Category } from "@/types/listing";
 import { buttonVariants } from "@/components/ui/button";
 import { getCategoryImagePath } from "@/lib/categories/category-images";
 
-// Uniform tiles: the first ten fill two full rows on the 5-column desktop grid
-// and 2.5 rows on 4 columns, where the toggle completes the last row.
-const TONES = ["a", "b", "c"] as const;
-const PREVIEW_COUNT = 10;
+const FEATURED_COUNT = 8;
+// Fixture/seed labels must never become decorative homepage shortcuts (they stay in the full directory).
+const FIXTURE_PATTERN = /(^|[\s_-])(fs[\s_-]*test|test|seed|fixture|dummy|sample)([\s_-]|$)|\d{6,}/i;
 
-export function CategoryBento({ categories, hrefFor }: {
-  categories: Pick<Category, "id" | "slug" | "name">[];
-  hrefFor: (slug: string) => string;
-}) {
+type Item = Pick<Category, "id" | "slug" | "name">;
+
+/** Real categories that have curated photography and are not test/fixture entries. */
+export function featuredCategories(categories: Item[]): Item[] {
+  return categories
+    .filter((category) => getCategoryImagePath(category.slug) && !FIXTURE_PATTERN.test(`${category.name} ${category.slug}`))
+    .slice(0, FEATURED_COUNT);
+}
+
+/**
+ * "Explore categories" rail: 6-8 pictured real categories as a compact swipeable photo rail. The full directory of
+ * every active category stays one tap away via the toggle, including categories without a photo.
+ */
+export function CategoryBento({ categories, hrefFor }: { categories: Item[]; hrefFor: (slug: string) => string }) {
   const [expanded, setExpanded] = useState(false);
-  // Keep the supplied relative order, but never feature an unmatched/test category.
-  const photographed = categories.filter((category) => getCategoryImagePath(category.slug));
-  const unphotographed = categories.filter((category) => !getCategoryImagePath(category.slug));
-  const ordered = [...photographed, ...unphotographed];
-  const visible = expanded ? ordered : ordered.slice(0, PREVIEW_COUNT);
+  const featured = featuredCategories(categories);
   return (
-    // Phones get a swipeable rail (compact, keeps listings close to the top); sm+ is the grid.
-    <ul id="home-category-grid" className="mt-3 flex snap-x gap-2.5 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:pb-0 lg:grid-cols-5">
-      {visible.map((category, index) => {
-        const imagePath = getCategoryImagePath(category.slug);
-        return (
-          <li key={category.id} className="w-36 shrink-0 snap-start sm:w-auto">
-            <Link
-              href={hrefFor(category.slug)}
-              prefetch={false}
-              data-tone={TONES[index % TONES.length]}
-              data-image={imagePath ? "true" : undefined}
-              style={{ "--i": Math.min(index, 10) } as CSSProperties}
-              className="fs-tile fs-rise group relative flex aspect-4/3 flex-col justify-end overflow-hidden rounded-2xl p-3 focus-visible:outline-2 focus-visible:outline-(--fs-focus)"
+    <>
+      <ul id="home-category-rail" className="mt-3 flex snap-x gap-2.5 overflow-x-auto pb-1 sm:gap-3">
+        {featured.map((category, index) => {
+          const imagePath = getCategoryImagePath(category.slug)!;
+          return (
+            <li key={category.id} className="w-[7.25rem] shrink-0 snap-start sm:min-w-0 sm:flex-1">
+              <Link
+                href={hrefFor(category.slug)}
+                prefetch={false}
+                data-image="true"
+                className="group relative flex h-[6.5rem] flex-col justify-end overflow-hidden rounded-2xl bg-subtle p-2.5 ring-1 ring-border focus-visible:outline-2 focus-visible:outline-(--fs-focus)"
+              >
+                <Image
+                  src={imagePath}
+                  alt=""
+                  fill
+                  sizes="(max-width: 639px) 116px, (max-width: 1023px) 18vw, 160px"
+                  loading={index < 3 ? "eager" : "lazy"}
+                  className="pointer-events-none absolute inset-0 object-cover object-center motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
+                />
+                <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+                <span className="relative z-10 wrap-break-word text-xs font-bold leading-snug text-white sm:text-sm">{category.name}</span>
+              </Link>
+            </li>
+          );
+        })}
+        {categories.length > featured.length && (
+          <li className="w-[7.25rem] shrink-0 snap-start sm:w-auto sm:min-w-28">
+            <button
+              type="button"
+              aria-expanded={expanded}
+              aria-controls="home-category-directory"
+              onClick={() => setExpanded(!expanded)}
+              className={buttonVariants({ variant: "secondary", size: "lg", className: "h-[6.5rem] w-full rounded-2xl border-dashed text-xs sm:text-sm" })}
             >
-              {imagePath && (
-                <>
-                  <Image
-                    src={imagePath}
-                    alt=""
-                    fill
-                    sizes="(max-width: 639px) 50vw, (max-width: 1023px) 25vw, 18vw"
-                    loading={index < 4 ? "eager" : "lazy"}
-                    className="pointer-events-none absolute inset-0 object-cover object-center motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
-                  />
-                  <span aria-hidden="true" className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
-                </>
-              )}
-              <span className="relative z-10 wrap-break-word text-sm font-bold leading-snug tracking-tight sm:text-base">{category.name}</span>
-            </Link>
+              {expanded ? "Show fewer categories" : "View all categories"}
+            </button>
           </li>
-        );
-      })}
-      {categories.length > PREVIEW_COUNT && (
-        <li className="w-36 shrink-0 snap-start sm:col-span-4 sm:w-auto lg:col-span-5">
-          <button
-            type="button"
-            aria-expanded={expanded}
-            aria-controls="home-category-grid"
-            onClick={() => setExpanded(!expanded)}
-            className={buttonVariants({ variant: "secondary", size: "lg", className: "h-full min-h-14 w-full rounded-2xl border-dashed" })}
-          >
-            {expanded ? "Show fewer categories" : "View all categories"}
-          </button>
-        </li>
+        )}
+      </ul>
+      {expanded && (
+        <ul id="home-category-directory" aria-label="All categories" className="mt-3 flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <li key={category.id}>
+              <Link href={hrefFor(category.slug)} prefetch={false} className={buttonVariants({ variant: "secondary", size: "md", className: "min-h-11 rounded-full" })}>{category.name}</Link>
+            </li>
+          ))}
+        </ul>
       )}
-    </ul>
+    </>
   );
 }

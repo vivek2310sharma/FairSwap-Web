@@ -17,9 +17,9 @@ test.describe("Homepage editorial redesign", () => {
         await page.goto("/");
 
         await expect(page.getByRole("searchbox", { name: "Search items", exact: true })).toBeVisible();
-        await expect(page.getByRole("heading", { level: 2, name: /browse categories/i })).toBeVisible();
+        await expect(page.getByRole("heading", { level: 2, name: /explore categories/i })).toBeVisible();
         await expect(page.getByRole("heading", { level: 2, name: /your safety matters/i })).toBeVisible();
-        await expect(page.getByText(/inspect before paying/i)).toBeVisible();
+        await expect(page.getByRole("list", { name: "Safety reminders" }).getByText("Inspect before paying")).toBeVisible();
         await expect(page.getByRole("heading", { level: 2, name: /how it works/i })).toBeVisible();
 
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
