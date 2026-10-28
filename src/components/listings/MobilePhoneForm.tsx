@@ -20,7 +20,8 @@ export default function MobilePhoneForm({catalogue,ownerId,cities,maintenance=fa
  const locale: PostingLocale = "en";const t=(text:string)=>postingText(locale,text);
  const router=useRouter();const form=useRef<HTMLFormElement>(null);const summary=useRef<HTMLDivElement>(null);
  const [draft,setDraft]=useState(blank);const [photos,setPhotos]=useState<PostingPhoto[]>([]);const [manualTitle,setManualTitle]=useState(false);
- const [phase,setPhase]=useState<"edit"|"preview"|"plan">("edit");const [loaded,setLoaded]=useState(false);const [sessionReady,setSessionReady]=useState(false);const [frozen,setFrozen]=useState(false);
+ const [phase,setPhase]=useState<"edit"|"preview"|"plan">("edit");const [loaded,setLoaded]=useState(false);const [sessionState,setSessionState]=useState<"initializing"|"ready"|"failed">("initializing");const [frozen,setFrozen]=useState(false);
+ const sessionReady=sessionState==="ready";const retryInFlight=useRef(false);
  const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");const [issues,setIssues]=useState<Issue[]>([]);const [area,setArea]=useState("");const [priceText,setPriceText]=useState("");const [modelSearch,setModelSearch]=useState("");const [brandSearch,setBrandSearch]=useState("");
  const model=catalogue.models.find(m=>m.id===draft.model_id&&m.brand_id===draft.brand_id);
  const update=<K extends keyof MobileSubmission>(key:K,value:MobileSubmission[K])=>setDraft(d=>({...d,[key]:value}));
@@ -51,17 +52,27 @@ export default function MobilePhoneForm({catalogue,ownerId,cities,maintenance=fa
    const session=restored?.draft.session_id||crypto.randomUUID();
    setDraft(restored?{...restored.draft,session_id:session}:{...blank,session_id:session});
    setPhotos(restored?.photos.map(p=>({...p,state:p.state==="uploading"?"failed":p.state}))??[]);setManualTitle(restored?.manualTitle??false);setPriceText(restored?.priceText??"");setArea(restored?.area??"");setLoaded(true);
-   try{
-    selectPostingCategory(blank.selection,catalogue);
-    const r=await fetch("/api/post-ad/sessions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_id:session})});const data=await r.json();if(!r.ok)throw new Error(data.error);
-    if(cancelled)return;
-    if(data.session?.state==="submitted"){await writePostingRecovery(ownerId,null);router.replace(`/account/listings/${data.session.listing_id}/edit`);return;}
-    setSessionReady(true);await refresh(session);
-   }catch(e){if(!cancelled)setMessage(e instanceof Error?e.message:"Session unavailable.");}
+   await initializeSession(session,()=>cancelled);
   }void init();return()=>{cancelled=true;};
   // Account changes remount this component via its account key.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[ownerId]);
+ async function initializeSession(session:string,cancelled=()=>false){
+  setSessionState("initializing");
+  try{
+   selectPostingCategory(blank.selection,catalogue);
+   const r=await fetch("/api/post-ad/sessions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_id:session})});const data=await r.json();if(!r.ok)throw new Error(data.error);
+   if(cancelled())return;
+   if(data.session?.state==="submitted"){await writePostingRecovery(ownerId,null);if(!cancelled())router.replace(`/account/listings/${data.session.listing_id}/edit`);return;}
+   await refresh(session);
+   if(!cancelled())setSessionState("ready");
+  }catch(e){if(!cancelled()){setSessionState("failed");setMessage(e instanceof Error?e.message:"Session unavailable.");}}
+ }
+ async function retrySession(){
+  if(sessionState!=="failed"||retryInFlight.current)return;
+  retryInFlight.current=true;setMessage("");
+  try{await initializeSession(draft.session_id);}finally{retryInFlight.current=false;}
+ }
  useEffect(()=>{
   if(!loaded)return;
   const timer=setTimeout(()=>{void writePostingRecovery(ownerId,{version:2,owner:ownerId,updated:Date.now(),draft,manualTitle,area,priceText,photos:photos.map(({id,state,blob})=>({id,state,blob}))}).catch(()=>setMessage("Local recovery could not save. Keep this page open until submission."));},350);
@@ -91,15 +102,14 @@ export default function MobilePhoneForm({catalogue,ownerId,cities,maintenance=fa
  return <div className="space-y-5" lang={locale}>
   <h1 className="text-2xl font-bold">{t("Mobile Phones")}</h1><p>{t("Have your bill and box ready — buyers trust them.")}</p><p className="text-sm">{t("Pickup only. FairSwap does not currently verify IMEI or device authenticity.")}</p>
   {message&&<p role="alert" className="rounded-lg border border-amber-300 p-3">{phoneErrorText(locale,message)}</p>}
-  {!sessionReady&&<button type="button" className="rounded-lg border px-4 py-3" onClick={async()=>{
-   const id=crypto.randomUUID();try{const r=await fetch("/api/post-ad/sessions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_id:id})});const result=await r.json();if(!r.ok)throw new Error(result.error);update("session_id",id);setPhotos(p=>p.filter(x=>x.blob).map(x=>({...x,state:"pending",url:undefined})));setSessionReady(true);setMessage("");}catch(e){setMessage(e instanceof Error?e.message:"Could not start photo session.");}
-  }}>{t("Start / retry photo session")}</button>}
+  {sessionState==="initializing"&&<p role="status">{t("Preparing photo upload…")}</p>}
+  {sessionState==="failed"&&<button type="button" className="rounded-lg border px-4 py-3" onClick={()=>void retrySession()}>{t("Retry photo upload")}</button>}
   {uniqueIssues.length>0&&<div ref={summary} tabIndex={-1} role="alert" className="rounded-lg border border-red-400 p-4"><p className="font-semibold">{phoneValidationSummary(locale,uniqueIssues[0].field,uniqueIssues.length-1)}</p><ul>{uniqueIssues.map(issue=><li key={issue.field}><button type="button" className="text-left underline" onClick={()=>focus(issue.field)}>{phoneValidationText(locale,issue.field,issue.message)}</button></li>)}</ul></div>}
   <form ref={form} noValidate onSubmit={e=>{e.preventDefault();const value=validate();if(value){setDraft(value);setPhase("preview");}}} className="space-y-6">
    <div hidden={phase!=="edit"} className="space-y-6">
     <fieldset disabled={busy||maintenance} className="space-y-6">
      {label("trade","Trade type",<select id="mobile-trade" className={input} value={draft.trade} onChange={e=>{update("trade",e.target.value as "sell"|"giveaway");if(e.target.value==="giveaway")update("negotiable",false);}}><option value="sell">{t("Sell")}</option><option value="giveaway">{t("Give away")}</option></select>)}
-     <PreListingMediaUploader locale={locale} photos={photos} onChange={setPhotos} sessionId={draft.session_id} disabled={!sessionReady||busy||maintenance||frozen} onReady={()=>refresh()}/>
+     {sessionReady&&<PreListingMediaUploader locale={locale} photos={photos} onChange={setPhotos} sessionId={draft.session_id} disabled={busy||maintenance||frozen} onReady={()=>refresh()}/>}
      <PostingAIAssistant locale={locale}/>
      {label("brand-search","Search brands",<input id="mobile-brand-search" type="search" className={input} value={brandSearch} onChange={e=>setBrandSearch(e.target.value)}/>)}
      {label("brand_id","Brand",<select id="mobile-brand_id" className={input} value={draft.brand_id} onChange={e=>{update("brand_id",e.target.value);update("model_id","");update("other_model","");setModelSearch("");}}><option value="">{t("Choose brand")}</option>{catalogue.brands.filter(b=>b.id===draft.brand_id||[b.name,...b.aliases].some(s=>s.toLowerCase().includes(brandSearch.toLowerCase()))).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>)}
