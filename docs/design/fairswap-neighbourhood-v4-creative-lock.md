@@ -3,7 +3,7 @@
 
 **Supersedes all earlier “Second Life Journey” V3 art direction, headlines, timing and Claude prompts.** The owner asked for a more distinctive, cinematic locality-map sequence rather than product stills or a people/handshake scene. This branch was created from staging `5075d102e8afb67eae1a573c59192c55e2e0df16`. No web code is changed by this document.
 
-**Canonical source bundle:** `FairSwap-Neighbourhood-V4-Creative-Lock.zip` supplied by ChatGPT in the FairSwap project conversation, containing the full strict specification `docs/design/01-CREATIVE-LOCK.md` through `05-CLAUDE-PASTE-PROMPT.md`, three original production-ready SVGs under `public/animations/fairswap-neighbourhood-v4/`, plus rendered previews. **Use that exact bundle for local Claude Code work; the assistant-generated vector assets are owned by the project and MUST NOT be recreated by the agent.** There are no missing external image dependencies: marketplace category photos are already in `public/images/categories/`.
+**Canonical source bundle:** `FairSwap-Neighbourhood-V4-Creative-Lock.zip` supplied by ChatGPT in the FairSwap project conversation, containing the full strict specification `docs/design/neighbourhood-v4/01-CREATIVE-LOCK.md` through `05-CLAUDE-PASTE-PROMPT.md`, three original production-ready SVGs under `public/animations/fairswap-neighbourhood-v4/`, plus rendered previews. **Use that exact bundle for local Claude Code work; the assistant-generated vector assets are owned by the project and MUST NOT be recreated by the agent.** There are no missing external image dependencies: marketplace category photos are already in `public/images/categories/`.
 
 ## Brand positioning and homepage copy
 
@@ -60,7 +60,7 @@ At desktop 1366px: compact 56–64px header with existing auth/messages/favourit
 
 ## Implementation ownership and delivery
 
-- **Claude Code Sonnet**: read `docs/design/05-CLAUDE-PASTE-PROMPT.md` from the delivered ZIP (or paste the self-contained prompt), make a short plan and implement automatically; **DO NOT ASK for more design approval.** Claude does **not** need GitHub access. Do not invent imagery or change the creative lock.
+- **Claude Code Sonnet**: read `docs/design/neighbourhood-v4/05-CLAUDE-PASTE-PROMPT.md` from the delivered ZIP (or paste the self-contained prompt), make a short plan and implement automatically; **DO NOT ASK for more design approval.** Claude does **not** need GitHub access. Do not invent imagery or change the creative lock.
 - Scoped files: `src/app/page.tsx`, `src/components/header.tsx`, `src/components/listings/{HomeDiscovery,RecentListingsSection,DiscoveryLocationSelector}.tsx`, `src/components/home/{FairSwapIntro,IntroGate,CategoryBento,FairSwapHeroArtwork,fairswap-art}.ts[x]`, `src/components/home/FairSwapIntro.module.css`, `src/app/globals.css`, added small typed intro/collage components, existing focused Vitest and Playwright tests. Do not edit other backend/auth/IDV/Ratings/Chat files.
 - **DB migrations:** none. **Env vars:** none. **Hosted Supabase/RLS changes:** none. **CI changes:** none.
 - Exact automated tests: lint, typecheck, Vitest, build, Playwright intro/homepage/location/performance/responsive, preserving all CI gates. No manual/exploratory testing by coding agent.
