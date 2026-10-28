@@ -18,6 +18,14 @@ export const locationPreferenceSchema = z.object({
   expires: z.number().finite(),
 });
 
+/** Homepage URL for a public area; `null` (All India) is the bare `/`, which drops both URL parameters. */
+export function homeAreaHref(area: PublicArea | null) {
+  if (!area) return "/";
+  const params = new URLSearchParams({ city: area.city });
+  if (area.locality) params.set("locality", area.locality);
+  return `/?${params}`;
+}
+
 /** Changed discovery filters always start at the first page. */
 export function discoveryHref(filters: Partial<SearchFilters>, area?: PublicArea | null) {
   const values = { ...filters, q: filters.q?.trim(), page: undefined };

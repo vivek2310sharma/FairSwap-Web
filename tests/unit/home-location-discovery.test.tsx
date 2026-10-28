@@ -6,19 +6,28 @@ import { discoveryHref, LOCATION_PREFERENCE_KEY } from "@/lib/location/discovery
 
 function render(ui: React.ReactElement) { const result = rtlRender(ui); document.querySelectorAll("details").forEach(d => { d.open = true; }); return result; }
 const push = vi.hoisted(() => vi.fn());
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const replace = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace }) }));
 const area = { city: "11111111-1111-4111-8111-111111111111", locality: "22222222-2222-4222-8222-222222222222", label: "Koramangala, Bengaluru district, Karnataka" };
 const categories = [{ id: "c1", slug: "electronics", name: "Electronics" }];
-beforeEach(() => { vi.useFakeTimers(); push.mockReset(); localStorage.clear(); });
+beforeEach(() => { vi.useFakeTimers(); push.mockReset(); replace.mockReset(); localStorage.clear(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 async function settle() { await act(async () => { await vi.advanceTimersByTimeAsync(350); }); }
 const mockResponse = (items = [area]) => ({ ok: true, json: async () => ({ items }) });
 
 describe("location-aware discovery", () => {
-  it("renders only a visually hidden H1 and omits the removed headline and subtitle", () => {
+  it("renders one visible H1 with concise search copy and no removed headline or subtitle", () => {
     render(<HomeDiscovery categories={categories} initialArea={area} initialFilters={{}} restoreSaved={false} />);
-    const h1 = screen.getByRole("heading", { level: 1, name: "Buy & sell locally on FairSwap.in" });
-    expect(h1).toHaveClass("sr-only");
+    const h1 = screen.getByRole("heading", { level: 1 });
+    expect(h1).toHaveTextContent("Good things, closer to you.");
+    expect(screen.getByText("Discover useful finds from people around you. Buy, sell and explore locally.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore nearby" })).toHaveAttribute("href", "#fresh-finds");
+    expect(screen.queryByText("Find more. Share more. Trust more.")).toBeNull();
+    expect(document.querySelector("img[src*='second-life']")).toBeNull();
+    expect(h1).not.toHaveClass("sr-only");
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("searchbox", { name: "Search items" })).toHaveAttribute("placeholder", "Phone, bike, sofa...");
+    expect(screen.queryByText("Search approved ads")).toBeNull();
     expect(screen.queryByText("Discover pre-loved finds on FairSwap")).toBeNull();
     expect(screen.queryByText("Pre-loved things. A fresh start.")).toBeNull();
   });
@@ -82,6 +91,26 @@ describe("location-aware discovery", () => {
     const restore = vi.fn(), confirm = vi.fn();
     render(<DiscoveryLocationSelector area={null} restoreSaved onRestore={restore} onConfirm={confirm} />);
     await settle(); expect(restore).toHaveBeenCalledWith(area); expect(confirm).not.toHaveBeenCalled();
+  });
+  it("confirming an area updates the homepage URL so the feed follows; All India clears both params and the saved area", async () => {
+    render(<HomeDiscovery categories={categories} initialArea={area} restoreSaved={false} />);
+    fireEvent.click(screen.getByRole("button", { name: /All India/ }));
+    expect(push).toHaveBeenCalledWith("/", { scroll: false });
+    expect(localStorage.getItem(LOCATION_PREFERENCE_KEY)).toBeNull();
+  });
+  it("restores a saved area once via replace, without a loop, when the URL has no explicit area", async () => {
+    localStorage.setItem(LOCATION_PREFERENCE_KEY, JSON.stringify({ city: area.city, locality: area.locality, expires: Date.now() + 10000 }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse()));
+    render(<HomeDiscovery categories={categories} restoreSaved />);
+    await settle();
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith(`/?city=${area.city}&locality=${area.locality}`, { scroll: false });
+    expect(push).not.toHaveBeenCalled();
+  });
+  it("exposes a real focusable location control for #location", () => {
+    render(<HomeDiscovery categories={categories} initialArea={area} restoreSaved={false} />);
+    const target = document.getElementById("location")!;
+    expect(target.tagName).toBe("SUMMARY");
   });
   it("explicit URL area does not read saved preferences", async () => {
     localStorage.setItem(LOCATION_PREFERENCE_KEY, JSON.stringify({ city: area.city, expires: Date.now() + 10000 }));

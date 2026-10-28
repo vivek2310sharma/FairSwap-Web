@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test";
 import { HELP_CENTRE_URL } from "../src/lib/help-centre";
 
 test.describe("Independent public Help Centre integration", () => {

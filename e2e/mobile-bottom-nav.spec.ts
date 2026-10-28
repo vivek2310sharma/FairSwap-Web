@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./helpers/test";
 
 test.describe("HDR-01: Mobile Bottom Navigation", () => {
   const mobileWidths = [
