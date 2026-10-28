@@ -15,6 +15,32 @@ afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 async function ready(){render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await waitFor(()=>expect(screen.getByRole("button",{name:"Preview / Continue"})).toBeEnabled());}
 function fill(){fireEvent.click(screen.getByRole("button",{name:"Add ready photo"}));fireEvent.change(screen.getByLabelText("Brand"),{target:{value:brand}});fireEvent.change(screen.getByLabelText("Model"),{target:{value:model}});fireEvent.change(screen.getByLabelText("Description"),{target:{value:"Used carefully. Battery health 90%."}});fireEvent.change(screen.getByLabelText("Price (₹)"),{target:{value:"25000"}});}
 describe("Mobile phone posting journey",()=>{
+ it("shows preparation until the session and recovered media are ready",async()=>{
+  let finish!:()=>void;const pending=new Promise<void>(resolve=>{finish=resolve;});
+  m.fetch.mockImplementation(async()=>{await pending;return {ok:true,json:async()=>({session:{state:"open"},media:[]})};});
+  render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);
+  expect(await screen.findByText("Preparing photo upload…")).toHaveAttribute("role","status");
+  expect(screen.queryByRole("button",{name:/retry/i})).toBeNull();expect(screen.queryByRole("button",{name:"Add ready photo"})).toBeNull();
+  finish();expect(await screen.findByRole("button",{name:"Add ready photo"})).toBeVisible();
+  expect(screen.queryByText("Preparing photo upload…")).toBeNull();
+ });
+ it("retries initialization once with the same session and retains recovered photos",async()=>{
+  let finish!:()=>void;const pending=new Promise<void>(resolve=>{finish=resolve;});let attempts=0;
+  m.fetch.mockImplementation(async(input:string)=>{
+   if(input==="/api/post-ad/sessions"){
+    if(++attempts===1)return {ok:false,json:async()=>({error:"Session unavailable."})};
+    await pending;
+   }
+   return {ok:true,json:async()=>({session:{state:"open"},media:[{id:model,state:"ready",url:null}]})};
+  });
+  render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);
+  const retry=await screen.findByRole("button",{name:"Retry photo upload"});
+  fireEvent.click(retry);fireEvent.click(retry);
+  expect(attempts).toBe(2);expect(screen.getByText("Preparing photo upload…")).toBeVisible();
+  const requests=m.fetch.mock.calls.filter(([url])=>url==="/api/post-ad/sessions");expect(requests[1][1].body).toBe(requests[0][1].body);
+  finish();await screen.findByRole("button",{name:"Add ready photo"});
+  await waitFor(()=>expect(m.write).toHaveBeenCalledWith(owner,expect.objectContaining({photos:[{id:model,state:"ready",blob:undefined}]})));
+ });
  it("defaults to English without a page-specific language selector",async()=>{await ready();expect(screen.queryByLabelText("Posting language")).toBeNull();expect(screen.queryByRole("button",{name:"हिंदी"})).toBeNull();expect(screen.getByLabelText("Brand")).toBeVisible();expect(screen.getByLabelText("Condition")).toHaveValue("good");expect(screen.getByText("Your photos are not analysed by AI yet.")).toBeVisible();});
  it("keeps the AI panel below photos and never offers a separate draft step",async()=>{await ready();const photo=screen.getByRole("button",{name:"Add ready photo"});const ai=screen.getByRole("complementary",{name:"AI assistant"});expect(photo.compareDocumentPosition(ai)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();expect(screen.getByText("Your photos are not analysed by AI yet.")).toBeVisible();expect(screen.queryByRole("button",{name:/Save.*Draft/i})).toBeNull();});
  it("retains a manually edited title when condition and storage change",async()=>{await ready();fill();fireEvent.change(screen.getByLabelText("Title"),{target:{value:"My carefully used phone"}});fireEvent.change(screen.getByLabelText("Storage"),{target:{value:"256 GB"}});fireEvent.change(screen.getByLabelText("Condition"),{target:{value:"like_new"}});expect(screen.getByLabelText("Title")).toHaveValue("My carefully used phone");});
