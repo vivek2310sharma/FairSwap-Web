@@ -53,7 +53,7 @@ export function HomeDiscovery({ categories, initialArea = null, initialFilters =
               <input id="home-keywords" type="search" name="q" maxLength={100} value={query} onChange={e => setQuery(e.target.value)} placeholder="Phone, bike, sofa..." className="min-h-11 min-w-0 flex-1 rounded-l-2xl bg-transparent px-4 text-base text-foreground placeholder:text-muted focus:outline-none" />
               <button type="submit" aria-label="Search" className={buttonVariants({ variant: "primary", size: "lg", className: "m-0.5 min-h-11 min-w-[48px] rounded-xl px-3 sm:px-6" })}><Search className="h-5 w-5 sm:hidden" aria-hidden="true" /><span className="hidden sm:inline" aria-hidden="true">Search</span></button>
             </form>
-            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3">
+            <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 max-[360px]:gap-x-1">
               <DiscoveryLocationSelector
                 summaryId="location"
                 area={area}
