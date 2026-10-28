@@ -13,7 +13,8 @@ export function rememberPublicArea(area: PublicArea | null) {
   } catch { /* Storage may be disabled; discovery still works. */ }
 }
 
-export function DiscoveryLocationSelector({ area, onConfirm, onRestore, restoreSaved = false }: {
+export function DiscoveryLocationSelector({ area, onConfirm, onRestore, restoreSaved = false, summaryId }: {
+  summaryId?: string;
   area: PublicArea | null;
   onConfirm: (area: PublicArea | null) => void;
   onRestore?: (area: PublicArea) => void;
@@ -113,7 +114,7 @@ export function DiscoveryLocationSelector({ area, onConfirm, onRestore, restoreS
     <details ref={details} className="relative min-w-0" onKeyDown={event => {
       if (event.key === "Escape" && details.current) { sequence.current++; gpsController.current?.abort(); setLocating(false); details.current.open = false; details.current.querySelector("summary")?.focus(); }
     }}>
-      <summary className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-action-500">
+      <summary id={summaryId} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-action-500">
         <MapPin className="h-4 w-4 shrink-0 text-brand-link" aria-hidden="true" />
         <span className="min-w-0 break-words">{area?.label || "All India"}</span>
         <span className="ml-auto text-xs text-brand-link">Change</span>

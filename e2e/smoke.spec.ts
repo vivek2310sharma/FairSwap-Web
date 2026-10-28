@@ -38,7 +38,7 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
 
     // 4. Content sections
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Exchange. Share. Discover."
+      "Find more. Share more. Trust more."
     );
     await expect(
       page.getByRole("heading", { level: 2, name: /how it works/i })
@@ -213,8 +213,9 @@ test.describe("FairSwap Foundation Smoke Tests", () => {
 
       // 3. Activate navigation link via Enter key
       await page.keyboard.press("Enter");
-      await expect(page).toHaveURL(/#safety$/);
-      await expect(page.locator("#safety")).toBeVisible();
+      // The header Safety link opens the dedicated /safety page (the on-page band is #safety).
+      await expect(page).toHaveURL(/\/safety$/);
+      await expect(page.getByRole("heading", { level: 1, name: /safety guidelines/i })).toBeVisible();
     }
   });
 

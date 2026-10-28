@@ -40,8 +40,8 @@ export default async function HomePage({ searchParams }: HomePageProps = {}) {
     <Header />
     <main className="flex-1">
       <HomeDiscovery key={JSON.stringify(params)} categories={categories.map(({ id, slug, name }) => ({ id, slug, name }))} initialArea={area} initialFilters={filters} restoreSaved={!hasExplicitLocation} />
+      <Suspense key={area ? `${area.city}:${area.locality ?? ""}` : "all-india"} fallback={<RecentListingsSkeleton />}><RecentListingsSection area={area} /></Suspense>
       <SafetyBand />
-      <Suspense fallback={<RecentListingsSkeleton />}><RecentListingsSection /></Suspense>
       <HowItWorks />
     </main>
     <Footer />

@@ -23,11 +23,12 @@ export function CategoryBento({ categories, hrefFor }: {
   const ordered = [...photographed, ...unphotographed];
   const visible = expanded ? ordered : ordered.slice(0, PREVIEW_COUNT);
   return (
-    <ul id="home-category-grid" className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-5">
+    // Phones get a swipeable rail (compact, keeps listings close to the top); sm+ is the grid.
+    <ul id="home-category-grid" className="mt-3 flex snap-x gap-2.5 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:pb-0 lg:grid-cols-5">
       {visible.map((category, index) => {
         const imagePath = getCategoryImagePath(category.slug);
         return (
-          <li key={category.id}>
+          <li key={category.id} className="w-36 shrink-0 snap-start sm:w-auto">
             <Link
               href={hrefFor(category.slug)}
               prefetch={false}
@@ -55,13 +56,13 @@ export function CategoryBento({ categories, hrefFor }: {
         );
       })}
       {categories.length > PREVIEW_COUNT && (
-        <li className="col-span-2 lg:col-span-5">
+        <li className="w-36 shrink-0 snap-start sm:col-span-4 sm:w-auto lg:col-span-5">
           <button
             type="button"
             aria-expanded={expanded}
             aria-controls="home-category-grid"
             onClick={() => setExpanded(!expanded)}
-            className={buttonVariants({ variant: "secondary", size: "lg", className: "min-h-14 w-full rounded-2xl border-dashed" })}
+            className={buttonVariants({ variant: "secondary", size: "lg", className: "h-full min-h-14 w-full rounded-2xl border-dashed" })}
           >
             {expanded ? "Show fewer categories" : "View all categories"}
           </button>

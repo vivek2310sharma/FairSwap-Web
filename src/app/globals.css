@@ -191,10 +191,9 @@ body {
 /* Home hero: soft tinted glow behind the discovery desk. */
 .fs-hero {
   background:
-    radial-gradient(34rem 22rem at 6% 8%, color-mix(in srgb, var(--fs-primary) 22%, transparent), transparent 70%),
-    radial-gradient(34rem 22rem at 94% 12%, color-mix(in srgb, var(--fs-primary) 18%, transparent), transparent 70%),
-    radial-gradient(30rem 16rem at 50% 0%, color-mix(in srgb, var(--fs-link) 10%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--fs-primary) 7%, var(--color-background)), var(--color-background) 85%);
+    radial-gradient(36rem 20rem at 92% 0%, color-mix(in srgb, var(--fs-primary) 14%, transparent), transparent 70%),
+    radial-gradient(30rem 16rem at 0% 0%, color-mix(in srgb, var(--fs-primary) 8%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--fs-primary) 4%, var(--color-background)), var(--color-background) 90%);
 }
 
 /* First-frame gate for the homepage intro. `IntroGate` (home page only) sets data-fs-intro on <html> before
