@@ -6,6 +6,6 @@
 
 **Current approved GitHub branch:** `feat/web-homepage-3-2-neighbourhood-v4` (based on staging `5075d102e8afb67eae1a573c59192c55e2e0df16` at preparation time).
 
-**Owner-provided production creative package:** `FairSwap-Neighbourhood-V4-Creative-Lock.zip` containing `docs/design/01-CREATIVE-LOCK.md`, `02-MOTION-STORYBOARD.md`, `03-HOMEPAGE-CONTRACT.md`, `04-ENGINEERING-GATES.md`, `05-CLAUDE-PASTE-PROMPT.md`, original SVG cartographic artwork, and storyboard PNGs.
+**Owner-provided production creative package:** `FairSwap-Neighbourhood-V4-Creative-Lock.zip` containing `docs/design/neighbourhood-v4/01-CREATIVE-LOCK.md`, `02-MOTION-STORYBOARD.md`, `03-HOMEPAGE-CONTRACT.md`, `04-ENGINEERING-GATES.md`, `05-CLAUDE-PASTE-PROMPT.md`, original SVG cartographic artwork, and storyboard PNGs.
 
 **Implementation policy:** Claude only codes locally without approval loops or GitHub actions; ChatGPT owns diff reconciliation, commits, PRs and staging CI. Production remains on hold during the staging creative experiment.
