@@ -37,9 +37,9 @@ export function FairSwapHeroPair({ art = FAIRSWAP_ART }: { art?: FairSwapArt | n
   const [failed, setFailed] = useState(false);
   if (failed || !isCompleteArt(art)) return null;
   return (
-    <div aria-hidden="true" data-testid="hero-art-pair" className="pointer-events-none mt-4 flex items-end justify-between gap-4 px-2 lg:hidden">
-      <ArtImage image={art.heroLeft} onFail={() => setFailed(true)} className="block h-[clamp(11rem,52vw,17rem)] w-auto max-w-[44vw] object-contain object-bottom" />
-      <ArtImage image={art.heroRight} onFail={() => setFailed(true)} className="block h-[clamp(11rem,52vw,17rem)] w-auto max-w-[44vw] object-contain object-bottom" />
+    <div aria-hidden="true" data-testid="hero-art-pair" className="pointer-events-none mt-3 flex items-end justify-center gap-6 px-2 lg:hidden">
+      <ArtImage image={art.heroLeft} onFail={() => setFailed(true)} className="block h-[clamp(8rem,26vw,13rem)] w-auto max-w-[30vw] object-contain object-bottom" />
+      <ArtImage image={art.heroRight} onFail={() => setFailed(true)} className="block h-[clamp(8rem,26vw,13rem)] w-auto max-w-[30vw] object-contain object-bottom" />
     </div>
   );
 }
