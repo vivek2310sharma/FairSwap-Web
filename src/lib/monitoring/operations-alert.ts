@@ -43,6 +43,10 @@ function buildAlertText(alert: OperationsEmailAlert): string {
 export async function sendOperationsEmailAlert(
   alert: OperationsEmailAlert
 ): Promise<OperationsAlertResult> {
+  return sendOperationsTextAlert(buildAlertText(alert));
+}
+
+export async function sendOperationsTextAlert(text: string): Promise<OperationsAlertResult> {
   const rawUrl = process.env.OPERATIONS_ALERT_WEBHOOK_URL?.trim();
   if (!rawUrl) {
     return { ok: false, reason: "not_configured" };
@@ -65,11 +69,12 @@ export async function sendOperationsEmailAlert(
   try {
     const response = await fetch(url, {
       method: "POST",
+      redirect: "error",
       headers: {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        text: buildAlertText(alert),
+        text,
       }),
       cache: "no-store",
       signal: controller.signal,
