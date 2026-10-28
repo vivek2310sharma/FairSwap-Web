@@ -7,7 +7,6 @@ import { SellerTabs } from "@/components/seller/SellerTabs";
 import { SellerListingsPanel } from "@/components/seller/SellerListingsPanel";
 import { PublicRatings } from "@/components/ratings/PublicRatings";
 import { publicRatingsEnabled } from "@/lib/ratings/server";
-import { ratingsLocale } from "@/lib/ratings/copy";
 import { cursorSchema } from "@/lib/ratings/contracts";
 import { createClient } from "@/lib/supabase/server";
 import { getSellerListingsPage } from "@/lib/discovery/queries";
@@ -82,7 +81,7 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
   if (!sellerIdSchema.safeParse(id).success) notFound();
 
   const raw = firstValues(await searchParams);
-  const locale = ratingsLocale(raw.lang);
+  const locale = "en";
   const cursor = raw.before_at || raw.before_id ? cursorSchema.safeParse({ before_at: raw.before_at, before_id: raw.before_id }) : null;
   const { params: query, invalid } = parseSellerListingsParams(raw);
   if (query.tab === "ratings" && !publicRatingsEnabled()) notFound();
@@ -165,7 +164,7 @@ export default async function SellerProfilePage({ params, searchParams }: Seller
             {listingsActive ? (
               <SellerListingsPanel basePath={basePath} params={query} result={result} filtered={showAsFiltered} />
             ) : (
-              cursor && !cursor.success ? <p>Ratings unavailable / रेटिंग उपलब्ध नहीं है</p> : <PublicRatings userId={id} locale={locale} cursor={cursor?.success ? cursor.data : null} />
+              cursor && !cursor.success ? <p>Ratings unavailable</p> : <PublicRatings userId={id} locale={locale} cursor={cursor?.success ? cursor.data : null} />
             )}
           </div>
         </div>

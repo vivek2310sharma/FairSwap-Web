@@ -22,7 +22,7 @@ it("ON renders genuine typed server events fetched separately from messages", as
   expect(m.readTrade).toHaveBeenCalledExactlyOnceWith(ids.conversation, true);
   expect(m.readPage).toHaveBeenCalledExactlyOnceWith("ratings_events", { id: ids.trade });
   expect(screen.getByText(new RegExp(ratingsCopy("hi").events.confirmed))).toBeInTheDocument();
-  expect(screen.getByRole("link")).toHaveAttribute("href", `/account/ratings/${ids.trade}?lang=hi`);
+  expect(screen.getByRole("link")).toHaveAttribute("href", `/account/ratings/${ids.trade}`);
 });
 it("no matching trade produces no card or event query", async () => {
   m.readTrade.mockResolvedValue({ data: null }); expect(await TradeCards({ conversationId: ids.conversation })).toBeNull(); expect(m.readPage).not.toHaveBeenCalled();

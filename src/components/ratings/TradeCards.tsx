@@ -15,6 +15,6 @@ export async function TradeCards({ conversationId, locale = "en" }: { conversati
     <p className="font-semibold">FairSwap · {t.states[trade.data.state]}</p>
     <p>{t.deadline}: <DateLabel value={trade.data.deadline} locale={locale} /></p>
     {events.error ? <p>{t.unavailable}</p> : <TradeEventList tradeId={trade.data.id} initial={events.data} locale={locale} />}
-    <Link className="inline-flex min-h-11 items-center underline" href={`/account/ratings/${trade.data.id}?lang=${locale}`}>{t.title}</Link>
+    <Link className="inline-flex min-h-11 items-center underline" href={`/account/ratings/${trade.data.id}`}>{t.title}</Link>
   </aside>;
 }
