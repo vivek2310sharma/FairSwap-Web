@@ -129,9 +129,11 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByText("Account Suspended")).toBeInTheDocument();
     expect(screen.getByText(/Your account is currently suspended/i)).toBeInTheDocument();
 
-    // Restricted accounts cannot edit, have no public profile link and no verification preview
+    // Restricted accounts cannot edit, have no public profile link and no verification banner
     expect(screen.queryByRole("link", { name: /Edit profile/i })).toBeNull();
     expect(screen.queryByRole("link", { name: "View public profile" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Identity verification" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Verify identity/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Verify account/i })).toBeNull();
 
     // Help tile keeps support and appeals access
@@ -265,10 +267,18 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByRole("heading", { level: 1, name: "FairSwap member" })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/[←-⇿]|\[City\]|\[n\]/);
 
-    // Verification preview copy
-    expect(screen.getByText("Help us make FairSwap secure")).toBeInTheDocument();
-    expect(screen.getByText("Planned launch offer - Coming soon")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Verify account/ })).toBeInTheDocument();
+    // Identity verification banner and Coming Soon navigation semantics
+    const idvBanner = screen.getByRole("region", { name: "Identity verification" });
+    expect(idvBanner).toBeInTheDocument();
+    expect(within(idvBanner).getByRole("heading", { level: 2, name: "Identity verification" })).toBeInTheDocument();
+    expect(within(idvBanner).getAllByText("Coming soon").length).toBeGreaterThanOrEqual(1);
+
+    const verifyLink = within(idvBanner).getByRole("link", { name: /Verify identity/ });
+    expect(verifyLink).toHaveAttribute("href", "/account/verification");
+    // Verify that the link is a navigation anchor and not an interactive form submission that could trigger verification
+    expect(verifyLink.tagName.toLowerCase()).toBe("a");
+    expect(within(idvBanner).queryByRole("button", { name: /verify/i })).toBeNull();
+
     expect(screen.queryByRole("button", { name: /sign out/i })).not.toBeInTheDocument();
     expect(options.getByRole("link", { name: /My ads/ })).toHaveTextContent("Manage the ads you've posted on FairSwap.");
 
@@ -292,4 +302,21 @@ describe("ACC-02 My Account Page UI Tests", () => {
   expect(getAccountCopy().tiles.listings).toEqual({ title: "My ads", description: "Manage the ads you've posted on FairSwap." });
   expect(getAccountCopy("hi").tiles.listings.title).toBe("मेरे विज्ञापन");
   expect(getAccountCopy("hi").seller.searchLabel).toBe("इस विक्रेता के विज्ञापन खोजें");
+});
+
+it("provides safe bilingual IDV verification copy and states without internal notes", () => {
+  const enCopy = getAccountCopy("en");
+  const hiCopy = getAccountCopy("hi");
+
+  expect(enCopy.verification.heading).toBe("Identity verification");
+  expect(hiCopy.verification.heading).toBe("पहचान सत्यापन");
+
+  expect(enCopy.verification.states.comingSoon.title).toBe("DigiLocker verification is coming soon");
+  expect(hiCopy.verification.states.comingSoon.title).toBe("DigiLocker सत्यापन जल्द आ रहा है");
+
+  expect(enCopy.verification.states.unableToVerify.title).toBe("Unable to verify");
+  expect(hiCopy.verification.states.unableToVerify.title).toBe("सत्यापित करने में असमर्थ");
+
+  expect(enCopy.verification.consent.notice).toContain("DigiLocker");
+  expect(hiCopy.verification.consent.notice).toContain("DigiLocker");
 });

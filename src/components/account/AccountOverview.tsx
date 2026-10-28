@@ -90,7 +90,7 @@ export function AccountOverview({
         </section>
       )}
 
-      {showVerification && <VerificationBanner onOpen={() => open("verification")} />}
+      {showVerification && <VerificationBanner />}
 
       <nav aria-label="Account options">
         <ul className="grid grid-cols-1 overflow-hidden rounded-2xl border border-border bg-card max-sm:divide-y max-sm:divide-border sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:border-0 sm:bg-transparent lg:grid-cols-3">
