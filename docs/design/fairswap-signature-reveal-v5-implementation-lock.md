@@ -67,3 +67,25 @@ Coding agent: **Claude Code Sonnet** in Antigravity's local `FairSwap-Web-Stagin
 ChatGPT owns GitHub: branch `feat/web-signature-reveal-v5-staging`, commit message `feat(web): replace V4 intro with premium Signature Reveal V5`, PR targeting `staging`, required CI, then staging release/deployment verification. Hold production/main until visual acceptance of staged signature animation (previous explicit staging-first direction); then focused PR into `main` + required CI + production deployment. No DB migrations / env vars for either environment. Rollback: git revert or prior Vercel deployment.
 
 Token advice: Claude Sonnet, new focused session for intro-only V5, don't change CLAUDE.md/MCP settings, /compact around 50-60% with focus on intro diffs and failing automated specs.
+
+
+## V5 precision refinement — definitive correctness addendum (29 October 2026)
+
+**This addendum is binding and supersedes any contrary layering approach above.** The user approved no new effects; this is engineering-quality refinement to the agreed 2.2-second motion. Complete standalone reference: `FairSwap-Signature-Reveal-V5-Precision-Demo.html` in the companion owner-provided handoff ZIP. **Never copy its illustrative demo homepage.**
+
+### Critical fixes established by actual browser review
+
+1. **Modal top-layer must NOT move with the curtain.** Keep an accessible native `<dialog>` full-viewport and **transparent** as the stationary top-layer container; its `::backdrop` must be transparent. Place a child `.curtainPanel` inside it with the precise forest radial gradient and animate **that panel** upward. Otherwise the modal backdrop can keep the homepage dark even when the curtain visually departs.
+2. **Flying logo must be in the modal top layer, outside the moving panel.** Clone only the same original official FairSwap **image** into the stable dialog root, at a layer above the moving curtain. A clone appended to document.body would render **behind** a modal dialog; a clone inside the moving panel would be carried away with the curtain. Measure both image rectangles after decoding and compute the transformation; preserve aspect ratio.
+3. **Prevent doubled logos during FLIP.** When the moving logo clone is created, hide the source plaque/mark using **`visibility:hidden`**, not `opacity:0` because a CSS keyframe animation of opacity with fill mode can override inline opacity. Temporarily hide the destination header image until the late crossfade. Restore original visibility and opacity **on every completion, Skip, Escape, route unmount and error**, removing the clone and cancelling all animations.
+4. **Minimize lingering controls while the curtain exits.** Fade away the Skip button as the curtain begins to rise, but keep Escape cancellation and dialog semantics until completion. Maintain keyboard focus/restore.
+5. **Do not freeze on a missing asset.** If the center image fails, immediately end the intro and expose the SSR homepage. If the destination/header measurement fails, skip FLIP and let the curtain exit normally. Ensure the independent pre-hydration no-flash safeguard is removed in <=3300ms without React.
+6. Maintain 3px line overshoot, ~130ms hold, curtain start ~1420ms and total 2200ms. No new decorative elements, caption, loader percentage, music, maps, product cards, people or text.
+
+### Browser-verified proof points from the updated reference
+
+Local Chromium prototype checks passed on 1366×768 and 390×844: modal opens; moving image clone exists in the **top layer** while source is hidden and destination is temporarily hidden; overlay closes; header opacity returns; flyer removed; body overflow restored; pre-paint flag removed. Replay, Escape, reduced-motion, Save-Data, blocked storage and no JavaScript were also exercised. These verify the **standalone reference only**, not the actual Next.js implementation or production CI.
+
+### Change boundary
+
+Existing homepage, search-bar location, header styling, categories and marketplace functionality stay byte-for-byte unchanged except an optional **invisible** stable data attribute on the current header logo for target selection. Existing V4 source files/artwork may remain in repo, unmounted. Typecheck, lint, Vitest, build and Playwright are mandatory for the eventual application patch. No DB migrations, env vars, RLS/Edge function changes or new runtime dependencies. Deployment order: staging CI + Vercel staging, then focused main/prod PR after user approval. GitHub remains ChatGPT-only; Claude uses Sonnet, implements without repeated creative questions, returns auditable patches/ZIP, performs no Git operations.
