@@ -5,7 +5,8 @@ import { HomeDiscovery } from "@/components/listings/HomeDiscovery";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
 import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
 import { getPublicCategories } from "@/lib/discovery/queries";
-import { NeighbourhoodMapIntro } from "@/components/home/NeighbourhoodMapIntro";
+import { PremiumIndiaIntro } from "@/components/home/PremiumIndiaIntro";
+import { ReplayIntroLink } from "@/components/home/ReplayIntroLink";
 import { IntroGate } from "@/components/home/IntroGate";
 import { SafetyBand } from "@/components/home/SafetyBand";
 import { HowItWorks } from "@/components/home/HowItWorks";
@@ -44,7 +45,8 @@ export default async function HomePage({ searchParams }: HomePageProps = {}) {
       <SafetyBand />
       <HowItWorks />
     </main>
+    <ReplayIntroLink />
     <Footer />
-    <NeighbourhoodMapIntro />
+    <PremiumIndiaIntro />
   </>;
 }
