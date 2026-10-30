@@ -1,0 +1,219 @@
+/*
+ * FairSwap V19 premium intro. Ported from the approved prototype stylesheet (assets/original-styles.exact.css), keeping its
+ * values, merged in cascade order (base, V12 float/mobile overrides, V13 copy overrides, text-only reveal). The prototype's
+ * `.device.<size>` wrappers become `.<size>` on the stage, which here is the real viewport rather than a device mock-up.
+ * Studio-only chrome (swatches, toolbar, device frame, logo image states) is not part of production.
+ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overflow: hidden;
+  transition: opacity 0.30s ease;
+  /* CSS-only safety net: even if every timer failed the dialog is gone shortly after the 9s JS fail-open. */
+  animation: hide 0.01s linear 9.5s forwards;
+}
+.overlay:not([open]) { display: none; }
+.overlay::backdrop { background: transparent; }
+.closing { opacity: 0; }
+@keyframes hide { to { opacity: 0; visibility: hidden; } }
+
+.stage {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* The prototype page sets none; the site body sets 1.55, which would change every untouched text box. */
+  line-height: normal;
+  background: radial-gradient(ellipse at 50% 46%, var(--bg2), var(--bg) 72%);
+  color: var(--text);
+}
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--accent), transparent 90%), transparent 48%);
+  pointer-events: none;
+  animation: none;
+}
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: radial-gradient(ellipse at 50% 50%, var(--bg) 0%, transparent 54%);
+  opacity: 0.21;
+  pointer-events: none;
+}
+.starfield {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image: radial-gradient(circle, var(--accent) 0.75px, transparent 1.2px), radial-gradient(circle, var(--accent) 0.6px, transparent 1px);
+  background-size: 97px 83px, 173px 149px;
+  background-position: 13px 26px, 51px 48px;
+  opacity: 0.13;
+}
+.art { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+/* V12/V13: stable, non-overlapping, soft-floating ornaments. Only transform animates. */
+.ornament {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  aspect-ratio: 1;
+  opacity: 0.21;
+  filter: none;
+  animation: soft-float var(--float-duration, 15s) ease-in-out infinite alternate;
+  animation-delay: var(--float-delay, 0s);
+  will-change: transform;
+}
+.ornament svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: var(--art);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.88;
+  filter: none;
+}
+.tablet .ornament svg, .mobile .ornament svg { stroke-width: 1.3; }
+@keyframes soft-float {
+  from { transform: translate(-50%, -50%) translate(0, 0); }
+  to { transform: translate(-50%, -50%) translate(var(--float-x, 1px), -2px); }
+}
+
+.centerGuard {
+  position: absolute;
+  inset: 18% 23%;
+  z-index: 2;
+  background: radial-gradient(ellipse at center, var(--bg2) 8%, color-mix(in srgb, var(--bg2), transparent 35%) 43%, transparent 72%);
+  filter: blur(20px);
+  pointer-events: none;
+}
+.tablet .centerGuard { inset: 31% 15%; }
+.mobile .centerGuard { inset: 32% 3%; filter: blur(15px); }
+
+.brandtop { position: absolute; top: 7%; left: 5%; right: 5%; display: flex; justify-content: flex-end; align-items: center; z-index: 5; gap: 10px; }
+.made { font-size: clamp(7px, 0.77vw, 10px); font-weight: 700; letter-spacing: 0.18em; opacity: 0.73; }
+.mobile .brandtop { top: 7%; left: 8%; right: 8%; }
+.mobile .made { font-size: 8px; letter-spacing: 0.08em; }
+
+/* Production-only control (the prototype's Skip lives in its studio toolbar). Bottom-right, clear of MADE IN INDIA (top-right) and the progress bar (bottom-left). */
+.skip {
+  position: absolute;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 6;
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--text), transparent 72%);
+  background: color-mix(in srgb, var(--bg), transparent 45%);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.skip:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.center { position: absolute; z-index: 4; left: 8%; right: 8%; top: 50%; transform: translateY(-50%); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0; }
+.tablet .center { left: 5%; right: 5%; }
+.mobile .center { left: 5%; right: 5%; top: 49%; }
+
+.greeting {
+  font-family: 'Noto Sans Devanagari', 'Noto Sans Tamil', 'Noto Sans Telugu', 'Noto Sans Bengali', 'Noto Sans Gurmukhi', 'Noto Sans Gujarati', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Oriya', 'Noto Sans Arabic', 'Noto Sans Ol Chiki', 'Noto Sans Meetei Mayek', system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(96px, 10.3vw, 148px);
+  max-width: 100%;
+  font-size: clamp(36px, 6.5vw, 88px);
+  font-weight: 740;
+  letter-spacing: -0.045em;
+  line-height: 1.45;
+  white-space: nowrap;
+  text-wrap: nowrap;
+  text-shadow: 0 3px 30px #0005;
+}
+.arrive { animation: rise 0.23s cubic-bezier(0.2, 0.85, 0.2, 1) both; }
+.leave { animation: leave 0.12s ease-in both; }
+.tablet .greeting { font-size: clamp(34px, 5vw, 62px); min-height: 120px; }
+/* The prototype's !important is kept: it makes the mobile size fixed regardless of the inline long-string adjustment. */
+.mobile .greeting { font-size: clamp(24px, 7vw, 37px) !important; width: 100%; min-height: 110px; letter-spacing: -0.045em; line-height: 1.8; max-width: 100%; padding-inline: 4px; overflow-wrap: anywhere; }
+
+.dividerline { width: 92px; height: 1px; margin-top: 7px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.8; }
+.tagline { font-size: clamp(10px, 1.15vw, 15px); color: var(--text); opacity: 0.84; margin-top: 12px; display: none; }
+.stageEnd .tagline { display: block; }
+
+/* Text-only final reveal: the literal wordmark text FairSwap, not an image. */
+.officialLogo { display: flex; align-items: center; justify-content: center; position: relative; background: transparent; border-radius: 0; box-shadow: none; }
+.reveal { display: none; width: min(72%, 430px); min-height: 85px; padding: 0; animation: logo-arrive 0.65s cubic-bezier(0.15, 0.8, 0.2, 1) both; }
+.stageEnd .reveal { display: flex; }
+.tablet .reveal { width: min(78%, 385px); }
+.mobile .reveal { width: min(87%, 310px); min-height: 72px; }
+.logoFallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-weight: 850;
+  letter-spacing: -0.065em;
+  z-index: 1;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--accent), transparent 70%);
+  font-size: clamp(32px, 5.5vw, 70px);
+}
+.mobile .logoFallback { font-size: 40px; }
+
+.foot { position: absolute; bottom: 6%; left: 5%; right: 5%; z-index: 5; display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.tablet .foot { bottom: 5%; }
+.mobile .foot { bottom: 5%; left: 8%; right: 8%; }
+.progress { height: 2px; width: clamp(72px, 11vw, 170px); margin-top: 10px; background: #ffffff32; overflow: hidden; border-radius: 10px; }
+.progress i { height: 100%; display: block; background: var(--accent); transition: width 0.23s ease; }
+.mobile .progress { width: 105px; }
+
+@media (max-width: 500px) {
+  .mobile .greeting { max-width: 100%; letter-spacing: -0.04em; }
+  .mobile .tagline { font-size: 10px; max-width: 86%; text-align: center; }
+}
+
+.srOnly { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(25px) scale(0.97); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+@keyframes leave { to { opacity: 0; transform: translateY(-20px); filter: blur(7px); } }
+@keyframes logo-arrive {
+  from { opacity: 0; transform: translateY(15px) scale(0.96); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ornament, .stage::before, .greeting, .reveal { animation: none !important; }
+  .progress i, .overlay { transition: none; }
+}

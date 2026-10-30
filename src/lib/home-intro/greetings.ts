@@ -1,0 +1,3 @@
+// Verbatim from FairSwap-V19-LOCKED-HANDOFF/assets/greetings.prototype.json. Locked design data: do not edit by hand.
+/** [visible text, BCP-47 language tag]. Prototype inventory, not a verified translation dataset: do not add entries without native-speaker review. */
+export const GREETING_CANDIDATES: readonly (readonly [text: string, lang: string])[] = [["नमस्ते","hi"],["வணக்கம்","ta"],["নমস্কার","bn"],["నమస్కారం","te"],["ਸਤ ਸ੍ਰੀ ਅਕਾਲ","pa"],["ನಮಸ್ಕಾರ","kn"],["નમસ્તે","gu"],["നമസ്കാരം","ml"],["নমস্কাৰ","as"],["ନମସ୍କାର","or"],["नमस्कार","mr"],["آداب","ur"],["नमस्ते","ne"],["प्रणाम","sa"],["ᱡᱚᱦᱟᱨ","sat"],["ꯈꯨꯔꯨꯝꯖꯔꯤ","mni"],["जौहोर","kok"],["नमस्ते","mai"],["नमस्कार","doi"],["سلام","ks"],["آداب","sd"],["नमस्ते","brx"]];
