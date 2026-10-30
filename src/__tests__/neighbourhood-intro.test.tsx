@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { NeighbourhoodMapIntro } from "@/components/home/NeighbourhoodMapIntro";
 import { IntroGate, INTRO_GATE_FAILSAFE_MS } from "@/components/home/IntroGate";
+import { resetIntroDecision } from "@/lib/home-intro/session";
 import { CategoryBento, featuredCategories } from "@/components/home/CategoryBento";
 import { getCategoryImagePath } from "@/lib/categories/category-images";
 import {
@@ -238,6 +239,7 @@ describe("NeighbourhoodMapIntro", () => {
 });
 
 describe("IntroGate", () => {
+  beforeEach(() => { sessionStorage.clear(); resetIntroDecision(window); });
   const run = () => {
     const { container } = render(<IntroGate />);
     new Function(container.querySelector("script")!.textContent!)();
@@ -251,21 +253,7 @@ describe("IntroGate", () => {
     vi.advanceTimersByTime(1);
     expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
   });
-  it("does nothing when seen, reduced-motion, Save-Data or storage is blocked", () => {
-    localStorage.setItem(SEEN_KEY, "1");
-    run();
-    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
-    localStorage.clear(); stubMotion(true);
-    run();
-    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
-    stubMotion(false); setConnection({ saveData: true });
-    run();
-    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
-    setConnection(undefined);
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
-    run();
-    expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
-  });
+  // Seen / reduced-motion / Save-Data / storage-blocked behaviour moved with the V19 tab-session policy: see home-intro-session.test.ts.
 });
 
 describe("CategoryBento rail", () => {

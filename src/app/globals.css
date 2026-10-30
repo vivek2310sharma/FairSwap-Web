@@ -196,15 +196,14 @@ body {
     linear-gradient(180deg, color-mix(in srgb, var(--fs-primary) 4%, var(--color-background)), var(--color-background) 90%);
 }
 
-/* First-frame gate for the Neighbourhood intro. `IntroGate` (home page only) sets data-fs-intro on <html> before
-   content paints; the intro removes it once its dialog is open (or on any failure / after 4s). The backdrop is the
-   intro's forest scrim (.scrim in NeighbourhoodMapIntro.module.css). Never set without JS, so no-JS users see the page. */
+/* First-frame gate for the V19 intro. The gate sets the per-tab palette as CSS variables.
+   No-JS and reduced-motion visitors see the homepage without a blocking overlay. */
 html[data-fs-intro="pending"] body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: #0e2b22;
+  background: radial-gradient(ellipse at 50% 46%, var(--fs-intro-bg2, #1a2c45), var(--fs-intro-bg, #0b1526) 72%);
 }
 @media (prefers-reduced-motion: reduce) {
   html[data-fs-intro="pending"] body::before { display: none; }
