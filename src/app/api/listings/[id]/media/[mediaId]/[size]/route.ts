@@ -85,15 +85,15 @@ export async function GET(
     let isAuthorizedStaff = false;
 
     if (!isOwner) {
-      const { data: staffData } = await client
+      const { data: staffData, error: staffError } = await client
         .from("staff_roles")
         .select("role")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      const { data: aalData } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+      const { data: aalData, error: aalError } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
       isAuthorizedStaff =
-        !!staffData &&
+        !staffError && !aalError && !!staffData &&
         ["administrator", "moderator"].includes(staffData.role) &&
         aalData?.currentLevel === "aal2";
     }
@@ -101,8 +101,21 @@ export async function GET(
     // If caller is neither the owner nor authorized staff, deny with 404
     // Note: if listing is public and caller is just a normal user requesting JSON mode,
     // they can view ready derivatives (thumb/medium/large), but not original.
-    if (!isOwner && !isAuthorizedStaff && !isPublicVisible) {
+    if (!isOwner && !isAuthorizedStaff && (size === "original" || !isPublicVisible)) {
       return mediaApiError("LISTING_NOT_FOUND");
+    }
+
+    // Restricted delivery uses the same authoritative account-status check as
+    // the seller media guard. Public buyer derivatives need no additional query.
+    if (isOwner || isAuthorizedStaff) {
+      const { data: account, error: accountError } = await client
+        .from("user_accounts")
+        .select("account_status")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (accountError || account?.account_status !== "active") {
+        return mediaApiError("LISTING_NOT_FOUND");
+      }
     }
 
     // Look up media row
@@ -116,6 +129,11 @@ export async function GET(
       .maybeSingle();
 
     if (mediaError || !media) {
+      return mediaApiError("MEDIA_NOT_FOUND");
+    }
+
+    // Public buyers may only receive ready derivatives, including in JSON mode.
+    if (!isOwner && !isAuthorizedStaff && media.processing_status !== "ready") {
       return mediaApiError("MEDIA_NOT_FOUND");
     }
 
