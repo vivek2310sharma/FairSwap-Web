@@ -2,6 +2,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+const mockAccount = vi.fn();
+const mockStaff = vi.fn();
+const mockAal = vi.fn();
+const mockMediaEq = vi.fn();
 const mockAuthUser = vi.fn();
 const mockIsPublicVisible = vi.fn();
 const mockGetListing = vi.fn();
@@ -26,12 +30,12 @@ vi.mock("@/lib/supabase/request-auth", () => ({
       context: {
         user,
         client: {
-          from: vi.fn().mockReturnValue({
+          from: vi.fn((table: string) => ({
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-          }),
-          auth: { mfa: { getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({ data: { currentLevel: "aal1" } }) } },
+            maybeSingle: vi.fn(() => table === "user_accounts" ? mockAccount() : mockStaff()),
+          })),
+          auth: { mfa: { getAuthenticatorAssuranceLevel: mockAal } },
         },
         authType: req.headers.get("authorization") ? "bearer" : "cookie",
       },
@@ -60,7 +64,7 @@ vi.mock("@/lib/supabase/service", () => ({
       }
       if (table === "listing_media") {
         const queryChain: any = {
-          eq: vi.fn(() => queryChain),
+          eq: vi.fn((...args) => { mockMediaEq(...args); return queryChain; }),
           maybeSingle: vi.fn(async () => mockGetMedia()),
           single: vi.fn(async () => mockGetMedia()),
         };
@@ -89,6 +93,9 @@ describe("Seller Media Derivative Delivery & Signed URL Tests (#103)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAccount.mockResolvedValue({ data: { account_status: "active" }, error: null });
+    mockStaff.mockResolvedValue({ data: null, error: null });
+    mockAal.mockResolvedValue({ data: { currentLevel: "aal1" }, error: null });
     mockAuthUser.mockResolvedValue(null);
     mockIsPublicVisible.mockResolvedValue({ data: false, error: null });
     mockGetListing.mockResolvedValue({
@@ -111,6 +118,94 @@ describe("Seller Media Derivative Delivery & Signed URL Tests (#103)", () => {
       data: { signedUrl: `https://storage.example.com/object?token=signed_sig_123` },
       error: null,
     });
+  });
+
+  const deliver = (size = "original", json = false) => GET(
+    new NextRequest(`http://localhost:3000/api/listings/${listingId}/media/${mediaId}/${size}`, {
+      headers: json ? { Accept: "application/json", Authorization: "Bearer test_token" } : {},
+    }),
+    { params: Promise.resolve({ id: listingId, mediaId, size }) },
+  );
+
+  it.each([true, false])("original authorization matrix (public=%s)", async (publicVisible) => {
+    mockIsPublicVisible.mockResolvedValue({ data: publicVisible, error: null });
+    for (const actor of [null, "buyer", "another-seller", "support", "moderator-aal1", "suspended-owner", "suspended-staff", "role-error", "aal-error", "account-error", "missing-account", "owner", "administrator", "moderator"]) {
+      mockCreateSignedUrl.mockClear();
+      mockAuthUser.mockResolvedValue(actor === null ? null : { id: actor?.includes("owner") ? ownerId : actor });
+      const staff = ["support", "moderator-aal1", "suspended-staff", "role-error", "aal-error", "administrator", "moderator"].includes(actor ?? "");
+      mockStaff.mockResolvedValue({ data: staff ? { role: actor === "support" ? "support" : actor === "administrator" ? "administrator" : "moderator" } : null, error: actor === "role-error" ? {} : null });
+      mockAal.mockResolvedValue({ data: { currentLevel: actor === "moderator-aal1" ? "aal1" : "aal2" }, error: actor === "aal-error" ? {} : null });
+      mockAccount.mockResolvedValue({ data: actor === "missing-account" ? null : { account_status: actor?.startsWith("suspended") ? "suspended" : "active" }, error: actor === "account-error" ? {} : null });
+      // Exercise account failure on an otherwise authorized owner.
+      if (["account-error", "missing-account"].includes(actor ?? "")) mockAuthUser.mockResolvedValue({ id: ownerId });
+      const res = await deliver();
+      const allowed = ["owner", "administrator", "moderator"].includes(actor ?? "");
+      expect(res.status, String(actor)).toBe(allowed ? 302 : 404);
+      expect(res.headers.get("cache-control")).toContain("no-store");
+      if (allowed) expect(mockCreateSignedUrl).toHaveBeenCalledWith(`${listingId}/${mediaId}/original.jpg`, actor === "owner" ? 60 : 300);
+      else {
+        expect((await res.json()).code).toBe("LISTING_NOT_FOUND");
+        expect(mockCreateSignedUrl).not.toHaveBeenCalled();
+        expect(res.headers.get("location")).toBeNull();
+      }
+    }
+  });
+
+  it.each(["thumb", "medium", "large"])("public %s preserves browser cache and native JSON contract", async (size) => {
+    mockIsPublicVisible.mockResolvedValue({ data: true, error: null });
+    expect((await deliver(size)).headers.get("cache-control")).toBe("public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400");
+    expect(mockAuthUser).not.toHaveBeenCalled();
+    expect(mockGetListing).not.toHaveBeenCalled();
+    expect(mockAccount).not.toHaveBeenCalled();
+    expect(mockMediaEq).toHaveBeenCalledWith("processing_status", "ready");
+    mockAuthUser.mockResolvedValue({ id: "buyer" });
+    const res = await deliver(size, true);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ url: "https://storage.example.com/object?token=signed_sig_123", expiresIn: 60 });
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(mockAccount).not.toHaveBeenCalled();
+  });
+
+  it.each([null, "buyer", ownerId, "staff"])("JSON originals never sign for %s", async (id) => {
+    mockAuthUser.mockResolvedValue(id ? { id } : null);
+    expect((await deliver("original", true)).status).toBe(400);
+    expect(mockCreateSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it.each(["thumb", "medium", "large"])("private %s denies unrelated users in both response modes", async (size) => {
+    for (const json of [false, true]) {
+      mockAuthUser.mockResolvedValue({ id: "another-seller" });
+      const res = await deliver(size, json);
+      expect(res.status).toBe(404);
+      expect((await res.json()).code).toBe("LISTING_NOT_FOUND");
+      expect(mockCreateSignedUrl).not.toHaveBeenCalled();
+    }
+  });
+
+  it("owner original fails closed for sealed storage paths", async () => {
+    mockAuthUser.mockResolvedValue({ id: ownerId });
+    const current = await mockGetMedia();
+    mockGetMedia.mockResolvedValue({ data: { ...current.data, original_storage_path: `${listingId}/${mediaId}/v2/version/hash/original.jpg` }, error: null });
+    expect((await deliver()).status).toBe(404);
+    expect(mockCreateSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it("binds media lookup to both IDs and denies a missing pair", async () => {
+    mockAuthUser.mockResolvedValue({ id: ownerId });
+    mockGetMedia.mockResolvedValue({ data: null, error: null });
+    expect((await deliver()).status).toBe(404);
+    expect(mockMediaEq).toHaveBeenCalledWith("id", mediaId);
+    expect(mockMediaEq).toHaveBeenCalledWith("listing_id", listingId);
+    expect(mockCreateSignedUrl).not.toHaveBeenCalled();
+  });
+
+  it("public JSON buyer cannot sign processing media", async () => {
+    mockIsPublicVisible.mockResolvedValue({ data: true, error: null });
+    mockAuthUser.mockResolvedValue({ id: "buyer" });
+    const current = await mockGetMedia();
+    mockGetMedia.mockResolvedValue({ data: { ...current.data, processing_status: "processing" }, error: null });
+    expect((await deliver("medium", true)).status).toBe(404);
+    expect(mockCreateSignedUrl).not.toHaveBeenCalled();
   });
 
   it("public active derivative redirects normally with public Cache-Control", async () => {
