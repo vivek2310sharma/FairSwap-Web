@@ -1,0 +1,18 @@
+import React from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import SearchCombobox from "@/components/listings/posting/SearchCombobox";
+import { generatedPhoneTitle, blankPhoneDraft, phoneRecoverySchema } from "@/components/listings/posting/mobile-wizard";
+import AccountChrome from "@/components/account/AccountChrome";
+const m = vi.hoisted(() => ({ path: "/account/listings/new" }));
+vi.mock("next/navigation", () => ({ usePathname: () => m.path }));
+vi.mock("@/components/header", () => ({ Header: () => <header>Usual header</header> }));
+vi.mock("@/components/account/AccountNav", () => ({ AccountNav: () => <nav>Usual account navigation</nav> }));
+afterEach(cleanup);
+describe("Posting controls and navigation", () => {
+    it("uses committed options with keyboard, Escape, aliases and pointer selection", () => { const change = vi.fn(); Element.prototype.scrollIntoView = vi.fn(); render(<SearchCombobox id="brand" label="Brand" options={[{ id: "a", name: "Apple", aliases: ["iPhone"] }, { id: "s", name: "Samsung" }]} value="a" onChange={change}/>); const input = screen.getByRole("combobox"); fireEvent.change(input, { target: { value: "iPhone" } }); expect(screen.getByRole("option", { name: "Apple" })).toBeVisible(); fireEvent.keyDown(input, { key: "ArrowDown" }); expect(input.getAttribute("aria-activedescendant")).toBe(screen.getByRole("option").id); fireEvent.keyDown(input, { key: "Enter" }); expect(change).toHaveBeenCalledWith("a"); fireEvent.change(input, { target: { value: "Invalid text" } }); fireEvent.keyDown(input, { key: "Escape" }); expect(input).toHaveValue("Apple"); expect(change).toHaveBeenCalledTimes(1); fireEvent.click(input); fireEvent.pointerDown(screen.getByRole("option", { name: "Samsung" })); fireEvent.click(screen.getByRole("option", { name: "Samsung" })); expect(change).toHaveBeenLastCalledWith("s"); });
+    it("has genuinely empty defaults and no duplicate brand prefixes", () => { expect(blankPhoneDraft()).toMatchObject({ storage: "", condition: "", brand_id: "", model_id: "", ram: "" }); expect(generatedPhoneTitle("OnePlus", "OnePlus 11", "128 GB", "good")).toBe("OnePlus 11 · 128 GB · Good condition"); expect(generatedPhoneTitle("Apple", "iPhone 15", "", "good")).toBe("Apple iPhone 15 · Good condition"); expect(generatedPhoneTitle("Apple", "", "", "")).toBe(""); });
+    it("reads old recovery step as zero without changing the version", () => { const record = { version: 2, owner: "11111111-1111-4111-8111-111111111111", updated: Date.now(), draft: { ...blankPhoneDraft(), session_id: "11111111-1111-4111-8111-111111111111" }, manualTitle: false, area: "", priceText: "", photos: [] }; expect(phoneRecoverySchema.parse(record).step).toBe(0); expect(phoneRecoverySchema.safeParse({ ...record, step: 6 }).success).toBe(false); });
+    it.each(["/account/listings/new", "/account/listings/new/details"])("uses compact approved brand chrome only on %s", path => { m.path = path; render(<AccountChrome ratingsAvailable={false}/>); expect(screen.getByRole("img", { name: "FairSwap" })).toHaveAttribute("src", expect.stringContaining("FairSwap_Web_Logo_Transparent.png")); expect(screen.queryByText("Usual account navigation")).toBeNull(); });
+    it.each(["/account/listings", "/account/settings", "/account/listings/newspaper"])("retains ordinary navigation on %s", path => { m.path = path; render(<AccountChrome ratingsAvailable={false}/>); expect(screen.getByText("Usual header")).toBeVisible(); expect(screen.getByText("Usual account navigation")).toBeVisible(); });
+});
