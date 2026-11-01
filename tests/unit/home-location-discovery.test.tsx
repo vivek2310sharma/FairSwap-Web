@@ -43,6 +43,11 @@ describe("location-aware discovery", () => {
     expect(params.has("page")).toBe(false);
     expect(screen.getByRole("link", { name: "Electronics" })).toHaveAttribute("href", push.mock.calls[0][0]);
   });
+  it("does not render the decorative neighbourhood map image in the hero", () => {
+    const { container } = render(<HomeDiscovery categories={categories} restoreSaved={false} />);
+    expect(container.querySelector('[data-testid="hero-map-texture"]')).toBeNull();
+    expect(container.querySelector('img[src*="neighbourhood-map"]')).toBeNull();
+  });
   it("submits empty search to canonical /search", () => {
     render(<HomeDiscovery categories={categories} restoreSaved={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
