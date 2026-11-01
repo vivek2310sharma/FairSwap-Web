@@ -18,6 +18,8 @@ test.describe("Homepage 4.4 responsive matrix", () => {
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Good things, closer to you.");
       await expect(page.getByRole("searchbox", { name: "Search items", exact: true })).toBeVisible();
       expect(await noHorizontalScroll(page)).toBe(true);
+      // Decorative map SVG caused a visible rectangular seam over the hero gradient; it must stay absent.
+      await expect(page.locator('img[src*="neighbourhood-map"], [data-testid="hero-map-texture"]')).toHaveCount(0);
       const submit = await page.locator('form[role="search"] button[type="submit"]').boundingBox();
       expect(submit!.height).toBeGreaterThanOrEqual(44);
       // Mascots keep their intrinsic aspect ratio (never stretched).
