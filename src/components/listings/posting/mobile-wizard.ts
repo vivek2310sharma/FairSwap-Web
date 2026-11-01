@@ -20,3 +20,22 @@ export function fieldStep(field: string) { if (field === "media_ids")
     return 1; if (["condition", "included", "warranty_until", "title", "description"].includes(field))
     return 2; if (["trade", "price_paise", "negotiable"].includes(field))
     return 3; return 4; }
+
+export type WizardIssue = { field: string; message: string };
+/** Current data, rather than a visited/saved step, determines access and completion. */
+export function validatePhoneWizard(value: PhoneDraft, catalogue: import("@/lib/listings/mobiles/contract").MobileCatalogue, photos: { state: string }[], priceText: string) {
+    const parsed = mobileSchema.safeParse(value);
+    const issues: WizardIssue[] = parsed.success ? [] : parsed.error.issues.map(i => ({ field: String(i.path[0]), message: i.message }));
+    const brand = catalogue.brands.find(b => b.id === value.brand_id);
+    const model = catalogue.models.find(m => m.id === value.model_id && m.brand_id === brand?.id);
+    if (!brand) issues.push({ field: "brand_id", message: "Choose a brand." });
+    if (!model) issues.push({ field: "model_id", message: "Choose a model for this brand." });
+    if (model?.other && value.other_model.trim().length < 2) issues.push({ field: "other_model", message: "Enter the model name for review." });
+    if (!photos.some(p => p.state === "ready")) issues.push({ field: "media_ids", message: "Upload at least one photo before continuing." });
+    if (photos.some(p => p.state !== "ready")) issues.push({ field: "media_ids", message: "Upload or remove unfinished photos." });
+    // Zod object refinements may not execute while an earlier enum is invalid.
+    if (value.trade === "sell" && (!/^\d+(\.\d{1,2})?$/.test(priceText) || value.price_paise < 1)) issues.push({ field: "price_paise", message: "Enter a selling price greater than zero, with at most two decimal places." });
+    if (value.included.includes("Under warranty") && (!value.warranty_until || value.warranty_until < new Date().toISOString().slice(0,7))) issues.push({ field: "warranty_until", message: "Enter a current warranty expiry month." });
+    return { parsed, issues: Array.from(new Map(issues.map(i => [i.field, i])).values()).sort((a,b) => fieldStep(a.field)-fieldStep(b.field)) };
+}
+export function reachablePhoneStep(issues: WizardIssue[]) { return issues.length ? Math.min(...issues.map(i => fieldStep(i.field))) : 5; }
