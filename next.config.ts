@@ -66,7 +66,8 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            // geolocation is same-origin only, used solely by the explicit "Use my current location" button; never on load or in iframes.
+            value: "camera=(), microphone=(), geolocation=(self)",
           },
         ],
       },

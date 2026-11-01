@@ -9,7 +9,8 @@ import { PremiumIndiaIntro } from "@/components/home/PremiumIndiaIntro";
 import { ReplayIntroLink } from "@/components/home/ReplayIntroLink";
 import { IntroGate } from "@/components/home/IntroGate";
 import { SafetyBand } from "@/components/home/SafetyBand";
-import { HowItWorks } from "@/components/home/HowItWorks";
+import { HomepageStory } from "@/components/home/HomepageStory";
+import { SellerCta } from "@/components/home/SellerCta";
 import { searchFiltersSchema } from "@/types/listing";
 import { resolvePublicArea } from "@/lib/location/public-areas";
 import { z } from "zod";
@@ -42,8 +43,9 @@ export default async function HomePage({ searchParams }: HomePageProps = {}) {
     <main className="flex-1">
       <HomeDiscovery key={JSON.stringify(params)} categories={categories.map(({ id, slug, name }) => ({ id, slug, name }))} initialArea={area} initialFilters={filters} restoreSaved={!hasExplicitLocation} />
       <Suspense key={area ? `${area.city}:${area.locality ?? ""}` : "all-india"} fallback={<RecentListingsSkeleton />}><RecentListingsSection area={area} /></Suspense>
+      <SellerCta />
       <SafetyBand />
-      <HowItWorks />
+      <HomepageStory />
     </main>
     <ReplayIntroLink />
     <Footer />

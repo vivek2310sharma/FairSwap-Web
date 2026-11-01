@@ -36,20 +36,21 @@ test.describe("Homepage 3.2 layout (V4)", () => {
   test.beforeEach(({}, testInfo) => { test.skip(testInfo.project.name !== "desktop-chromium", "viewports are set explicitly below"); });
 
   for (const [width, height] of [[1366, 768], [1440, 900], [1920, 1080]]) {
-    test(`desktop ${width}px: compact product-led hero, no people, no overflow`, async ({ page }) => {
+    test(`desktop ${width}px: compact hero with the approved mascots, no overflow`, async ({ page }) => {
       await page.setViewportSize({ width, height });
       await page.goto("/");
       await expect(page.getByRole("heading", { level: 1 })).toHaveText("Good things, closer to you.");
       await expect(page.getByText("Discover useful finds from people around you. Buy, sell and explore locally.")).toBeVisible();
-      await expect(page.getByTestId("collage-wide")).toBeVisible();
-      await expect(page.getByTestId("collage-mobile")).toBeHidden();
-      expect(await page.locator('img[src*="walk"], img[src*="handshake"], img[src*="-hero-"]').count()).toBe(0);
-      expect(await heroHeight(page)).toBeLessThanOrEqual(340);
+      await expect(page.getByTestId("mascots-wide")).toBeVisible();
+      await expect(page.getByTestId("mascots-mobile")).toBeHidden();
+      await expect(page.getByTestId("mascots-wide").locator('img[src*="%2Fman-hero"]')).toHaveCount(1);
+      await expect(page.getByTestId("mascots-wide").locator('img[src*="%2Fwoman-hero"]')).toHaveCount(1);
+      expect(await heroHeight(page)).toBeLessThanOrEqual(440);
       const header = await box(page, "header");
       expect(header.height).toBeLessThanOrEqual(65); // 64px bar + 1px border
       await expect(searchbox(page)).toHaveCount(1);
       const form = await box(page, 'form[role="search"]');
-      const collage = await box(page, '[data-testid="collage-wide"]');
+      const collage = await box(page, '[data-testid="mascots-wide"]');
       expect(form.x + form.width).toBeLessThanOrEqual(collage.x + 1); // collage never sits under the search
       expect(collage.x + collage.width).toBeLessThanOrEqual(width);
       expect(await noHorizontalScroll(page)).toBe(true);
@@ -65,8 +66,8 @@ test.describe("Homepage 3.2 layout (V4)", () => {
       await expect(page.getByRole("link", { name: "Explore nearby" })).toBeVisible();
       expect(await noHorizontalScroll(page)).toBe(true);
       if (width <= 639) {
-        await expect(page.getByTestId("collage-mobile")).toBeVisible();
-        await expect(page.getByTestId("collage-wide")).toBeHidden();
+        await expect(page.getByTestId("mascots-mobile")).toBeVisible();
+        await expect(page.getByTestId("mascots-wide")).toBeHidden();
         expect(await heroHeight(page)).toBeLessThanOrEqual(width <= 320 ? 300 : 260);
       }
       const submit = await box(page, 'form[role="search"] button[type="submit"]');

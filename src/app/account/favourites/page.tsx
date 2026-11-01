@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { ListingCard } from "@/components/listings/ListingCard";
 import { ClearUnavailableButton } from "./ClearUnavailableButton";
+import { SyncGuestFavourites } from "@/components/favourites/SyncGuestFavourites";
 import { createClient } from "@/lib/supabase/server";
 import { getUserFavourites } from "@/lib/discovery/queries";
 import { Heart, Search, AlertCircle } from "lucide-react";
@@ -48,6 +49,8 @@ export default async function FavouritesPage() {
               Browse more ads
             </Link>
           </div>
+
+          <SyncGuestFavourites />
 
           {/* Unavailable Items Notice if any */}
           {unavailableIds.length > 0 && (

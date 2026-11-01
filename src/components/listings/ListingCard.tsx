@@ -1,16 +1,25 @@
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Tag } from "lucide-react";
-import { PublicListingCard } from "@/types/listing";
+import type { PublicListingCard } from "@/types/listing";
 import { publicPriceFallback, type PublicFamilyDisplay } from "@/lib/discovery/family-display";
 import { FavouriteButton } from "./FavouriteButton";
 
+/** The only listing fields a card reads, so public-only sources (such as /saved) can render it without private columns. */
+export type ListingCardData = Pick<PublicListingCard, "id" | "slug" | "title" | "condition" | "price_type" | "price_paise"> & {
+  category: { name: string; slug: string } | null;
+  city: { name: string } | null;
+  locality: { name: string } | null;
+  cover_photo: { id: string } | null;
+};
+
 interface ListingCardProps {
-  listing: PublicListingCard;
+  listing: ListingCardData;
   isFavourited?: boolean;
   searchContext?: string;
   variant?: "default" | "compact" | "editorial" | "feature";
   familyDisplay?: PublicFamilyDisplay;
+  favouriteStore?: "auto" | "device";
 }
 
 export function ListingCard({
@@ -19,6 +28,7 @@ export function ListingCard({
   searchContext,
   variant = "default",
   familyDisplay,
+  favouriteStore = "auto",
 }: ListingCardProps) {
   const listingPath = `/listings/${listing.slug}`;
   const listingHref = searchContext
@@ -71,7 +81,7 @@ export function ListingCard({
           )}
         </div>
         <div className="absolute right-2.5 top-2.5 z-30">
-          <FavouriteButton listingId={listing.id} initialIsFavourited={isFavourited} />
+          <FavouriteButton listingId={listing.id} initialIsFavourited={isFavourited} store={favouriteStore} />
         </div>
         <div className={`relative z-20 flex flex-col ${feature ? "pointer-events-none mt-auto p-4 text-white sm:p-6" : "p-3 sm:p-4"}`}>
           <span className={`fs-price ${feature ? "text-3xl sm:text-5xl" : "text-xl sm:text-2xl text-foreground"}`}>{formattedPrice}</span>
@@ -131,7 +141,7 @@ export function ListingCard({
 
         {/* Favourite Button */}
         <div className={`absolute z-20 ${isCompact ? "top-1.5 right-1.5 sm:top-2 sm:right-2" : "top-2 right-2"}`}>
-          <FavouriteButton listingId={listing.id} initialIsFavourited={isFavourited} />
+          <FavouriteButton listingId={listing.id} initialIsFavourited={isFavourited} store={favouriteStore} />
         </div>
       </div>
 

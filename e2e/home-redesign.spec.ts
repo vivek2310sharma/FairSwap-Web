@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const VIEWPORTS = [
+  { name: "320", width: 320, height: 640 },
   { name: "360", width: 360, height: 740 },
   { name: "768", width: 768, height: 1024 },
   { name: "1280", width: 1280, height: 800 },

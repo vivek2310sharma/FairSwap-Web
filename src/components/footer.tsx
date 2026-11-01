@@ -41,8 +41,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/saved" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
+                  Saved on this device
+                </Link>
+              </li>
+              <li>
                 <Link href="/account/favourites" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
-                  Saved Favourites
+                  Account Favourites
                 </Link>
               </li>
               <li>
@@ -132,6 +137,7 @@ export function Footer() {
           <p className="text-xs text-muted">
             &copy; {currentYear} FairSwap.
           </p>
+
         </div>
       </div>
     </footer>
