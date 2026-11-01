@@ -29,7 +29,9 @@ const navLinks = [
   { label: "Safety", href: "/safety" },
 ];
 
-export function Header() {
+/** `variant="home"` only changes appearance (dark plum bar via .fs-plum-dark tokens); behaviour is identical. */
+export function Header({ variant = "default" }: { variant?: "default" | "home" } = {}) {
+  const home = variant === "home";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isLoading, unreadMessagesCount, unreadNotificationsCount, signOut } =
     useAuth();
@@ -52,7 +54,7 @@ export function Header() {
   }, [signOut]);
 
   return (
-    <header ref={headerRef} onKeyDown={event => { if (event.key === "Escape" && mobileMenuOpen) { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className="fs-header sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xs">
+    <header ref={headerRef} onKeyDown={event => { if (event.key === "Escape" && mobileMenuOpen) { setMobileMenuOpen(false); menuButton.current?.focus(); } }} className={`fs-header sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur-xs${home ? " fs-plum-dark fs-header-plum" : ""}`}>
       <div className="px-4 sm:px-6 lg:px-8">
       <div ref={barRef} className="mx-auto flex max-w-7xl items-center gap-4 py-2.5">
         {/* Wordmark */}
@@ -61,7 +63,7 @@ export function Header() {
           className="flex shrink-0 items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--fs-focus) rounded-md"
           aria-label="FairSwap home"
         >
-          <span className="rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5">
+          <span className={home ? "rounded-lg bg-[#FFF9F5] px-2 py-1" : "rounded-sm bg-transparent dark:bg-white/90 px-1 py-0.5"}>
             <Image
               src="/brand/FairSwap_Web_Logo_Transparent.png"
               alt="FairSwap"

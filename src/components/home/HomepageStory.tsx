@@ -33,7 +33,7 @@ export function HomepageStory() {
                 onClick={() => setActive(index)}
                 onMouseEnter={() => setActive(index)}
                 onFocus={() => setActive(index)}
-                className={`h-full w-full rounded-3xl border p-5 text-left transition-[transform,box-shadow,border-color] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-(--fs-focus) ${index === active ? "border-primary bg-card shadow-md" : "border-border bg-card hover:border-primary/50"}`}
+                className={`h-full w-full rounded-3xl border p-5 text-left transition-[transform,box-shadow,border-color] motion-safe:duration-200 motion-safe:hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--fs-focus) motion-reduce:transition-none ${index === active ? "border-primary bg-card shadow-md ring-2 ring-[#F5D6BE]" : "border-border bg-card hover:border-primary/50"}`}
               >
                 <span className="flex items-center justify-between">
                   <span className="fs-price text-4xl text-(--fs-icon) opacity-80" aria-hidden="true">{`0${index + 1}`}</span>

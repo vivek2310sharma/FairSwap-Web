@@ -2,8 +2,75 @@ import Link from "next/link";
 import Image from "next/image";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { LanguageSelector } from "@/components/LanguageSelector";
+import { Reveal } from "@/components/home/Reveal";
 
-export function Footer() {
+type FooterLink = { label: string; href: string; external?: boolean };
+const HOME_GROUPS: { title: string; links: FooterLink[] }[] = [
+  { title: "Browse", links: [
+    { label: "Browse All Ads", href: "/search" },
+    { label: "Saved on this device", href: "/saved" },
+    { label: "Account Favourites", href: "/account/favourites" },
+    { label: "Post an Advertisement", href: "/account/listings/new" },
+  ] },
+  { title: "Support", links: [
+    { label: "Help Centre", href: HELP_CENTRE_URL },
+    { label: "In-Person Safety Tips", href: "/safety" },
+    { label: "Contact Us", href: "https://help.fairswap.in/en/contact" },
+    { label: "support@fairswap.in", href: "mailto:support@fairswap.in" },
+    { label: "WhatsApp Support: +91 7877966996", href: "https://wa.me/917877966996", external: true },
+  ] },
+  { title: "Policies", links: [
+    { label: "Terms of Service", href: "/terms" },
+    { label: "Refund & Cancellation Policy", href: "/refund-policy" },
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Acceptable Use", href: "/acceptable-use" },
+    { label: "Grievance Redressal", href: "/grievance" },
+  ] },
+];
+
+/** Homepage-only finale. Same destinations as the default footer, regrouped; no invented pages, socials or app badges. */
+function HomeFooter() {
+  const currentYear = new Date().getFullYear();
+  const linkClass = "rounded-sm text-sm text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--fs-focus)";
+  return (
+    <footer className="fs-plum-dark fs-footer-plum mt-auto overflow-hidden">
+      <div className="fs-container pb-8 pt-16">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,2fr)] lg:gap-16">
+          <Reveal>
+            <p aria-hidden="true" className="fs-wordmark">FairSwap.</p>
+            <p className="mt-4 text-lg font-semibold text-foreground">Good things deserve another chapter.</p>
+            <p className="mt-1 text-sm text-muted">Buy locally. Sell simply. Exchange more safely.</p>
+            <p className="mt-1 text-xs text-muted">India&apos;s local classifieds marketplace</p>
+            <Link href="/account/listings/new" className="mt-4 inline-flex min-h-11 items-center rounded-xl border border-[#F5D6BE] px-5 text-sm font-semibold text-[#F5D6BE] hover:bg-[#F5D6BE] hover:text-[#271B38] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--fs-focus)">Post Ad</Link>
+          </Reveal>
+          <div className="grid grid-cols-1 gap-8 min-[480px]:grid-cols-2 md:grid-cols-3">
+            {HOME_GROUPS.map(group => (
+              <nav key={group.title} aria-label={group.title}>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[#F5D6BE]">{group.title}</h3>
+                <ul className="mt-2 space-y-0.5">
+                  {group.links.map(link => (
+                    <li key={link.href}>
+                      {link.href.startsWith("/")
+                        ? <Link href={link.href} className={linkClass}>{link.label}</Link>
+                        : <a href={link.href} {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})} className={linkClass}>{link.label}</a>}
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
+          </div>
+        </div>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
+          <p className="text-xs text-muted">&copy; {currentYear} FairSwap.</p>
+          <LanguageSelector id="language-select-footer" />
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+export function Footer({ variant = "default" }: { variant?: "default" | "home" } = {}) {
+  if (variant === "home") return <HomeFooter />;
   const currentYear = new Date().getFullYear();
 
   return (
