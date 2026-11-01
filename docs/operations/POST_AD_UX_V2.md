@@ -1,3 +1,22 @@
+# Post Ad V2.1.1 — stepper feedback hotfix
+
+1 November 2026. This correction supersedes the V2.1 locked-step feedback described below.
+
+- Native `disabled` and an inert handler guard prevent future-step pointer, keyboard and synthetic activation. Locked activation neither changes step nor validates, adds errors, programmatically focuses a field or scrolls.
+- Continue parses only the current step's canonical Zod fields and related catalogue/media/cross-field rules. Concise inline errors focus the first invalid field; the full-form yellow summary is removed. Existing styles, layout, logo, Manrope, buyer preview and completion calculations are preserved.
+- Review and Submit still run the full canonical schema plus catalogue and media readiness checks. An invalid earlier step receives focus and only that step's inline errors. Server issues are similarly limited to the earliest affected step. Server validation, auth/RLS and session/upload retry boundaries are unchanged.
+- Recovery, saved fields/media, session IDs, previous-step editing and submission uncertainty handling remain unchanged. Tests cover native disabled state, repeated pointer/Enter/Space activation, tab order, no locked-step feedback/scroll/geometry changes, local Continue feedback, backward invalidation, recovery and real upload retry/sequential Review.
+
+Only Web source, regression tests and required documentation change. No migration, dependency, environment, CI workflow, Git command or hosted operation. The archive includes exact task-start filesystem diffs, before/after hashes and command logs. Production/source parity is not established by the local snapshot.
+
+After review, ChatGPT owns branch `fix/post-ad-v211-stepper-feedback`, commit `fix(post-ad): prevent locked-step error flooding`, a PR to `staging`, existing CI and staging checks, then selective updates to draft Production PR #305. Production promotion remains blocked on authenticated hosted Test acceptance. This task performs no GitHub or deployment action. No owner predeployment testing is requested. Production post-release checks use automated authenticated journey/health/error evidence. Rollback is scoped Git revert or the previous Vercel deployment; no database rollback.
+
+Final local results: PASS typecheck; PASS lint (zero errors, three pre-existing warnings); PASS 94 focused unit tests across nine files; PASS seven isolated Playwright cases; PASS production webpack build. Detailed results and limits are in the ZIP `_handoff/TEST-EVIDENCE.md`. Existing isolated browser tests use real components with fixture auth/catalogue/APIs and system fonts; the production webpack build preserves the real Next configuration and fonts. They do not establish authenticated hosted Test acceptance, physical-device performance or screen-reader certification. The wizard remains English.
+
+---
+
+## Historical V2.1 record
+
 # Post Ad UX V2.1 corrective patch
 
 1 November 2026. The correction below supersedes the V2 photo-skipping and recovered-step behavior described in the historical implementation record below.
