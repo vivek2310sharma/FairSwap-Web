@@ -4,7 +4,7 @@ import { HomeSearchInput, suggestionsFor } from "@/components/listings/HomeSearc
 import { InteractiveSafety } from "@/components/home/InteractiveSafety";
 import { HomepageStory } from "@/components/home/HomepageStory";
 import { LanguageSelector } from "@/components/LanguageSelector";
-import { LOCALES, isSelectableLocale, resolveLocale } from "@/lib/i18n/locales";
+import { USER_FACING_LOCALES, isSelectableLocale, resolveLocale } from "@/lib/i18n/locales";
 import { useState } from "react";
 
 const categories = [
@@ -83,14 +83,15 @@ describe("homepage story", () => {
 });
 
 describe("language selector", () => {
-  it("lists the planned languages but only English is selectable", () => {
+  it("shows only English and Hindi, with only English selectable", () => {
     render(<LanguageSelector />);
     const select = screen.getByRole("combobox", { name: "Language" });
     expect(select).toHaveValue("en");
     const options = screen.getAllByRole("option") as HTMLOptionElement[];
-    expect(options).toHaveLength(LOCALES.length);
+    expect(options).toHaveLength(USER_FACING_LOCALES.length);
+    expect(options.map((o) => o.value)).toEqual(["en", "hi"]);
     expect(options.filter((o) => !o.disabled).map((o) => o.value)).toEqual(["en"]);
-    expect(screen.getByRole("option", { name: "Hindi (coming soon)" })).toBeDisabled();
+    expect(screen.getByRole("option", { name: "हिन्दी (coming soon)" })).toBeDisabled();
   });
 
   it("never resolves to a locale that is not enabled", () => {

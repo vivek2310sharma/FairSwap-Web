@@ -82,7 +82,8 @@ describe("FSW-SEC-001 media privacy regression (original photos stay private)", 
   const read = (p: string) => fs.readFileSync(path.resolve(p), "utf8");
 
   it("listing cards only ever reference the derivative thumb route", () => {
-    const card = read("src/components/listings/ListingCard.tsx");
+    // Homepage 4.4: the URL is built in CardPhoto (client); ListingCard no longer builds media URLs itself.
+    const card = read("src/components/listings/ListingCard.tsx") + read("src/components/listings/CardPhoto.tsx") + read("src/lib/listings/gallery-client.ts");
     const urls = card.match(/\/api\/listings\/\$\{[^}]+\}\/media\/\$\{[^}]+\}\/[a-z]+/g) ?? [];
     expect(urls.length).toBeGreaterThan(0);
     for (const url of urls) expect(url).toMatch(/\/thumb$/);

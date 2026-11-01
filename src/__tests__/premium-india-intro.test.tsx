@@ -82,6 +82,22 @@ describe("first visit", () => {
     expect(document.documentElement.hasAttribute("data-fs-intro")).toBe(false);
   });
 
+  it("Homepage 4.4: holds the final screen 1.9s, then slides up (CSS exit duration mirrors TIMING.fade) before the failsafes", () => {
+    expect(TIMING.hold).toBe(1900);
+    const sequence = TIMING.first + 15 * (TIMING.leave + TIMING.gap);
+    expect(sequence + TIMING.hold + TIMING.fade).toBeLessThan(9000); // full intro fits well inside the 10s JS failsafe / 10.5s CSS net
+    render(<PremiumIndiaIntro />);
+    expect(dialog()!.style.getPropertyValue("--fs-intro-exit")).toBe(`${TIMING.fade}ms`);
+    advance(SEQUENCE_MS);
+    advance(TIMING.hold - 200);
+    expect(dialog()!.className).not.toMatch(/closing/);
+    advance(300);
+    expect(dialog()!.className).toMatch(/closing/); // slide starts; still mounted until the slide ends
+    expect(dialog()).toBeInTheDocument();
+    advance(TIMING.fade + 50);
+    expect(dialog()).toBeNull();
+  });
+
   it("uses the tab session's palette on the dialog and publishes motifs for the chosen family", () => {
     render(<PremiumIndiaIntro />);
     const id = sessionStorage.getItem(cfg.theme)!;

@@ -28,7 +28,7 @@ export async function RecentListingsSection({ area = null }: { area?: PublicArea
   const secondary = buttonVariants({ variant: "secondary", size: "lg", className: "rounded-full" });
 
   return (
-    <section id="fresh-finds" aria-labelledby="recent-heading" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+    <section id="fresh-finds" aria-labelledby="recent-heading" className="fs-container scroll-mt-20 py-6 lg:py-8">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <p className="fs-eyebrow text-muted">{area ? area.label : "Across India"}</p>

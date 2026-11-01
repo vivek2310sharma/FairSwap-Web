@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Globe } from "lucide-react";
-import { DEFAULT_LOCALE, LOCALES, LOCALE_STORAGE_KEY, isSelectableLocale, resolveLocale } from "@/lib/i18n/locales";
+import { DEFAULT_LOCALE, USER_FACING_LOCALES, LOCALE_STORAGE_KEY, isSelectableLocale, resolveLocale } from "@/lib/i18n/locales";
 
 /** Localization-ready language picker. Only enabled locales can be chosen; the preference is independent of the intro's greeting language. */
 /** `id` is explicit (not useId) so server-rendered markup is identical on every page. */
@@ -24,9 +24,9 @@ export function LanguageSelector({ className = "", id = "language-select" }: { c
         }}
         className="min-h-[44px] rounded-xl border border-border bg-card px-2 text-sm font-semibold text-foreground"
       >
-        {LOCALES.map((locale) => (
+        {USER_FACING_LOCALES.map((locale) => (
           <option key={locale.code} value={locale.code} disabled={!locale.enabled}>
-            {locale.enabled ? locale.nativeLabel : `${locale.label} (coming soon)`}
+            {locale.enabled ? locale.nativeLabel : `${locale.nativeLabel} (coming soon)`}
           </option>
         ))}
       </select>

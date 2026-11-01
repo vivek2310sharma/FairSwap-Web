@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 /** Seller call to action with the approved walking mascot. Claims nothing about reach, speed or sales. */
 export function SellerCta() {
   return (
-    <section aria-labelledby="sell-heading" className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <section aria-labelledby="sell-heading" className="fs-container py-6">
       <div className="flex items-center gap-4 overflow-hidden rounded-3xl bg-(--fs-tone-b) p-5 sm:gap-8 sm:p-8">
         <div className="min-w-0 flex-1">
           <h2 id="sell-heading" className="text-xl font-extrabold tracking-tight text-foreground sm:text-2xl">Have something to pass on?</h2>
