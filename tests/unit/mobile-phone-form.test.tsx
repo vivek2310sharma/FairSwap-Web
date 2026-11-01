@@ -23,16 +23,25 @@ const submitCalls = () => m.fetch.mock.calls.filter(([url]) => url === "/api/pos
 function recovered() { return { version: 2, owner, updated: Date.now(), step: 5, draft: { ...blankPhoneDraft(), session_id: owner, brand_id: brand, model_id: model, storage: "128 GB", condition: "good", title: "Saved title" }, manualTitle: true, area: "Koramangala", priceText: "24500", photos: [{ id: model, state: "ready" }] }; }
 describe("Production phone wizard", () => {
     it("blocks blank Photos jumps and Continue, then validates details with focus", async () => {
-        await ready(); step("5 Location"); expect(screen.getByRole("alert")).toHaveTextContent(/photo/i); expect(document.getElementById("mobile-media_ids")).toHaveFocus();
+        await ready();
+        const active = screen.getByRole("button", {name:"Step 1: Photos"}); active.focus();
+        vi.mocked(Element.prototype.scrollIntoView).mockClear();
+        for (let repeat=0;repeat<3;repeat++) for (const name of ["2 Phone details","3 Condition","4 Price","5 Location"]) {
+            const locked=screen.getByRole("button", {name:`Step ${name[0]}: ${name.slice(2)}`});
+            expect(locked).toBeDisabled(); locked.focus(); fireEvent.click(locked);
+            fireEvent.keyDown(locked,{key:"Enter"}); fireEvent.keyDown(locked,{key:" "});
+            expect(active).toHaveFocus(); expect(screen.queryAllByRole("alert")).toHaveLength(0);
+        }
+        expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
         expect(screen.getByRole("button", {name:"Step 1: Photos"})).toHaveAttribute("data-complete", "false");
-        step("Continue"); expect(submitCalls()).toHaveLength(0);
+        step("Continue"); expect(submitCalls()).toHaveLength(0); expect(screen.getAllByRole("alert")).toHaveLength(1); expect(document.getElementById("mobile-media_ids")).toHaveFocus();
         step("Add ready photo"); step("Continue");
         expect(screen.getByRole("combobox", {name:"Brand"})).toHaveValue("");
-        step("Continue"); expect(screen.getByRole("combobox", {name:"Brand"})).toHaveFocus();
+        step("Continue"); expect(screen.getByRole("combobox", {name:"Brand"})).toHaveFocus(); expect(screen.getAllByRole("alert")).toHaveLength(3); expect(screen.queryByText("Check the highlighted details")).toBeNull(); expect(screen.queryByText("Choose the condition that best fits.")).toBeNull();
         expect(screen.getByRole("button", {name:"Step 2: Phone details"})).toHaveAttribute("data-complete", "false");
         expect(screen.getByRole("button", {name:"Step 1: Photos"})).toHaveAttribute("data-complete", "true");
     });
-    it("does not initialize or overwrite a pending recovery before explicit Resume", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Resume saved listing" }); await act(async () => { await new Promise(r => setTimeout(r, 400)); }); expect(m.write).not.toHaveBeenCalled(); expect(m.fetch).not.toHaveBeenCalled(); step("Resume saved listing"); await waitFor(() => expect(screen.getByLabelText("Price (₹)")).toHaveValue("24500")); await waitFor(() => expect(m.write).toHaveBeenCalledWith(owner, expect.objectContaining({ step: 0, photos: [{ id: model, state: "ready", blob: undefined }] }))); expect(JSON.parse(m.fetch.mock.calls[0][1].body).session_id).toBe(owner); expect(screen.getByRole("button", {name:"Step 1: Photos"})).toHaveAttribute("aria-current", "step"); step("5 Location"); expect(screen.getByRole("group", {name:"Condition"})).toBeVisible(); expect(screen.getByLabelText("Description")).toHaveFocus(); });
+    it("does not initialize or overwrite a pending recovery before explicit Resume", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Resume saved listing" }); await act(async () => { await new Promise(r => setTimeout(r, 400)); }); expect(m.write).not.toHaveBeenCalled(); expect(m.fetch).not.toHaveBeenCalled(); step("Resume saved listing"); await waitFor(() => expect(screen.getByLabelText("Price (₹)")).toHaveValue("24500")); await waitFor(() => expect(m.write).toHaveBeenCalledWith(owner, expect.objectContaining({ step: 0, photos: [{ id: model, state: "ready", blob: undefined }] }))); expect(JSON.parse(m.fetch.mock.calls[0][1].body).session_id).toBe(owner); expect(screen.getByRole("button", {name:"Step 1: Photos"})).toHaveAttribute("aria-current", "step"); step("5 Location"); expect(screen.queryByRole("alert")).toBeNull(); step("Continue"); step("Continue"); step("Continue"); expect(screen.getByLabelText("Description")).toHaveFocus(); expect(screen.getAllByRole("alert")).toHaveLength(1); });
     it("Start fresh creates a different session with no recovered values", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Start fresh" }); step("Start fresh"); await screen.findByRole("button", { name: "Add ready photo" }); expect(JSON.parse(m.fetch.mock.calls[0][1].body).session_id).not.toBe(owner); step("4 Price"); expect(screen.getByLabelText("Price (₹)")).toHaveValue(""); });
     it("ignores stale or other-owner recovery", async () => { m.read.mockResolvedValue({ ...recovered(), owner: brand }); await ready(); expect(screen.queryByText("Resume saved listing")).toBeNull(); expect(m.read).toHaveBeenCalledWith(owner); });
     it("retries initialization once with the same session", async () => { let finish!: () => void; const pending = new Promise<void>(r => { finish = r; }); let attempts = 0; m.fetch.mockImplementation(async (url: string) => { if (url === "/api/post-ad/sessions") {
@@ -41,7 +50,7 @@ describe("Production phone wizard", () => {
         await pending;
     } return { ok: true, json: async () => ({ session: { state: "open" }, media: [] }) }; }); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); const retry = await screen.findByRole("button", { name: "Retry photo upload" }); fireEvent.click(retry); fireEvent.click(retry); const requests = m.fetch.mock.calls.filter(([url]) => url === "/api/post-ad/sessions"); expect(requests).toHaveLength(2); expect(requests[0][1].body).toBe(requests[1][1].body); finish(); await screen.findByRole("button", { name: "Add ready photo" }); });
     it("keeps manual title and offers automatic reset", async () => { await ready(); fill(); step("3 Condition"); expect(screen.getByLabelText("Title")).toHaveValue("Apple iPhone 15 · 128 GB · Good condition"); fireEvent.change(screen.getByLabelText("Title"), { target: { value: "My carefully used phone" } }); step("Like new"); expect(screen.getByLabelText("Title")).toHaveValue("My carefully used phone"); step("Use automatically generated title"); expect(screen.getByLabelText("Title")).toHaveValue("Apple iPhone 15 · 128 GB · Like new"); });
-    it("blocks review when photos are missing and focuses the photo group", async () => { await ready(); step("5 Location"); expect(screen.getByRole("alert")).toHaveTextContent(/photo/i); expect(document.getElementById("mobile-media_ids")).toHaveFocus(); expect(submitCalls()).toHaveLength(0); });
+    it("blocks review when photos are missing and focuses the photo group", async () => { await ready(); step("Continue"); expect(screen.getByRole("alert")).toHaveTextContent(/photo/i); expect(document.getElementById("mobile-media_ids")).toHaveFocus(); expect(submitCalls()).toHaveLength(0); });
     it("submits giveaway only from final review and displays one preview", async () => { await ready(); fill(); step("Give away"); step("5 Location"); step("Review listing"); expect(screen.getAllByRole("complementary", { name: "Buyer preview" })).toHaveLength(1); expect(screen.getByRole("radio")).toBeChecked(); expect(submitCalls()).toHaveLength(0); step("Submit for review"); await waitFor(() => expect(m.replace).toHaveBeenCalledWith(`/account/listings/${owner}/edit`)); expect(JSON.parse(submitCalls()[0][1].body)).toMatchObject({ trade: "giveaway", price_paise: 0, negotiable: false, plan_id: "free-v1" }); await act(async () => { await new Promise(r => setTimeout(r, 450)); }); expect(m.write.mock.calls.at(-1)).toEqual([owner, null]); });
     it("keeps the session and recovery after a rejected submission", async () => { await ready(); fill(); step("5 Location"); step("Review listing"); m.fetch.mockImplementation(async (url: string) => ({ ok: url !== "/api/post-ad/submit", json: async () => url === "/api/post-ad/submit" ? { error: "Submission unavailable" } : { session: { state: "open" }, media: [] } })); step("Submit for review"); await screen.findByText("Submission unavailable"); expect(m.replace).not.toHaveBeenCalled(); expect(m.write.mock.calls.some(([, v]) => v === null)).toBe(false); });
     it("maintenance prevents progression and submission", async () => { await ready(true); expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled(); expect(screen.getByRole("alert")).toHaveTextContent(/temporarily|maintenance|pause/i); expect(submitCalls()).toHaveLength(0); });
@@ -64,7 +73,20 @@ describe("Production phone wizard", () => {
 it("invalidating earlier details removes completion and blocks later links while Back remains usable", async () => {
  await ready(); fill(); step("2 Phone details"); choose("Brand","Apple");
  expect(screen.getByRole("button",{name:"Step 2: Phone details"})).toHaveAttribute("data-complete","false");
- step("5 Location"); expect(screen.getByRole("combobox",{name:"Model"})).toHaveFocus();
+ step("5 Location"); expect(screen.queryByRole("alert")).toBeNull(); expect(screen.getByRole("button",{name:"Step 5: Location"})).toBeDisabled(); step("Continue"); expect(screen.getByRole("combobox",{name:"Model"})).toHaveFocus();
  step("Back"); expect(screen.getByRole("button",{name:"Step 1: Photos"})).toHaveAttribute("aria-current","step");
+ expect(submitCalls()).toHaveLength(0);
+});
+
+it("Review/Submit returns to the earliest invalid step with only its inline errors", async () => {
+ await ready(); fill(); step("5 Location"); step("Review listing");
+ m.fetch.mockImplementation(async (url:string) => ({ok:true,json:async()=>({session:{state:"open"},media:url.endsWith("/media")?[{id:"44444444-4444-4444-8444-444444444444",state:"removed",url:null}]:[]})}));
+ fireEvent.focus(window);
+ await waitFor(()=>expect(screen.getByRole("button",{name:"Step 1: Photos"})).toHaveAttribute("data-complete","false"));
+ step("Submit for review");
+ expect(document.getElementById("mobile-media_ids")).toHaveFocus();
+ expect(screen.getAllByRole("alert")).toHaveLength(1);
+ expect(screen.getByRole("alert")).toHaveTextContent(/photo/i);
+ expect(screen.queryByText("Check the highlighted details")).toBeNull();
  expect(submitCalls()).toHaveLength(0);
 });

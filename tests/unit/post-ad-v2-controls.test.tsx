@@ -2,7 +2,7 @@ import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import SearchCombobox from "@/components/listings/posting/SearchCombobox";
-import { generatedPhoneTitle, blankPhoneDraft, phoneRecoverySchema, validatePhoneWizard, reachablePhoneStep } from "@/components/listings/posting/mobile-wizard";
+import { generatedPhoneTitle, blankPhoneDraft, phoneRecoverySchema, validatePhoneStep, validatePhoneWizard, reachablePhoneStep } from "@/components/listings/posting/mobile-wizard";
 import AccountChrome from "@/components/account/AccountChrome";
 const m = vi.hoisted(() => ({ path: "/account/listings/new" }));
 vi.mock("next/navigation", () => ({ usePathname: () => m.path }));
@@ -33,4 +33,23 @@ it("derives access and completion from required values and media readiness", () 
  expect(check({...valid,trade:"giveaway",price_paise:0},[{state:"ready"}],"").issues).toEqual([]);
  expect(reachablePhoneStep(check({...valid,pin_code:"000000"}).issues)).toBe(4);
  expect(check({...valid,condition:"" as never,included:["Under warranty"]}).issues.map(i=>i.field)).toContain("warranty_until");
+});
+
+it("Continue validates only current fields, while Review retains full Zod validation", () => {
+ const id="11111111-1111-4111-8111-111111111111";
+ const catalogue={brands:[{id}],models:[{id,brand_id:id,other:false}]} as unknown as import("@/lib/listings/mobiles/contract").MobileCatalogue;
+ const blank={...blankPhoneDraft(),session_id:id};
+ expect(validatePhoneStep(0,blank,catalogue,[],"").map(i=>i.field)).toEqual(["media_ids"]);
+ const withPhoto={...blank,media_ids:[id]}; const photos=[{state:"ready"}];
+ expect(validatePhoneStep(0,withPhoto,catalogue,photos,"")).toEqual([]);
+ expect(validatePhoneStep(1,withPhoto,catalogue,photos,"").map(i=>i.field)).toEqual(["brand_id","model_id","storage"]);
+ const details={...withPhoto,brand_id:id,model_id:id,storage:"128 GB" as const};
+ expect(validatePhoneStep(1,details,catalogue,photos,"")).toEqual([]);
+ const condition={...details,condition:"good" as const,title:"My phone",description:"Used with care."};
+ expect(validatePhoneStep(2,condition,catalogue,photos,"")).toEqual([]);
+ expect(validatePhoneStep(2,{...condition,included:["Under warranty"]},catalogue,photos,"").map(i=>i.field)).toEqual(["warranty_until"]);
+ expect(validatePhoneStep(3,condition,catalogue,photos,"0").map(i=>i.field)).toEqual(["price_paise"]);
+ expect(validatePhoneStep(3,{...condition,trade:"giveaway"},catalogue,photos,"")).toEqual([]);
+ expect(validatePhoneStep(4,condition,catalogue,photos,"").map(i=>i.field)).toEqual(["pin_code","city_id","locality_id"]);
+ expect(validatePhoneWizard(condition,catalogue,photos,"").parsed.success).toBe(false);
 });
