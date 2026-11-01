@@ -22,6 +22,7 @@
 
 | Runbook | Responsibility |
 | --- | --- |
+| [Post Ad UX V2](operations/POST_AD_UX_V2.md) | Local wizard/category implementation, verification limits and release handoff |
 | [Deployments](operations/deployment-guide.md) | Source release, environments, migration and rollback guardrails |
 | [Auth email templates](operations/auth-email-templates.md) | Confirmation and OTP design, backups and hosted evidence |
 | [Recovery email](operations/password-recovery-email.md) | Completed branded recovery rollout and operator acceptance |

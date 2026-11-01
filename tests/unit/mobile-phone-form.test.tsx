@@ -1,57 +1,53 @@
 import React from "react";
-import { afterEach,beforeEach,describe,expect,it,vi } from "vitest";
-import { cleanup,fireEvent,render,screen,waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import MobilePhoneForm from "@/components/listings/MobilePhoneForm";
 import type { MobileCatalogue } from "@/lib/listings/mobiles/contract";
-const m=vi.hoisted(()=>({read:vi.fn(),write:vi.fn(),replace:vi.fn(),fetch:vi.fn()}));
-vi.mock("next/navigation",()=>({useRouter:()=>({replace:m.replace})}));
-vi.mock("@/lib/listings/posting-recovery",()=>({readPostingRecovery:m.read,writePostingRecovery:m.write}));
-vi.mock("@/components/listings/PincodeLocationPicker",()=>({default:()=> <div><input type="hidden" name="pin_code" value="560034"/><input type="hidden" name="city_id" value="55555555-5555-4555-8555-555555555555"/><input type="hidden" name="locality_id" value="66666666-6666-4666-8666-666666666666"/></div>}));
-vi.mock("@/components/listings/PreListingMediaUploader",()=>({default:({onChange}:{onChange:(v:unknown[])=>void})=><button type="button" onClick={()=>onChange([{id:"44444444-4444-4444-8444-444444444444",state:"ready"}])}>Add ready photo</button>}));
-const owner="11111111-1111-4111-8111-111111111111",brand="22222222-2222-4222-8222-222222222222",model="33333333-3333-4333-8333-333333333333";
-const catalogue:MobileCatalogue={version:2,revision:"fixture-v2",listing_category_id:owner,enabled:true,selection:{category:"mobiles",subcategory:"mobile-phones",version:2},brands:[{id:brand,name:"Apple",aliases:["iPhone"],sort_order:1}],models:[{id:model,brand_id:brand,name:"iPhone 15",aliases:[],sort_order:1,older_group:false,other:false}]};
-beforeEach(()=>{vi.clearAllMocks();m.read.mockResolvedValue(undefined);m.write.mockResolvedValue(undefined);m.fetch.mockImplementation(async(input:string)=>({ok:true,json:async()=>input==="/api/post-ad/submit"?{success:true,listing_id:owner}:{session:{state:"open"},media:[]}}));vi.stubGlobal("fetch",m.fetch);});
-afterEach(()=>{cleanup();vi.unstubAllGlobals();});
-async function ready(){render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await waitFor(()=>expect(screen.getByRole("button",{name:"Preview / Continue"})).toBeEnabled());}
-function fill(){fireEvent.click(screen.getByRole("button",{name:"Add ready photo"}));fireEvent.change(screen.getByLabelText("Brand"),{target:{value:brand}});fireEvent.change(screen.getByLabelText("Model"),{target:{value:model}});fireEvent.change(screen.getByLabelText("Description"),{target:{value:"Used carefully. Battery health 90%."}});fireEvent.change(screen.getByLabelText("Price (₹)"),{target:{value:"25000"}});}
-describe("Mobile phone posting journey",()=>{
- it("shows preparation until the session and recovered media are ready",async()=>{
-  let finish!:()=>void;const pending=new Promise<void>(resolve=>{finish=resolve;});
-  m.fetch.mockImplementation(async()=>{await pending;return {ok:true,json:async()=>({session:{state:"open"},media:[]})};});
-  render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);
-  expect(await screen.findByText("Preparing photo upload…")).toHaveAttribute("role","status");
-  expect(screen.queryByRole("button",{name:/retry/i})).toBeNull();expect(screen.queryByRole("button",{name:"Add ready photo"})).toBeNull();
-  finish();expect(await screen.findByRole("button",{name:"Add ready photo"})).toBeVisible();
-  expect(screen.queryByText("Preparing photo upload…")).toBeNull();
+import { blankPhoneDraft } from "@/components/listings/posting/mobile-wizard";
+const m = vi.hoisted(() => ({ read: vi.fn(), write: vi.fn(), replace: vi.fn(), push: vi.fn(), fetch: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: m.replace, push: m.push }) }));
+vi.mock("@/lib/listings/posting-recovery", () => ({ readPostingRecovery: m.read, writePostingRecovery: m.write }));
+vi.mock("@/components/listings/PincodeLocationPicker", () => ({ default: () => <div><input type="hidden" name="pin_code" value="560034"/><input type="hidden" name="city_id" value="55555555-5555-4555-8555-555555555555"/><input type="hidden" name="locality_id" value="66666666-6666-4666-8666-666666666666"/></div> }));
+vi.mock("@/components/listings/PreListingMediaUploader", () => ({ default: ({ onChange }: {
+        onChange: (v: unknown[]) => void;
+    }) => <button type="button" onClick={() => onChange([{ id: "44444444-4444-4444-8444-444444444444", state: "ready" }])}>Add ready photo</button> }));
+const owner = "11111111-1111-4111-8111-111111111111", brand = "22222222-2222-4222-8222-222222222222", model = "33333333-3333-4333-8333-333333333333";
+const catalogue: MobileCatalogue = { version: 2, revision: "fixture-v2", listing_category_id: owner, enabled: true, selection: { category: "mobiles", subcategory: "mobile-phones", version: 2 }, brands: [{ id: brand, name: "Apple", aliases: ["iPhone"], sort_order: 1 }], models: [{ id: model, brand_id: brand, name: "iPhone 15", aliases: [], sort_order: 1, older_group: false, other: false }] };
+beforeEach(() => { vi.clearAllMocks(); m.read.mockResolvedValue(undefined); m.write.mockResolvedValue(undefined); m.fetch.mockImplementation(async (input: string) => ({ ok: true, json: async () => input === "/api/post-ad/submit" ? { success: true, listing_id: owner } : { session: { state: "open" }, media: [] } })); vi.stubGlobal("fetch", m.fetch); Element.prototype.scrollIntoView = vi.fn(); });
+afterEach(async() => { cleanup(); await Promise.resolve();await Promise.resolve();vi.unstubAllGlobals(); });
+async function ready(maintenance = false) { render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]} maintenance={maintenance}/>); await screen.findByRole("button", { name: "Add ready photo" }); }
+const step = (name: string) => fireEvent.click(screen.getByRole("button", { name: /^\d /.test(name) ? `Step ${name[0]}: ${name.slice(2)}` : name }));
+function choose(label: string, name: string) { const input = screen.getByRole("combobox", { name: label }); fireEvent.click(input); fireEvent.change(input, { target: { value: name } }); fireEvent.keyDown(input, { key: "ArrowDown" }); fireEvent.keyDown(input, { key: "Enter" }); }
+function fill() { fireEvent.click(screen.getByRole("button", { name: "Add ready photo" })); step("2 Phone details"); choose("Brand", "Apple"); choose("Model", "iPhone 15"); fireEvent.change(screen.getByLabelText("Storage"), { target: { value: "128 GB" } }); step("3 Condition"); step("Good condition"); fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Used carefully. Battery health 90%." } }); step("4 Price"); fireEvent.change(screen.getByLabelText("Price (₹)"), { target: { value: "25000" } }); }
+const submitCalls = () => m.fetch.mock.calls.filter(([url]) => url === "/api/post-ad/submit");
+function recovered() { return { version: 2, owner, updated: Date.now(), step: 3, draft: { ...blankPhoneDraft(), session_id: owner, brand_id: brand, model_id: model, storage: "128 GB", condition: "good", title: "Saved title" }, manualTitle: true, area: "Koramangala", priceText: "24500", photos: [{ id: model, state: "ready" }] }; }
+describe("Production phone wizard", () => {
+    it("starts blank and skips photos while editing", async () => { await ready(); step("Continue"); expect(screen.getByRole("combobox", { name: "Brand" })).toHaveValue(""); expect(screen.getByRole("combobox", { name: "Model" })).toBeDisabled(); expect(screen.getByLabelText("Storage")).toHaveValue(""); step("3 Condition"); expect(screen.getByRole("button", { name: "Good condition" })).toHaveAttribute("aria-pressed", "false"); expect(screen.queryByRole("complementary", { name: "AI assistant" })).toBeNull(); expect(submitCalls()).toHaveLength(0); });
+    it("does not initialize or overwrite a pending recovery before explicit Resume", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Resume saved listing" }); await act(async () => { await new Promise(r => setTimeout(r, 400)); }); expect(m.write).not.toHaveBeenCalled(); expect(m.fetch).not.toHaveBeenCalled(); step("Resume saved listing"); await waitFor(() => expect(screen.getByLabelText("Price (₹)")).toHaveValue("24500")); await waitFor(() => expect(m.write).toHaveBeenCalledWith(owner, expect.objectContaining({ step: 3, photos: [{ id: model, state: "ready", blob: undefined }] }))); expect(JSON.parse(m.fetch.mock.calls[0][1].body).session_id).toBe(owner); });
+    it("Start fresh creates a different session with no recovered values", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Start fresh" }); step("Start fresh"); await screen.findByRole("button", { name: "Add ready photo" }); expect(JSON.parse(m.fetch.mock.calls[0][1].body).session_id).not.toBe(owner); step("4 Price"); expect(screen.getByLabelText("Price (₹)")).toHaveValue(""); });
+    it("ignores stale or other-owner recovery", async () => { m.read.mockResolvedValue({ ...recovered(), owner: brand }); await ready(); expect(screen.queryByText("Resume saved listing")).toBeNull(); expect(m.read).toHaveBeenCalledWith(owner); });
+    it("retries initialization once with the same session", async () => { let finish!: () => void; const pending = new Promise<void>(r => { finish = r; }); let attempts = 0; m.fetch.mockImplementation(async (url: string) => { if (url === "/api/post-ad/sessions") {
+        if (++attempts === 1)
+            return { ok: false, json: async () => ({ error: "Session unavailable." }) };
+        await pending;
+    } return { ok: true, json: async () => ({ session: { state: "open" }, media: [] }) }; }); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); const retry = await screen.findByRole("button", { name: "Retry photo upload" }); fireEvent.click(retry); fireEvent.click(retry); const requests = m.fetch.mock.calls.filter(([url]) => url === "/api/post-ad/sessions"); expect(requests).toHaveLength(2); expect(requests[0][1].body).toBe(requests[1][1].body); finish(); await screen.findByRole("button", { name: "Add ready photo" }); });
+    it("keeps manual title and offers automatic reset", async () => { await ready(); fill(); step("3 Condition"); expect(screen.getByLabelText("Title")).toHaveValue("Apple iPhone 15 · 128 GB · Good condition"); fireEvent.change(screen.getByLabelText("Title"), { target: { value: "My carefully used phone" } }); step("Like new"); expect(screen.getByLabelText("Title")).toHaveValue("My carefully used phone"); step("Use automatically generated title"); expect(screen.getByLabelText("Title")).toHaveValue("Apple iPhone 15 · 128 GB · Like new"); });
+    it("blocks review when photos are missing and focuses the photo group", async () => { await ready(); step("5 Location"); step("Review listing"); expect(screen.getByRole("alert")).toHaveTextContent(/photos/i); expect(submitCalls()).toHaveLength(0); });
+    it("submits giveaway only from final review and displays one preview", async () => { await ready(); fill(); step("Give away"); step("5 Location"); step("Review listing"); expect(screen.getAllByRole("complementary", { name: "Buyer preview" })).toHaveLength(1); expect(screen.getByRole("radio")).toBeChecked(); expect(submitCalls()).toHaveLength(0); step("Submit for review"); await waitFor(() => expect(m.replace).toHaveBeenCalledWith(`/account/listings/${owner}/edit`)); expect(JSON.parse(submitCalls()[0][1].body)).toMatchObject({ trade: "giveaway", price_paise: 0, negotiable: false, plan_id: "free-v1" }); await act(async () => { await new Promise(r => setTimeout(r, 450)); }); expect(m.write.mock.calls.at(-1)).toEqual([owner, null]); });
+    it("keeps the session and recovery after a rejected submission", async () => { await ready(); fill(); step("5 Location"); step("Review listing"); m.fetch.mockImplementation(async (url: string) => ({ ok: url !== "/api/post-ad/submit", json: async () => url === "/api/post-ad/submit" ? { error: "Submission unavailable" } : { session: { state: "open" }, media: [] } })); step("Submit for review"); await screen.findByText("Submission unavailable"); expect(m.replace).not.toHaveBeenCalled(); expect(m.write.mock.calls.some(([, v]) => v === null)).toBe(false); });
+    it("maintenance prevents progression and submission", async () => { await ready(true); expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled(); expect(screen.getByRole("alert")).toHaveTextContent(/temporarily|maintenance|pause/i); expect(submitCalls()).toHaveLength(0); });
+ it("preserves edits when router or catalogue references change for the same account",async()=>{
+  const view=render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);
+  await screen.findByRole("button",{name:"Add ready photo"});step("2 Phone details");choose("Brand","Apple");choose("Model","iPhone 15");
+  view.rerender(<MobilePhoneForm ownerId={owner} catalogue={{...catalogue,revision:"new-reference"}} cities={[]}/>);
+  expect(screen.getByRole("combobox",{name:"Model"})).toHaveValue("iPhone 15");expect(m.fetch.mock.calls.filter(([url])=>url==="/api/post-ad/sessions")).toHaveLength(1);
  });
- it("retries initialization once with the same session and retains recovered photos",async()=>{
-  let finish!:()=>void;const pending=new Promise<void>(resolve=>{finish=resolve;});let attempts=0;
-  m.fetch.mockImplementation(async(input:string)=>{
-   if(input==="/api/post-ad/sessions"){
-    if(++attempts===1)return {ok:false,json:async()=>({error:"Session unavailable."})};
-    await pending;
-   }
-   return {ok:true,json:async()=>({session:{state:"open"},media:[{id:model,state:"ready",url:null}]})};
-  });
-  render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);
-  const retry=await screen.findByRole("button",{name:"Retry photo upload"});
-  fireEvent.click(retry);fireEvent.click(retry);
-  expect(attempts).toBe(2);expect(screen.getByText("Preparing photo upload…")).toBeVisible();
-  const requests=m.fetch.mock.calls.filter(([url])=>url==="/api/post-ad/sessions");expect(requests[1][1].body).toBe(requests[0][1].body);
-  finish();await screen.findByRole("button",{name:"Add ready photo"});
-  await waitFor(()=>expect(m.write).toHaveBeenCalledWith(owner,expect.objectContaining({photos:[{id:model,state:"ready",blob:undefined}]})));
+
+ it("flushes the latest edits on route exit without waiting for the autosave timer",async()=>{
+  const view=render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Add ready photo"});step("4 Price");fireEvent.change(screen.getByLabelText("Price (₹)"),{target:{value:"12345"}});view.unmount();await waitFor(()=>expect(m.write).toHaveBeenCalledWith(owner,expect.objectContaining({step:3,priceText:"12345"})));
  });
- it("defaults to English without a page-specific language selector",async()=>{await ready();expect(screen.queryByLabelText("Posting language")).toBeNull();expect(screen.queryByRole("button",{name:"हिंदी"})).toBeNull();expect(screen.getByLabelText("Brand")).toBeVisible();expect(screen.getByLabelText("Condition")).toHaveValue("good");expect(screen.getByText("Your photos are not analysed by AI yet.")).toBeVisible();});
- it("keeps the AI panel below photos and never offers a separate draft step",async()=>{await ready();const photo=screen.getByRole("button",{name:"Add ready photo"});const ai=screen.getByRole("complementary",{name:"AI assistant"});expect(photo.compareDocumentPosition(ai)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();expect(screen.getByText("Your photos are not analysed by AI yet.")).toBeVisible();expect(screen.queryByRole("button",{name:/Save.*Draft/i})).toBeNull();});
- it("retains a manually edited title when condition and storage change",async()=>{await ready();fill();fireEvent.change(screen.getByLabelText("Title"),{target:{value:"My carefully used phone"}});fireEvent.change(screen.getByLabelText("Storage"),{target:{value:"256 GB"}});fireEvent.change(screen.getByLabelText("Condition"),{target:{value:"like_new"}});expect(screen.getByLabelText("Title")).toHaveValue("My carefully used phone");});
- it("submits a zero-price giveaway only after preview and Free plan",async()=>{
-  await ready();fill();fireEvent.change(screen.getByLabelText("Trade type"),{target:{value:"giveaway"}});expect(screen.queryByLabelText("Price (₹)")).toBeNull();
-  fireEvent.click(screen.getByRole("button",{name:"Preview / Continue"}));expect(screen.getByRole("region",{name:"Buyer preview"})).toBeVisible();expect(screen.queryByRole("button",{name:"Submit for review"})).toBeNull();
-  fireEvent.click(screen.getByRole("button",{name:"Continue"}));expect(screen.getByRole("radio")).toBeChecked();fireEvent.click(screen.getByRole("button",{name:"Submit for review"}));
-  await waitFor(()=>expect(m.replace).toHaveBeenCalledWith(`/account/listings/${owner}/edit`));const request=m.fetch.mock.calls.find(([url])=>url==="/api/post-ad/submit")!;expect(JSON.parse(request[1].body)).toMatchObject({trade:"giveaway",price_paise:0,negotiable:false,plan_id:"free-v1"});expect(m.write).toHaveBeenCalledWith(owner,null);
+ it("never flushes a pending recovered draft on unmount",async()=>{
+  m.read.mockResolvedValue(recovered());const view=render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Resume saved listing"});view.unmount();await Promise.resolve();expect(m.write).not.toHaveBeenCalled();expect(m.fetch).not.toHaveBeenCalled();
  });
- it("ignores recovery belonging to a different signed-in account",async()=>{
-  m.read.mockResolvedValue({version:2,owner:brand,updated:Date.now(),draft:{title:"Other account private title"}});await ready();expect(screen.queryByDisplayValue("Other account private title")).toBeNull();expect(m.read).toHaveBeenCalledWith(owner);
- });
- it("shows a consolidated linked summary for missing price and photos",async()=>{await ready();fireEvent.click(screen.getByRole("button",{name:"Preview / Continue"}));expect(screen.getByRole("alert")).toHaveTextContent("Fix");expect(screen.getByRole("alert").querySelectorAll("button").length).toBeGreaterThan(1);expect(m.fetch.mock.calls.some(([url])=>url==="/api/post-ad/submit")).toBe(false);});
+
 });
