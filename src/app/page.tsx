@@ -14,6 +14,7 @@ import { SellerCta } from "@/components/home/SellerCta";
 import { searchFiltersSchema } from "@/types/listing";
 import { resolvePublicArea } from "@/lib/location/public-areas";
 import { z } from "zod";
+import "./home-premium.css";
 
 export const metadata = {
   title: "FairSwap.in — India's Local Classifieds Marketplace",
@@ -39,17 +40,20 @@ export default async function HomePage({ searchParams }: HomePageProps = {}) {
   ]);
   return <>
     <IntroGate />
-    <Header />
-    <main className="flex-1">
-      <HomeDiscovery key={JSON.stringify(params)} categories={categories.map(({ id, slug, name }) => ({ id, slug, name }))} initialArea={area} initialFilters={filters} restoreSaved={!hasExplicitLocation} />
-      <div className="fs-surface-cream">
-        <Suspense key={area ? `${area.city}:${area.locality ?? ""}` : "all-india"} fallback={<RecentListingsSkeleton />}><RecentListingsSection area={area} /></Suspense>
-      </div>
-      <div className="fs-surface-mint"><Reveal><SellerCta /></Reveal></div>
-      <SafetyBand />
-      <div className="fs-surface-sky"><HomepageStory /></div>
-    </main>
-    <Footer />
+    {/* Homepage 4.5 palette is scoped to this wrapper (see home-premium.css); other routes keep the root tokens. */}
+    <div className="fs-home-plum flex min-h-full flex-1 flex-col">
+      <Header variant="home" />
+      <main className="flex-1">
+        <HomeDiscovery key={JSON.stringify(params)} categories={categories.map(({ id, slug, name }) => ({ id, slug, name }))} initialArea={area} initialFilters={filters} restoreSaved={!hasExplicitLocation} />
+        <div className="fs-plum-ivory">
+          <Suspense key={area ? `${area.city}:${area.locality ?? ""}` : "all-india"} fallback={<RecentListingsSkeleton />}><RecentListingsSection area={area} /></Suspense>
+        </div>
+        <div className="fs-plum-lavender"><HomepageStory /></div>
+        <SafetyBand />
+        <div className="fs-plum-ivory"><Reveal><SellerCta /></Reveal></div>
+      </main>
+      <Footer variant="home" />
+    </div>
     <PremiumIndiaIntro />
   </>;
 }

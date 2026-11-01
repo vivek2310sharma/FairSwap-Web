@@ -1,0 +1,168 @@
+/*
+ * Homepage 4.5 — Midnight Plum & Champagne.
+ * Imported only by src/app/page.tsx and scoped to `.fs-home-plum` (and its `.fs-plum-*` zones), so root tokens and
+ * every other route keep their existing palette. Tailwind's semantic utilities (bg-card, text-muted, bg-primary ...)
+ * read `--color-*`; those are resolved at :root, so each zone re-declares the `--color-*` values itself.
+ */
+.fs-home-plum,
+.fs-plum-light {
+  --color-background: #FFF9F5;
+  --color-foreground: #312432;
+  --color-muted: #5F5064;
+  --color-border: #E6D7D3;
+  --color-surface: #FFF9F5;
+  --color-card: #FFFFFF;
+  --color-subtle: #F6EAEB;
+  --fs-subtle: #F6EAEB;
+  --color-primary: #271B38;
+  --color-primary-hover: #3B2443;
+  --color-on-primary: #FFF8F1;
+  --fs-primary: #271B38;
+  --fs-primary-hover: #3B2443;
+  --fs-on-primary: #FFF8F1;
+  --color-link: #9E4660;
+  --fs-link: #9E4660;
+  --fs-icon: #9E4660;
+  --fs-icon-surface: #F6EAEB;
+  --fs-focus: #9E4660;
+  --fs-tone-a: #FFF9F5;
+  --fs-tone-b: #F6EAEB;
+  --fs-tone-c: #F8E1D0;
+  --fs-ink: #3B2443;
+  --fs-on-ink: #FFF8F1;
+  --fs-ink-muted: #E3D7EA;
+  --fs-ink-accent: #F5D6BE;
+  --fs-ink-line: rgb(245 214 190 / 0.3);
+  background: #FFF9F5;
+  color: #312432;
+}
+
+.fs-plum-dark {
+  --color-background: #271B38;
+  --color-foreground: #FFF8F1;
+  --color-muted: #E3D7EA;
+  --color-border: rgb(245 214 190 / 0.3);
+  --color-surface: #271B38;
+  --color-card: #2F2141;
+  --color-subtle: rgb(245 214 190 / 0.14);
+  --fs-subtle: rgb(245 214 190 / 0.14);
+  --color-primary: #F5D6BE;
+  --color-primary-hover: #FFE6D3;
+  --color-on-primary: #271B38;
+  --fs-primary: #F5D6BE;
+  --fs-primary-hover: #FFE6D3;
+  --fs-on-primary: #271B38;
+  --color-link: #F5D6BE;
+  --fs-link: #F5D6BE;
+  --fs-icon: #F5D6BE;
+  --fs-focus: #F5D6BE;
+  color: #FFF8F1;
+}
+
+/* ---- Hero ---- */
+.fs-home-plum .fs-hero {
+  isolation: isolate;
+  background:
+    radial-gradient(28rem 16rem at 12% 6%, rgb(245 214 190 / 0.16), transparent 70%),
+    radial-gradient(34rem 18rem at 90% 0%, rgb(158 70 96 / 0.4), transparent 70%),
+    radial-gradient(44rem 14rem at 50% 108%, rgb(245 214 190 / 0.14), transparent 70%),
+    linear-gradient(180deg, #271B38, #3B2443);
+}
+/* Restrained curve + ivory wave closing the hero. Pure CSS, no raster or SVG art. */
+.fs-home-plum .fs-hero::before {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -11rem;
+  height: 20rem;
+  border: 1px solid rgb(245 214 190 / 0.2);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}
+.fs-home-plum .fs-hero::after {
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  bottom: -1px;
+  height: 2rem;
+  background: #FFF9F5;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  pointer-events: none;
+}
+.fs-plum-safety a {
+  border: 1px solid rgb(245 214 190 / 0.35);
+  background: rgb(255 248 241 / 0.07);
+}
+.fs-plum-safety a:hover,
+.fs-plum-safety a:focus-visible {
+  border-color: #F5D6BE;
+  background: rgb(245 214 190 / 0.16);
+}
+
+/* ---- Header (dark variant of the shared header) ---- */
+.fs-header-plum {
+  background: rgb(39 27 56 / 0.94);
+  border-bottom: 1px solid rgb(245 214 190 / 0.28);
+  padding-top: env(safe-area-inset-top);
+}
+.fs-header-plum .text-red-600 { color: #FFB8C6; }
+
+/* ---- Sections ---- */
+.fs-plum-ivory { background: #FFF9F5; }
+.fs-plum-lavender { background: linear-gradient(180deg, #EDE5F3, #F6EAEB); }
+
+/* Category tiles and listing cards: thin champagne outline + small raise on hover/focus only. */
+.fs-home-plum #home-category-rail a { transition: box-shadow 0.25s ease, transform 0.25s ease; }
+.fs-home-plum #home-category-rail a:hover,
+.fs-home-plum #home-category-rail a:focus-visible { box-shadow: 0 0 0 2px #F5D6BE, 0 10px 22px -12px rgb(39 27 56 / 0.5); }
+.fs-home-plum [data-gallery-root] { transition: box-shadow 0.25s ease, transform 0.25s ease; }
+.fs-home-plum [data-gallery-root]:hover,
+.fs-home-plum [data-gallery-root]:focus-within { box-shadow: 0 0 0 2px #F5D6BE, 0 14px 28px -14px rgb(39 27 56 / 0.4); }
+@media (prefers-reduced-motion: no-preference) {
+  .fs-home-plum #home-category-rail a:hover,
+  .fs-home-plum [data-gallery-root]:hover { transform: translateY(-2px); }
+  .fs-plum-safety a:hover { transform: translateY(-2px); }
+}
+
+/* ---- Footer ---- */
+.fs-footer-plum {
+  position: relative;
+  background:
+    radial-gradient(40rem 18rem at 85% 100%, rgb(158 70 96 / 0.3), transparent 70%),
+    linear-gradient(180deg, #3B2443, #271B38 55%);
+}
+.fs-footer-plum::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -5%;
+  right: -5%;
+  height: 2rem;
+  background: #FFF9F5;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  pointer-events: none;
+}
+.fs-wordmark {
+  font-family: Georgia, "Times New Roman", "Noto Serif", serif;
+  font-weight: 500;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  font-size: clamp(3rem, 14vw, 7rem);
+  white-space: nowrap;
+  color: #F5D6BE;
+  background: linear-gradient(180deg, #FFF8F1, #F5D6BE 55%, #C98F9C);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  user-select: none;
+}
+@media (min-width: 64rem) { .fs-wordmark { font-size: clamp(3.5rem, 7.5vw, 7rem); } }
+@media (prefers-reduced-motion: no-preference) {
+  .fs-footer-plum [data-reveal="in"] .fs-wordmark { animation: fs-wordmark-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  @keyframes fs-wordmark-in { from { transform: translateY(12px); opacity: 0.4; } }
+}
+.fs-footer-plum a { min-height: 44px; display: inline-flex; align-items: center; }
+.fs-footer-plum a:hover { color: #FFF8F1; text-decoration: underline; }
