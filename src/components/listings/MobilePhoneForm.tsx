@@ -11,7 +11,7 @@ import PincodeLocationPicker from "./PincodeLocationPicker";
 import PreListingMediaUploader, { type PostingPhoto } from "./PreListingMediaUploader";
 import SearchCombobox from "./posting/SearchCombobox";
 import MobileBuyerPreview from "./posting/MobileBuyerPreview";
-import { STEP_LABELS, validatePhoneWizard, reachablePhoneStep, blankPhoneDraft, generatedPhoneTitle, phoneRecoverySchema, fieldStep, type PhoneDraft, type PhoneRecovery } from "./posting/mobile-wizard";
+import { STEP_LABELS, validatePhoneStep, validatePhoneWizard, reachablePhoneStep, blankPhoneDraft, generatedPhoneTitle, phoneRecoverySchema, fieldStep, type PhoneDraft, type PhoneRecovery } from "./posting/mobile-wizard";
 import styles from "./posting/Posting.module.css";
 type Issue = {
     field: string;
@@ -162,30 +162,42 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
         return; resolved.current = true; const value = resume ? recovery : null; const session = value?.draft.session_id || crypto.randomUUID(); setDraft(value ? { ...value.draft, session_id: session } : { ...blankPhoneDraft(), session_id: session }); setPhotos(value?.photos.map(p => ({ ...p, state: p.state === "uploading" ? "failed" : p.state })) ?? []); setManualTitle(value?.manualTitle ?? false); setPriceText(value?.priceText ?? ""); setArea(value?.area ?? ""); setStep(0); setRecovery(null); void initializeSession(session); }
     function draftSubmission() { return { ...draft, title, price_paise: draft.trade === "giveaway" ? 0 : Math.round(Number(priceText) * 100), negotiable: draft.trade === "sell" && draft.negotiable, pin_code: draft.pin_code, city_id: draft.city_id, locality_id: draft.locality_id, media_ids: photos.filter(p => p.state === "ready").map(p => p.id), other_model: model?.other ? draft.other_model : "", warranty_until: draft.included.includes("Under warranty") ? draft.warranty_until : "" }; }
     function submission() { const data = form.current ? new FormData(form.current) : null; return { ...draftSubmission(), pin_code: String(data?.get("pin_code") ?? draft.pin_code), city_id: String(data?.get("city_id") ?? draft.city_id), locality_id: String(data?.get("locality_id") ?? draft.locality_id) }; }
+    const localizeIssues = (values: Issue[]) => values.map(i => ({ ...i, message: ({ storage: "Choose storage.", condition: "Choose the condition that best fits.", ram: "Choose RAM or leave it unspecified." } as Record<string,string>)[i.field] ?? phoneValidationText("en", i.field, i.message) }));
     function getIssues() {
         const result = validatePhoneWizard(submission(), catalogue, photos, priceText);
-        return { ...result, issues: result.issues.map(i => ({ ...i, message: ({ storage: "Choose storage.", condition: "Choose the condition that best fits.", ram: "Choose RAM or leave it unspecified." } as Record<string,string>)[i.field] ?? phoneValidationText("en", i.field, i.message) })) };
+        return { ...result, issues: localizeIssues(result.issues) };
+    }
+    function showIssues(values: Issue[]) {
+        const first = values[0];
+        setIssues(first ? values.filter(i => fieldStep(i.field) === fieldStep(first.field)) : []);
+        if (first) focusField(first.field);
     }
     function navigate(target: number) {
-        if (busy || maintenance) return;
-        if (target <= step) { setStep(target); setIssues([]); return; }
-        const blocked = getIssues().issues.filter(i => fieldStep(i.field) < target);
-        setIssues(blocked);
-        if (blocked.length) { focusField(blocked[0].field); return; }
-        setStep(target);
+        // Native disabled blocks pointer/keyboard activation; guard synthetic/stale events too.
+        if (busy || maintenance || (target > step && target > reachable)) return;
+        setStep(target); setIssues([]);
     }
     // Focus in the same commit as step rendering. Timers can steal focus from a fast typist.
     useLayoutEffect(()=>{if(pendingFocus.current){focusPostingField(pendingFocus.current);pendingFocus.current=null;}else heading.current?.focus();},[step]);
-    function focusField(field:string){const validation=getIssues().issues; const first=validation.find(i=>fieldStep(i.field)<fieldStep(field)); if(first) field=first.field; const nextStep=fieldStep(field);if(nextStep===step){focusPostingField(field);return;}pendingFocus.current=field;setStep(nextStep);}
-    function next() { navigate(Math.min(5, step + 1)); }
+    function focusField(field: string) {
+        const nextStep = fieldStep(field);
+        if (nextStep === step) { focusPostingField(field); return; }
+        pendingFocus.current = field; setStep(nextStep);
+    }
+    function next() {
+        if (busy || maintenance) return;
+        const current = step === 4 ? getIssues().issues : localizeIssues(validatePhoneStep(step, submission(), catalogue, photos, priceText));
+        if (current.length) { showIssues(current); return; }
+        // A background media refresh can invalidate an earlier step while editing.
+        if (reachable < step) { showIssues(getIssues().issues); return; }
+        setIssues([]); setStep(Math.min(5, step + 1));
+    }
     async function submit() {
         if (submitting.current || busy || maintenance || !sessionReady || recovery)
             return;
         const value = getIssues();
         if (value.issues.length || !value.parsed.success) {
-            setIssues(value.issues);
-            if (value.issues[0])
-                focusField(value.issues[0].field);
+            showIssues(value.issues);
             return;
         }
         submitting.current = true;
@@ -198,7 +210,7 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
                 if (Array.isArray(result.issues)) {
                     const safe = z.array(z.object({ field: z.string(), message: z.string() })).safeParse(result.issues);
                     if (safe.success)
-                        setIssues(safe.data);
+                        showIssues(safe.data.slice().sort((a,b) => fieldStep(a.field)-fieldStep(b.field)));
                 }
                 throw new Error(result.error);
             }
@@ -217,7 +229,7 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
         }
     }
     const issue = (field: string) => issues.find(i => i.field === field)?.message;
-    const error = (field: string) => issue(field) ? <p id={`mobile-${field}-error`} className={styles.error}><CircleAlert aria-hidden="true"/><span>{issue(field)}</span></p> : null;
+    const error = (field: string) => issue(field) ? <p id={`mobile-${field}-error`} role="alert" className={styles.error}><CircleAlert aria-hidden="true"/><span>{issue(field)}</span></p> : null;
     const attributes = (field: string) => ({ id: `mobile-${field}`, "aria-invalid": !!issue(field), "aria-describedby": issue(field) ? `mobile-${field}-error` : undefined });
     const field = (key: "other_model" | "warranty_until" | "description", label: string, node: React.ReactNode) => <div><label htmlFor={`mobile-${key}`}>{label}{node}</label>{error(key)}</div>;
     if (!loaded)
@@ -236,8 +248,8 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
         retryInFlight.current = false;
     } }}>Retry photo upload</button>}
 
- <div className={styles.columns}><div><ol className={styles.steps} aria-label="Posting steps">{STEP_LABELS.map((label, i) => <li key={label}><button type="button" disabled={busy || maintenance} aria-disabled={i > step && i > reachable} data-complete={i < reachable} aria-label={`Step ${i + 1}: ${label}`} aria-current={step === i ? "step" : undefined} onClick={() => navigate(i)}><b>{i < reachable ? <><Check aria-hidden="true" size={18}/><span className="sr-only">Completed</span></> : i + 1}</b><span>{label}</span></button></li>)}</ol>
- {issues.length > 0 && <div role="alert" className={styles.errorBox}><strong>Check the highlighted details</strong>{issues.map(i => <button type="button" key={i.field} onClick={() => focusField(i.field)}>{i.message}</button>)}</div>}
+ <div className={styles.columns}><div><ol className={styles.steps} aria-label="Posting steps">{STEP_LABELS.map((label, i) => <li key={label}><button type="button" disabled={busy || maintenance || (i > step && i > reachable)} data-complete={i < reachable} aria-label={`Step ${i + 1}: ${label}`} aria-current={step === i ? "step" : undefined} onClick={() => navigate(i)}><b>{i < reachable ? <><Check aria-hidden="true" size={18}/><span className="sr-only">Completed</span></> : i + 1}</b><span>{label}</span></button></li>)}</ol>
+
  <form ref={form} noValidate onSubmit={e => { e.preventDefault(); if (step < 5)
         next(); }}><fieldset disabled={busy || maintenance} className="min-w-0">
  <section {...attributes("media_ids")} tabIndex={-1} className={styles.card} style={{ display: step === 0 ? undefined : "none" }} aria-label="Photos">{sessionReady ? <PreListingMediaUploader photos={photos} onChange={p => { setPhotos(p); clearIssue("media_ids"); }} sessionId={draft.session_id} disabled={busy || maintenance || frozen} onReady={() => refresh(draft.session_id)}/> : <p className={styles.muted}>Your photos will be available when the photo session is ready.</p>}{error("media_ids")}</section>
@@ -245,7 +257,7 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
  <section className={styles.card} style={{ display: step === 2 ? undefined : "none" }} aria-label="Condition and description"><h2>A little honesty goes a long way.</h2><div {...attributes("condition")} tabIndex={-1} role="group" aria-label="Condition">{Object.entries(CONDITIONS).map(([v, label]) => <button type="button" key={v} className={`${styles.button} ${styles.condition} ${draft.condition === v ? styles.selected : ""}`} aria-pressed={draft.condition === v} onClick={() => update("condition", v as PhoneDraft["condition"])}>{label}{draft.condition === v ? <Check size={20} aria-hidden="true"/> : <Circle size={20} aria-hidden="true"/>}</button>)}</div>{error("condition")}<fieldset><legend>What’s included? (seller-declared)</legend><div className={styles.accessories}>{INCLUDED.map(item => <button key={item} type="button" className={`${styles.button} ${draft.included.includes(item) ? styles.selected : ""}`} aria-pressed={draft.included.includes(item)} onClick={() => { setDraft(d => ({ ...d, included: d.included.includes(item) ? d.included.filter(i => i !== item) : [...d.included, item], warranty_until: item === "Under warranty" && d.included.includes(item) ? "" : d.warranty_until })); clearIssue("warranty_until"); }}>{draft.included.includes(item) && <Check size={18} aria-hidden="true"/>}{item}</button>)}</div></fieldset>{draft.included.includes("Under warranty") && field("warranty_until", "Warranty expiry month / year", <input {...attributes("warranty_until")} type="month" min={new Date().toISOString().slice(0, 7)} value={draft.warranty_until} onChange={e => update("warranty_until", e.target.value)}/>)}<div><label htmlFor="mobile-title">Title<input {...attributes("title")} maxLength={150} value={title} onChange={e => { setManualTitle(true); update("title", e.target.value); }}/></label>{error("title")}<button type="button" className={styles.back} onClick={() => { setManualTitle(false); clearIssue("title"); }}><RotateCcw size={16} aria-hidden="true"/>Use automatically generated title</button></div>{field("description", "Description", <textarea {...attributes("description")} rows={5} maxLength={5000} value={draft.description} placeholder="Battery health, repairs, visible wear and why you’re selling…" onChange={e => update("description", e.target.value)}/>)}<p className={styles.muted}>10–5,000 characters. Keep contact and payment details in FairSwap chat.</p></section>
  <section className={styles.card} style={{ display: step === 3 ? undefined : "none" }} aria-label="Price"><h2>Make it a fair deal.</h2><div className={styles.choices} role="group" aria-label="Trade type">{(["sell", "giveaway"] as const).map(v => <button type="button" key={v} className={`${styles.button} ${draft.trade === v ? styles.selected : ""}`} aria-pressed={draft.trade === v} onClick={() => { setDraft(d => ({ ...d, trade: v, negotiable: v === "giveaway" ? false : d.negotiable })); clearIssue("price_paise"); }}>{v === "sell" ? "Sell" : "Give away"}</button>)}</div>{draft.trade === "sell" ? <><div><label htmlFor="mobile-price_paise">Price (₹)<input {...attributes("price_paise")} inputMode="decimal" value={priceText} maxLength={20} onChange={e => { setPriceText(e.target.value); clearIssue("price_paise"); }}/></label>{error("price_paise")}<p className={styles.price}>{price}</p></div><button type="button" role="switch" aria-checked={draft.negotiable} className={styles.switch} onClick={() => update("negotiable", !draft.negotiable)}><span>Negotiable</span><span className={styles.track} aria-hidden="true"><span /></span></button></> : <p className={styles.notice}>Your listing will show “Free”. No asking price or negotiation is needed.</p>}</section>
  <section className={`${styles.card} ${styles.location}`} style={{ display: step === 4 ? undefined : "none" }} aria-label="Location"><h2>Find someone nearby.</h2><PincodeLocationPicker validationErrors={{ pin_code: issue("pin_code"), city_id: issue("city_id"), locality_id: issue("locality_id") }} key={`${ownerId}-${draft.session_id}`} locale="en" hideLandmark onResolvedChange={locationChanged} cities={cities} initialPinCode={draft.pin_code} initialCityId={draft.city_id} initialLocalityId={draft.locality_id}/>{error("pin_code")}{error("city_id")}{error("locality_id")}</section>
- {step === 5 && <section className={styles.card} aria-label="Submission review"><h2>Review your listing</h2><p>Check your photos and details in the buyer preview.</p><fieldset><legend>Listing plan</legend><label className="flex min-h-12 items-center gap-3"><input type="radio" name="plan_id" value="free-v1" checked readOnly style={{ width: 20, minHeight: 20 }}/>Free — submit your listing for review</label></fieldset><p className={styles.muted}>Pickup only. FairSwap does not currently verify IMEI or device authenticity.</p>{STEP_LABELS.map((label, i) => <button type="button" key={label} className={styles.button} onClick={() => setStep(i)}>Edit {label}</button>)}</section>}
+ {step === 5 && <section className={styles.card} aria-label="Submission review"><h2>Review your listing</h2><p>Check your photos and details in the buyer preview.</p><fieldset><legend>Listing plan</legend><label className="flex min-h-12 items-center gap-3"><input type="radio" name="plan_id" value="free-v1" checked readOnly style={{ width: 20, minHeight: 20 }}/>Free — submit your listing for review</label></fieldset><p className={styles.muted}>Pickup only. FairSwap does not currently verify IMEI or device authenticity.</p>{STEP_LABELS.map((label, i) => <button type="button" key={label} className={styles.button} onClick={() => navigate(i)}>Edit {label}</button>)}</section>}
  </fieldset></form></div><MobileBuyerPreview title={title} price={price} description={draft.description} area={area} photos={photos} facts={[draft.condition ? CONDITIONS[draft.condition] : "", draft.storage, draft.ram ? `${draft.ram} RAM` : "", draft.trade === "sell" && draft.negotiable ? "Negotiable" : ""]}/></div>
  <aside className={styles.safety}><ShieldAlert aria-hidden="true" size={22}/><p>To receive money, you never need to enter a UPI PIN, scan a payment QR code or share an OTP.</p></aside>
  {frozen && <p role="status" className={styles.notice}>Your photos are prepared for submission. Retry the same submission to complete it.</p>}
