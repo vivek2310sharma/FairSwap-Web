@@ -17,7 +17,6 @@ const SAFETY_REMINDERS = [
   { icon: Eye, text: "Inspect before paying", hint: "Check the item in person first.", tone: "bg-sky-100 text-sky-800" },
   { icon: Ban, text: "Avoid advance UPI payments", hint: "Never scan a QR or approve a collect request to receive money.", tone: "bg-amber-100 text-amber-900" },
 ] as const;
-const MAP_TEXTURE = "/animations/fairswap-neighbourhood-v4/neighbourhood-map-desktop.svg";
 
 /**
  * The selected public area lives in the homepage URL (`/?city=&locality=`) so the server-rendered
@@ -35,9 +34,6 @@ export function HomeDiscovery({ categories, initialArea = null, initialFilters =
   const href = (category = initialFilters.category) => discoveryHref({ q: query, category }, area);
   return <>
   <section className="fs-hero relative overflow-hidden">
-    {/* Decorative provided map texture, faint, never a real map. */}
-    {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img src={MAP_TEXTURE} alt="" aria-hidden="true" width={1440} height={820} loading="lazy" decoding="async" data-testid="hero-map-texture" className="pointer-events-none absolute inset-y-0 right-0 hidden h-full w-auto max-w-none opacity-[0.07] sm:block" />
     <div className="fs-container relative pb-3 pt-3 sm:pb-5 sm:pt-5">
       <div className="grid items-stretch gap-3 sm:grid-cols-[minmax(0,1fr)_38%] lg:grid-cols-[minmax(0,1fr)_minmax(0,34rem)_minmax(0,1fr)] lg:gap-6">
         <div className="min-w-0 lg:col-start-2 lg:row-start-1 lg:self-center">
