@@ -1,3 +1,22 @@
+# Post Ad UX V2.1 corrective patch
+
+1 November 2026. The correction below supersedes the V2 photo-skipping and recovered-step behavior described in the historical implementation record below.
+
+- `.journey` now uses explicit full width, a 1160px maximum, horizontal-only auto margins and top anchoring. Account content permits shrinking without horizontal overflow. Filtered/empty category search shares the default grid and side-panel scaffold.
+- Current canonical Zod results plus catalogue membership, conditional warranty, selling-price and photo readiness checks govern progression. Forward navigation validates every preceding step; backward editing remains available. Errors focus the first invalid field, including step-link and summary navigation. Completion indicators reflect current validity; changing earlier details invalidates later access. The validation summary sits below the stepper; the mobile heading reserves equal space for numbered steps and Review.
+- Resume retains all data, photo retry blobs/IDs and session UUID, but starts at Photos. Stored step numbers grant no access. Final Review/submission still validates the full schema and media state; existing server authorization, upload/retry and submission code remain authoritative.
+- Updated automated regressions remove intentional photo skipping and cover blank jumps, incomplete details/focus, completion invalidation, giveaway/warranty/price/PIN gates, sequential Review, stale recovery, real compression/upload failure/retry, category search `ip`/`iph`/clear/empty, responsive geometry, keyboard controls and reduced motion.
+
+No Git commands or hosted operations were run for V2.1. Baseline is the task-start local filesystem V2 source; latest approved Production parity is NOT VERIFIED. The archive's unified diffs and SHA-256 manifest identify the exact task-start and corrected bytes. Real environment files, dependencies, generated outputs and unrelated changes are excluded.
+
+Delivery remains existing GitHub CI → Staging/Test (FairSwapTest) → automated verification → selective Production (FairSwapProd) → automated post-deployment verification. ChatGPT owns all GitHub/release operations. No migration or environment step. Rollback: scoped Git revert or previous Vercel deployment. Owner Production checks use automated health/journey/error evidence; no owner predeployment testing is requested.
+
+Final local results: PASS typecheck; PASS lint (zero errors, three pre-existing warnings); PASS 92 focused unit tests across nine files; PASS seven Playwright tests; PASS production webpack build in an isolated copy without real environment files. Detailed command results are recorded in the archive `_handoff/TEST-EVIDENCE.md`. Fixture tests use real components with intercepted APIs and system fonts; they do not establish hosted acceptance, device-performance benchmarks, assistive-technology certification or Hindi localization (this wizard remains English). The production webpack build retains Manrope and the existing font setup.
+
+---
+
+## Historical V2 implementation record
+
 # Post Ad UX V2 — local implementation handoff
 
 1 November 2026. Local source implementation, not hosted acceptance. Modern Expressive V1.2 is the visual reference; its mock data and standalone runtime are not imported into production.
