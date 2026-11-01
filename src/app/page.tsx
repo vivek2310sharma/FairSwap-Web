@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { Reveal } from "@/components/home/Reveal";
 import { HomeDiscovery } from "@/components/listings/HomeDiscovery";
 import { RecentListingsSection } from "@/components/listings/RecentListingsSection";
 import { RecentListingsSkeleton } from "@/components/listings/RecentListingsSkeleton";
 import { getPublicCategories } from "@/lib/discovery/queries";
 import { PremiumIndiaIntro } from "@/components/home/PremiumIndiaIntro";
-import { ReplayIntroLink } from "@/components/home/ReplayIntroLink";
 import { IntroGate } from "@/components/home/IntroGate";
 import { SafetyBand } from "@/components/home/SafetyBand";
 import { HomepageStory } from "@/components/home/HomepageStory";
@@ -42,12 +42,13 @@ export default async function HomePage({ searchParams }: HomePageProps = {}) {
     <Header />
     <main className="flex-1">
       <HomeDiscovery key={JSON.stringify(params)} categories={categories.map(({ id, slug, name }) => ({ id, slug, name }))} initialArea={area} initialFilters={filters} restoreSaved={!hasExplicitLocation} />
-      <Suspense key={area ? `${area.city}:${area.locality ?? ""}` : "all-india"} fallback={<RecentListingsSkeleton />}><RecentListingsSection area={area} /></Suspense>
-      <SellerCta />
+      <div className="fs-surface-cream">
+        <Suspense key={area ? `${area.city}:${area.locality ?? ""}` : "all-india"} fallback={<RecentListingsSkeleton />}><RecentListingsSection area={area} /></Suspense>
+      </div>
+      <div className="fs-surface-mint"><Reveal><SellerCta /></Reveal></div>
       <SafetyBand />
-      <HomepageStory />
+      <div className="fs-surface-sky"><HomepageStory /></div>
     </main>
-    <ReplayIntroLink />
     <Footer />
     <PremiumIndiaIntro />
   </>;

@@ -50,9 +50,12 @@ test.describe("Homepage 3.2 layout (V4)", () => {
       expect(header.height).toBeLessThanOrEqual(65); // 64px bar + 1px border
       await expect(searchbox(page)).toHaveCount(1);
       const form = await box(page, 'form[role="search"]');
-      const collage = await box(page, '[data-testid="mascots-wide"]');
-      expect(form.x + form.width).toBeLessThanOrEqual(collage.x + 1); // collage never sits under the search
-      expect(collage.x + collage.width).toBeLessThanOrEqual(width);
+      const man = await box(page, '[data-testid="mascots-wide"] img[src*="%2Fman-hero"]');
+      const woman = await box(page, '[data-testid="mascots-wide"] img[src*="%2Fwoman-hero"]');
+      expect(man.x + man.width).toBeLessThanOrEqual(form.x + 1); // man | search | woman: neither figure sits under the search
+      expect(woman.x).toBeGreaterThanOrEqual(form.x + form.width - 1);
+      expect(woman.x + woman.width).toBeLessThanOrEqual(width);
+      expect(Math.abs(man.height - woman.height)).toBeLessThanOrEqual(2); // equal painted height (same padding ratio), never stretched
       expect(await noHorizontalScroll(page)).toBe(true);
     });
   }
@@ -78,7 +81,12 @@ test.describe("Homepage 3.2 layout (V4)", () => {
   test("safety microbar shows the three truthful lines and no verification claims", async ({ page }) => {
     await page.goto("/");
     const bar = page.getByRole("list", { name: "Safety reminders" });
-    await expect(bar.getByRole("listitem")).toHaveText(["Meet in a public place", "Inspect before paying", "Avoid advance UPI payments"]);
+    await expect(bar.getByRole("listitem").getByRole("link")).toHaveCount(3);
+    for (const [title, hint] of [["Meet in a public place", /public|friend/i], ["Inspect before paying", /in person/i], ["Avoid advance UPI payments", /QR|collect request/i]] as const) {
+      const card = bar.getByRole("link", { name: new RegExp(title) });
+      await expect(card).toHaveAttribute("href", "/safety");
+      await expect(card).toContainText(hint);
+    }
     await expect(page.locator("main")).not.toContainText(/escrow|guaranteed|payment protection/i);
   });
 

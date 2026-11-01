@@ -16,10 +16,12 @@ export function HeroMascots({ variant }: { variant: "compact" | "wide" }) {
       </div>
     );
   }
+  // lg+: the wrapper spans the hero grid as a subgrid so each figure is a cell beside the centred copy (man | copy | woman).
+  // Both canvases carry the same ~1.5% transparent top/bottom padding, so equal CSS heights give equal painted heights.
   return (
-    <div aria-hidden="true" data-testid="mascots-wide" className="pointer-events-none flex h-full min-h-44 w-full items-end justify-center gap-2 lg:gap-6">
-      <Image src={`${BASE}/man-hero-480w.webp`} alt="" width={480} height={937} sizes="(max-width: 1023px) 18vw, 14vw" priority className="h-[16rem] w-auto lg:h-[19rem]" />
-      <Image src={`${BASE}/woman-hero-480w.webp`} alt="" width={480} height={1037} sizes="(max-width: 1023px) 18vw, 14vw" priority className="h-[17rem] w-auto lg:h-[20.5rem]" />
+    <div aria-hidden="true" data-testid="mascots-wide" className="pointer-events-none flex h-full min-h-44 w-full items-end justify-center gap-2 lg:col-span-3 lg:col-start-1 lg:row-start-1 lg:grid lg:grid-cols-subgrid">
+      <Image src={`${BASE}/man-hero-480w.webp`} alt="" width={480} height={937} sizes="(max-width: 1023px) 18vw, 14vw" priority className="h-[16rem] w-auto lg:col-start-1 lg:row-start-1 lg:justify-self-end lg:self-end lg:h-[19rem] 2xl:h-[22rem]" />
+      <Image src={`${BASE}/woman-hero-480w.webp`} alt="" width={480} height={1037} sizes="(max-width: 1023px) 18vw, 14vw" priority className="h-[16rem] w-auto lg:col-start-3 lg:row-start-1 lg:justify-self-start lg:self-end lg:h-[19rem] 2xl:h-[22rem]" />
     </div>
   );
 }

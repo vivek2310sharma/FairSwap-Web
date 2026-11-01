@@ -1,9 +1,9 @@
 import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Tag } from "lucide-react";
+import { MapPin } from "lucide-react";
 import type { PublicListingCard } from "@/types/listing";
 import { publicPriceFallback, type PublicFamilyDisplay } from "@/lib/discovery/family-display";
 import { FavouriteButton } from "./FavouriteButton";
+import { CardPhoto } from "./CardPhoto";
 
 /** The only listing fields a card reads, so public-only sources (such as /saved) can render it without private columns. */
 export type ListingCardData = Pick<PublicListingCard, "id" | "slug" | "title" | "condition" | "price_type" | "price_paise"> & {
@@ -45,34 +45,17 @@ export function ListingCard({
     poor: "For Parts",
   };
 
-  const coverUrl = listing.cover_photo?.id
-    ? `/api/listings/${listing.id}/media/${listing.cover_photo.id}/thumb`
-    : null;
-
   const isCompact = variant === "compact";
 
   if (variant === "editorial" || variant === "feature") {
     const feature = variant === "feature";
     const place = listing.locality?.name ? `${listing.locality.name}, ${listing.city?.name}` : listing.city?.name;
     return (
-      <div className={`group relative flex h-full flex-col overflow-hidden rounded-3xl bg-card ring-1 ring-border transition-shadow hover:shadow-lg ${feature ? "min-h-80 sm:min-h-[26rem]" : ""}`}>
+      <div data-gallery-root className={`group relative flex h-full flex-col overflow-hidden rounded-3xl bg-card ring-1 ring-border transition-shadow hover:shadow-lg ${feature ? "min-h-80 sm:min-h-[26rem]" : ""}`}>
         <div className={`z-10 w-full overflow-hidden bg-subtle ${feature ? "absolute inset-0" : "relative aspect-4/5 lg:aspect-square"}`}>
-          <Link href={listingHref} tabIndex={-1} aria-hidden="true" className="block h-full w-full focus:outline-hidden">
-          {coverUrl ? (
-            <Image
-              src={coverUrl}
-              alt={listing.title}
-              fill
-              sizes={feature ? "(max-width: 1024px) 100vw, 60vw" : "(max-width: 1024px) 50vw, 25vw"}
-              className="object-cover object-center motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105"
-              unoptimized={true}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted">
-              <Tag className="h-10 w-10 stroke-1 opacity-50" aria-hidden="true" />
-            </div>
-          )}
-          </Link>
+          <CardPhoto href={listingHref} listingId={listing.id} coverId={listing.cover_photo?.id ?? null} title={listing.title}
+            sizes={feature ? "(max-width: 1024px) 100vw, 60vw" : "(max-width: 1024px) 50vw, 25vw"}
+            imageClassName="object-cover object-center motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105" />
           {feature && <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent" aria-hidden="true" />}
           {listing.condition && (
             <span className="pointer-events-none absolute left-2.5 top-2.5 max-w-[calc(100%-3.75rem)] truncate rounded-full bg-black/65 px-2 py-1 text-[11px] sm:px-2.5 sm:text-xs font-semibold text-white backdrop-blur-xs">
@@ -102,29 +85,12 @@ export function ListingCard({
   }
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all hover:border-primary/50 hover:shadow-md">
+    <div data-gallery-root className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xs transition-all hover:border-primary/50 hover:shadow-md">
       {/* Thumbnail Container */}
       <div className="relative z-10 aspect-4/3 w-full overflow-hidden bg-subtle">
-        <Link href={listingHref} tabIndex={-1} aria-hidden="true" className="block h-full w-full focus:outline-hidden">
-          {coverUrl ? (
-            <Image
-              src={coverUrl}
-              alt={listing.title}
-              fill
-              sizes={
-                isCompact
-                  ? "(max-width: 360px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              }
-              className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
-              unoptimized={true}
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted">
-              <Tag className="h-10 w-10 stroke-1 opacity-50" aria-hidden="true" />
-            </div>
-          )}
-        </Link>
+        <CardPhoto href={listingHref} listingId={listing.id} coverId={listing.cover_photo?.id ?? null} title={listing.title}
+          sizes={isCompact ? "(max-width: 360px) 100vw, (max-width: 1024px) 50vw, 33vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"}
+          imageClassName="object-cover object-center transition-transform duration-300 group-hover:scale-105" />
 
         {/* Condition Tag */}
         {listing.condition && (

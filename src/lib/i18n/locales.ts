@@ -23,6 +23,10 @@ export const LOCALES: readonly LocaleOption[] = [
   { code: "ml", label: "Malayalam", nativeLabel: "മലയാളം", enabled: false },
 ];
 
+/** Locales shown in the user-facing header/footer selector. The rest stay in the registry, hidden until translated. */
+export const USER_FACING_LOCALE_CODES: readonly string[] = ["en", "hi"];
+export const USER_FACING_LOCALES: readonly LocaleOption[] = LOCALES.filter((locale) => USER_FACING_LOCALE_CODES.includes(locale.code));
+
 export function isSelectableLocale(code: string): boolean {
   return LOCALES.some((locale) => locale.code === code && locale.enabled);
 }

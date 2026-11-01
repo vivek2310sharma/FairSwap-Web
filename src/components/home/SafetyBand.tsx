@@ -5,7 +5,7 @@ import { InteractiveSafety } from "./InteractiveSafety";
 export function SafetyBand() {
   return (
     <section id="safety" aria-labelledby="safety-heading" className="fs-ink-band scroll-mt-20">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-12 lg:gap-12 lg:px-8 lg:py-14">
+      <div className="fs-container grid gap-8 py-10 lg:grid-cols-12 lg:gap-12 lg:py-14">
         <div className="lg:col-span-5">
           <Shield className="h-8 w-8 text-(--fs-ink-accent)" aria-hidden="true" />
           <h2 id="safety-heading" className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl">Your safety matters</h2>
