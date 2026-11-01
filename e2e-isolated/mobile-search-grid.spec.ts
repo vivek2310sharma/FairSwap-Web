@@ -139,28 +139,48 @@ test.describe("SRCH-01 Two-Column Mobile Search Grid Verification (Real React Co
     await expect(page).toHaveURL(/\/listings\/iphone-15-pro-max-mumbai/);
   });
 
-  test("favourite button tap executes independently without triggering listing navigation", async ({ page }) => {
+  test("guest favourite tap saves on this device without login or listing navigation, and toggles off", async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
     await page.goto("/search");
 
     const resultsGrid = page.getByRole("main").getByTestId("search-results-grid");
     await expect(resultsGrid).toBeVisible({ timeout: 10000 });
-      // React may stream hidden replacement content during hydration. It must
-      // settle to one grid in the entire DOM, not merely one matching landmark.
-      await expect(page.getByTestId("search-results-grid")).toHaveCount(1);
+    // React may stream hidden replacement content during hydration. It must
+    // settle to one grid in the entire DOM, not merely one matching landmark.
+    await expect(page.getByTestId("search-results-grid")).toHaveCount(1);
 
-    // Find the real 44px favourite button rendered by React ListingCard
-    const favBtn = resultsGrid.getByRole("button", { name: "Save to favourites" }).first();
-    await expect(favBtn).toBeVisible();
+    // Guests save locally. The button is disabled until the session check settles, so wait for the guest label.
+    const saveBtn = resultsGrid.getByRole("button", { name: "Save on this device" }).first();
+    await expect(saveBtn).toBeVisible();
+    await expect(saveBtn).toBeEnabled();
 
     // Scroll element below sticky header before clicking natively without force
-    await favBtn.scrollIntoViewIfNeeded();
+    await saveBtn.scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollBy(0, -100));
-    await favBtn.click();
+    await saveBtn.click();
 
-    // Verify favourite action triggered the legitimate sign-in redirect rather than direct listing page navigation
-    await expect(page).toHaveURL(/\/auth\/sign-in/);
-    expect(page.url()).not.toContain("/listings/iphone-15-pro-max-mumbai");
+    // Saved locally: no sign-in redirect, no navigation into the listing, and the pressed state and notice show.
+    await expect(page).toHaveURL(/\/search/);
+    expect(page.url()).not.toContain("/auth/sign-in");
+    expect(page.url()).not.toContain("/listings/");
+    const removeBtn = resultsGrid.getByRole("button", { name: "Remove from saved on this device" }).first();
+    await expect(removeBtn).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("guest-save-notice")).toContainText("Saved on this device");
+    const stored = await page.evaluate(() => JSON.parse(window.localStorage.getItem("fs.guestFavourites.v1") ?? "[]"));
+    expect(stored).toEqual(["00000000-0000-4000-8000-0000000000a1"]);
+
+    // The save survives a reload.
+    await page.reload();
+    await expect(resultsGrid.getByRole("button", { name: "Remove from saved on this device" }).first()).toBeVisible();
+
+    // Toggle off: removed from the device, still on /search.
+    const again = resultsGrid.getByRole("button", { name: "Remove from saved on this device" }).first();
+    await again.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -100));
+    await again.click();
+    await expect(resultsGrid.getByRole("button", { name: "Save on this device" }).first()).toHaveAttribute("aria-pressed", "false");
+    await expect(page).toHaveURL(/\/search/);
+    expect(await page.evaluate(() => window.localStorage.getItem("fs.guestFavourites.v1"))).toBeNull();
   });
 });
 

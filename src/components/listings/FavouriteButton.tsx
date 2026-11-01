@@ -4,12 +4,16 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { toggleFavouriteAction } from "@/app/account/favourites/actions";
+import { useOptionalAuth } from "@/components/providers/AuthProvider";
+import { addGuestFavourite, removeGuestFavourite, useIsGuestFavourite } from "@/lib/favourites/guest";
 
 interface FavouriteButtonProps {
   listingId: string;
   initialIsFavourited?: boolean;
   className?: string;
   showText?: boolean;
+  /** "auto": account favourites when signed in, device saves for guests. "device": always device saves (the /saved page). */
+  store?: "auto" | "device";
 }
 
 export function FavouriteButton({
@@ -17,24 +21,39 @@ export function FavouriteButton({
   initialIsFavourited = false,
   className = "",
   showText = false,
+  store = "auto",
 }: FavouriteButtonProps) {
-  const [isFavourited, setIsFavourited] = useState(initialIsFavourited);
+  const [accountFavourited, setAccountFavourited] = useState(initialIsFavourited);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const auth = useOptionalAuth();
+  const deviceFavourited = useIsGuestFavourite(listingId);
+
+  // Auth still resolving is neither "guest" nor "signed in": do not act until it is known.
+  const authPending = store === "auto" && (!auth || auth.isLoading);
+  const useDevice = store === "device" || (!!auth && !auth.isLoading && !auth.user);
+  const isFavourited = useDevice ? deviceFavourited : accountFavourited;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (authPending) return;
+
+    if (useDevice) {
+      if (deviceFavourited) removeGuestFavourite(listingId);
+      else addGuestFavourite(listingId);
+      return;
+    }
 
     // Optimistic toggle
-    const nextState = !isFavourited;
-    setIsFavourited(nextState);
+    const nextState = !accountFavourited;
+    setAccountFavourited(nextState);
 
     startTransition(async () => {
       const result = await toggleFavouriteAction(listingId);
       if (!result.success) {
         // Revert optimistic update
-        setIsFavourited(!nextState);
+        setAccountFavourited(!nextState);
         if (result.redirectTo) {
           router.push(result.redirectTo);
         } else if (result.error?.includes("sign in")) {
@@ -43,20 +62,25 @@ export function FavouriteButton({
           alert(result.error || "Could not update favourite");
         }
       } else if (result.isFavourited !== undefined) {
-        setIsFavourited(result.isFavourited);
+        setAccountFavourited(result.isFavourited);
       }
     });
   };
+
+  const label = isFavourited
+    ? useDevice ? "Remove from saved on this device" : "Remove from favourites"
+    : useDevice ? "Save on this device" : "Save to favourites";
 
   return (
     <button
       type="button"
       onClick={handleToggle}
-      disabled={isPending}
-      aria-label={isFavourited ? "Remove from favourites" : "Save to favourites"}
+      disabled={isPending || authPending}
+      aria-pressed={isFavourited}
+      aria-label={label}
       className={`relative z-20 inline-flex items-center justify-center min-h-[44px] min-w-[44px] gap-1.5 rounded-full p-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-action-500 focus:ring-offset-2 ${
         isFavourited
-          ? "bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950 dark:text-rose-400"
+          ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
           : "bg-surface/80 text-muted hover:bg-surface hover:text-foreground backdrop-blur-xs"
       } ${className}`}
     >

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Fixed light theme: FairSwap ships one light palette. `dark:` utilities never match, whatever the OS/browser prefers. */
+@custom-variant dark (&:where([data-fs-never-dark], [data-fs-never-dark] *));
 
 @theme inline {
   --color-brand-50: #f0f7ff;
@@ -63,6 +64,7 @@
 }
 
 :root {
+  color-scheme: light;
   --color-background: #F7F8F6;
   --color-foreground: #1B272C;
   --color-muted: #475B60;
@@ -94,36 +96,6 @@
   --fs-ink-muted: #B7CFC4;
   --fs-ink-accent: #7BE0B0;
   --fs-ink-line: rgba(241, 247, 244, 0.22);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #111418;
-    --color-foreground: #F1F5F7;
-    --color-muted: #9EB1C0;
-    --color-border: #2E3640;
-    --color-surface: #1B2026;
-    --color-card: #1B2026;
-    --fs-subtle: #242B33;
-
-    --fs-primary: #1BA46D;
-    --fs-primary-hover: #2FBF84;
-    --fs-on-primary: #04140D;
-
-    --color-notice-bg: #451a03;
-    --color-notice-border: #b45309;
-    --color-notice-text: #fde68a;
-
-    --fs-link: #8fd0ff;
-    --fs-icon: #5FD9A3;
-    --fs-icon-surface: rgba(27, 164, 109, 0.16);
-    --fs-focus: #8fd0ff;
-
-    --fs-tone-a: #16302A;
-    --fs-tone-b: #2B2418;
-    --fs-tone-c: #1A2733;
-    --fs-ink: #14382C;
-  }
 }
 
 .text-brand-link {

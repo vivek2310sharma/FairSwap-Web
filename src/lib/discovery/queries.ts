@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service";
+import { loadCoverMedia, loadSellerStatuses } from "@/lib/favourites/schema-compat";
 import {
   Category,
   City,
@@ -83,9 +84,9 @@ interface RawListingItem {
   cover_photo: { id: string; thumbnail_storage_path: string | null; medium_storage_path: string | null; width: number | null; height: number | null } | Array<{ id: string; thumbnail_storage_path: string | null; medium_storage_path: string | null; width: number | null; height: number | null }> | null;
 }
 
-interface FavListingRow extends RawListingItem {
+interface FavListingRow extends Omit<RawListingItem, "cover_photo"> {
   expires_at: string | null;
-  user_accounts: { account_status: string } | null;
+  cover_photo_id: string | null;
 }
 
 export async function searchPublicListings(filters: Partial<SearchFilters> = {}): Promise<SearchListingsResult> {
@@ -464,6 +465,8 @@ export async function getSellerListingsPage(
   if (error || !data) return null;
 
   const result = data as unknown as SellerListingsResult;
+  // An RPC response without an items array is a failed read, not an empty page.
+  if (!Array.isArray(result.items)) return null;
   return { ...result, categories: result.categories ?? [] };
 }
 
@@ -516,13 +519,20 @@ export async function getUserFavourites(userId: string): Promise<{
       created_at,
       published_at,
       expires_at,
+      cover_photo_id,
       category:categories(id, name, slug, icon),
       city:cities(id, name, state),
-      locality:localities(id, name),
-      cover_photo:listing_media!listings_cover_photo_id_fkey(id, thumbnail_storage_path, medium_storage_path, width, height),
-      user_accounts!listings_seller_id_fkey(account_status)
+      locality:localities(id, name)
     `)
     .in("id", listingIds);
+
+  // Seller status and cover media are read with plain lookups instead of foreign-key-named embeds: the FK names differ
+  // between FairSwapTest and FairSwapProd. Same data, same service-role boundary, same filtering below.
+  const rows = (listings ?? []) as unknown as FavListingRow[];
+  const [sellerStatus, coverByListing] = await Promise.all([
+    loadSellerStatuses(serviceClient, rows.map((row) => row.seller_id)).catch(() => new Map<string, string>()),
+    loadCoverMedia(serviceClient, rows.map((row) => ({ listingId: row.id, coverPhotoId: row.cover_photo_id }))).catch(() => new Map()),
+  ]);
 
   const activeListings: PublicListingCard[] = [];
   const unavailableIds: string[] = [];
@@ -539,7 +549,7 @@ export async function getUserFavourites(userId: string): Promise<{
 
   for (const fav of favs) {
     const l = listingMap.get(fav.listing_id);
-    const isSellerActive = l?.user_accounts?.account_status === "active";
+    const isSellerActive = !!l && sellerStatus.get(l.seller_id) === "active";
     const isNotExpired = !l?.expires_at || new Date(l.expires_at) > now;
     const isPublic = l && l.status === "active" && isSellerActive && isNotExpired;
 
@@ -560,7 +570,10 @@ export async function getUserFavourites(userId: string): Promise<{
         category: Array.isArray(l.category) ? l.category[0] : l.category,
         city: Array.isArray(l.city) ? l.city[0] : l.city,
         locality: Array.isArray(l.locality) ? l.locality[0] : l.locality,
-        cover_photo: Array.isArray(l.cover_photo) ? l.cover_photo[0] : l.cover_photo,
+        cover_photo: (() => {
+          const cover = coverByListing.get(l.id);
+          return cover ? { id: cover.id, thumbnail_storage_path: cover.thumbnail_storage_path, medium_storage_path: cover.medium_storage_path, width: cover.width, height: cover.height } : null;
+        })(),
       });
     } else {
       unavailableIds.push(fav.listing_id);
