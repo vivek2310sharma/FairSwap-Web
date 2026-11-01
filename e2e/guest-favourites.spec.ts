@@ -74,7 +74,7 @@ test.describe("Homepage 4.3: saved on this device, fixed light theme, 320px", ()
   test("the language selector offers only English", async ({ page }) => {
     await page.setViewportSize({ width: 1400, height: 800 });
     await page.goto("/");
-    const select = page.getByRole("combobox", { name: "Language" }).first();
+    const select = page.getByRole("contentinfo").getByRole("combobox", { name: "Language" });
     await expect(select).toHaveValue("en");
     await expect(select.locator("option:not([disabled])")).toHaveCount(1);
   });

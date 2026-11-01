@@ -465,6 +465,8 @@ export async function getSellerListingsPage(
   if (error || !data) return null;
 
   const result = data as unknown as SellerListingsResult;
+  // An RPC response without an items array is a failed read, not an empty page.
+  if (!Array.isArray(result.items)) return null;
   return { ...result, categories: result.categories ?? [] };
 }
 

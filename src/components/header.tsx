@@ -109,7 +109,8 @@ export function Header() {
 
         {/* Action buttons */}
         <div className="fs-inline-only shrink-0 items-center gap-3">
-          <LanguageSelector />
+          {/* Keep authenticated shortcuts visible at 1280px; the selector remains in the menu and footer. */}
+          <div className="hidden 2xl:block"><LanguageSelector /></div>
           {isLoading ? <span role="status" className="px-3 text-xs">Checking session…</span> : user ? (
             <>
               <Link

@@ -45,7 +45,7 @@ export function startMockSupabaseServer(port = 54322): Promise<http.Server> {
           JSON.stringify({
             items: [
               {
-                id: "list-1",
+                id: "00000000-0000-4000-8000-0000000000a1",
                 seller_id: "seller-1",
                 slug: "iphone-15-pro-max-mumbai",
                 title: "iPhone 15 Pro Max 256GB Natural Titanium - केवल 2 महीने पुराना",
@@ -62,13 +62,13 @@ export function startMockSupabaseServer(port = 54322): Promise<http.Server> {
                 locality: { id: "loc-1", name: "Bandra West" },
                 cover_photo: {
                   id: "photo-1",
-                  storage_path: "listings/list-1/photo-1.jpg",
+                  storage_path: "listings/00000000-0000-4000-8000-0000000000a1/photo-1.jpg",
                   aspect_ratio: "4:3",
                   blur_data_url: null,
                 },
               },
               {
-                id: "list-2",
+                id: "00000000-0000-4000-8000-0000000000a2",
                 seller_id: "seller-2",
                 slug: "samsung-front-load-washing-machine",
                 title: "Samsung Front Load Washing Machine 8kg Fully Automatic",
@@ -109,7 +109,7 @@ export function startMockSupabaseServer(port = 54322): Promise<http.Server> {
           JSON.stringify([
             {
               id: "photo-1",
-              listing_id: "list-1",
+              listing_id: "00000000-0000-4000-8000-0000000000a1",
               thumbnail_storage_path: "photo-1-thumb.jpg",
               medium_storage_path: "photo-1-medium.jpg",
               large_storage_path: "photo-1-large.jpg",
@@ -137,7 +137,7 @@ export function startMockSupabaseServer(port = 54322): Promise<http.Server> {
         res.end(
           JSON.stringify([
             {
-              id: "list-1",
+              id: "00000000-0000-4000-8000-0000000000a1",
               seller_id: "seller-1",
               slug: "iphone-15-pro-max-mumbai",
               title: "iPhone 15 Pro Max 256GB Natural Titanium - केवल 2 महीने पुराना",

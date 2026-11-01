@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -137,6 +138,7 @@ export function Footer() {
           <p className="text-xs text-muted">
             &copy; {currentYear} FairSwap.
           </p>
+          <LanguageSelector id="language-select-footer" className="mt-2" />
 
         </div>
       </div>
