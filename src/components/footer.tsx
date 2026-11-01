@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -41,8 +42,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/saved" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
+                  Saved on this device
+                </Link>
+              </li>
+              <li>
                 <Link href="/account/favourites" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
-                  Saved Favourites
+                  Account Favourites
                 </Link>
               </li>
               <li>
@@ -132,6 +138,8 @@ export function Footer() {
           <p className="text-xs text-muted">
             &copy; {currentYear} FairSwap.
           </p>
+          <LanguageSelector id="language-select-footer" className="mt-2" />
+
         </div>
       </div>
     </footer>

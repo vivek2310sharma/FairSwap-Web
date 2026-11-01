@@ -1,5 +1,8 @@
 import { test, expect } from "./helpers/test";
 
+// The header shows "Checking session…" until the client auth check settles. Snapshot only after it has, or the comparison races.
+const settled = (page: import("@playwright/test").Page) => expect(page.getByText("Checking session…")).toHaveCount(0);
+
 test.describe("Retired Web Admin", () => {
   for (const path of [
     "/admin", "/admin/", "/admin/users", "/admin/users/",
@@ -11,6 +14,7 @@ test.describe("Retired Web Admin", () => {
       expect(direct.headers().location).toBeUndefined();
 
       await page.goto("/admina");
+      await settled(page);
       const standard = await page.locator("header, main, footer").evaluateAll((elements) => elements.map((element) => element.outerHTML));
       const response = await page.goto(path);
       expect(response?.status()).toBe(404);
@@ -19,6 +23,7 @@ test.describe("Retired Web Admin", () => {
       await expect(page.getByRole("banner")).toBeVisible();
       await expect(page.getByRole("contentinfo")).toBeVisible();
       await expect(page.getByRole("link", { name: "Back to home", exact: true })).toHaveAttribute("href", "/");
+      await settled(page);
       // Compare the complete existing page design, excluding framework runtime nodes.
       expect(await page.locator("header, main, footer").evaluateAll((elements) => elements.map((element) => element.outerHTML))).toEqual(standard);
       if (path === "/admin") {

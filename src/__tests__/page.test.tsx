@@ -20,7 +20,7 @@ vi.mock("@/lib/location/public-areas", () => ({ resolvePublicArea }));
 vi.mock("@/components/listings/RecentListingsSection", () => ({
   RecentListingsSection: ({ area }: { area?: { city: string } | null }) => <section data-testid="fresh-finds" data-city={area?.city ?? ""} />,
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/" }));
 
 describe("HomePage component", () => {
   it("renders main landmark and main heading", async () => {
@@ -77,17 +77,24 @@ describe("HomePage component", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the How It Works section with 3 core steps and updated Exchange text", async () => {
+  it("renders the four-step How It Works story with approved mascots and no payment-handling claim", async () => {
     render(await HomePage());
-    expect(
-      screen.getByRole("heading", { level: 2, name: /how it works/i })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 3, name: "Browse" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 3, name: "Connect" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 3, name: "Exchange" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Meet in a public place, inspect the item, and agree on payment directly.")
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: /how it works/i })).toBeInTheDocument();
+    const story = document.getElementById("how-it-works")!;
+    for (const step of ["Browse", "Connect", "Inspect", "Exchange"]) {
+      expect(story.textContent).toContain(step);
+    }
+    expect(screen.getByText("Meet in a public place and check the item in person before you pay.")).toBeInTheDocument();
+    expect(story.textContent).toContain("FairSwap does not handle payments");
+    expect(screen.getByTestId("story-art").querySelector("img")?.getAttribute("src")).toMatch(/laptop-720w/);
+  });
+
+  it("shows the approved mascots in the hero and an India-specific expandable safety panel", async () => {
+    render(await HomePage());
+    expect(screen.getByTestId("mascots-wide").querySelector("img[src*='man-hero']")).toBeTruthy();
+    expect(screen.getByTestId("mascots-wide").querySelector("img[src*='woman-hero']")).toBeTruthy();
+    const army = screen.getByRole("button", { name: /army officer/i });
+    expect(army).toHaveAttribute("aria-expanded", "false");
   });
 
   it("renders the Explore categories rail", async () => {

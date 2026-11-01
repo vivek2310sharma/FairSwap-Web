@@ -132,8 +132,8 @@ export const TIMING = {
   first: Math.round(270 * SPEED),
   gap: Math.round(105 * SPEED),
   leave: 75 * SPEED,
-  /** Integration-only: readable final FairSwap pause before releasing the existing homepage. The standalone reference does not auto-release. */
-  hold: 900,
-  /** Integration-only: soft release into the already-rendered homepage. */
-  fade: 300,
+  /** Production-only: how long the final FairSwap reveal holds before the homepage is released. Homepage 4.4: +1000ms from staging's 900ms. */
+  hold: 1900,
+  /** Production-only: the overlay slides up off-screen over this long, revealing the homepage. Mirrored in CSS via --fs-intro-exit. */
+  fade: 650,
 } as const;

@@ -1,7 +1,8 @@
 import { AuthProvider } from "@/components/providers/AuthProvider";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Manrope, Noto_Sans_Devanagari } from "next/font/google";
 import { MobileBottomNav } from "@/components/navigation/MobileBottomNav";
+import { GuestSaveNotice } from "@/components/favourites/GuestSaveNotice";
 import "./globals.css";
 
 // Self-hosted by next/font. Variable fonts, Latin / Devanagari subsets only. Devanagari is not
@@ -45,6 +46,9 @@ export const metadata: Metadata = {
   }
 };
 
+// One fixed light theme: tell the browser not to apply forced/auto dark rendering.
+export const viewport: Viewport = { colorScheme: "light" };
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,6 +60,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <MobileBottomNav />
+          <GuestSaveNotice />
         </AuthProvider>
       </body>
     </html>

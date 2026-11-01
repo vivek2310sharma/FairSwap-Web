@@ -21,6 +21,7 @@ import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useHeaderFit } from "@/components/navigation/useHeaderFit";
 import { buttonVariants } from "@/components/ui/button";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const navLinks = [
   { label: "How It Works", href: "/#how-it-works" },
@@ -99,15 +100,17 @@ export function Header() {
             Browse
           </Link>
           <Link
-            href="/account/favourites"
+            href={user ? "/account/favourites" : "/saved"}
             className="whitespace-nowrap rounded-md text-sm font-semibold text-muted transition-colors hover:text-foreground"
           >
-            Favourites
+            {user ? "Favourites" : "Saved"}
           </Link>
         </nav>
 
         {/* Action buttons */}
         <div className="fs-inline-only shrink-0 items-center gap-3">
+          {/* Keep authenticated shortcuts visible at 1280px; the selector remains in the menu and footer. */}
+          <div className="hidden 2xl:block"><LanguageSelector /></div>
           {isLoading ? <span role="status" className="px-3 text-xs">Checking session…</span> : user ? (
             <>
               <Link
@@ -230,13 +233,14 @@ export function Header() {
               Browse Ads
             </Link>
             <Link
-              href="/account/favourites"
+              href={user ? "/account/favourites" : "/saved"}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-base font-semibold text-muted hover:bg-subtle hover:text-foreground"
             >
               <Heart className="h-4 w-4" aria-hidden="true" />
-              Saved Favourites
+              {user ? "Saved Favourites" : "Saved on this device"}
             </Link>
+            <LanguageSelector id="language-select-mobile" className="px-3" />
             <Link
               href="/account/listings/new"
               onClick={() => setMobileMenuOpen(false)}
