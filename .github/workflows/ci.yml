@@ -74,7 +74,7 @@ jobs:
         run: pnpm run typecheck
 
       - name: Run Homepage Performance Unit Tests
-        run: pnpm vitest run src/__tests__/recent-listings.test.tsx
+        run: pnpm vitest run src/__tests__/recent-listings.test.tsx src/__tests__/category-images.test.ts
 
       - name: Run HDR-03 Auth and Navigation Regression Tests
         run: pnpm vitest run src/__tests__/auth-provider.test.tsx src/__tests__/header.test.tsx src/__tests__/mobile-bottom-nav.test.tsx src/__tests__/notification-bell.test.tsx src/__tests__/notification-list-auth.test.tsx src/__tests__/account-navigation.test.tsx src/__tests__/auth-close.test.tsx src/__tests__/policy-review.test.tsx tests/unit/account-page-ui.test.tsx tests/unit/account-profile-restricted.test.tsx tests/unit/account-settings-tab.test.ts src/__tests__/page.test.tsx src/__tests__/not-found.test.tsx tests/unit/chat-thread-hydration-and-composer.test.tsx tests/unit/conversation-page-window.test.tsx tests/unit/chat-read-unread-integration.test.tsx

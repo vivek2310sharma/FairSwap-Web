@@ -12,7 +12,7 @@ import styles from "./PremiumIndiaIntro.module.css";
 
 export const INTRO_LABEL = "FairSwap introduction";
 /** Last-resort fail-open: whatever happens, the intro is gone by now. The CSS safety net on .overlay is slightly later. */
-const FAILSAFE_MS = 9000;
+const FAILSAFE_MS = 10000;
 const config = introSessionConfig(PALETTES.map((p) => p.id));
 const nextTagline = createTaglineBag();
 
@@ -145,7 +145,7 @@ export function PremiumIndiaIntro() {
     return () => window.clearTimeout(timer);
   }, [run, index]);
 
-  // Final FairSwap reveal holds briefly, then fades into the homepage.
+  // Final FairSwap reveal holds, then the overlay slides up to reveal the homepage.
   const ended = !!run && index >= run.greetings.length;
   useEffect(() => {
     if (!ended) return;
@@ -166,6 +166,7 @@ export function PremiumIndiaIntro() {
   return (
     <dialog ref={dialog} aria-modal="true" aria-label={INTRO_LABEL} className={`${styles.overlay} ${closing ? styles.closing : ""}`}
       data-testid="premium-intro" data-device={device} data-theme={palette.id} data-replay={run.replay ? "true" : "false"} data-ended={ended ? "true" : "false"}
+      style={{ "--fs-intro-exit": `${TIMING.fade}ms` } as React.CSSProperties}
       onCancel={(event) => { event.preventDefault(); close(); }}>
       <section className={`${styles.stage} ${styles[device]} ${ended ? styles.stageEnd : ""}`} style={vars}>
         <div className={styles.starfield} aria-hidden="true" />

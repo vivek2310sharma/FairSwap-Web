@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Fixed light theme: FairSwap ships one light palette. `dark:` utilities never match, whatever the OS/browser prefers. */
+@custom-variant dark (&:where([data-fs-never-dark], [data-fs-never-dark] *));
 
 @theme inline {
   --color-brand-50: #f0f7ff;
@@ -63,6 +64,7 @@
 }
 
 :root {
+  color-scheme: light;
   --color-background: #F7F8F6;
   --color-foreground: #1B272C;
   --color-muted: #475B60;
@@ -94,36 +96,6 @@
   --fs-ink-muted: #B7CFC4;
   --fs-ink-accent: #7BE0B0;
   --fs-ink-line: rgba(241, 247, 244, 0.22);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #111418;
-    --color-foreground: #F1F5F7;
-    --color-muted: #9EB1C0;
-    --color-border: #2E3640;
-    --color-surface: #1B2026;
-    --color-card: #1B2026;
-    --fs-subtle: #242B33;
-
-    --fs-primary: #1BA46D;
-    --fs-primary-hover: #2FBF84;
-    --fs-on-primary: #04140D;
-
-    --color-notice-bg: #451a03;
-    --color-notice-border: #b45309;
-    --color-notice-text: #fde68a;
-
-    --fs-link: #8fd0ff;
-    --fs-icon: #5FD9A3;
-    --fs-icon-surface: rgba(27, 164, 109, 0.16);
-    --fs-focus: #8fd0ff;
-
-    --fs-tone-a: #16302A;
-    --fs-tone-b: #2B2418;
-    --fs-tone-c: #1A2733;
-    --fs-ink: #14382C;
-  }
 }
 
 .text-brand-link {
@@ -247,4 +219,40 @@ html[data-fs-intro="pending"] body::before {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ---- Homepage 4.4 ---- */
+/* Fluid homepage container: 80rem up to 1600px, then grows so zoomed-out/wide viewports are not a narrow island. */
+.fs-container { width: 100%; max-width: 80rem; margin-inline: auto; padding-inline: 1rem; }
+@media (min-width: 40rem) { .fs-container { padding-inline: 1.5rem; } }
+@media (min-width: 64rem) { .fs-container { padding-inline: 2rem; } }
+@media (min-width: 100rem) { .fs-container { max-width: 96rem; } }
+@media (min-width: 137.5rem) { .fs-container { max-width: 112rem; } }
+.fs-snap-row { scroll-snap-type: x proximity; scrollbar-width: none; }
+.fs-snap-row > * { scroll-snap-align: start; }
+.fs-snap-row::-webkit-scrollbar { display: none; }
+
+/* Alternating editorial surfaces (cream / mint / cool blue). Plain backgrounds: no layout cost. */
+.fs-surface-cream { background: linear-gradient(180deg, color-mix(in srgb, var(--fs-tone-b) 45%, transparent), transparent); }
+.fs-surface-mint { background: linear-gradient(180deg, color-mix(in srgb, var(--fs-tone-a) 70%, transparent), transparent); }
+.fs-surface-sky { background: linear-gradient(180deg, color-mix(in srgb, var(--fs-tone-c) 80%, transparent), transparent); }
+
+/* Scroll reveal. Content is visible by default; `Reveal` marks an off-screen element "pending" only after hydration,
+   and only when motion is allowed, so no-JS, reduced-motion and Save-Data users never see hidden content. */
+[data-reveal="pending"] { opacity: 0; transform: translateY(14px); }
+[data-reveal="in"] { transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.fs-rule { display: block; height: 3px; width: 3.5rem; margin-top: 0.75rem; border-radius: 9999px; background: var(--fs-primary); transform-origin: left; transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.15s; }
+[data-reveal="pending"] .fs-rule { transform: scaleX(0); }
+
+/* How It Works scene: layered, original composition from approved mascot art. */
+.fs-scene { position: relative; overflow: hidden; isolation: isolate; }
+.fs-scene-layer { position: absolute; inset: 0; transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.4s ease; }
+.fs-scene-blob { border-radius: 9999px; filter: blur(0.5px); }
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal="pending"] { opacity: 1; transform: none; }
+  .fs-scene-layer { transition: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fs-story-art { animation: fs-story-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  @keyframes fs-story-in { from { opacity: 0; transform: translateY(14px) scale(0.96); } }
 }

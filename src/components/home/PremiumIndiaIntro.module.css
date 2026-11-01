@@ -20,13 +20,17 @@
   background: transparent;
   color: inherit;
   overflow: hidden;
-  transition: opacity 0.30s ease;
-  /* CSS-only safety net: even if every timer failed the dialog is gone shortly after the 9s JS fail-open. */
-  animation: hide 0.01s linear 9.5s forwards;
+  transition: transform var(--fs-intro-exit, 650ms) cubic-bezier(0.76, 0, 0.24, 1), opacity 0.2s ease var(--fs-intro-exit, 650ms);
+  /* CSS-only safety net: even if every timer failed the dialog is gone shortly after the 10s JS fail-open. */
+  animation: hide 0.01s linear 10.5s forwards;
 }
 .overlay:not([open]) { display: none; }
 .overlay::backdrop { background: transparent; }
-.closing { opacity: 0; }
+.closing { transform: translateY(-100%); opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .overlay { transition: opacity 0.2s ease; }
+  .closing { transform: none; }
+}
 @keyframes hide { to { opacity: 0; visibility: hidden; } }
 
 .stage {

@@ -186,3 +186,8 @@ export function useAuth() {
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }
+
+/** Same as useAuth but returns null outside an AuthProvider (isolated components and tests). */
+export function useOptionalAuth() {
+  return useContext(AuthContext) ?? null;
+}
