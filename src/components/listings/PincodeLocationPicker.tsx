@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { CircleAlert, LockKeyhole } from "lucide-react";
 import type { City, PincodeLookupResult } from "@/types/listing";
 import { postingText, type PostingLocale } from "@/lib/listings/mobiles/locale";
 
 export interface PincodeLocationPickerProps {
   locale?: PostingLocale;
+  validationErrors?: Partial<Record<"pin_code"|"city_id"|"locality_id", string>>;
   hideLandmark?: boolean;
   onResolvedChange?: (value: {pin_code:string;city_id:string;locality_id:string;area:string}) => void;
   initialPinCode?: string | null;
@@ -228,6 +230,7 @@ export default function PincodeLocationPicker({
   locale = "en",
   hideLandmark = false,
   onResolvedChange,
+  validationErrors,
 }: PincodeLocationPickerProps) {
   const t=(text:string)=>postingText(locale,text);
   const initial = useMemo(
@@ -503,6 +506,8 @@ export default function PincodeLocationPicker({
           <div className="mt-1 flex items-center gap-2">
             <input
               id="pincode_picker_input"
+              aria-invalid={!!validationErrors?.pin_code||!!errorMsg}
+              aria-describedby={validationErrors?.pin_code?"mobile-pin_code-error":errorMsg?"pin-lookup-error":undefined}
               type="text"
               inputMode="numeric"
               pattern="^\d{6}$"
@@ -524,8 +529,8 @@ export default function PincodeLocationPicker({
             )}
           </div>
           {errorMsg && (
-            <div className="mt-2 flex items-center justify-between gap-2 rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
-              <span>{t(errorMsg)}</span>
+            <div id="pin-lookup-error" role="alert" className="mt-2 flex items-center justify-between gap-2 rounded border border-red-200 bg-red-50 p-2 text-xs text-red-700">
+              <span className="flex items-start gap-2"><CircleAlert aria-hidden="true" size={18}/>{t(errorMsg)}</span>
               {pinCode.length === 6 && (
                 <button
                   type="button"
@@ -561,6 +566,8 @@ export default function PincodeLocationPicker({
             </label>
             <select
               id="city_picker_select"
+              aria-invalid={!!validationErrors?.city_id}
+              aria-describedby={validationErrors?.city_id?"mobile-city_id-error":undefined}
               value={selectedDistrict}
               onChange={(e) => handleDistrictChange(e.target.value)}
               disabled={isLoading}
@@ -583,6 +590,8 @@ export default function PincodeLocationPicker({
           </label>
           <select
             id="locality_picker_select"
+            aria-invalid={!!validationErrors?.locality_id}
+            aria-describedby={validationErrors?.locality_id?"mobile-locality_id-error":undefined}
             value={selectedLocalityId}
             onChange={(e) => {
               const locId = e.target.value;
@@ -652,7 +661,7 @@ export default function PincodeLocationPicker({
         </div>}
         {/* Privacy reassurance footnote */}
         <div className="pt-2 border-t border-emerald-100/60 text-xs text-gray-500 space-y-0.5">
-          <p className="font-medium text-gray-600">{t("🔒 Privacy protection:")}</p>
+          <p className="flex items-center gap-2 font-medium text-gray-600"><LockKeyhole aria-hidden="true" size={16}/>{t("🔒 Privacy protection:").replace("🔒 ","")}</p>
           {isProperty?<><p>Property drafts are not public. Society/building text is private to the owner.</p><p>Arrange viewing details in chat when appropriate.</p></>:<><p>{t("Only your approximate area is shown publicly on FairSwap.")}</p><p>{t("You can decide the exact pickup location later with the buyer in chat.")}</p></>}
         </div>
       </div>

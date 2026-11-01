@@ -94,6 +94,18 @@ jobs:
       - name: Run SRCH-01 Isolated Mobile Search E2E
         run: pnpm exec playwright test --config=playwright.srch-01.config.ts
 
+      - name: Run Post Ad V2 Wizard, Recovery and Upload Unit Tests
+        run: >-
+          pnpm vitest run
+          tests/unit/mobile-phone-form.test.tsx
+          tests/unit/mobile-submit-boundary.test.ts
+          tests/unit/post-ad-selector.test.tsx
+          tests/unit/post-ad-v2-controls.test.tsx
+          tests/unit/pre-listing-media-uploader.test.tsx
+
+      - name: Run Post Ad V2 Isolated Browser Journeys
+        run: node tools/post-ad-v2/verify.mjs
+
       - name: Run LIST-03 WhatsApp Sharing Unit Tests
         run: pnpm vitest run tests/unit/share.test.tsx
 
