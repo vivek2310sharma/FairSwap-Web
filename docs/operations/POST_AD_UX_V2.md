@@ -1,3 +1,7 @@
+## Accessories V1 extension — 2 November 2026
+
+The existing phone journey remains the visual and lifecycle reference. Accessories has its own versioned contract, route, recovery key, immutable context and submission RPC; phone fields are not repurposed. Shared controls gain optional photo/preview copy and the same media preparer. See [Accessories V1](ACCESSORIES_V1.md) for the plan, release ordering and limitations. The isolated browser runner now allocates a loopback port, verifies a per-run fixture identity and terminates its own process group; it no longer depends on fixed port 4318. Existing phone regression assertions remain.
+
 # V2.1.2 final security/product-completion pass
 
 2 November 2026. This is a delta against the existing V2.1.2 candidate below, not a redesign or deployment. It closes the prior native-concurrency gap and makes the certified-blank path reachable through real posting actions.

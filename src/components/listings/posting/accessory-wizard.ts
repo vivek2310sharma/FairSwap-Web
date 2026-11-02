@@ -1,0 +1,25 @@
+import {z} from "zod";
+import {accessoryBase,accessorySchema,refineAccessory,CONDITIONS,type AccessorySubmission,type AccessoryCatalogue} from "@/lib/listings/accessories/contract";
+import {accessoryType} from "@/lib/listings/accessories/catalogue";
+export const STEP_LABELS=["Photos","Details","Condition","Price","Location"] as const;
+export type AccessoryDraft=Omit<AccessorySubmission,"condition"|"originality"|"working"|"safety">&{condition:AccessorySubmission["condition"]|"";originality:AccessorySubmission["originality"]|"";working:AccessorySubmission["working"]|"";safety:AccessorySubmission["safety"]|""};
+export function blankAccessoryDraft():AccessoryDraft{return {selection:{category:"mobiles",subcategory:"mobile-accessories",version:1},session_id:"",type:"",brand:"",other_brand:"",product_model:"",originality:"",compatibility:{state:"unknown",device_brand:"",device_model:"",standard:""},specs:{},quantity:1,bundle_contents:"",condition:"",working:"",faults:"",bill:false,box:false,warranty_until:"",safety:"",title:"",description:"",trade:"sell",price_paise:0,negotiable:false,pin_code:"",city_id:"",locality_id:"",media_ids:[],plan_id:"free-v1"};}
+export const accessoryRecoveryKey=(owner:string)=>`${owner}:mobile-accessories:v1`;
+const partial=accessoryBase.extend({session_id:z.string(),brand:z.string().max(80),originality:accessoryBase.shape.originality.or(z.literal("")),condition:accessoryBase.shape.condition.or(z.literal("")),working:accessoryBase.shape.working.or(z.literal("")),safety:accessoryBase.shape.safety.or(z.literal("")),title:z.string().max(150),description:z.string().max(5000),bundle_contents:z.string().max(500),pin_code:z.string().max(6),city_id:z.string(),locality_id:z.string(),media_ids:z.array(z.string().uuid()).max(8)});
+export const accessoryRecoverySchema=z.object({version:z.literal(1),owner:z.string().uuid(),updated:z.number(),draft:partial,step:z.number().int().min(0).max(5).default(0),manualTitle:z.boolean(),area:z.string(),priceText:z.string().max(20),photos:z.array(z.object({id:z.string().uuid(),state:z.enum(["pending","uploading","ready","failed"]),blob:z.instanceof(Blob).optional()})).max(8)});
+export type AccessoryRecovery=z.infer<typeof accessoryRecoverySchema>;
+export function generatedAccessoryTitle(d:AccessoryDraft){return [d.brand==="Other"?d.other_brand:d.brand,d.product_model,accessoryType(d.type)?.name,d.compatibility.state==="seller"?d.compatibility.device_model:"",d.condition?CONDITIONS[d.condition]:""].filter(Boolean).join(" · ").slice(0,150);}
+export function fieldStep(field:string){if(field==="media_ids")return 0;if(["type","brand","other_brand","product_model","originality","compatibility","specs","quantity","bundle_contents"].includes(field.split(".")[0]))return 1;if(["condition","working","faults","bill","box","warranty_until","safety","title","description"].includes(field))return 2;if(["trade","price_paise","negotiable"].includes(field))return 3;return 4;}
+export type WizardIssue={field:string;message:string};
+export function validateAccessoryWizard(d:AccessoryDraft,_c:AccessoryCatalogue,photos:{state:string}[],priceText:string){
+ const parsed=accessorySchema.safeParse(d);const issues:WizardIssue[]=parsed.success?[]:parsed.error.issues.map(i=>({field:i.path[0]==="specs"?i.path.join("."):String(i.path[0]),message:i.message}));
+ refineAccessory(d,{addIssue:i=>issues.push({field:i.path?.[0]==="specs"?i.path.join("."):String(i.path?.[0]),message:i.message??"Check this field."}),path:[]});
+ if(!photos.some(p=>p.state==="ready")||photos.some(p=>p.state!=="ready"))issues.push({field:"media_ids",message:"Upload at least one photo and retry or remove unfinished photos."});
+ if(d.trade==="sell"&&!/^\d+(\.\d{1,2})?$/.test(priceText))issues.push({field:"price_paise",message:"Enter a price with at most two decimal places."});
+ return {parsed,issues:Array.from(new Map(issues.map(i=>[i.field,i])).values()).sort((a,b)=>fieldStep(a.field)-fieldStep(b.field)||Object.keys(blankAccessoryDraft()).indexOf(a.field.split(".")[0])-Object.keys(blankAccessoryDraft()).indexOf(b.field.split(".")[0]))};
+}
+export function validateAccessoryStep(step:number,d:AccessoryDraft,c:AccessoryCatalogue,photos:{state:string}[],priceText:string){return validateAccessoryWizard(d,c,photos,priceText).issues.filter(i=>fieldStep(i.field)===step);}
+export function reachableAccessoryStep(issues:WizardIssue[]){return issues.length?Math.min(...issues.map(i=>fieldStep(i.field))):5;}
+export function canPrepareBlankAccessorySession(d:AccessoryDraft,photos:unknown[],priceText:string,manualTitle:boolean,area:string){const blank=blankAccessoryDraft();return !photos.length&&!priceText&&!manualTitle&&!area&&JSON.stringify({...d,session_id:""})===JSON.stringify(blank);}
+/** A type change intentionally clears all dependent declarations/specs. */
+export function changeAccessoryType(d:AccessoryDraft,type:string):AccessoryDraft{const t=accessoryType(type);return {...d,type,specs:{},compatibility:{state:"unknown",device_brand:"",device_model:"",standard:""},working:t?.electronic?"":"not_applicable",safety:t?.safety?"":"not_applicable"};}

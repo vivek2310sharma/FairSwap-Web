@@ -13,6 +13,7 @@ export const localize = (text: LocalizedText, locale: Locale = "en") => text[loc
 export type FamilyState = "off" | "draft" | "live";
 export interface PostAdCapabilities {
   mobilePhones?: boolean;
+  accessories?: boolean;
   twoWheelers: FamilyState;
   cars: FamilyState;
   property: FamilyState;
@@ -26,6 +27,7 @@ export type Readiness = "available" | "draft-only" | "coming-soon" | "unavailabl
 
 export type SubRoute =
   | { kind: "mobile-phones" }
+  | { kind: "accessories" }
   /** General (broad) Goods continuation only; the unchanged form is where the category is chosen. */
   | { kind: "goods"; key: string }
   | { kind: "vehicles"; family: "two-wheelers" | "cars" }
@@ -77,7 +79,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     trust: { status: "available", message: "Have your bill and box ready — buyers trust them.", disclaimer: "FairSwap does not currently verify IMEI or device authenticity." },
     subs: [
       { id: "mobile-phones", label: "Mobile Phones", hi: "मोबाइल फोन", aliases: ["iphone", "samsung", "redmi", "oneplus", "vivo", "oppo", "realme", "android", "smartphone"], route: {kind:"mobile-phones"} },
-      { id: "mobile-accessories", label: "Accessories", hi: "एक्सेसरीज़", aliases: ["charger", "earphones", "earbuds", "cover", "case", "power bank"], route: none },
+      { id: "mobile-accessories", label: "Accessories", hi: "एक्सेसरीज़", aliases: ["charger", "earphones", "earbuds", "cover", "case", "power bank"], route: {kind:"accessories"} },
       { id: "tablets", label: "Tablets", hi: "टैबलेट", aliases: ["ipad", "tab"], route: none },
       { id: "wearables", label: "Smartwatches & Wearables", hi: "स्मार्टवॉच और वियरेबल्स", aliases:["smartwatch","wearable"], route:none },
     ],
@@ -259,6 +261,7 @@ const fromFamily = (state: FamilyState): Readiness =>
 export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readiness: Readiness; macro?: MacroCategory } {
   const r = sub.route;
   switch (r.kind) {
+    case "accessories": return caps.accessories ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "mobile-phones": return caps.mobilePhones ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "goods": return caps.goodsCategories.includes(r.key) ? { readiness: "available", macro: "goods" } : { readiness: "coming-soon" };
     case "vehicles": {
