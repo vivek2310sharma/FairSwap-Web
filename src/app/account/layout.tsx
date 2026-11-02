@@ -1,6 +1,5 @@
 import { ratingsEnabled } from "@/lib/ratings/server";
-import { Header } from "@/components/header";
-import { AccountNav } from "@/components/account/AccountNav";
+import AccountChrome from "@/components/account/AccountChrome";
 
 export default function AccountLayout({
   children,
@@ -9,9 +8,8 @@ export default function AccountLayout({
 }) {
   return (
     <>
-      <Header />
-      <AccountNav ratingsAvailable={ratingsEnabled()} />
-      <div className="flex-1 flex flex-col">{children}</div>
+      <AccountChrome ratingsAvailable={ratingsEnabled()} />
+      <div className="flex-1 flex flex-col min-w-0 w-full">{children}</div>
     </>
   );
 }

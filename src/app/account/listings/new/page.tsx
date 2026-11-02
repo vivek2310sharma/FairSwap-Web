@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+import { ArrowLeft } from "lucide-react";
+import styles from "@/components/listings/posting/Posting.module.css";
 import Link from "next/link";
 import MobilePhoneForm from "@/components/listings/MobilePhoneForm";
 import { loadMobileCatalogue } from "@/lib/listings/mobiles/server";
@@ -19,6 +22,8 @@ import {
   isSellerWriteMaintenanceEnabled,
   SELLER_WRITE_MAINTENANCE_MESSAGE,
 } from "@/lib/maintenance/seller-writes";
+
+export const metadata: Metadata = { title: "Post an ad | FairSwap.in" };
 
 export default async function NewListingPage({
   searchParams,
@@ -54,10 +59,10 @@ export default async function NewListingPage({
   const query = await searchParams;
   const mobileCatalogue = await loadMobileCatalogue(supabase);
   if (query.posting !== undefined) {
-    if (query.posting !== "mobile-phones" || !mobileCatalogue) return <div className="mx-auto max-w-3xl p-6"><h1 className="text-2xl font-bold">Coming soon</h1><Link href="/account/listings/new">Choose a category</Link></div>;
+    if (query.posting !== "mobile-phones" || !mobileCatalogue) return <main id="posting-content" className={styles.journey}><h1>This category isn’t available right now</h1><Link className={styles.back} href="/account/listings/new">Choose a category</Link></main>;
     const locations = await loadPostAdLocations(supabase);
-    if (locations.status !== "ready") return <p role="alert">{locations.message}</p>;
-    return <div className="mx-auto max-w-3xl space-y-5 px-4 py-8"><Link href="/account/listings/new">Back to categories (your phone posting is saved on this device)</Link><MobilePhoneForm key={user.id} ownerId={user.id} catalogue={mobileCatalogue} cities={locations.cities} maintenance={isMaintenanceActive}/></div>;
+    if (locations.status !== "ready") return <main id="posting-content" className={styles.journey}><h1>We couldn’t load your area options</h1><p role="alert">Please try again shortly.</p><Link className={styles.back} href="/account/listings/new">Choose a category</Link></main>;
+    return <main id="posting-content" className={styles.journey}><Link className={styles.back} href="/account/listings/new"><ArrowLeft size={18} aria-hidden="true"/> Categories</Link><MobilePhoneForm key={user.id} ownerId={user.id} catalogue={mobileCatalogue} cities={locations.cities} maintenance={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}/></main>;
   }
   // The former `?entry=legacy` creation route is retired wherever Post Ad is
   // active. Canonicalize every old/new `entry` variant so it cannot bypass
@@ -76,10 +81,10 @@ export default async function NewListingPage({
     const vehicles=twOk||carsOk ? {categories:[...(twOk?.categories??[]),...(carsOk?.categories??[])],states:twOk?.states.length?twOk.states:carsOk?.states??[]} : undefined;
     const testSubmission=isVerifiedSubmissionTestEnvironment(process.env);
     const submission={twoWheelers:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"two-wheelers"),cars:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"cars"),property:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"property")};
-    return <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      <Link href="/account/listings" className="text-sm font-medium text-emerald-600 hover:text-emerald-700">Back to My ads</Link>
+    return <main id="posting-content" className={styles.journey}>
+      <Link href="/account/listings" className={styles.back}><ArrowLeft size={18} aria-hidden="true"/> My ads</Link>
       <div className="mt-6"><GoodsPostAdEntry mobilePhones={!!mobileCatalogue} submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
-    </div>;
+    </main>;
   }
 
   // Flag OFF retains the original reference queries and creation form.
@@ -101,7 +106,7 @@ export default async function NewListingPage({
     .order("name", { ascending: true });
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+    <main id="posting-content" className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <div className="mb-6">
         <Link
           href="/account/listings"
@@ -123,6 +128,6 @@ export default async function NewListingPage({
         isMaintenanceActive={isMaintenanceActive}
         maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}
       />
-    </div>
+    </main>
   );
 }
