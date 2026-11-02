@@ -53,3 +53,11 @@ it("Continue validates only current fields, while Review retains full Zod valida
  expect(validatePhoneStep(4,condition,catalogue,photos,"").map(i=>i.field)).toEqual(["pin_code","city_id","locality_id"]);
  expect(validatePhoneWizard(condition,catalogue,photos,"").parsed.success).toBe(false);
 });
+
+it("blank preparation rejects every meaningful local draft, including no-photo fields and pending media",async()=>{
+ const {canPrepareBlankSession}=await import("@/components/listings/posting/session-preparation");const blank=blankPhoneDraft();
+ expect(canPrepareBlankSession(blank,[],"",false,"")).toBe(true);
+ for(const changes of [{title:"Saved title"},{description:"unfinished"},{brand_id:"chosen"},{pin_code:"560034"},{trade:"giveaway" as const},{storage:"128 GB" as const},{media_ids:["saved-id"]}]) expect(canPrepareBlankSession({...blank,...changes},[],"",false,"")).toBe(false);
+ expect(canPrepareBlankSession(blank,[{state:"pending"}],"",false,"")).toBe(false);expect(canPrepareBlankSession(blank,[],"1",false,"")).toBe(false);
+ expect(canPrepareBlankSession(blank,[],"",true,"")).toBe(false);expect(canPrepareBlankSession(blank,[],"",false,"Saved area")).toBe(false);
+});

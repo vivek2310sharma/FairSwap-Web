@@ -13,7 +13,7 @@ export type PostingPhoto = {
     url?: string;
     error?: string;
 };
-export default function PreListingMediaUploader({ photos, onChange, sessionId, disabled, onReady, ensureSession, onSessionError, locale = "en" }: {
+export default function PreListingMediaUploader({ photos, onChange, sessionId, disabled, onReady, ensureSession, onPrepareSession, onSessionError, locale = "en" }: {
     locale?: PostingLocale;
     photos: PostingPhoto[];
     onChange: (photos: PostingPhoto[]) => void;
@@ -21,6 +21,7 @@ export default function PreListingMediaUploader({ photos, onChange, sessionId, d
     disabled: boolean;
     onReady: () => Promise<void>;
     ensureSession?: () => Promise<string | null>;
+    onPrepareSession?: () => Promise<void>;
     onSessionError?: (code:SessionErrorCode) => void;
 }) {
     const t = (text: string) => postingText(locale, text);
@@ -73,7 +74,7 @@ export default function PreListingMediaUploader({ photos, onChange, sessionId, d
     }
     return <section className="space-y-4" aria-labelledby="photo-heading">
   <h2 id="photo-heading">Photos</h2><p className={styles.muted}>Add up to 8 photos. Upload at least one photo before continuing.</p>
-  <div className={styles.drop}><Camera aria-hidden="true" size={36}/><strong>Show it from every angle</strong><p>Front, back, screen on, sides and any wear.</p><button type="button" className={styles.button} disabled={disabled || busy || photos.length >= 8} aria-controls="mobile-photo-files" onClick={() => fileInput.current?.click()}><Images size={20} aria-hidden="true"/>Add photos</button><p className={styles.muted}>JPEG, PNG or WebP · up to 20 MB each</p>
+  <div className={styles.drop}><Camera aria-hidden="true" size={36}/><strong>Show it from every angle</strong><p>Front, back, screen on, sides and any wear.</p><button type="button" className={styles.button} disabled={disabled || busy || photos.length >= 8} aria-controls="mobile-photo-files" onClick={() => { void onPrepareSession?.(); fileInput.current?.click(); }}><Images size={20} aria-hidden="true"/>Add photos</button><p className={styles.muted}>JPEG, PNG or WebP · up to 20 MB each</p>
   <input id="mobile-photo-files" tabIndex={-1} ref={fileInput} aria-label="Choose photo files" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={disabled || busy || photos.length >= 8} style={{ position: "absolute", width: 1, height: 1, minHeight: 1, padding: 0, border: 0, clipPath: "inset(50%)" }} onChange={async (e) => {
             const files = Array.from(e.target.files ?? []);
             e.target.value = "";

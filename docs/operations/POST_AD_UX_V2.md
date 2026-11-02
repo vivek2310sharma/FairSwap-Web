@@ -1,3 +1,34 @@
+# V2.1.2 final security/product-completion pass
+
+2 November 2026. This is a delta against the existing V2.1.2 candidate below, not a redesign or deployment. It closes the prior native-concurrency gap and makes the certified-blank path reachable through real posting actions.
+
+## Reachable, safe journey
+
+- A page visit still allocates nothing. Local file selection without preparation and meaningful/recovered drafts continue through protected allocation. Their photos/fields must never be relabeled as empty.
+- An explicit **Add photos** click on a fully pristine local draft starts blank preparation while opening the file chooser synchronously in the original user-gesture stack. The existing button, layout, logo/fonts/tokens, buyer preview and storage format remain. Cancelling leaves only a server-certified blank, with no associated meaningful draft or media. Repeated preparation reuses its owner/request nonce.
+- The pristine check conservatively covers all canonical draft fields, selected/pending photos, price text, manual-title state and resolved area. A no-photo list alone is not sufficient. The guarded HTTP `create_empty` path reuses/protects an already-owned real session instead of misclassifying it; otherwise the existing Backend RPC mints an unrelated fresh ID.
+- The returned unclaimed server ID stays only in memory. It is NOT written into IndexedDB or assigned to draft work. Upload first confirms `claim_draft`, verifies the returned ID and `draft_protected===true`, then serializes the existing version-2 record under the claimed ID before media requests. An unprotected/mismatched response fails closed. If rotation wins before claim, the saved nonce/blobs remain and the existing explicit expiry recovery is shown.
+- New guarded HTTP `acquire_draft` is a Web transport mode, not a new SQL operation. It prioritizes an existing owned real draft ID, then resolves that owner's prior empty-request nonce and claims it, otherwise uses protected `create`. This handles lost claim responses/reload without duplicating sessions. Lookup errors fail closed. The legacy body with no operation still delegates to `create` unchanged; Zod remains strict and rejects injected protection/owner metadata.
+- A real browser regression drives six Add photos/cancel actions (no seeded eligibility), observes the oldest certified blank retire at five active sessions, then selects/uploads and verifies claim before saved-ID/media use. Other tests cover claim-race expiry, lost-response reload reuse and existing protected/unknown recovery choices. No legacy/meaningful/media draft is automatically reclassified or removed.
+
+## Native PG17 and CI
+
+`tests/posting-v212/run-native.sh` starts a new mode-0700 private-socket PostgreSQL 17.6 cluster with TCP disabled and no URL/credential inputs. The adapter verifies version, fixture marker, data directory, role and listeners before DDL. Independent psql backends hold transactions open; a separate observer confirms distinct PIDs and lock waits before explicit commit/rollback. Thirteen cases cover competing creation, one safe slot, same-ID retries, empty nonce retries, claim/rotation ordering, rollback, owner/RLS isolation, upload row locking, media completion/object inventory and protected work.
+
+The same original fixture SQL is shared with the existing 57-check PGlite suite. No migration or canonical SQL function changed. Backend's existing `backend-ci.yml` gains mandatory fixture/CI-contract checks in `unit-integrity` and the native runner in the already aggregate-gated `ratings-native-pg17` job, reusing its checksum-pinned build/dependencies. No new workflow, job, package, credential or deployment environment variable. Existing gates remain required. Local source wiring is verified; GitHub Actions was not dispatched.
+
+## Verification and release
+
+Exact final command results/counts are in the corrective ZIP. Web typecheck/lint/build and focused unit/browser checks, Backend baseline units/validators/typecheck, original 57 SQL checks, 13 native cases and migration integrity are run. The 58-file immutable manifest and V2.1.2 forward candidate are unchanged. Native PG17 now passes locally; supporting auth/storage schemas are explicit fixtures, so this is not authenticated hosted Supabase/Storage acceptance.
+
+Apply the small delta only to the reviewed V2.1.2 base. ChatGPT owns GitHub integration and hosted release steps. Underlying V2.1.2 Backend migration still precedes compatible Web in FairSwapTest; run existing CI and automated authenticated hosted Test acceptance before selective Production and automated postflight. Production remains blocked on that hosted acceptance. No Git command, deployment, manual/exploratory or owner predeployment testing occurred here.
+
+Rollback this delta by scoped revert/previous Web deployment, retaining all server data/protection metadata and migration history. The prior V2.1.2 baseline lacks the real blank-preparation path/native CI coverage but keeps safe explicit recovery. No schema rollback, ID resurrection or protection downgrade is needed. Owner Production availability checks use automated authenticated journey/health/error evidence after an authorized release.
+
+---
+
+## Prior V2.1.2 candidate record (superseded above for native coverage and preparation reachability)
+
 # Post Ad V2.1.2 — upload-session lifecycle correction
 
 2 November 2026. Includes the owner-approved automatic-rotation amendment. Local candidate, not deployed. Owner-confirmed FairSwapTest evidence: one seller has five active sessions, four without photos. No hosted account/session data was queried here.

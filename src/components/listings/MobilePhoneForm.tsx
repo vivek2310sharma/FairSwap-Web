@@ -13,6 +13,7 @@ import SearchCombobox from "./posting/SearchCombobox";
 import MobileBuyerPreview from "./posting/MobileBuyerPreview";
 import { STEP_LABELS, validatePhoneStep, validatePhoneWizard, reachablePhoneStep, blankPhoneDraft, generatedPhoneTitle, phoneRecoverySchema, fieldStep, type PhoneDraft, type PhoneRecovery } from "./posting/mobile-wizard";
 import { PostingSessionError, sessionErrors, sessionFailure, sessionRecoveryChoicesSchema, type SessionErrorCode, type SessionRecoveryChoice } from "@/lib/listings/mobiles/session-errors";
+import {canPrepareBlankSession} from "./posting/session-preparation";
 import styles from "./posting/Posting.module.css";
 type Issue = {
     field: string;
@@ -46,6 +47,8 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
     const [releaseChoice, setReleaseChoice] = useState<string | null>(null);
     const [sessionAction, setSessionAction] = useState(false);
     const [replaceExpired, setReplaceExpired] = useState(false);
+    const preparedSession = useRef<{nonce:string;id:string}|null>(null);
+    const preparation = useRef<{nonce:string;promise:Promise<void>}|null>(null);
     const releaseInFlight = useRef(false);
     const initialization = useRef<{id:string;promise:Promise<string|null>} | null>(null);
     const [frozen, setFrozen] = useState(false);
@@ -102,13 +105,37 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
         const parsed = sessionRecoveryChoicesSchema.parse(data);
         if (mounted.current) setSessionChoices(parsed.sessions);
     }, []);
+    function prepareBlankSession(): Promise<void> {
+        const nonce=draft.session_id;
+        if (preparation.current?.nonce===nonce) return preparation.current.promise;
+        if (sessionState!=="idle" || busy || maintenance || !canPrepareBlankSession(draft,photos,priceText,manualTitle,area) || preparedSession.current?.nonce===nonce) return Promise.resolve();
+        const promise=(async()=>{
+            setSessionState("initializing");
+            try {
+                const response=await fetch("/api/post-ad/sessions",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_id:nonce,operation:"create_empty"})});
+                const data=await response.json();if(!response.ok)throw sessionFailure(data);
+                const id=z.string().uuid().parse(data.session?.id);
+                if(!mounted.current || activeSession.current!==nonce)return;
+                // This unclaimed ID NEVER enters IndexedDB or the draft. Cancel is safely rotatable.
+                preparedSession.current={nonce,id};setSessionState("idle");
+            } catch(error) {
+                if(!mounted.current || activeSession.current!==nonce)return;
+                const failure=error instanceof PostingSessionError?error:sessionFailure(null);
+                setSessionState("failed");setSessionCode(failure.code);setMessage(failure.message);
+                if(failure.code==="UPLOAD_SESSION_LIMIT")await loadSessionChoices().catch(()=>{});
+            }
+        })();
+        preparation.current={nonce,promise};void promise.finally(()=>{if(preparation.current?.promise===promise)preparation.current=null;});return promise;
+    }
     const initializeSession = useCallback((session: string): Promise<string|null> => {
         if (initialization.current?.id === session) return initialization.current.promise;
         const promise = (async () => {
+            let activeId = session;
             activeSession.current = session;
             setSessionState("initializing"); setSessionCode(null);
             try {
                 selectPostingCategory(blankPhoneDraft().selection, catalogue);
+                if (preparation.current?.nonce === session) await preparation.current.promise;
                 // Persist the chosen id before allocation, so a lost response retries that id.
                 await saveQueue.current.catch(() => {});
                 const record = latestRecovery.current;
@@ -117,7 +144,8 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
                     await saveQueue.current.catch(() => { if (mounted.current) setSaveState("Could not save on this device. Keep this page open."); });
                 }
                 if (!mounted.current || activeSession.current !== session) return null;
-                const r = await fetch("/api/post-ad/sessions", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_id:session})});
+                const prepared=preparedSession.current?.nonce===session?preparedSession.current:null;
+                const r = await fetch("/api/post-ad/sessions", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(prepared?{session_id:prepared.id,operation:"claim_draft"}:{session_id:session,operation:"acquire_draft"})});
                 const data = await r.json();
                 if (!r.ok) throw sessionFailure(data);
                 if (!mounted.current || activeSession.current !== session) return null;
@@ -127,10 +155,25 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
                     replace(`/account/listings/${z.string().uuid().parse(data.session.listing_id)}/edit`);
                     return null;
                 }
-                await refresh(session);
-                if (mounted.current && activeSession.current === session) { setSessionState("ready"); setMessage(""); return session; }
+                const resolvedId=z.string().uuid().parse(data.session?.id??session);
+                if (prepared || resolvedId!==session) {
+                    const claimedId=resolvedId;
+                    if((prepared && claimedId!==prepared.id) || data.session?.draft_protected!==true)throw sessionFailure(null);
+                    activeId=claimedId;activeSession.current=claimedId;
+                    const latest=latestRecovery.current;
+                    if(latest?.owner===ownerId && latest.draft.session_id===session){
+                        const claimed={...latest,draft:{...latest.draft,session_id:claimedId}};
+                        latestRecovery.current=claimed;
+                        saveQueue.current=saveQueue.current.catch(()=>{}).then(()=>submitting.current?undefined:writePostingRecovery(ownerId,claimed));
+                        await saveQueue.current.catch(()=>{if(mounted.current)setSaveState("Could not save on this device. Keep this page open.");});
+                    }
+                    setDraft(current=>current.session_id===session?{...current,session_id:claimedId}:current);
+                    preparedSession.current=null;
+                }
+                await refresh(activeId);
+                if (mounted.current && activeSession.current === activeId) { setSessionState("ready"); setMessage(""); return activeId; }
             } catch (error) {
-                if (mounted.current && activeSession.current === session) {
+                if (mounted.current && activeSession.current === activeId) {
                     const failure = error instanceof PostingSessionError ? error : sessionFailure(null);
                     setSessionState("failed"); setSessionCode(failure.code); setMessage(failure.message);
                     if (failure.code === "UPLOAD_SESSION_LIMIT") await loadSessionChoices().catch(() => {});
@@ -175,7 +218,7 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
         } finally { releaseInFlight.current = false; setSessionAction(false); }
     }
     function restartExpiredSession() {
-        const session = crypto.randomUUID(); activeSession.current = session;
+        const session = crypto.randomUUID(); activeSession.current = session; preparedSession.current=null;
         setDraft(d => ({...d,session_id:session,media_ids:[]}));
         setPhotos(current => current.filter(p => p.blob).map(p => ({...p,id:crypto.randomUUID(),state:"pending",error:undefined})));
         setFrozen(false); setStep(0); setIssues([]); setSessionCode(null); setSessionState("idle"); setReplaceExpired(false);
@@ -216,7 +259,7 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
         if (!loaded || !resolved.current || recovery || submitting.current || !draft.session_id)
             return;
         const record:PhoneRecovery = { version: 2, owner: ownerId, updated: Date.now(), draft, step, manualTitle, area, priceText, photos: photos.map(({ id, state, blob }) => ({ id, state, blob })) };latestRecovery.current=record;
-        const timer = setTimeout(() => { saveQueue.current = saveQueue.current.catch(() => { }).then(() => submitting.current ? undefined : writePostingRecovery(ownerId, record)).then(() => { if (mounted.current)
+        const timer = setTimeout(() => { saveQueue.current = saveQueue.current.catch(() => { }).then(() => submitting.current || latestRecovery.current!==record ? undefined : writePostingRecovery(ownerId, record)).then(() => { if (mounted.current)
             {setSaveState("Saved on this device");setSavedRecord({draft,photos,step,manualTitle,area,priceText});} }).catch(() => { if (mounted.current)
             setSaveState("Could not save on this device. Keep this page open."); }); }, 350);
         return () => clearTimeout(timer);
@@ -322,7 +365,7 @@ export default function MobilePhoneForm({ catalogue, ownerId, cities, maintenanc
 
  <form ref={form} noValidate onSubmit={e => { e.preventDefault(); if (step < 5)
         next(); }}><fieldset disabled={busy || maintenance} className="min-w-0">
- <section {...attributes("media_ids")} tabIndex={-1} className={styles.card} style={{ display: step === 0 ? undefined : "none" }} aria-label="Photos">{<PreListingMediaUploader photos={photos} onChange={p => { setPhotos(p); clearIssue("media_ids"); }} sessionId={draft.session_id} disabled={busy || maintenance || frozen || sessionAction} ensureSession={() => sessionReady ? Promise.resolve(draft.session_id) : initializeSession(draft.session_id)} onSessionError={code => { setSessionState("failed"); setSessionCode(code); setMessage(sessionErrors[code].message); }} onReady={async () => { await refresh(activeSession.current); }}/>}{error("media_ids")}</section>
+ <section {...attributes("media_ids")} tabIndex={-1} className={styles.card} style={{ display: step === 0 ? undefined : "none" }} aria-label="Photos">{<PreListingMediaUploader photos={photos} onChange={p => { setPhotos(p); clearIssue("media_ids"); }} sessionId={draft.session_id} disabled={busy || maintenance || frozen || sessionAction} onPrepareSession={prepareBlankSession} ensureSession={() => sessionReady ? Promise.resolve(draft.session_id) : initializeSession(draft.session_id)} onSessionError={code => { setSessionState("failed"); setSessionCode(code); setMessage(sessionErrors[code].message); }} onReady={async () => { await refresh(activeSession.current); }}/>}{error("media_ids")}</section>
  <section className={styles.card} style={{ display: step === 1 ? undefined : "none" }} aria-label="Phone details"><h2>Which phone is it?</h2><p className={styles.muted}>Choose the details printed on your phone or its box.</p><SearchCombobox id="mobile-brand_id" label="Brand" options={catalogue.brands} value={draft.brand_id} error={issue("brand_id")} onChange={id => { setDraft(d => ({ ...d, brand_id: id, model_id: "", other_model: "" })); clearIssue("brand_id"); clearIssue("model_id"); }}/>{error("brand_id")}<div className={styles.choices} aria-label="Popular brands">{catalogue.brands.slice(0, 3).map(b => <button type="button" key={b.id} className={`${styles.button} ${draft.brand_id === b.id ? styles.selected : ""}`} aria-pressed={draft.brand_id === b.id} onClick={() => { setDraft(d => ({ ...d, brand_id: b.id, model_id: "", other_model: "" })); clearIssue("brand_id"); }}>{b.name}</button>)}</div><SearchCombobox id="mobile-model_id" label="Model" options={catalogue.models.filter(m => m.brand_id === draft.brand_id)} value={draft.model_id} disabled={!draft.brand_id} error={issue("model_id")} onChange={id => { update("model_id", id); update("other_model", ""); }}/>{error("model_id")}{model?.other && field("other_model", "Model name", <input {...attributes("other_model")} maxLength={100} value={draft.other_model} onChange={e => update("other_model", e.target.value)}/>)}<div className={styles.pair}><div><label htmlFor="mobile-storage">Storage<select {...attributes("storage")} value={draft.storage} onChange={e => update("storage", e.target.value as PhoneDraft["storage"])}><option value="">Choose storage</option>{STORAGE.map(s => <option key={s}>{s}</option>)}</select></label>{error("storage")}</div><div><label htmlFor="mobile-ram">RAM (optional)<select {...attributes("ram")} value={draft.ram} onChange={e => update("ram", e.target.value as PhoneDraft["ram"])}><option value="">Not specified</option>{RAM.map(s => <option key={s}>{s}</option>)}</select></label>{error("ram")}</div></div><small className={styles.muted}>Specs are seller-declared. Choose the configuration of your device.</small></section>
  <section className={styles.card} style={{ display: step === 2 ? undefined : "none" }} aria-label="Condition and description"><h2>A little honesty goes a long way.</h2><div {...attributes("condition")} tabIndex={-1} role="group" aria-label="Condition">{Object.entries(CONDITIONS).map(([v, label]) => <button type="button" key={v} className={`${styles.button} ${styles.condition} ${draft.condition === v ? styles.selected : ""}`} aria-pressed={draft.condition === v} onClick={() => update("condition", v as PhoneDraft["condition"])}>{label}{draft.condition === v ? <Check size={20} aria-hidden="true"/> : <Circle size={20} aria-hidden="true"/>}</button>)}</div>{error("condition")}<fieldset><legend>What’s included? (seller-declared)</legend><div className={styles.accessories}>{INCLUDED.map(item => <button key={item} type="button" className={`${styles.button} ${draft.included.includes(item) ? styles.selected : ""}`} aria-pressed={draft.included.includes(item)} onClick={() => { setDraft(d => ({ ...d, included: d.included.includes(item) ? d.included.filter(i => i !== item) : [...d.included, item], warranty_until: item === "Under warranty" && d.included.includes(item) ? "" : d.warranty_until })); clearIssue("warranty_until"); }}>{draft.included.includes(item) && <Check size={18} aria-hidden="true"/>}{item}</button>)}</div></fieldset>{draft.included.includes("Under warranty") && field("warranty_until", "Warranty expiry month / year", <input {...attributes("warranty_until")} type="month" min={new Date().toISOString().slice(0, 7)} value={draft.warranty_until} onChange={e => update("warranty_until", e.target.value)}/>)}<div><label htmlFor="mobile-title">Title<input {...attributes("title")} maxLength={150} value={title} onChange={e => { setManualTitle(true); update("title", e.target.value); }}/></label>{error("title")}<button type="button" className={styles.back} onClick={() => { setManualTitle(false); clearIssue("title"); }}><RotateCcw size={16} aria-hidden="true"/>Use automatically generated title</button></div>{field("description", "Description", <textarea {...attributes("description")} rows={5} maxLength={5000} value={draft.description} placeholder="Battery health, repairs, visible wear and why you’re selling…" onChange={e => update("description", e.target.value)}/>)}<p className={styles.muted}>10–5,000 characters. Keep contact and payment details in FairSwap chat.</p></section>
  <section className={styles.card} style={{ display: step === 3 ? undefined : "none" }} aria-label="Price"><h2>Make it a fair deal.</h2><div className={styles.choices} role="group" aria-label="Trade type">{(["sell", "giveaway"] as const).map(v => <button type="button" key={v} className={`${styles.button} ${draft.trade === v ? styles.selected : ""}`} aria-pressed={draft.trade === v} onClick={() => { setDraft(d => ({ ...d, trade: v, negotiable: v === "giveaway" ? false : d.negotiable })); clearIssue("price_paise"); }}>{v === "sell" ? "Sell" : "Give away"}</button>)}</div>{draft.trade === "sell" ? <><div><label htmlFor="mobile-price_paise">Price (₹)<input {...attributes("price_paise")} inputMode="decimal" value={priceText} maxLength={20} onChange={e => { setPriceText(e.target.value); clearIssue("price_paise"); }}/></label>{error("price_paise")}<p className={styles.price}>{price}</p></div><button type="button" role="switch" aria-checked={draft.negotiable} className={styles.switch} onClick={() => update("negotiable", !draft.negotiable)}><span>Negotiable</span><span className={styles.track} aria-hidden="true"><span /></span></button></> : <p className={styles.notice}>Your listing will show “Free”. No asking price or negotiation is needed.</p>}</section>

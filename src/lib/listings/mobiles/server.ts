@@ -61,6 +61,26 @@ export async function sessionRecoveryChoices(client: SupabaseClient) {
   if (!parsed.success) throw new PostingSessionError("UPLOAD_SESSION_UNAVAILABLE");
   return parsed.data;
 }
+/** A pristine browser view must not relabel an existing server draft as empty. */
+export async function prepareEmptySession(client: SupabaseClient, owner: string, nonce: string) {
+  const existing=await client.from("posting_upload_sessions").select("id").eq("owner_id",owner).eq("id",nonce).maybeSingle();
+  if(existing.error)throw new PostingSessionError("UPLOAD_SESSION_UNAVAILABLE");
+  return sessionCall(client,nonce,existing.data?"create":"create_empty");
+}
+/** Resolve only this account's prior preparation nonce; never guess an unrelated blank. */
+export async function acquireDraftSession(client: SupabaseClient, owner: string, nonce: string) {
+  const existing=await client.from("posting_upload_sessions").select("id").eq("owner_id",owner).eq("id",nonce).maybeSingle();
+  if(existing.error)throw new PostingSessionError("UPLOAD_SESSION_UNAVAILABLE");
+  if(existing.data)return sessionCall(client,nonce,"create");
+  const lookup=await client.from("posting_upload_sessions").select("id").eq("owner_id",owner).eq("empty_request_id",nonce).maybeSingle();
+  if(lookup.error)throw new PostingSessionError("UPLOAD_SESSION_UNAVAILABLE");
+  if(lookup.data){
+    const id=z.string().uuid().safeParse(lookup.data.id);
+    if(!id.success)throw new PostingSessionError("UPLOAD_SESSION_UNAVAILABLE");
+    return sessionCall(client,id.data,"claim_draft");
+  }
+  return sessionCall(client,nonce,"create");
+}
 export function postingError(error: unknown, status = 400) {
   if (error instanceof PostingSessionError) return Response.json({error:error.message,code:error.code},{status:sessionErrors[error.code].status,headers:{"Cache-Control":"private, no-store"}});
   const message = error instanceof Error && /^(Mobile posting|Request origin|Posting is temporarily|Sign in|Current policy|An active|Upload in progress|Session unavailable)/.test(error.message) ? error.message : "Could not complete the request. Your saved details are safe; please retry.";

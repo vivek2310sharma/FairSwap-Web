@@ -8,9 +8,9 @@ const m = vi.hoisted(() => ({ read: vi.fn(), write: vi.fn(), replace: vi.fn(), p
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: m.replace, push: m.push }) }));
 vi.mock("@/lib/listings/posting-recovery", () => ({ readPostingRecovery: m.read, writePostingRecovery: m.write }));
 vi.mock("@/components/listings/PincodeLocationPicker", () => ({ default: () => <div><input type="hidden" name="pin_code" value="560034"/><input type="hidden" name="city_id" value="55555555-5555-4555-8555-555555555555"/><input type="hidden" name="locality_id" value="66666666-6666-4666-8666-666666666666"/></div> }));
-vi.mock("@/components/listings/PreListingMediaUploader", () => ({ default: ({ onChange, ensureSession }: {
-        onChange: (v: unknown[]) => void; ensureSession:()=>Promise<string|null>;
-    }) => <><button type="button" onClick={() => void ensureSession()}>Prepare fixture photo session</button><button type="button" onClick={() => onChange([{ id: "44444444-4444-4444-8444-444444444444", state: "ready" }])}>Add ready photo</button></> }));
+vi.mock("@/components/listings/PreListingMediaUploader", () => ({ default: ({ onChange, ensureSession, onPrepareSession }: {
+        onChange: (v: unknown[]) => void; ensureSession:()=>Promise<string|null>; onPrepareSession:()=>Promise<void>;
+    }) => <><button type="button" onClick={()=>void onPrepareSession()}>Start blank fixture photo session</button><button type="button" onClick={() => void ensureSession()}>Prepare fixture photo session</button><button type="button" onClick={() => onChange([{ id: "44444444-4444-4444-8444-444444444444", state: "ready" }])}>Add ready photo</button></> }));
 const owner = "11111111-1111-4111-8111-111111111111", brand = "22222222-2222-4222-8222-222222222222", model = "33333333-3333-4333-8333-333333333333";
 const catalogue: MobileCatalogue = { version: 2, revision: "fixture-v2", listing_category_id: owner, enabled: true, selection: { category: "mobiles", subcategory: "mobile-phones", version: 2 }, brands: [{ id: brand, name: "Apple", aliases: ["iPhone"], sort_order: 1 }], models: [{ id: model, brand_id: brand, name: "iPhone 15", aliases: [], sort_order: 1, older_group: false, other: false }] };
 beforeEach(() => { vi.clearAllMocks(); m.read.mockResolvedValue(undefined); m.write.mockResolvedValue(undefined); m.fetch.mockImplementation(async (input: string) => ({ ok: true, json: async () => input === "/api/post-ad/submit" ? { success: true, listing_id: owner } : { session: { state: "open" }, media: input.includes(owner) ? [{id:model,state:"ready",url:null}] : [] } })); vi.stubGlobal("fetch", m.fetch); Element.prototype.scrollIntoView = vi.fn(); });
@@ -125,4 +125,34 @@ it("an expired resumed session retains details and never silently allocates a re
  step("Start a new photo session");step("Keep expired draft");expect(m.fetch).toHaveBeenCalledTimes(1);
  step("Start a new photo session");step("Start new session and re-upload photos");
  expect(screen.getByLabelText("Title")).toHaveValue("Saved title");expect(m.fetch).toHaveBeenCalledTimes(1);
+});
+
+it("explicit blank preparation keeps its server id out of recovery until a confirmed claim",async()=>{
+ const serverId="99999999-9999-4999-8999-999999999999";
+ m.fetch.mockImplementation(async(url:string,options:{body?:string}={})=>{
+  const operation=options.body?JSON.parse(options.body).operation:undefined;
+  return {ok:true,json:async()=>({session:{id:operation==="create_empty"||operation==="claim_draft"?serverId:serverId,state:"open",draft_protected:true},media:url.endsWith("/media")?[{id:"44444444-4444-4444-8444-444444444444",state:"ready",url:null}]:[]})};
+ });
+ render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Start blank fixture photo session"});
+ expect(m.fetch).not.toHaveBeenCalled();step("Start blank fixture photo session");await waitFor(()=>expect(m.fetch).toHaveBeenCalledOnce());
+ await act(async()=>{await new Promise(r=>setTimeout(r,400));});
+ expect(m.write.mock.calls.some(([,v])=>v?.draft.session_id===serverId)).toBe(false);expect(screen.getByRole("button",{name:"Continue"})).toBeDisabled();
+ const nonce=JSON.parse(m.fetch.mock.calls[0][1].body).session_id;expect(nonce).not.toBe(serverId);
+ step("Add ready photo");step("Prepare fixture photo session");await waitFor(()=>expect(screen.getByRole("button",{name:"Continue"})).toBeEnabled());
+ expect(JSON.parse(m.fetch.mock.calls[1][1].body)).toEqual({session_id:serverId,operation:"claim_draft"});
+ expect(m.write.mock.calls.some(([,v])=>v?.draft.session_id===serverId)).toBe(true);
+});
+it("meaningful recovered work never requests an empty-session certificate",async()=>{
+ m.read.mockResolvedValue(recovered());render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Resume saved listing"});step("Resume saved listing");
+ await waitFor(()=>expect(screen.getByRole("button",{name:"Continue"})).toBeEnabled());step("Start blank fixture photo session");
+ expect(m.fetch.mock.calls.some(([,o])=>o.body&&JSON.parse(o.body).operation==="create_empty")).toBe(false);expect(screen.getByLabelText("Title")).toHaveValue("Saved title");
+});
+
+it("a claim response without confirmed server protection cannot enter recovery or enable Continue",async()=>{
+ const serverId="99999999-9999-4999-8999-999999999999";
+ m.fetch.mockImplementation(async()=>({ok:true,json:async()=>({session:{id:serverId,state:"open",draft_protected:false},media:[]})}));
+ render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Start blank fixture photo session"});step("Start blank fixture photo session");
+ await waitFor(()=>expect(m.fetch).toHaveBeenCalledOnce());await act(async()=>{await Promise.resolve();});step("Add ready photo");step("Prepare fixture photo session");
+ await screen.findByText(/The photo session could not be opened/);expect(screen.getByRole("button",{name:"Continue"})).toBeDisabled();expect(m.write.mock.calls.some(([,v])=>v?.draft.session_id===serverId)).toBe(false);
+ expect(m.fetch.mock.calls.some(([url])=>url.endsWith("/media"))).toBe(false);
 });

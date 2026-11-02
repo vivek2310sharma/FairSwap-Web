@@ -30,3 +30,8 @@ it("removes an unallocated pending photo locally without a session or media requ
  render(<Host/>);fireEvent.change(screen.getByLabelText("Choose photo files"),{target:{files:[new File(["image"],"phone.png",{type:"image/png"})]}});await screen.findByText("Cover · Ready to upload");
  fireEvent.click(screen.getByRole("button",{name:"Remove photo 1"}));expect(screen.queryByText("Cover · Ready to upload")).toBeNull();expect(m.fetch).not.toHaveBeenCalled();
 });
+
+it("Add photos starts preparation only on explicit activation without awaiting the file chooser",()=>{
+ const prepare=vi.fn(()=>new Promise<void>(()=>{}));render(<PreListingMediaUploader photos={[]} onChange={vi.fn()} sessionId={id} disabled={false} onReady={async()=>{}} onPrepareSession={prepare}/>);
+ const picker=vi.spyOn(screen.getByLabelText("Choose photo files"),"click");expect(prepare).not.toHaveBeenCalled();fireEvent.click(screen.getByRole("button",{name:"Add photos"}));expect(prepare).toHaveBeenCalledOnce();expect(picker).toHaveBeenCalledOnce();expect(m.fetch).not.toHaveBeenCalled();
+});
