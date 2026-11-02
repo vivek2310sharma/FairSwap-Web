@@ -1,3 +1,37 @@
+# Post Ad V2.1.2 — upload-session lifecycle correction
+
+2 November 2026. Includes the owner-approved automatic-rotation amendment. Local candidate, not deployed. Owner-confirmed FairSwapTest evidence: one seller has five active sessions, four without photos. No hosted account/session data was queried here.
+
+## Final behavior
+
+- Page visits and local photo selection allocate no remote session. Explicit upload serializes the latest account-bound recovery write, then creates/reuses that UUID. One in-flight promise coalesces duplicate initialization; lost responses retry the same ID. Resume reads a known session without allocating one; entirely local/pending records wait for explicit upload. Continue and forward steps are disabled while the session is unavailable.
+- Backend keeps the five-active-session limit. At capacity, a new request atomically retires the oldest SAFELY CERTIFIED blank owned session and inserts its replacement under the existing seller advisory lock and victim row lock. Failed replacement rolls retirement back. All operations remain on `posting_v2_session(uuid,text,uuid)` with its public invoker/private implementation and existing owner/account/policy/RLS checks.
+- Safety does not depend on zero uploaded photos, elapsed inactivity or a browser heartbeat. New `draft_protected` defaults true for every legacy/unknown session and every ordinary upload allocation. Only `create_empty` can create a certified blank, under a fresh SERVER-GENERATED session ID distinct from the supplied owner-scoped request nonce. `claim_draft` must complete before associating meaningful local work with that ID; legacy create/read and all media/prepare operations also permanently protect it. A retry cannot downgrade protection. The normal Web upload path already has recoverable selected photos, so it uses protected `create`, never `create_empty`.
+- A caller-supplied existing/local draft ID cannot be certified blank. Automatic eligibility also requires open/unexpired state, a server empty-allocation certificate and NO media history, including removed/uploading rows. Photos, active uploads, meaningful/unknown local drafts and finalizing/submitted sessions are preserved. The four historical no-photo sessions cannot be assumed safe: they remain protected until the seller explicitly reviews recovery. This is intentional.
+- If all candidates are protected/unknown, HTTP returns `UPLOAD_SESSION_LIMIT` (429) and bounded current-owner recovery metadata. The UI distinguishes certified blanks from photo-free sessions whose local work is protected/unknown. A guarded, explicit, confirmed empty-only release remains available for a session the owner no longer needs. The warning covers other tabs/devices and preserves their saved fields. There is no automatic bulk discard or global draft search.
+- Safe allowlisted codes also include `UPLOAD_SESSION_EXPIRED` (410), `UPLOAD_SESSION_PROTECTED` / `UPLOAD_SESSION_BUSY` (409) and `UPLOAD_SESSION_UNAVAILABLE` (503). Raw SQL errors/details/hints never reach clients; legacy capacity/expiry messages are recognized. GET lists owner metadata only; DELETE validates the UUID/origin/policy/account and delegates to atomic release.
+- Upload failures retain sanitized blobs/IDs. A coded media expiry disables Continue. Expired drafts retain fields/photos until explicit replacement confirmation. Retry blobs get new media IDs; photos without a local copy must be re-added. Previous server photos are not deleted by this action and keep their original expiry policy. The recovery format/24-hour window, branding, tokens, layout scaffold and buyer preview remain existing behavior.
+
+## Canonical migration and cleanup
+
+Backend candidate: `supabase/forward-migrations/posting-v2/session-recovery/supabase/migrations/20261101234604_posting_v212_session_recovery.sql`. Its filename was CLI-generated in UTC; all original/applied foundation/activation files and the immutable 58-file set remain unchanged. Two additive session metadata columns and an owner/request index support conservative certification; no new table/RLS policy or direct client write grant is added.
+
+Retirement creates an expired tombstone, never deletes a row or object in the allocation RPC, and never resurrects an old ID. A certified blank cannot have upload assets because trusted Storage writes require reserve, which protects the row first. The unchanged service-only cleanup can safely claim/ack the tombstone repeatedly. Replacement and committed listing media remain untouched. See Backend `session-recovery/README.md` for protocol and release details.
+
+## Evidence and release boundary
+
+Final local evidence is recorded in the ZIP: Web typecheck/lint, production webpack build without real environment files, focused unit tests and isolated Playwright checks; Backend disposable PostgreSQL security/RLS/contract tests, typecheck and immutable-manifest verification. No auth, category activation, moderation/finalizer, dependency, new environment variable, CI workflow, Git command or hosted operation. The wizard remains English. Local storage remains best-effort/device-local, not a new synced draft service.
+
+ChatGPT owns independent review and delivery: the Backend forward migration to FairSwapTest first, compatible Web through existing CI → Staging/Test, automated authenticated hosted Test acceptance, then selective Production migration/Web delivery and automated postflight. Backend has no new staging branch. Preserve environment-specific histories and Test-only differences. Production promotion remains BLOCKED on authenticated hosted Test acceptance. No manual/exploratory or owner predeployment testing is requested.
+
+Rollback: previous Web/Vercel deployment or scoped Git revert, retaining server data and the additive protection columns. If the private function needs restoration, use a separately reviewed forward-fix migration; never edit an applied file, rewind a ledger or resurrect retired IDs. V2.1.1 rollback reintroduces eager allocation. Owner Production checks use automated authenticated session/upload/recovery/submission, health and error evidence after authorized release.
+
+NOT RUN: authenticated hosted Test/Production acceptance, native PostgreSQL parallel-connection races, the full disposable Supabase/pgTAP stack, physical-device benchmarks or screen-reader certification. SQL tests execute real migrations/functions/roles in PGlite with explicit auth/storage/status fixtures; concurrent driver requests are serialized by that engine. Browser tests use real components with intercepted synthetic APIs/system fonts. They are not hosted RLS acceptance. Production build retains the actual font setup.
+
+---
+
+## Historical V2.1.1 record
+
 # Post Ad V2.1.1 — stepper feedback hotfix
 
 1 November 2026. This correction supersedes the V2.1 locked-step feedback described below.

@@ -1,5 +1,6 @@
 "use client";
 import { Camera, Images, CircleAlert } from "lucide-react";
+import { sessionErrorCodeSchema, type SessionErrorCode } from "@/lib/listings/mobiles/session-errors";
 import PostingPhotoImage from "./posting/PostingPhotoImage";
 import styles from "./posting/Posting.module.css";
 import { useEffect, useRef, useState } from "react";
@@ -12,13 +13,15 @@ export type PostingPhoto = {
     url?: string;
     error?: string;
 };
-export default function PreListingMediaUploader({ photos, onChange, sessionId, disabled, onReady, locale = "en" }: {
+export default function PreListingMediaUploader({ photos, onChange, sessionId, disabled, onReady, ensureSession, onSessionError, locale = "en" }: {
     locale?: PostingLocale;
     photos: PostingPhoto[];
     onChange: (photos: PostingPhoto[]) => void;
     sessionId: string;
     disabled: boolean;
     onReady: () => Promise<void>;
+    ensureSession?: () => Promise<string | null>;
+    onSessionError?: (code:SessionErrorCode) => void;
 }) {
     const t = (text: string) => postingText(locale, text);
     const fileInput = useRef<HTMLInputElement>(null);
@@ -35,6 +38,8 @@ export default function PreListingMediaUploader({ photos, onChange, sessionId, d
         setBusy(true);
         setError("");
         try {
+            const uploadSession = ensureSession ? await ensureSession() : sessionId;
+            if (!uploadSession) return;
             for (const photo of items) {
                 if (!photo.blob)
                     continue;
@@ -43,10 +48,13 @@ export default function PreListingMediaUploader({ photos, onChange, sessionId, d
                     const data = new FormData();
                     data.append("file", photo.blob, "photo.webp");
                     data.append("media_id", photo.id);
-                    const r = await fetch(`/api/post-ad/sessions/${sessionId}/media`, { method: "POST", body: data });
+                    const r = await fetch(`/api/post-ad/sessions/${uploadSession}/media`, { method: "POST", body: data });
                     const result = await r.json();
-                    if (!r.ok)
+                    if (!r.ok) {
+                        const code = sessionErrorCodeSchema.safeParse(result.code);
+                        if (code.success) onSessionError?.(code.data);
                         throw new Error(result.error);
+                    }
                     change(latest.current.map(p => p.id === photo.id ? { ...p, state: "ready" } : p));
                 }
                 catch (e) {
@@ -100,6 +108,7 @@ export default function PreListingMediaUploader({ photos, onChange, sessionId, d
    <button type="button" aria-label={`Remove photo ${i + 1}`} disabled={disabled || busy} onClick={async () => {
                 if (working.current)
                     return;
+                if (p.state === "pending") { change(latest.current.filter(x => x.id !== p.id)); return; }
                 working.current = true;
                 setBusy(true);
                 try {

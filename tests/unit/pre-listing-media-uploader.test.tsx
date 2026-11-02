@@ -16,3 +16,17 @@ describe("Production media uploader", () => {
     it("rejects more than eight files before compression or upload", async () => { render(<Host />); fireEvent.change(screen.getByLabelText("Choose photo files"), { target: { files: Array.from({ length: 9 }, () => new File(["x"], "x.png", { type: "image/png" })) } }); expect(await screen.findByRole("alert")).toHaveTextContent("at most 8"); expect(m.compress).not.toHaveBeenCalled(); expect(m.fetch).not.toHaveBeenCalled(); });
     it("does not remove a photo locally when deletion fails", async () => { m.fetch.mockResolvedValue({ ok: false }); render(<PreListingMediaUploader photos={[{ id, state: "ready" }]} onChange={vi.fn()} sessionId={id} disabled={false} onReady={async () => { }}/>); fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" })); expect(await screen.findByRole("alert")).toHaveTextContent("Could not remove"); expect(screen.getByText("Cover · Ready")).toBeVisible(); });
 });
+
+it("keeps selection local and retains the same blob/id when session allocation fails",async()=>{
+ const ensure=vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(id);
+ function LazyHost(){const [photos,setPhotos]=React.useState<PostingPhoto[]>([]);return <PreListingMediaUploader photos={photos} onChange={setPhotos} sessionId={id} disabled={false} ensureSession={ensure} onReady={async()=>{}}/>;}
+ m.fetch.mockResolvedValue({ok:true,json:async()=>({})});render(<LazyHost/>);
+ fireEvent.change(screen.getByLabelText("Choose photo files"),{target:{files:[new File(["image"],"phone.png",{type:"image/png"})]}});await screen.findByText("Cover · Ready to upload");
+ expect(ensure).not.toHaveBeenCalled();expect(m.fetch).not.toHaveBeenCalled();fireEvent.click(screen.getByRole("button",{name:"Upload / retry photos"}));await waitFor(()=>expect(ensure).toHaveBeenCalledOnce());
+ expect(m.fetch).not.toHaveBeenCalled();expect(screen.getByText("Cover · Ready to upload")).toBeVisible();
+ fireEvent.click(screen.getByRole("button",{name:"Upload / retry photos"}));await screen.findByText("Cover · Ready");expect(m.fetch).toHaveBeenCalledOnce();
+});
+it("removes an unallocated pending photo locally without a session or media request",async()=>{
+ render(<Host/>);fireEvent.change(screen.getByLabelText("Choose photo files"),{target:{files:[new File(["image"],"phone.png",{type:"image/png"})]}});await screen.findByText("Cover · Ready to upload");
+ fireEvent.click(screen.getByRole("button",{name:"Remove photo 1"}));expect(screen.queryByText("Cover · Ready to upload")).toBeNull();expect(m.fetch).not.toHaveBeenCalled();
+});

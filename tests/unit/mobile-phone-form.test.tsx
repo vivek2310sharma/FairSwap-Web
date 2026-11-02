@@ -8,14 +8,14 @@ const m = vi.hoisted(() => ({ read: vi.fn(), write: vi.fn(), replace: vi.fn(), p
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: m.replace, push: m.push }) }));
 vi.mock("@/lib/listings/posting-recovery", () => ({ readPostingRecovery: m.read, writePostingRecovery: m.write }));
 vi.mock("@/components/listings/PincodeLocationPicker", () => ({ default: () => <div><input type="hidden" name="pin_code" value="560034"/><input type="hidden" name="city_id" value="55555555-5555-4555-8555-555555555555"/><input type="hidden" name="locality_id" value="66666666-6666-4666-8666-666666666666"/></div> }));
-vi.mock("@/components/listings/PreListingMediaUploader", () => ({ default: ({ onChange }: {
-        onChange: (v: unknown[]) => void;
-    }) => <button type="button" onClick={() => onChange([{ id: "44444444-4444-4444-8444-444444444444", state: "ready" }])}>Add ready photo</button> }));
+vi.mock("@/components/listings/PreListingMediaUploader", () => ({ default: ({ onChange, ensureSession }: {
+        onChange: (v: unknown[]) => void; ensureSession:()=>Promise<string|null>;
+    }) => <><button type="button" onClick={() => void ensureSession()}>Prepare fixture photo session</button><button type="button" onClick={() => onChange([{ id: "44444444-4444-4444-8444-444444444444", state: "ready" }])}>Add ready photo</button></> }));
 const owner = "11111111-1111-4111-8111-111111111111", brand = "22222222-2222-4222-8222-222222222222", model = "33333333-3333-4333-8333-333333333333";
 const catalogue: MobileCatalogue = { version: 2, revision: "fixture-v2", listing_category_id: owner, enabled: true, selection: { category: "mobiles", subcategory: "mobile-phones", version: 2 }, brands: [{ id: brand, name: "Apple", aliases: ["iPhone"], sort_order: 1 }], models: [{ id: model, brand_id: brand, name: "iPhone 15", aliases: [], sort_order: 1, older_group: false, other: false }] };
-beforeEach(() => { vi.clearAllMocks(); m.read.mockResolvedValue(undefined); m.write.mockResolvedValue(undefined); m.fetch.mockImplementation(async (input: string) => ({ ok: true, json: async () => input === "/api/post-ad/submit" ? { success: true, listing_id: owner } : { session: { state: "open" }, media: [] } })); vi.stubGlobal("fetch", m.fetch); Element.prototype.scrollIntoView = vi.fn(); });
+beforeEach(() => { vi.clearAllMocks(); m.read.mockResolvedValue(undefined); m.write.mockResolvedValue(undefined); m.fetch.mockImplementation(async (input: string) => ({ ok: true, json: async () => input === "/api/post-ad/submit" ? { success: true, listing_id: owner } : { session: { state: "open" }, media: input.includes(owner) ? [{id:model,state:"ready",url:null}] : [] } })); vi.stubGlobal("fetch", m.fetch); Element.prototype.scrollIntoView = vi.fn(); });
 afterEach(async() => { cleanup(); await Promise.resolve();await Promise.resolve();vi.unstubAllGlobals(); });
-async function ready(maintenance = false) { render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]} maintenance={maintenance}/>); await screen.findByRole("button", { name: "Add ready photo" }); }
+async function ready(maintenance = false) { render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]} maintenance={maintenance}/>); await screen.findByRole("button", { name: "Add ready photo" }); if (!maintenance) {step("Prepare fixture photo session"); await waitFor(()=>expect(screen.getByRole("button",{name:"Continue"})).toBeEnabled());} }
 const step = (name: string) => fireEvent.click(screen.getByRole("button", { name: /^\d /.test(name) ? `Step ${name[0]}: ${name.slice(2)}` : name }));
 function choose(label: string, name: string) { const input = screen.getByRole("combobox", { name: label }); fireEvent.click(input); fireEvent.change(input, { target: { value: name } }); fireEvent.keyDown(input, { key: "ArrowDown" }); fireEvent.keyDown(input, { key: "Enter" }); }
 function fill() { fireEvent.click(screen.getByRole("button", { name: "Add ready photo" })); step("2 Phone details"); choose("Brand", "Apple"); choose("Model", "iPhone 15"); fireEvent.change(screen.getByLabelText("Storage"), { target: { value: "128 GB" } }); step("3 Condition"); step("Good condition"); fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Used carefully. Battery health 90%." } }); step("4 Price"); fireEvent.change(screen.getByLabelText("Price (₹)"), { target: { value: "25000" } }); }
@@ -41,14 +41,14 @@ describe("Production phone wizard", () => {
         expect(screen.getByRole("button", {name:"Step 2: Phone details"})).toHaveAttribute("data-complete", "false");
         expect(screen.getByRole("button", {name:"Step 1: Photos"})).toHaveAttribute("data-complete", "true");
     });
-    it("does not initialize or overwrite a pending recovery before explicit Resume", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Resume saved listing" }); await act(async () => { await new Promise(r => setTimeout(r, 400)); }); expect(m.write).not.toHaveBeenCalled(); expect(m.fetch).not.toHaveBeenCalled(); step("Resume saved listing"); await waitFor(() => expect(screen.getByLabelText("Price (₹)")).toHaveValue("24500")); await waitFor(() => expect(m.write).toHaveBeenCalledWith(owner, expect.objectContaining({ step: 0, photos: [{ id: model, state: "ready", blob: undefined }] }))); expect(JSON.parse(m.fetch.mock.calls[0][1].body).session_id).toBe(owner); expect(screen.getByRole("button", {name:"Step 1: Photos"})).toHaveAttribute("aria-current", "step"); step("5 Location"); expect(screen.queryByRole("alert")).toBeNull(); step("Continue"); step("Continue"); step("Continue"); expect(screen.getByLabelText("Description")).toHaveFocus(); expect(screen.getAllByRole("alert")).toHaveLength(1); });
-    it("Start fresh creates a different session with no recovered values", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Start fresh" }); step("Start fresh"); await screen.findByRole("button", { name: "Add ready photo" }); expect(JSON.parse(m.fetch.mock.calls[0][1].body).session_id).not.toBe(owner); step("4 Price"); expect(screen.getByLabelText("Price (₹)")).toHaveValue(""); });
+    it("does not initialize or overwrite a pending recovery before explicit Resume", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Resume saved listing" }); await act(async () => { await new Promise(r => setTimeout(r, 400)); }); expect(m.write).not.toHaveBeenCalled(); expect(m.fetch).not.toHaveBeenCalled(); step("Resume saved listing"); await waitFor(() => expect(screen.getByLabelText("Price (₹)")).toHaveValue("24500")); await waitFor(() => expect(m.write).toHaveBeenCalledWith(owner, expect.objectContaining({ step: 0, photos: [{ id: model, state: "ready", blob: undefined }] }))); expect(m.fetch.mock.calls.some(([url,options])=>url==="/api/post-ad/sessions"&&options.method==="POST")).toBe(false); expect(m.fetch.mock.calls[0][0]).toBe(`/api/post-ad/sessions/${owner}/media`); expect(screen.getByRole("button", {name:"Step 1: Photos"})).toHaveAttribute("aria-current", "step"); step("5 Location"); expect(screen.queryByRole("alert")).toBeNull(); step("Continue"); step("Continue"); step("Continue"); expect(screen.getByLabelText("Description")).toHaveFocus(); expect(screen.getAllByRole("alert")).toHaveLength(1); });
+    it("Start fresh creates a different session with no recovered values", async () => { m.read.mockResolvedValue(recovered()); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button", { name: "Start fresh" }); step("Start fresh"); await screen.findByRole("button", { name: "Add ready photo" }); expect(m.fetch).not.toHaveBeenCalled(); step("Prepare fixture photo session"); await waitFor(()=>expect(m.fetch).toHaveBeenCalled()); expect(JSON.parse(m.fetch.mock.calls[0][1].body).session_id).not.toBe(owner); step("4 Price"); expect(screen.getByLabelText("Price (₹)")).toHaveValue(""); });
     it("ignores stale or other-owner recovery", async () => { m.read.mockResolvedValue({ ...recovered(), owner: brand }); await ready(); expect(screen.queryByText("Resume saved listing")).toBeNull(); expect(m.read).toHaveBeenCalledWith(owner); });
     it("retries initialization once with the same session", async () => { let finish!: () => void; const pending = new Promise<void>(r => { finish = r; }); let attempts = 0; m.fetch.mockImplementation(async (url: string) => { if (url === "/api/post-ad/sessions") {
         if (++attempts === 1)
             return { ok: false, json: async () => ({ error: "Session unavailable." }) };
         await pending;
-    } return { ok: true, json: async () => ({ session: { state: "open" }, media: [] }) }; }); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); const retry = await screen.findByRole("button", { name: "Retry photo upload" }); fireEvent.click(retry); fireEvent.click(retry); const requests = m.fetch.mock.calls.filter(([url]) => url === "/api/post-ad/sessions"); expect(requests).toHaveLength(2); expect(requests[0][1].body).toBe(requests[1][1].body); finish(); await screen.findByRole("button", { name: "Add ready photo" }); });
+    } return { ok: true, json: async () => ({ session: { state: "open" }, media: [] }) }; }); render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>); await screen.findByRole("button",{name:"Prepare fixture photo session"}); step("Prepare fixture photo session"); const retry = await screen.findByRole("button", { name: "Retry photo upload" }); fireEvent.click(retry); fireEvent.click(retry); await waitFor(()=>expect(m.fetch.mock.calls.filter(([url])=>url==="/api/post-ad/sessions")).toHaveLength(2)); const requests = m.fetch.mock.calls.filter(([url]) => url === "/api/post-ad/sessions"); expect(requests).toHaveLength(2); expect(requests[0][1].body).toBe(requests[1][1].body); finish(); await waitFor(()=>expect(screen.getByRole("button",{name:"Continue"})).toBeEnabled()); });
     it("keeps manual title and offers automatic reset", async () => { await ready(); fill(); step("3 Condition"); expect(screen.getByLabelText("Title")).toHaveValue("Apple iPhone 15 · 128 GB · Good condition"); fireEvent.change(screen.getByLabelText("Title"), { target: { value: "My carefully used phone" } }); step("Like new"); expect(screen.getByLabelText("Title")).toHaveValue("My carefully used phone"); step("Use automatically generated title"); expect(screen.getByLabelText("Title")).toHaveValue("Apple iPhone 15 · 128 GB · Like new"); });
     it("blocks review when photos are missing and focuses the photo group", async () => { await ready(); step("Continue"); expect(screen.getByRole("alert")).toHaveTextContent(/photo/i); expect(document.getElementById("mobile-media_ids")).toHaveFocus(); expect(submitCalls()).toHaveLength(0); });
     it("submits giveaway only from final review and displays one preview", async () => { await ready(); fill(); step("Give away"); step("5 Location"); step("Review listing"); expect(screen.getAllByRole("complementary", { name: "Buyer preview" })).toHaveLength(1); expect(screen.getByRole("radio")).toBeChecked(); expect(submitCalls()).toHaveLength(0); step("Submit for review"); await waitFor(() => expect(m.replace).toHaveBeenCalledWith(`/account/listings/${owner}/edit`)); expect(JSON.parse(submitCalls()[0][1].body)).toMatchObject({ trade: "giveaway", price_paise: 0, negotiable: false, plan_id: "free-v1" }); await act(async () => { await new Promise(r => setTimeout(r, 450)); }); expect(m.write.mock.calls.at(-1)).toEqual([owner, null]); });
@@ -56,13 +56,13 @@ describe("Production phone wizard", () => {
     it("maintenance prevents progression and submission", async () => { await ready(true); expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled(); expect(screen.getByRole("alert")).toHaveTextContent(/temporarily|maintenance|pause/i); expect(submitCalls()).toHaveLength(0); });
  it("preserves edits when router or catalogue references change for the same account",async()=>{
   const view=render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);
-  await screen.findByRole("button",{name:"Add ready photo"});step("Add ready photo");step("2 Phone details");choose("Brand","Apple");choose("Model","iPhone 15");
+  await screen.findByRole("button",{name:"Add ready photo"});step("Prepare fixture photo session");await waitFor(()=>expect(screen.getByRole("button",{name:"Continue"})).toBeEnabled());step("Add ready photo");step("2 Phone details");choose("Brand","Apple");choose("Model","iPhone 15");
   view.rerender(<MobilePhoneForm ownerId={owner} catalogue={{...catalogue,revision:"new-reference"}} cities={[]}/>);
   expect(screen.getByRole("combobox",{name:"Model"})).toHaveValue("iPhone 15");expect(m.fetch.mock.calls.filter(([url])=>url==="/api/post-ad/sessions")).toHaveLength(1);
  });
 
  it("flushes the latest edits on route exit without waiting for the autosave timer",async()=>{
-  const view=render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Add ready photo"});fill();fireEvent.change(screen.getByLabelText("Price (₹)"),{target:{value:"12345"}});view.unmount();await waitFor(()=>expect(m.write).toHaveBeenCalledWith(owner,expect.objectContaining({step:3,priceText:"12345"})));
+  const view=render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Add ready photo"});step("Prepare fixture photo session");await waitFor(()=>expect(screen.getByRole("button",{name:"Continue"})).toBeEnabled());fill();fireEvent.change(screen.getByLabelText("Price (₹)"),{target:{value:"12345"}});view.unmount();await waitFor(()=>expect(m.write).toHaveBeenCalledWith(owner,expect.objectContaining({step:3,priceText:"12345"})));
  });
  it("never flushes a pending recovered draft on unmount",async()=>{
   m.read.mockResolvedValue(recovered());const view=render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Resume saved listing"});view.unmount();await Promise.resolve();expect(m.write).not.toHaveBeenCalled();expect(m.fetch).not.toHaveBeenCalled();
@@ -89,4 +89,40 @@ it("Review/Submit returns to the earliest invalid step with only its inline erro
  expect(screen.getByRole("alert")).toHaveTextContent(/photo/i);
  expect(screen.queryByText("Check the highlighted details")).toBeNull();
  expect(submitCalls()).toHaveLength(0);
+});
+
+it("page visits and fresh local drafts never allocate a remote session", async()=>{
+ const view=render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);
+ await screen.findByRole("button",{name:"Add ready photo"});
+ await act(async()=>{await new Promise(r=>setTimeout(r,400));});
+ expect(m.fetch).not.toHaveBeenCalled();expect(screen.getByRole("button",{name:"Continue"})).toBeDisabled();
+ view.unmount();await Promise.resolve();expect(m.fetch).not.toHaveBeenCalled();
+});
+it("capacity recovery requires confirmation, protects media sessions and reuses the pending request id",async()=>{
+ const empty="77777777-7777-4777-8777-777777777777",protectedId="88888888-8888-4888-8888-888888888888";
+ let released=false;
+ m.fetch.mockImplementation(async(url:string,options:{method?:string}={})=>{
+  if(url==="/api/post-ad/sessions"&&options.method==="POST")return {ok:released,json:async()=>released?{session:{state:"open"},media:[]}:{code:"UPLOAD_SESSION_LIMIT"}};
+  if(url==="/api/post-ad/sessions"&&options.method==="DELETE"){released=true;return {ok:true,json:async()=>({})};}
+  if(url==="/api/post-ad/sessions")return {ok:true,json:async()=>({limit:5,sessions:[{id:empty,state:"open",created_at:new Date().toISOString(),expires_at:new Date(Date.now()+86400000).toISOString(),can_abandon:true},{id:protectedId,state:"open",created_at:new Date().toISOString(),expires_at:new Date(Date.now()+86400000).toISOString(),can_abandon:false}]})};
+  return {ok:true,json:async()=>({session:{state:"open"},media:[]})};
+ });
+ render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Prepare fixture photo session"});step("Prepare fixture photo session");
+ await screen.findByRole("heading",{name:"Recover photo session capacity"});expect(screen.getByRole("button",{name:"Continue"})).toBeDisabled();
+ expect(screen.queryByRole("button",{name:/Review release of session 88888888/})).toBeNull();
+ step("Review release of session 77777777");expect(m.fetch.mock.calls.filter(([,o])=>o.method==="DELETE")).toHaveLength(0);
+ step("Keep session");expect(m.fetch.mock.calls.filter(([,o])=>o.method==="DELETE")).toHaveLength(0);
+ step("Review release of session 77777777");step("Confirm release of unused session");
+ await screen.findByText(/Unused photo session released/);expect(m.fetch.mock.calls.filter(([,o])=>o.method==="DELETE")).toHaveLength(1);
+ step("Prepare fixture photo session");await waitFor(()=>expect(screen.getByRole("button",{name:"Continue"})).toBeEnabled());
+ const attempts=m.fetch.mock.calls.filter(([url,o])=>url==="/api/post-ad/sessions"&&o.method==="POST");expect(attempts).toHaveLength(2);expect(attempts[0][1].body).toBe(attempts[1][1].body);
+});
+it("an expired resumed session retains details and never silently allocates a replacement",async()=>{
+ m.read.mockResolvedValue(recovered());m.fetch.mockResolvedValue({ok:false,json:async()=>({code:"UPLOAD_SESSION_EXPIRED"})});
+ render(<MobilePhoneForm ownerId={owner} catalogue={catalogue} cities={[]}/>);await screen.findByRole("button",{name:"Resume saved listing"});step("Resume saved listing");
+ await screen.findByText(/This photo session has expired/);expect(screen.getByLabelText("Title")).toHaveValue("Saved title");expect(screen.getByRole("button",{name:"Continue"})).toBeDisabled();
+ expect(m.fetch.mock.calls.some(([,o])=>o.method==="POST")).toBe(false);
+ step("Start a new photo session");step("Keep expired draft");expect(m.fetch).toHaveBeenCalledTimes(1);
+ step("Start a new photo session");step("Start new session and re-upload photos");
+ expect(screen.getByLabelText("Title")).toHaveValue("Saved title");expect(m.fetch).toHaveBeenCalledTimes(1);
 });

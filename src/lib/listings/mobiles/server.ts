@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PostingSessionError, sessionErrors, sessionRecoveryChoicesSchema } from "./session-errors";
 import { catalogueSchema } from "./contract";
 import { createClient } from "@/lib/supabase/server";
 import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
@@ -40,11 +41,28 @@ export async function postingGuard(request: Request, mutation = true) {
 }
 export async function sessionCall(client: SupabaseClient, session_id: string, operation: string, media_id?: string) {
   const r = await client.rpc("posting_v2_session", {session_id,operation,media_id:media_id ?? null});
+  if (r.error) throw sessionRpcError(r.error);
   const parsed = sessionSchema.safeParse(r.data);
-  if (r.error || !parsed.success) throw new Error(r.error?.code === "PT409" ? "Upload in progress. Retry in two minutes." : "Session unavailable. Retry or start a new posting.");
+  if (!parsed.success) throw new PostingSessionError("UPLOAD_SESSION_UNAVAILABLE");
+  return parsed.data;
+}
+function sessionRpcError(error: {code?:string;message?:string}) {
+  // Only known constants/legacy messages may cross the RPC boundary. Never echo SQL.
+  if (error.message === "UPLOAD_SESSION_LIMIT" || error.message === "Too many upload sessions") return new PostingSessionError("UPLOAD_SESSION_LIMIT");
+  if (error.message === "UPLOAD_SESSION_EXPIRED" || error.message === "Upload session expired" || error.message === "Upload session is expiring; start a new posting") return new PostingSessionError("UPLOAD_SESSION_EXPIRED");
+  if (error.message === "UPLOAD_SESSION_PROTECTED") return new PostingSessionError("UPLOAD_SESSION_PROTECTED");
+  if (error.message === "Upload in progress; retry shortly" || error.message === "Submission is being finalized") return new PostingSessionError("UPLOAD_SESSION_BUSY");
+  return new PostingSessionError("UPLOAD_SESSION_UNAVAILABLE");
+}
+export async function sessionRecoveryChoices(client: SupabaseClient) {
+  const r = await client.rpc("posting_v2_session", {session_id:null,operation:"list_recovery",media_id:null});
+  if (r.error) throw sessionRpcError(r.error);
+  const parsed = sessionRecoveryChoicesSchema.safeParse(r.data);
+  if (!parsed.success) throw new PostingSessionError("UPLOAD_SESSION_UNAVAILABLE");
   return parsed.data;
 }
 export function postingError(error: unknown, status = 400) {
+  if (error instanceof PostingSessionError) return Response.json({error:error.message,code:error.code},{status:sessionErrors[error.code].status,headers:{"Cache-Control":"private, no-store"}});
   const message = error instanceof Error && /^(Mobile posting|Request origin|Posting is temporarily|Sign in|Current policy|An active|Upload in progress|Session unavailable)/.test(error.message) ? error.message : "Could not complete the request. Your saved details are safe; please retry.";
   return Response.json({error:message},{status,headers:{"Cache-Control":"private, no-store"}});
 }
