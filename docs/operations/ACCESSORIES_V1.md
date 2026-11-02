@@ -1,0 +1,52 @@
+# Accessories V1 — local implementation and release handoff
+
+2 November 2026. Local candidate only; no hosted installation or acceptance is claimed. This extends the existing V2.1.2 filesystem implementation. Remote staging parity was not established: Git/GitHub operations were not performed, and the source trees must not be assumed synchronized. The ZIP's before/after hashes identify the actual task-start filesystem delta. Existing V2.1.2 work is retained.
+
+## Auditable implementation plan and decisions
+
+1. Reuse unchanged: Posting.module.css, FairSwap branding/fonts, SearchCombobox, PIN/location resolver, photo processing/image delivery, session error/recovery contracts and server account/policy/maintenance guards.
+2. Safe extensions: optional contextual uploader guidance and preview placeholder with unchanged phone defaults; shared byte-identical media preparation/create-only retry routine. Category capabilities/routes are enabled only by a valid server catalogue. The phone domain and recovery slot remain unchanged.
+3. New domain: Accessories V1 strict Zod contract, 21 types in seven searchable groups, conditional typed specifications, separate accessory manufacturer/device compatibility, generated/editable titles, six cosmetic conditions, functional status, quantity/bundle, bill/box/warranty and charging-safety declarations. Schemas/messages/data labels are separate modules; UI language is English.
+4. Backend capability: existing protected Posting V2 uploads and installed seller_submit_listing lifecycle are reusable. New dedicated submit_accessory_v1 validates every category/domain/media/location/price boundary. It never calls submit_mobile_v2 with renamed data. The existing phone implementation changes only to reject a submitted accessory session masquerading as a phone retry.
+5. Additive database work: accessory release/type metadata and immutable listing_accessory_contexts with FORCE RLS, owner/public/staff reads and no client writes. No public/client service credentials or storage-policy relaxation. Existing applied migrations remain unchanged. Shared session release availability accepts either enabled category; locking, five-session cap, certification, rotation and cleanup remain identical.
+6. Buyer integration: typed facts on discovery cards and listing detail; dedicated exact type/manufacturer/device/condition filters combined with existing price/location/keyword/sort/pagination. Counts filter before pagination. Other categories retain their installed search RPC. Exact seller declarations are not proof of compatibility.
+7. Security: no reviewed compatibility rules are seeded, so only seller-declared or unknown compatibility is accepted. Catalogue-confirmed labels are reserved for a future reviewed catalogue. Hazardous/uncertain charging declarations and exposed cable wires cannot submit. All seller-authored structured text retains contact/payment guards. Moderation still runs through the installed seller submission/finalizer; no direct activation or moderation switch changes.
+8. Automated validation: real-component browser journeys for S24 case, 65W charger, iPad stylus and Watch strap; actual browser compression, fixture failure/retry, sequential validation/focus, backward edits, refresh recovery and separate phone/accessory IndexedDB keys. SQL/RLS, retry/ownership/rollback/hazard/filter tests and native PG17 session regressions cover the combined candidate. Results and exact commands accompany the ZIP.
+
+## Files and contracts
+
+- Web domain: src/lib/listings/accessories/{catalogue,compatibility,contract,server,public}.ts.
+- Seller: AccessoryForm.tsx, posting/accessory-wizard.ts, posting/AccessoryBuyerPreview.tsx. Lifecycle mechanics match V2.1.2; no session is allocated on page visits. Explicit Add photos can certify a pristine blank; claim precedes persistence/upload. Meaningful/recovered work remains protected. Lifecycle state stays within the accessory form; sharing its state with phone drafts would conflate distinct contracts.
+- Recovery: existing fairswap-posting-v2 IndexedDB database/store and phone key are unchanged. Accessories uses <account>:mobile-accessories:v1 and version 1, owner checks, 24-hour window and sanitized retry blobs. Resume starts at Photos, preserves data and recalculates validity. It never trusts a saved step number. Recovery remains device-local and best effort.
+- HTTP: POST /api/post-ad/accessories/submit; same cookie-only origin/auth/account/policy/maintenance guard, 24 KB streamed-body cap and protected media preparer. Existing phone submission URL/payload remains unchanged.
+- SQL public RPCs: accessories_v1_catalogue(), submit_accessory_v1(payload jsonb), search_accessories_v1(filters jsonb). New privileged logic stays in app_security with empty search paths, explicit actor checks and least-privilege wrappers/grants.
+- Canonical taxonomy is in Backend accessories-v1/taxonomy.json and migration seed. The Web consumer has a byte-semantic hash assertion; no runtime catalogue download or speculative substring compatibility inference.
+
+The shared listing condition enum is unchanged: sealed maps to new, open box maps to like_new, and parts maps to poor. The immutable accessory context retains all six precise V1 states; buyer cards and detail headers use that precise condition rather than the coarse shared label.
+
+## Genuine release preconditions and limits
+
+Foundation fails rather than reinterpreting an existing incompatible category, required legacy attributes or legacy Accessories listings. If this preflight finds existing work in Test/Production, release is blocked pending a reviewed backfill/forward migration; do not bypass it or delete rows. Actual target data/history is NOT VERIFIED locally. Existing phone, unknown and media drafts are not backfilled or deleted.
+
+No independently verified compatibility, authenticity, warranty, AI-photo verification or payment protection exists in this feature. Free-text exact model/generation declarations permit unknown catalogue coverage; they are never independently verified. The device brand field clears a stale model. Arbitrary custom accessory makers use Other plus a name; Unbranded remains explicit.
+
+Local fixtures use synthetic auth/storage support and intercepted APIs, not hosted JWT/Storage or physical-device certification. Native PostgreSQL tests exercise the session lifecycle under actual separate backends; they do not certify hosted moderation providers. Automated tests replace manual/exploratory or owner predeployment testing.
+
+## Deployment dependencies and order
+
+ChatGPT handles branches, commits, PRs, CI orchestration, integration and deployment. No Actions file was changed in this task. Wire documented new test commands into existing reusable pipelines through that owner; do not create another workflow or weaken a gate. Backend baseline tests retain their fixed approved-file/count contracts.
+
+1. Reconstruct each target's independently verified migration ledger in its isolated release workspace. Retain the already-reviewed Posting V2 foundation/activation and V2.1.2 session recovery prerequisites. Never apply the raw immutable 58-file directory, copy Test-only migrations to Production or assume Web and Backend histories match.
+2. Existing GitHub CI, then apply only Backend foundation 20261102164135_accessories_v1.sql to FairSwapTest. It is closed by default and new_listing_enabled stays false; generic listing creation must remain prohibited. Deploy the matching Web to Vercel Staging. Route/readiness fail closed until matching Backend activation 20261102164137_activate_accessories_v1.sql.
+3. Apply the reviewed activation through the existing authorized Backend release process and run automated authenticated Test seller/upload/retry/recovery, denial, buyer-filter/privacy and moderation checks. No manual/owner staging verification is required. Test failure blocks Production.
+4. After successful automated Test acceptance, automatically promote the reviewed Backend foundation/activation and selective matching Web source to Production through existing pipelines, then automated post-deployment journey/health/error checks. Never merge staging wholesale or promote its Test-only email capture. Earlier V2.1.2 authenticated Test acceptance remains a dependency.
+
+No new environment variable, dependency, service or workflow. Existing POST_AD_MOBILES_V2_ENABLED controls shared posting HTTP/media infrastructure; POST_AD_GOODS_TEST_ENABLED / POST_AD_GOODS_PRODUCTION_ENABLED and their existing verified-environment gates control the selector entry. Retain existing public/server Supabase and site configuration without exposing values. Database release metadata independently authorizes Accessories; phone category activation is not required for accessory upload sessions.
+
+Rollback: disable the accessory release metadata through an approved forward change, use scoped application revert/previous Vercel deployment, and retain submitted data/contexts. Any database rollback is a reviewed forward compensating migration; do not drop tables or restore raw historical SQL. Coordinate shared session/phone RPC definitions with later releases. Device-local accessory drafts are not understood by older applications, but their separate key prevents phone draft corruption.
+
+Production checks are automated: category availability, authenticated posting and policy/maintenance denial, real private-media lifecycle, retained/recovered work, accurate buyer facts/counts, public address privacy and existing moderation state transitions. Hosted acceptance and production availability remain NOT RUN by this coding task.
+
+## Concurrent workspace preservation
+
+A separate local Tablets implementation changed seven shared category/routing/detail/discovery files during this task. Those edits remain in the workspace. The Accessories archive projects only this task’s edits against its saved pre-edit baselines for these seven files; it does not package or remove Tablet modules. The manifest records packaged and observed workspace hashes separately. Apply the exact Accessories patch through a scoped merge; never copy full shared files over concurrent work. A separate env-free Accessories-only verification copy restores the pre-Tablets edit-page dependency from the earlier V2.1.2 build solely for validation; that unrelated page is not included in this archive. The projected source receives its own typecheck, unit, browser, lint and production-build evidence.

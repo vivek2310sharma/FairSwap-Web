@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { SlidersHorizontal, RotateCcw, Search, Loader2, AlertCircle } from "lucide-react";
 import { Category, City, Locality, SearchSortOption, getEffectiveSort } from "@/types/listing";
+import type {SearchFilters as ListingSearchFilters} from "@/types/listing";
 import { publicFamilyForSlug } from "@/lib/discovery/category-family";
 
 interface SearchFiltersProps {
   categories: Category[];
   cities: City[];
   localities: Locality[];
-  initialFilters: {
+  initialFilters: Pick<ListingSearchFilters,"accessory_type"|"accessory_brand"|"device_brand"|"device_model"|"accessory_condition"> & {
     q?: string;
     category?: string;
     city?: string;
@@ -306,6 +307,7 @@ export function SearchFilters({
       }
     }
 
+    if(params.get("category")==="mobile-accessories")for(const key of ["accessory_type","accessory_brand","device_brand","device_model","accessory_condition"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     params.set("page", "1");
 
     const queryStr = params.toString();
@@ -358,6 +360,7 @@ export function SearchFilters({
       }
     }
 
+    if(params.get("category")==="mobile-accessories")for(const key of ["accessory_type","accessory_brand","device_brand","device_model","accessory_condition"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     params.set("page", "1");
 
     const queryStr = params.toString();
@@ -466,6 +469,7 @@ export function SearchFilters({
       }
     }
 
+    if(params.get("category")==="mobile-accessories")for(const key of ["accessory_type","accessory_brand","device_brand","device_model","accessory_condition"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     params.set("page", "1");
 
     const queryStr = params.toString();
@@ -511,6 +515,7 @@ export function SearchFilters({
       }
     }
 
+    if(params.get("category")==="mobile-accessories")for(const key of ["accessory_type","accessory_brand","device_brand","device_model","accessory_condition"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     params.set("page", "1");
 
     const queryStr = params.toString();
