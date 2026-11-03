@@ -3,6 +3,7 @@ import {loadTabletDetails} from "@/lib/listings/tablets/public";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
 import ListingForm from "@/components/listings/ListingForm";
 import PendingOwnerListing from '@/components/listings/PendingOwnerListing';
 import {loadSubmissionState} from '@/lib/listings/submission-server';
@@ -38,13 +39,14 @@ export default async function EditListingPage({
   }
 
   // Fetch listing
-  const { data: baseListing, error: listingError } = await supabase
+  const { data: baseListing, error: listingError } = await (supabase as SupabaseClient<Database>)
     .from("listings")
     .select(`
       id,
       seller_id,
       slug,
       category_id,
+      category:categories!listings_category_id_fkey(slug),
       city_id,
       locality_id,
       title,
@@ -77,7 +79,34 @@ export default async function EditListingPage({
   if (baseListing.seller_id !== user.id) {
     redirect("/account/listings");
   }
-  const tablet=await loadTabletDetails(supabase,id);
+  let category = baseListing.category;
+  if (!category) {
+    // Reference RLS hides inactive categories. Resolve only the persisted
+    // category of the listing whose ownership was checked above.
+    try {
+      const result = await createServiceRoleClient()
+        .from("categories").select("slug").eq("id", baseListing.category_id).single();
+      if (!result.error) category = result.data;
+    } catch {
+      // An unverifiable category cannot be sent to the generic editor.
+    }
+  }
+  if (!category?.slug) return <p role="alert">Saved category could not be verified.</p>;
+
+  if (category.slug === "tablets") {
+    const tablet = await loadTabletDetails(supabase, id);
+    if (!tablet) return <p role="alert">Saved tablet details could not be loaded.</p>;
+    return (
+      <div className="mx-auto max-w-4xl space-y-5 px-4 py-10 sm:px-6">
+        <Link href="/account/listings">Back to My ads</Link>
+        <h1 className="text-2xl font-bold">{baseListing.title}</h1>
+        {baseListing.status === "pending_review" && <p>Awaiting review</p>}
+        <p>Tablet details are read-only.</p>
+        <p>{baseListing.description}</p>
+        <TabletListingDetails details={tablet} />
+      </div>
+    );
+  }
   const readiness=await loadOwnerReadiness(supabase as SupabaseClient<Database>,id);
   let submission;
   try{if(baseListing.status==='pending_review'||isVerifiedSubmissionTestEnvironment(process.env)||isVerifiedProductionFamilySubmissionRouteEnvironment(process.env))submission=await loadSubmissionState(supabase,id);}catch{return <p role="alert">Saved submission eligibility could not be loaded. Reload to try again.</p>;}
@@ -106,7 +135,7 @@ export default async function EditListingPage({
   if(submission?.family&&listing.status==='pending_review'){
     const property=submission.family==='property'?await supabase.from('listing_property_contexts').select('society_name').eq('listing_id',id).maybeSingle():null;
     if(property?.error)return <p role="alert">Saved private Property details could not be loaded.</p>;
-    return <>{tablet&&<TabletListingDetails details={tablet}/>}<PendingOwnerListing listing={listing} media={(media as ListingMedia[])||[]} readiness={readiness} {...(property?{society:property.data?.society_name}:{})}/></>;
+    return <PendingOwnerListing listing={listing} media={(media as ListingMedia[])||[]} readiness={readiness} {...(property?{society:property.data?.society_name}:{})}/>;
   }
   if(isPropertyEnabled()){
     const result=await (supabase as SupabaseClient<Database>).from('listing_property_contexts').select('*').eq('listing_id',id).maybeSingle();
@@ -185,7 +214,6 @@ export default async function EditListingPage({
   }
 
   return (
-    <> {tablet&&<TabletListingDetails details={tablet}/>}
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <div className="mb-6">
         <Link
@@ -213,6 +241,5 @@ export default async function EditListingPage({
         maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}
       />
     </div>
-    </>
   );
 }
