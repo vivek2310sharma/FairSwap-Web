@@ -106,6 +106,18 @@ jobs:
       - name: Run Post Ad V2 Isolated Browser Journeys
         run: node tools/post-ad-v2/verify.mjs
 
+      - name: Run Tablets V1 typed posting and media regression tests
+        run: >-
+          pnpm vitest run
+          tests/unit/tablets-v1.test.ts
+          tests/unit/tablet-submit-boundary.test.ts
+          tests/unit/tablet-public-details.test.tsx
+          tests/unit/tablet-server.test.ts
+          tests/unit/prepare-posting-media.test.ts
+
+      - name: Run Tablets V1 isolated browser journeys
+        run: node tools/tablets-v1/verify.mjs --max-failures=1
+
       - name: Run LIST-03 WhatsApp Sharing Unit Tests
         run: pnpm vitest run tests/unit/share.test.tsx
 

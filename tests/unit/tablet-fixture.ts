@@ -1,0 +1,5 @@
+import type {TabletCatalogue} from "@/lib/listings/tablets/contract";
+import {blankTabletDraft} from "@/components/listings/posting/tablet-wizard";
+export const id="11111111-1111-4111-8111-111111111111";
+export const catalogue:TabletCatalogue={version:1,revision:"tablets-v1",enabled:true,listing_category_id:id,selection:{category:"mobiles",subcategory:"tablets",version:1},brands:[{id,name:"Apple",aliases:[],sort_order:1}],models:[{id,brand_id:id,name:"iPad (9th generation)",aliases:[],sort_order:1,other:false,family:"iPad",generation:"9th generation / 2021",screen_inches:"10.2",storage:["64 GB","256 GB"],connectivity:["wifi","lte"]}]};
+export const valid={...blankTabletDraft(),session_id:id,brand_id:id,model_id:id,storage:"64 GB" as const,connectivity:"wifi" as const,condition:"good" as const,screen_touch_status:"working" as const,battery_charging_status:"normal" as const,transfer_lock_status:"clear" as const,repair_history:"none" as const,title:"Apple iPad 9th generation",description:"Used carefully with no repairs.",price_paise:10000,pin_code:"560034",city_id:id,locality_id:id,media_ids:[id]};

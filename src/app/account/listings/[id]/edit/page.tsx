@@ -1,3 +1,5 @@
+import TabletListingDetails from "@/components/listings/TabletListingDetails";
+import {loadTabletDetails} from "@/lib/listings/tablets/public";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -75,6 +77,7 @@ export default async function EditListingPage({
   if (baseListing.seller_id !== user.id) {
     redirect("/account/listings");
   }
+  const tablet=await loadTabletDetails(supabase,id);
   const readiness=await loadOwnerReadiness(supabase as SupabaseClient<Database>,id);
   let submission;
   try{if(baseListing.status==='pending_review'||isVerifiedSubmissionTestEnvironment(process.env)||isVerifiedProductionFamilySubmissionRouteEnvironment(process.env))submission=await loadSubmissionState(supabase,id);}catch{return <p role="alert">Saved submission eligibility could not be loaded. Reload to try again.</p>;}
@@ -103,7 +106,7 @@ export default async function EditListingPage({
   if(submission?.family&&listing.status==='pending_review'){
     const property=submission.family==='property'?await supabase.from('listing_property_contexts').select('society_name').eq('listing_id',id).maybeSingle():null;
     if(property?.error)return <p role="alert">Saved private Property details could not be loaded.</p>;
-    return <PendingOwnerListing listing={listing} media={(media as ListingMedia[])||[]} readiness={readiness} {...(property?{society:property.data?.society_name}:{})}/>;
+    return <>{tablet&&<TabletListingDetails details={tablet}/>}<PendingOwnerListing listing={listing} media={(media as ListingMedia[])||[]} readiness={readiness} {...(property?{society:property.data?.society_name}:{})}/></>;
   }
   if(isPropertyEnabled()){
     const result=await (supabase as SupabaseClient<Database>).from('listing_property_contexts').select('*').eq('listing_id',id).maybeSingle();
@@ -182,6 +185,7 @@ export default async function EditListingPage({
   }
 
   return (
+    <> {tablet&&<TabletListingDetails details={tablet}/>}
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <div className="mb-6">
         <Link
@@ -209,5 +213,6 @@ export default async function EditListingPage({
         maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}
       />
     </div>
+    </>
   );
 }
