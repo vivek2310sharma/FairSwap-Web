@@ -1,4 +1,5 @@
 import {createClient} from "@/lib/supabase/server";
+import {tabletDetailsSchema,tabletFacts} from "@/lib/listings/tablets/public";
 import {accessoryDetailsSchema,accessoryFacts} from "@/lib/listings/accessories/public";
 import {publicPriceFallback} from "./family-display";
 import { createServiceRoleClient } from "@/lib/supabase/service";
@@ -24,6 +25,12 @@ export async function loadPublicFamilyDisplays(
   listings: PublicInput[],
 ): Promise<Map<string, PublicFamilyDisplay>> {
   const results = new Map<string, PublicFamilyDisplay>();
+  const tablets=listings.filter(l=>l.category?.slug==="tablets");
+  if(tablets.length){
+    const client=await createClient();
+    const response=await client.from("listing_tablet_contexts").select("listing_id,category_id,brand_name,model_name,details").in("listing_id",tablets.map(l=>l.id));
+    if(!response.error)for(const row of response.data??[]){const item=tablets.find(l=>l.id===row.listing_id&&l.category.id===row.category_id);const p=tabletDetailsSchema.safeParse(row.details);if(item&&p.success&&typeof row.brand_name==="string"&&typeof row.model_name==="string")results.set(item.id,{family:"tablets",priceLabel:publicPriceFallback(item.category.slug,item.price_type,item.price_paise),specifications:tabletFacts({...p.data,brand_name:row.brand_name,model_name:row.model_name}).filter(f=>["model","storage","connectivity","condition","touch","battery"].includes(f.field))});}
+  }
   const accessories=listings.filter(l=>l.category?.slug==="mobile-accessories");
   if(accessories.length){
     const client=await createClient();

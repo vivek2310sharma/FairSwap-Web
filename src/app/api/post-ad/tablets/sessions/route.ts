@@ -1,0 +1,8 @@
+import {z} from "zod";
+import {postingGuard,postingError,readPostingBody} from "@/lib/listings/mobiles/server";
+import {sessionRecoveryChoicesSchema} from "@/lib/listings/mobiles/session-errors";
+import {loadTabletCatalogue,tabletSession} from "@/lib/listings/tablets/server";
+const input=z.object({session_id:z.string().uuid(),operation:z.enum(["create","create_empty","claim_draft","acquire_draft"]).default("create")}).strict();
+export async function POST(request:Request){try{const {client}=await postingGuard(request);if(!await loadTabletCatalogue(client))throw Error("Unavailable");const v=input.parse(JSON.parse(new TextDecoder().decode(await readPostingBody(request,1024))));return Response.json(await tabletSession(client,v.session_id,v.operation),{headers:{"Cache-Control":"private, no-store"}});}catch(e){return postingError(e);}}
+export async function GET(request:Request){try{const {client}=await postingGuard(request,false);const id=new URL(request.url).searchParams.get("session_id");return Response.json(id?await tabletSession(client,z.string().uuid().parse(id),"read"):sessionRecoveryChoicesSchema.parse((await client.rpc("tablet_v1_session",{session_id:null,operation:"list_recovery"})).data),{headers:{"Cache-Control":"private, no-store"}});}catch(e){return postingError(e);}}
+export async function DELETE(request:Request){try{const {client}=await postingGuard(request);const v=z.object({session_id:z.string().uuid()}).strict().parse(JSON.parse(new TextDecoder().decode(await readPostingBody(request,1024))));return Response.json(await tabletSession(client,v.session_id,"abandon_empty"),{headers:{"Cache-Control":"private, no-store"}});}catch(e){return postingError(e);}}
