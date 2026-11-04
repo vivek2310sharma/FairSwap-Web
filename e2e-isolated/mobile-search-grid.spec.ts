@@ -61,13 +61,17 @@ test.describe("SRCH-04 browser navigation regressions", () => {
   test("desktop price blur followed by select retains both filters", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/search?q=phone&sort=newest");
-    await page.getByLabel("Minimum price in rupees").fill("500");
-    await page.getByLabel("Minimum price in rupees").press("Tab");
+    const minimumPrice = page.getByLabel("Minimum price in rupees");
+    await minimumPrice.fill("500");
+    await expect(minimumPrice).toHaveCount(1);
+    await minimumPrice.press("Tab");
     await page.getByLabel("Category", { exact: true }).selectOption("electronics");
     await expect(page).toHaveURL(/category=electronics/);
     await expect(page).toHaveURL(/price_min=500/);
     await expect(page).toHaveURL(/sort=newest/);
-    await expect(page.getByTestId("search-results-grid")).toBeVisible();
+    const resultsGrid = page.getByTestId("search-results-grid");
+    await expect(resultsGrid).toHaveCount(1);
+    await expect(resultsGrid).toBeVisible();
   });
 });
 
