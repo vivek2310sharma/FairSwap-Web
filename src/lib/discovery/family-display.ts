@@ -7,7 +7,7 @@ import { publicFamilyForSlug, type PublicFamily } from "./category-family";
 export { publicFamilyForSlug } from "./category-family";
 
 export interface PublicFamilyDisplay {
-  family: PublicFamily | "accessories";
+  family: PublicFamily | "accessories" | "tablets";
   priceLabel: string;
   specifications: Array<{ field: string; label: string; value: string }>;
   rental?: {
