@@ -28,7 +28,7 @@ function client(options:Setup={}){
   const from=vi.fn((table:string)=>{
     const filters:Record<string,unknown>={};let projection='';
     const result=()=>{
-      if(table==='listings')return {data:listing,error:null};
+      if(table==='listings')return {data:{...listing,category:{slug:'motorcycles'}},error:null};
       if(table==='listing_vehicle_contexts')return {data:options.missingContext?null:context,error:options.contextError?{code:'42501'}:null};
       if(table==='vehicle_contract_versions')return {data:{id:options.badVersion&&filters.id?categoryId:options.newVersion&&!filters.id?id:versionId,new_assignment_enabled:!(options.closed||(options.closedSaved&&filters.id))},error:null};
       if(table==='vehicle_category_contracts')return {data:projection.includes('categories(')?[{...contract,version_id:options.newVersion?id:versionId,categories:c.is_active?c:null}]:{...contract,version_id:options.badContract?categoryId:versionId},error:null};

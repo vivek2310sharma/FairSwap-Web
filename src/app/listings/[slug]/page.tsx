@@ -12,6 +12,8 @@ import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
 import {CONDITIONS as ACCESSORY_CONDITIONS} from "@/lib/listings/accessories/contract";
 import AccessoryListingDetails from "@/components/listings/AccessoryListingDetails";
 import {loadAccessoryDetails} from "@/lib/listings/accessories/public";
+import TabletListingDetails from "@/components/listings/TabletListingDetails";
+import {loadTabletDetails} from "@/lib/listings/tablets/public";
 import MobileListingDetails from "@/components/listings/MobileListingDetails";
 import { loadPublicMobileDetails } from "@/lib/listings/mobiles/public";
 import { CompactSafetyNotice, IndiaSafetyCard } from "@/components/listings/IndiaSafetyAdvice";
@@ -117,6 +119,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   // 3. Fetch seller's other active listings, favourite state, and seller verification badge projection
   const supabase = await createClient();
   const mobileDetails = await loadPublicMobileDetails(supabase,listing.id);
+  const tabletDetails=listing.category.slug==="tablets"?await loadTabletDetails(supabase,listing.id):null;
   const accessoryDetails=listing.category.slug==="mobile-accessories"?await loadAccessoryDetails(supabase,listing.id):null;
   const [sellerOtherListings, { data: authData }, { data: sellerIdvData }] = await Promise.all([
     listing.seller_id
@@ -335,6 +338,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                 </div>
               </div>
 
+              {tabletDetails&&<TabletListingDetails details={tabletDetails}/>}
               {accessoryDetails&&<AccessoryListingDetails details={accessoryDetails}/>}
               {/* Category-specific attributes if any */}
               {specificationsUnavailable&&<p role="status">Saved specifications could not be verified. No raw category values are displayed.</p>}

@@ -14,6 +14,7 @@ export type FamilyState = "off" | "draft" | "live";
 export interface PostAdCapabilities {
   mobilePhones?: boolean;
   accessories?: boolean;
+  tablets?: boolean;
   twoWheelers: FamilyState;
   cars: FamilyState;
   property: FamilyState;
@@ -28,6 +29,7 @@ export type Readiness = "available" | "draft-only" | "coming-soon" | "unavailabl
 export type SubRoute =
   | { kind: "mobile-phones" }
   | { kind: "accessories" }
+  | { kind: "tablets" }
   /** General (broad) Goods continuation only; the unchanged form is where the category is chosen. */
   | { kind: "goods"; key: string }
   | { kind: "vehicles"; family: "two-wheelers" | "cars" }
@@ -80,7 +82,7 @@ export const POST_AD_CATALOGUE: readonly MainCategory[] = [
     subs: [
       { id: "mobile-phones", label: "Mobile Phones", hi: "मोबाइल फोन", aliases: ["iphone", "samsung", "redmi", "oneplus", "vivo", "oppo", "realme", "android", "smartphone"], route: {kind:"mobile-phones"} },
       { id: "mobile-accessories", label: "Accessories", hi: "एक्सेसरीज़", aliases: ["charger", "earphones", "earbuds", "cover", "case", "power bank"], route: {kind:"accessories"} },
-      { id: "tablets", label: "Tablets", hi: "टैबलेट", aliases: ["ipad", "tab"], route: none },
+      { id: "tablets", label: "Tablets", hi: "टैबलेट", aliases: ["ipad", "tab"], route: {kind:"tablets"} },
       { id: "wearables", label: "Smartwatches & Wearables", hi: "स्मार्टवॉच और वियरेबल्स", aliases:["smartwatch","wearable"], route:none },
     ],
   },
@@ -262,6 +264,7 @@ export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readin
   const r = sub.route;
   switch (r.kind) {
     case "accessories": return caps.accessories ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
+    case "tablets": return caps.tablets ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "mobile-phones": return caps.mobilePhones ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "goods": return caps.goodsCategories.includes(r.key) ? { readiness: "available", macro: "goods" } : { readiness: "coming-soon" };
     case "vehicles": {

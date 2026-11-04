@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import styles from "@/components/listings/posting/Posting.module.css";
 import Link from "next/link";
+import TabletForm from "@/components/listings/TabletForm";
+import {loadTabletCatalogue} from "@/lib/listings/tablets/server";
 import AccessoryForm from "@/components/listings/AccessoryForm";
 import {loadAccessoryCatalogue} from "@/lib/listings/accessories/server";
 import MobilePhoneForm from "@/components/listings/MobilePhoneForm";
@@ -59,7 +61,13 @@ export default async function NewListingPage({
 
   const integrationEnabled = isGoodsPostAdEnabled();
   const query = await searchParams;
-  const [mobileCatalogue,accessoryCatalogue] = await Promise.all([loadMobileCatalogue(supabase),loadAccessoryCatalogue(supabase)]);
+  const [mobileCatalogue,accessoryCatalogue,tabletCatalogue] = await Promise.all([loadMobileCatalogue(supabase),loadAccessoryCatalogue(supabase),loadTabletCatalogue(supabase)]);
+  if(query.posting==="tablets"){
+    if(!tabletCatalogue)return <main id="posting-content" className={styles.journey}><h1>This category isn’t available right now</h1><Link href="/account/listings/new">Choose a category</Link></main>;
+    const locations=await loadPostAdLocations(supabase);
+    if(locations.status!=="ready")return <main id="posting-content" className={styles.journey}><h1>We couldn’t load your area options</h1><p role="alert">Please try again shortly.</p></main>;
+    return <main id="posting-content" className={styles.journey}><Link className={styles.back} href="/account/listings/new"><ArrowLeft size={18} aria-hidden="true"/> Categories</Link><TabletForm key={user.id} ownerId={user.id} catalogue={tabletCatalogue} cities={locations.cities} maintenance={isMaintenanceActive} maintenanceMessage={isMaintenanceActive?SELLER_WRITE_MAINTENANCE_MESSAGE:undefined}/></main>;
+  }
   if (query.posting === "mobile-accessories") {
     if (!accessoryCatalogue) return <main id="posting-content" className={styles.journey}><h1>This category isn’t available right now</h1><Link className={styles.back} href="/account/listings/new">Choose a category</Link></main>;
     const locations=await loadPostAdLocations(supabase);
@@ -91,7 +99,7 @@ export default async function NewListingPage({
     const submission={twoWheelers:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"two-wheelers"),cars:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"cars"),property:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"property")};
     return <main id="posting-content" className={styles.journey}>
       <Link href="/account/listings" className={styles.back}><ArrowLeft size={18} aria-hidden="true"/> My ads</Link>
-      <div className="mt-6"><GoodsPostAdEntry accessories={!!accessoryCatalogue} mobilePhones={!!mobileCatalogue} submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
+      <div className="mt-6"><GoodsPostAdEntry tablets={!!tabletCatalogue} accessories={!!accessoryCatalogue} mobilePhones={!!mobileCatalogue} submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
     </main>;
   }
 
