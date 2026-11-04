@@ -6,6 +6,7 @@ export interface Choice {
     id: string;
     name: string;
     aliases?: string[];
+    alwaysVisible?: boolean;
 }
 export default function SearchCombobox({ id, label, options, value, onChange, disabled = false, error }: {
     id: string;
@@ -25,7 +26,10 @@ export default function SearchCombobox({ id, label, options, value, onChange, di
     const filterText = useRef("");
     const expanded = useRef(false);
     const selected = options.find(o => o.id === value);
-    const hits = options.filter(o => [o.name, ...o.aliases ?? []].some(v => v.toLocaleLowerCase().includes(query.toLocaleLowerCase())));
+    const matchingOptions = (text: string) => options.filter(option =>
+        option.alwaysVisible || [option.name, ...option.aliases ?? []].some(name =>
+            name.toLocaleLowerCase().includes(text.toLocaleLowerCase())));
+    const hits = matchingOptions(query);
     const close = () => { expanded.current=false;filterText.current="";activeOption.current=-1;setOpen(false); setQuery(""); setActive(-1); };
     const choose = (id: string) => { onChange(id); close(); input.current?.focus(); };
     return <div className={styles.combo}><label htmlFor={id}>{label}</label><div className="relative"><input ref={input} id={id} role="combobox" autoComplete="off" aria-autocomplete="list" aria-controls={listId} aria-expanded={open} aria-activedescendant={open && active >= 0 && hits[active] ? `${listId}-${active}` : undefined} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} disabled={disabled} value={open ? query : selected?.name ?? ""} placeholder={disabled ? "Choose a brand first" : `Search or choose ${label.toLowerCase()}`} onClick={() => { expanded.current=true;filterText.current="";activeOption.current=-1;setOpen(true); setQuery(""); setActive(-1); }} onBlur={close} onChange={e => { expanded.current=true;filterText.current=e.target.value;activeOption.current=-1;setQuery(e.target.value); setOpen(true); setActive(-1); }} onKeyDown={e => {
@@ -42,7 +46,7 @@ export default function SearchCombobox({ id, label, options, value, onChange, di
                 return;
             if (e.key === "Enter") {
                 e.preventDefault();
-                const available=options.filter(o=>[o.name,...o.aliases??[]].some(v=>v.toLocaleLowerCase().includes(filterText.current.toLocaleLowerCase())));
+                const available=matchingOptions(filterText.current);
                 if (expanded.current && activeOption.current >= 0 && available[activeOption.current])
                     choose(available[activeOption.current].id);
                 return;
@@ -51,7 +55,7 @@ export default function SearchCombobox({ id, label, options, value, onChange, di
                 return;
             e.preventDefault();
             expanded.current=true;setOpen(true);
-            const count = options.filter(o=>[o.name,...o.aliases??[]].some(v=>v.toLocaleLowerCase().includes(filterText.current.toLocaleLowerCase()))).length;
+            const count = matchingOptions(filterText.current).length;
             if (!count)
                 return;
             const next = e.key === "Home" ? 0 : e.key === "End" ? count - 1 : e.key === "ArrowDown" ? (activeOption.current + 1) % count : activeOption.current <= 0 ? count - 1 : activeOption.current - 1;

@@ -9,7 +9,30 @@ for(const width of [320,360,390,768,1024,1440])test(`Tablet six-state journey, k
  const photo=await sharp({create:{width:32,height:32,channels:3,background:'#08704a'}}).png().toBuffer();await page.locator('#mobile-photo-files').setInputFiles({name:'tablet.png',mimeType:'image/png',buffer:photo});
  await page.getByRole('button',{name:'Upload / retry photos',exact:true}).click();await expect(page.getByText('Temporary upload failure',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Upload / retry photos',exact:true}).click();await page.getByRole('button',{name:'Continue',exact:true}).click();
  await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.getByRole('combobox',{name:'Brand',exact:true})).toBeFocused();await choose(page,'Brand','Apple');await choose(page,'Model','iPad');
- await page.getByRole('combobox',{name:'Storage',exact:true}).selectOption('64 GB');await page.getByRole('combobox',{name:'Connectivity',exact:true}).selectOption('wifi');await expect(page.getByRole('combobox',{name:'Connectivity',exact:true}).locator('option[value="five_g"]')).toHaveCount(0);
+ const storage=page.getByRole('combobox',{name:'Storage',exact:true});
+ const connectivity=page.getByRole('combobox',{name:'Connectivity',exact:true});
+ const ram=page.getByRole('combobox',{name:'RAM (optional)',exact:true});
+ await storage.selectOption('other');await page.getByLabel('Other storage (e.g. 8 GB)').fill('8 GB');
+ await ram.selectOption('4 GB');await connectivity.selectOption('five_g');
+ if(width<=390){
+  const brand=page.getByRole('combobox',{name:'Brand',exact:true});
+  const model=page.getByRole('combobox',{name:'Model',exact:true});
+  await brand.click();await expect(page.getByRole('listbox',{name:'Brand options'}).getByRole('option')).toHaveCount(30);await expect(page.getByRole('listbox',{name:'Brand options'}).getByRole('option').last()).toHaveText('Other Brand');
+  await choose(page,'Brand','Fixture Brand 1');
+  await model.fill('iPad');await expect(page.getByRole('listbox',{name:'Model options'}).getByRole('option')).toHaveText(['Other model']);
+  await model.press('ArrowDown');await model.press('Enter');await page.getByLabel('Model name',{exact:true}).fill('First typed model');
+  await choose(page,'Model','Fixture Tab 1 / 1');
+  await expect(page.getByLabel('Model name',{exact:true})).toHaveCount(0);
+  await choose(page,'Brand','Other Brand');
+  await expect(model).toHaveCount(0);
+  await expect(page.getByLabel('Model name',{exact:true})).toBeEmpty();
+  await page.getByRole('button',{name:'Continue',exact:true}).click();
+  await expect(page.getByLabel('Brand name',{exact:true})).toBeFocused();
+  await page.getByLabel('Brand name',{exact:true}).fill('Example');
+  await page.getByLabel('Model name',{exact:true}).fill('Legacy Tab');
+ }
+ await expect(storage).toHaveValue('other');await expect(ram).toHaveValue('4 GB');await expect(connectivity).toHaveValue('five_g');
+ await expect(page.getByLabel('Other storage (e.g. 8 GB)')).toHaveValue('8 GB');
  await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByRole('button',{name:'Good condition',exact:true}).click();await page.getByRole('combobox',{name:'Screen and touch',exact:true}).selectOption('working');await page.getByRole('combobox',{name:'Battery and charging',exact:true}).selectOption('normal');await page.getByRole('combobox',{name:'Activation Lock, FRP and organization management',exact:true}).selectOption('locked');await page.getByLabel('Description',{exact:true}).fill('Used carefully. No repairs or faults. Inspect before paying.');
  await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.getByRole('combobox',{name:'Activation Lock, FRP and organization management',exact:true})).toBeFocused();await page.getByRole('combobox',{name:'Activation Lock, FRP and organization management',exact:true}).selectOption('clear');
  await page.getByRole('button',{name:'Stylus/pen',exact:true}).click();await page.getByLabel('Stylus model / generation (optional)').fill('Pencil first generation');await page.getByRole('button',{name:'Continue',exact:true}).click();
@@ -17,7 +40,7 @@ for(const width of [320,360,390,768,1024,1440])test(`Tablet six-state journey, k
  await page.getByRole('button',{name:'Continue',exact:true}).click();await page.locator('#pincode_picker_input').fill('560034');await page.getByRole('combobox',{name:'Area / Locality *',exact:true}).selectOption('66666666-6666-4666-8666-666666666666');await page.getByRole('button',{name:'Review listing',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Review your listing',exact:true})).toBeVisible();await expect(page.getByRole('complementary',{name:'Buyer preview'})).toContainText('Pencil first generation');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await expect(page.getByText('Saved on this device',{exact:true})).toBeVisible();await page.reload();await page.getByRole('button',{name:'Resume saved listing'}).click();await expect(page.getByRole('button',{name:'Step 1: Photos'})).toHaveAttribute('aria-current','step');await page.getByRole('button',{name:'Step 5: Location'}).click();await page.getByRole('button',{name:'Review listing',exact:true}).click();
- const sent=page.waitForRequest(r=>r.url().endsWith('/api/post-ad/tablets/submit'));await page.getByRole('button',{name:'Submit for review',exact:true}).dblclick();const payload=(await sent).postDataJSON();expect(tabletSchema.safeParse(payload).success).toBe(true);expect(payload.trade).toBe(width===320?'giveaway':'sell');await expect(page.getByRole('heading',{name:'Submitted for review'})).toBeVisible();expect(fixture.submits()).toBe(1);
+ const sent=page.waitForRequest(r=>r.url().endsWith('/api/post-ad/tablets/submit'));await page.getByRole('button',{name:'Submit for review',exact:true}).dblclick();const payload=(await sent).postDataJSON();expect(tabletSchema.safeParse(payload).success).toBe(true);expect(payload).toMatchObject({storage_other:"8 GB",ram:"4 GB",connectivity:"five_g",other_brand:width<=390?"Example":"",other_model:width<=390?"Legacy Tab":""});expect(payload.trade).toBe(width===320?'giveaway':'sell');await expect(page.getByRole('heading',{name:'Submitted for review'})).toBeVisible();expect(fixture.submits()).toBe(1);
 });
 test('tablet category route is available',async({page})=>{await api(page);await page.goto('/account/listings/new');await page.getByRole('button',{name:/Mobiles & Tablets/}).click();await expect(page.getByRole('link',{name:'Tablets',exact:true})).toHaveAttribute('href','/account/listings/new?posting=tablets');});
 
