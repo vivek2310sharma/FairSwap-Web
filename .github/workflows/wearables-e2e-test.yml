@@ -27,7 +27,7 @@ jobs:
     # Protected Test environment holding the Test-only accounts/secrets below. Fails closed if absent.
     environment: Test
     env:
-      E2E_EVIDENCE_DIR: ${{ runner.temp }}/wearables-e2e-evidence
+      E2E_EVIDENCE_DIR: ${{ github.workspace }}/wearables-e2e-evidence
       TEST_ACTIVATION_RUN_ID: ${{ inputs.test_activation_run_id }}
       GITHUB_TOKEN: ${{ github.token }}
       E2E_SUPABASE_URL: ${{ vars.E2E_SUPABASE_URL }}
@@ -90,7 +90,7 @@ jobs:
         with:
           name: wearables-e2e-test-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            ${{ runner.temp }}/wearables-e2e-evidence/wearables-v1-e2e-test.json
-            ${{ runner.temp }}/wearables-e2e-evidence/SHA256SUMS_e2e
+            ${{ github.workspace }}/wearables-e2e-evidence/wearables-v1-e2e-test.json
+            ${{ github.workspace }}/wearables-e2e-evidence/SHA256SUMS_e2e
           if-no-files-found: error
           retention-days: 30
