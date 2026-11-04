@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition, useId } from "react";
+import { useState, useRef, useEffect, useTransition, useId, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { SlidersHorizontal, RotateCcw, Search, Loader2, AlertCircle } from "lucide-react";
@@ -40,7 +40,18 @@ const localityOptionsSchema = z.array(z.object({
   id: z.string(), city_id: z.string(), name: z.string(),
 })).max(100);
 
-export function SearchFilters({
+const subscribeToHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
+export function SearchFilters(props: SearchFiltersProps) {
+  // Streaming can retain server markup while React mounts a replacement tree.
+  // Mount interactive controls only in the client tree so that markup has no stale controls.
+  const hydrated = useSyncExternalStore(subscribeToHydration, clientSnapshot, serverSnapshot);
+  return hydrated ? <SearchFilterForm {...props} /> : null;
+}
+
+function SearchFilterForm({
   categories,
   cities,
   localities,
