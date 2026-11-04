@@ -310,6 +310,11 @@ export function getEffectiveSort(q?: string, sortParam?: string): SearchSortOpti
 }
 
 export const searchFiltersSchema = z.object({
+  accessory_type:z.string().trim().max(60).optional(),
+  accessory_brand:z.string().trim().max(80).optional(),
+  device_brand:z.string().trim().max(80).optional(),
+  device_model:z.string().trim().max(100).optional(),
+  accessory_condition:z.enum(["sealed","open_box","like_new","good","fair","parts",""]).optional().transform(v=>v===""?undefined:v),
   q: z.string().trim().max(100).optional().default(""),
   category: z.string().max(100).optional().default(""),
   city: z.string().max(100).optional().default(""),

@@ -45,6 +45,10 @@ export function ListingCard({
     poor: "For Parts",
   };
 
+  const conditionLabel = familyDisplay?.family === "accessories"
+    ? familyDisplay.specifications.find(s => s.field === "condition")?.value ?? "Condition details unavailable"
+    : listing.category?.slug === "mobile-accessories" ? "Condition details unavailable" : conditionLabels[listing.condition ?? ""] || listing.condition;
+
   const isCompact = variant === "compact";
 
   if (variant === "editorial" || variant === "feature") {
@@ -59,7 +63,7 @@ export function ListingCard({
           {feature && <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent" aria-hidden="true" />}
           {listing.condition && (
             <span className="pointer-events-none absolute left-2.5 top-2.5 max-w-[calc(100%-3.75rem)] truncate rounded-full bg-black/65 px-2 py-1 text-[11px] sm:px-2.5 sm:text-xs font-semibold text-white backdrop-blur-xs">
-              {conditionLabels[listing.condition] || listing.condition}
+              {conditionLabel}
             </span>
           )}
         </div>
@@ -74,6 +78,7 @@ export function ListingCard({
               {listing.title}
             </Link>
           </h3>
+          {familyDisplay?.family === "accessories" && <p className="mt-1 text-xs">{familyDisplay.specifications.map(s=>`${s.label}: ${s.value}`).join(" · ")}</p>}
           <p className={`mt-2 flex items-center gap-1.5 text-xs ${feature ? "text-white/85" : "text-muted"}`}>
             <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate">{place}</span>
@@ -101,7 +106,7 @@ export function ListingCard({
                 : "top-2 left-2 px-2 py-0.5 text-xs"
             }`}
           >
-            {conditionLabels[listing.condition] || listing.condition}
+            {conditionLabel}
           </span>
         )}
 
@@ -130,7 +135,7 @@ export function ListingCard({
 
         {familyDisplay?.specifications.length ? (
           <p className="mt-1 line-clamp-1 text-[11px] text-muted">
-            {familyDisplay.specifications.slice(0, 3).map(spec => `${spec.label}: ${spec.value}`).join(" · ")}
+            {familyDisplay.specifications.slice(0, familyDisplay.family === "accessories" ? 4 : 3).map(spec => `${spec.label}: ${spec.value}`).join(" · ")}
           </p>
         ) : null}
 

@@ -95,6 +95,10 @@ export async function searchPublicListings(filters: Partial<SearchFilters> = {})
   const priceMinPaise = filters.price_min !== undefined ? Math.round(filters.price_min * 100) : null;
   const priceMaxPaise = filters.price_max !== undefined ? Math.round(filters.price_max * 100) : null;
 
+  if(filters.category==="mobile-accessories"){
+    const {data,error}=await supabase.rpc("search_accessories_v1",{filters:{q:filters.q||"",type:filters.accessory_type||"",brand:filters.accessory_brand||"",device_brand:filters.device_brand||"",device_model:filters.device_model||"",accessory_condition:filters.accessory_condition||"",condition:filters.condition||"",city_id:filters.city||"",locality_id:filters.locality||"",price_min:priceMinPaise,price_max:priceMaxPaise,sort:filters.sort||"newest",page:filters.page||1}});
+    return error||!data?{unavailable:true,items:[],total_count:0,page:1,per_page:12,total_pages:0}:data as SearchListingsResult;
+  }
   const { data, error } = await supabase.rpc("search_public_listings", {
     query: filters.q ? filters.q.trim() : null,
     category_slug: filters.category ? filters.category.trim() : null,

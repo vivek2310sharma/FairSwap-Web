@@ -4,6 +4,7 @@ import { searchFiltersSchema } from "@/types/listing";
 export type ValidatedSearchFilters = z.output<typeof searchFiltersSchema>;
 
 const SEARCH_KEYS = [
+  "accessory_type", "accessory_brand", "device_brand", "device_model", "accessory_condition",
   "q",
   "category",
   "city",

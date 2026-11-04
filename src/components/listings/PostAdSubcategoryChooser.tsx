@@ -47,9 +47,9 @@ export function SubChoice({ sub, parent, actions, showParent = false }: {
   if (macro) {
     return (
       <Link
-        href={sub.route.kind === "mobile-phones" ? "/account/listings/new?posting=mobile-phones" : actions.hrefForSection(macro)}
+        href={sub.route.kind === "mobile-phones" ? "/account/listings/new?posting=mobile-phones" : sub.route.kind === "accessories" ? "/account/listings/new?posting=mobile-accessories" : actions.hrefForSection(macro)}
         prefetch={false}
-        onClick={sub.route.kind !== "mobile-phones" && actions.onChooseSection ? (e) => { e.preventDefault(); actions.onChooseSection?.(macro); } : undefined}
+        onClick={sub.route.kind !== "mobile-phones" && sub.route.kind !== "accessories" && actions.onChooseSection ? (e) => { e.preventDefault(); actions.onChooseSection?.(macro); } : undefined}
         className={cls}
       >
         {body}
