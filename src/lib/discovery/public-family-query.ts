@@ -1,3 +1,6 @@
+import {createClient} from "@/lib/supabase/server";
+import {accessoryDetailsSchema,accessoryFacts} from "@/lib/listings/accessories/public";
+import {publicPriceFallback} from "./family-display";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 import type { PublicListingCard } from "@/types/listing";
 import {
@@ -21,6 +24,12 @@ export async function loadPublicFamilyDisplays(
   listings: PublicInput[],
 ): Promise<Map<string, PublicFamilyDisplay>> {
   const results = new Map<string, PublicFamilyDisplay>();
+  const accessories=listings.filter(l=>l.category?.slug==="mobile-accessories");
+  if(accessories.length){
+    const client=await createClient();
+    const response=await client.from("listing_accessory_contexts").select("listing_id,category_id,details").in("listing_id",accessories.map(l=>l.id));
+    if(!response.error)for(const row of response.data??[]){const item=accessories.find(l=>l.id===row.listing_id&&l.category.id===row.category_id);const p=accessoryDetailsSchema.safeParse(row.details);if(item&&p.success)results.set(item.id,{family:"accessories",priceLabel:publicPriceFallback(item.category.slug,item.price_type,item.price_paise),specifications:accessoryFacts(p.data)});}
+  }
   const families = { "two-wheelers": [] as PublicInput[], cars: [] as PublicInput[], property: [] as PublicInput[] };
   for (const listing of listings) {
     const family = publicFamilyForSlug(listing.category?.slug);

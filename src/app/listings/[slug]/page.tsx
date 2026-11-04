@@ -9,6 +9,9 @@ import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { PhotoGallery } from "@/components/listings/PhotoGallery";
 import { FavouriteButton } from "@/components/listings/FavouriteButton";
 import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
+import {CONDITIONS as ACCESSORY_CONDITIONS} from "@/lib/listings/accessories/contract";
+import AccessoryListingDetails from "@/components/listings/AccessoryListingDetails";
+import {loadAccessoryDetails} from "@/lib/listings/accessories/public";
 import MobileListingDetails from "@/components/listings/MobileListingDetails";
 import { loadPublicMobileDetails } from "@/lib/listings/mobiles/public";
 import { CompactSafetyNotice, IndiaSafetyCard } from "@/components/listings/IndiaSafetyAdvice";
@@ -114,6 +117,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   // 3. Fetch seller's other active listings, favourite state, and seller verification badge projection
   const supabase = await createClient();
   const mobileDetails = await loadPublicMobileDetails(supabase,listing.id);
+  const accessoryDetails=listing.category.slug==="mobile-accessories"?await loadAccessoryDetails(supabase,listing.id):null;
   const [sellerOtherListings, { data: authData }, { data: sellerIdvData }] = await Promise.all([
     listing.seller_id
       ? getSellerPublicListings(listing.seller_id, listing.id)
@@ -325,12 +329,13 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
 
                   {listing.condition && (
                     <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-900 dark:bg-brand-950 dark:text-brand-300">
-                      {conditionLabels[listing.condition] || listing.condition}
+                      {listing.category.slug === "mobile-accessories" ? accessoryDetails ? ACCESSORY_CONDITIONS[accessoryDetails.condition] : "Condition details unavailable" : conditionLabels[listing.condition] || listing.condition}
                     </span>
                   )}
                 </div>
               </div>
 
+              {accessoryDetails&&<AccessoryListingDetails details={accessoryDetails}/>}
               {/* Category-specific attributes if any */}
               {specificationsUnavailable&&<p role="status">Saved specifications could not be verified. No raw category values are displayed.</p>}
               {specifications.length > 0 && (
