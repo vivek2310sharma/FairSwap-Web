@@ -17,6 +17,9 @@ export function buildReceipt({ preflight, steps, results, generatedAt }) {
   const proven = steps?.steps && typeof steps.steps === "object" ? steps.steps : {};
   if (!STEPS.every(step => proven[step] === true) || Object.keys(proven).length !== STEPS.length) return { error: "steps-not-all-true" };
   if (steps.webFlagEnabledInTest !== true) return { error: "test-flag-not-observed" };
+  // Test-data cleanup gate (not part of the receipt): evidence only exists if every created listing was retired and verified.
+  if (!Array.isArray(results.errors) || results.errors.length !== 0) return { error: "playwright-errors" };
+  if (steps.cleanup?.verified !== true) return { error: "cleanup-not-verified" };
   if (preflight?.webFlagEnabledInProduction !== false) return { error: "production-flag-not-off" };
   if (!SHA40.test(preflight.runnerSha ?? "") || preflight.deployedWebSha !== preflight.runnerSha) return { error: "deployed-sha-mismatch" };
   if (!/^\d+$/.test(preflight.runId ?? "") || !/^\d+$/.test(preflight.testActivationRunId ?? "")) return { error: "run-ids" };

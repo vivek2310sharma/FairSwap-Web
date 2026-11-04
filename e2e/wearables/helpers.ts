@@ -120,7 +120,10 @@ export async function anonApi(env: E2eEnv) {
 
 // ---- Evidence state (read by write-evidence.mjs; a step is only ever set after its assertions passed) -------
 const stateFile = () => join(need("E2E_EVIDENCE_DIR"), "steps.json");
-type State = { steps: Partial<Record<Step, true>>; webFlagEnabledInTest?: true; notes: Record<string, unknown> };
+type Cleanup = { verified: boolean; retired: number; alreadyInactive: number; error?: string };
+type State = { steps: Partial<Record<Step, true>>; webFlagEnabledInTest?: true; cleanup?: Cleanup; notes: Record<string, unknown> };
 const load = (): State => (existsSync(stateFile()) ? JSON.parse(readFileSync(stateFile(), "utf8")) as State : { steps: {}, notes: {} });
 export function recordStep(step: Step, note: Record<string, unknown> = {}) { const s = load(); s.steps[step] = true; s.notes[step] = note; writeFileSync(stateFile(), JSON.stringify(s, null, 2)); }
 export function recordTestFlag() { const s = load(); s.webFlagEnabledInTest = true; writeFileSync(stateFile(), JSON.stringify(s, null, 2)); }
+/** Cleanup outcome gate read by write-evidence.mjs: evidence is refused unless `verified` is true. */
+export function recordCleanup(cleanup: Cleanup) { const s = load(); s.cleanup = cleanup; writeFileSync(stateFile(), JSON.stringify(s, null, 2)); }

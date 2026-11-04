@@ -3,8 +3,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
+import { CleanupError, REMOVAL_REASON, retireListings, scanSearchPages } from "./cleanup.mjs";
 import {
-  anonApi, anonClient, loadEnv, recordStep, recordTestFlag, signIn, upgradeToAal2,
+  anonApi, anonClient, loadEnv, recordCleanup, recordStep, recordTestFlag, signIn, upgradeToAal2,
   type Actor, type E2eEnv,
 } from "./helpers";
 
@@ -28,6 +29,8 @@ let place: { city_id: string; locality_id: string };
 const A = {} as Listing; // still_paired -> flagged, held for moderator review, later published
 const B = {} as Listing; // unknown pairing -> flagged, never published
 let hiddenBeforePublication = false;
+/** Everything this run creates is registered here the moment it exists, so teardown can retire it even after a failure. */
+const created = { ids: new Set<string>(), titles: new Set<string>() };
 
 test.describe.configure({ mode: "serial" });
 
@@ -67,7 +70,7 @@ const ownListing = async (a: Actor, id: string) => rows(await a.client.from("lis
 async function search(c: { rpc: Actor["client"]["rpc"] }, filters: Json) {
   const r = await c.rpc("search_wearables_v1", { filters });
   expect(r.error).toBeNull();
-  return r.data as { items: { id: string; slug: string; wearable: { transfer_ready: boolean; pairing_status: string } }[]; total_count: number };
+  return r.data as { items: { id: string; slug: string; wearable: { transfer_ready: boolean; pairing_status: string } }[]; total_count: number; total_pages?: number };
 }
 const listingFilters = { type: "smartwatch", brand_id: model.brand_id, model_id: model.id };
 
@@ -81,7 +84,52 @@ test.beforeAll(async () => {
   expect(loc.city_id && locality, `Test location data for PIN ${PIN}`).toBeTruthy();
   place = { city_id: String(loc.city_id), locality_id: locality!.id };
 });
-test.afterAll(async () => { await Promise.all([seller?.api().dispose(), buyer?.api().dispose(), moderator?.api().dispose(), anon?.dispose()]); });
+
+type OwnRow = { id: string; seller_id: string; status: string; title: string; revision: number; slug: string | null };
+const OWN_COLUMNS = "id,seller_id,status,title,revision,slug";
+
+/** Retires every listing this run created (authorised seller/moderator operations under real RLS) and proves none is discoverable. */
+async function retireCreated() {
+  const ids = [...created.ids], titles = [...created.titles];
+  try {
+    const result = await retireListings({ sellerId: seller?.userId, ids, titles }, {
+      readOwn: async q => {
+        const out = new Map<string, OwnRow>();
+        const add = (list: Json[]) => list.forEach(r => out.set(String(r.id), r as unknown as OwnRow));
+        if (q.ids.length) add(rows(await seller.client.from("listings").select(OWN_COLUMNS).in("id", q.ids)));
+        if (q.titles.length) add(rows(await seller.client.from("listings").select(OWN_COLUMNS).eq("seller_id", seller.userId).in("title", q.titles)));
+        return [...out.values()];
+      },
+      ensureModeratorAal2: async () => { if ((await moderator.aal()) !== "aal2") await upgradeToAal2(moderator, env.moderator.totpSecret); },
+      remove: async row => ({ error: (await moderator.client.rpc("moderate_listing_reviewed", { listing_id: row.id, action: "remove", reason: REMOVAL_REASON, expected_revision: Number(row.revision), expected_status: row.status })).error }),
+      discoverable: async list => {
+        const wanted = new Set(list.map(r => r.id)), leaked = new Set<string>();
+        for (const r of rows(await anonSb.from("listings").select("id").in("id", [...wanted]))) leaked.add(String(r.id));
+        for (const c of [anonSb, buyer.client]) {
+          (await scanSearchPages(page => search(c, { ...listingFilters, sort: "newest", page }), wanted)).forEach(id => leaked.add(id));
+        }
+        for (const r of list) {
+          if (!r.slug) continue;
+          const res = await anon.get(`/listings/${r.slug}`);
+          if (res.status() === 200 && (await res.text()).includes(r.title)) leaked.add(r.id);
+        }
+        return [...leaked];
+      },
+      sleep: ms => new Promise(resolve => setTimeout(resolve, ms)),
+    });
+    recordCleanup({ verified: true, retired: result.retired.length, alreadyInactive: result.alreadyInactive.length });
+  } catch (error) {
+    recordCleanup({ verified: false, retired: 0, alreadyInactive: 0, error: error instanceof CleanupError ? error.code : "UNEXPECTED" });
+    throw error; // an unsuccessful cleanup fails the run, so no PASS evidence can be produced
+  }
+}
+
+// Runs after the last test AND after a failed test (serial mode skips later tests, never the hook).
+test.afterAll(async () => {
+  test.setTimeout(300_000);
+  try { await retireCreated(); }
+  finally { await Promise.all([seller?.api().dispose(), buyer?.api().dispose(), moderator?.api().dispose(), anon?.dispose()]); }
+});
 
 test("Test deployment has Wearables enabled and is bound to FairSwapTest", async () => {
   // Flag order in the route: feature flag -> auth. Unauthenticated + flag ON => "Sign in", never "coming soon".
@@ -115,9 +163,11 @@ test("authenticated_listing_creation: seller submits wearable listings", async (
   A.title = `Wearable check ${suffix()}`; B.title = `Wearable check ${suffix()}`;
   expect((await anon.post("/api/post-ad/wearables/submit", { data: payload(A, "still_paired") })).status(), "unauthenticated submit").toBe(400);
   for (const [l, pairing] of [[A, "still_paired"], [B, "unknown"]] as const) {
+    created.titles.add(l.title); // registered immediately before its own submit: an unresolved title fails cleanup closed
     const res = await seller.api().post("/api/post-ad/wearables/submit", { data: payload(l, pairing) });
     expect(res.status(), "submit").toBe(200);
     l.listingId = String((await json(res)).listing_id);
+    created.ids.add(l.listingId);
     const row = await ownListing(seller, l.listingId);
     expect(row.seller_id).toBe(seller.userId);
     expect(row.status).toBe("pending_review");
