@@ -118,6 +118,18 @@ jobs:
       - name: Run Tablets V1 isolated browser journeys
         run: node tools/tablets-v1/verify.mjs --max-failures=1
 
+      - name: Run Wearables V1 typed posting, catalogue, session and Tablet-coexistence unit tests
+        run: >-
+          pnpm vitest run
+          tests/unit/wearable-form.test.tsx
+          tests/unit/wearable-uploader-base.test.tsx
+          tests/unit/wearables-catalogue.test.ts
+          tests/unit/wearables-contract.test.ts
+          tests/unit/wearables-routes.test.ts
+          tests/unit/wearables-server.test.ts
+          tests/unit/wearables-tablets-coexistence.test.ts
+          tests/unit/wearables-wiring.test.tsx
+
       - name: Run LIST-03 WhatsApp Sharing Unit Tests
         run: pnpm vitest run tests/unit/share.test.tsx
 
@@ -151,6 +163,33 @@ jobs:
 
       - name: Validate V2 Backend registry payload contract (no DB authority)
         run: pnpm vitest run tests/security/moderation-v2-registry-candidate.test.ts
+
+
+      - name: Checkout pinned Wearables Backend candidate for cross-repository security tests
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: vivek2310sharma/FairSwap-Backend
+          ref: 18511802f1f55806b13a699f026348de41d50bc6
+          token: ${{ steps.backend-token.outputs.token }}
+          path: .fairswap-wearables-backend-ci-source
+          persist-credentials: false
+
+      - name: Use pinned Backend Node runtime for Wearables security fixtures
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24.15.0'
+          check-latest: false
+
+      - name: Require Wearables V1 catalogue, session/RLS and Tablet coexistence PGlite tests
+        timeout-minutes: 12
+        run: |
+          npm ci --prefix .fairswap-wearables-backend-ci-source/tests/ratings --ignore-scripts --no-audit --no-fund
+          (
+            cd .fairswap-wearables-backend-ci-source
+            PG="$PWD/tests/ratings/node_modules/@electric-sql/pglite/dist/index.js"
+            node scripts/ci/test-wearables-v1.mjs --pglite-module="$PG" --web="$GITHUB_WORKSPACE"
+            node scripts/ci/test-wearables-tablets-v1.mjs --pglite-module="$PG" --web="$GITHUB_WORKSPACE"
+          )
 
   database-security-tests:
     name: Supabase Local DB & Security Tests
