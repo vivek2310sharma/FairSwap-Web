@@ -118,6 +118,18 @@ jobs:
       - name: Run Tablets V1 isolated browser journeys
         run: node tools/tablets-v1/verify.mjs --max-failures=1
 
+      - name: Run Wearables V1 typed posting, catalogue, session and Tablet-coexistence unit tests
+        run: >-
+          pnpm vitest run
+          tests/unit/wearable-form.test.tsx
+          tests/unit/wearable-uploader-base.test.tsx
+          tests/unit/wearables-catalogue.test.ts
+          tests/unit/wearables-contract.test.ts
+          tests/unit/wearables-routes.test.ts
+          tests/unit/wearables-server.test.ts
+          tests/unit/wearables-tablets-coexistence.test.ts
+          tests/unit/wearables-wiring.test.tsx
+
       - name: Run LIST-03 WhatsApp Sharing Unit Tests
         run: pnpm vitest run tests/unit/share.test.tsx
 
