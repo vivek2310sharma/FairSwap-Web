@@ -1,12 +1,12 @@
 // Fail-closed preflight for the Wearables V1 Test E2E. Runs before Playwright; writes preflight.json.
 // 1. The checked-out runner commit must descend from the tested staging commit and differ ONLY in runner files.
 // 2. The runner commit must have a READY, non-Production deployment; its immutable URL is the E2E target.
-// 3. Production Wearables must be OFF, observed through one anonymous, credential-free GET (no Production credentials).
+// 3. Production Wearables must be OFF: exact anonymous flag-off response or reviewed deployed source absence.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  MAX_RUNNER_FILES, PRODUCTION_FLAG_OFF_MESSAGE, PRODUCTION_ORIGIN, RUNNER_PATHS, SHA40, WEB_STAGING_SHA,
+  MAX_RUNNER_FILES, PRODUCTION_ABSENCE, PRODUCTION_FLAG_OFF_MESSAGE, PRODUCTION_ORIGIN, RUNNER_PATHS, SHA40, WEB_STAGING_SHA,
 } from "./contract.mjs";
 
 export function fail(code, detail = "") {
@@ -49,12 +49,51 @@ async function findDeployment(repo, sha, token) {
   }
 }
 
-async function productionFlagIsOff() {
-  const res = await fetch(`${PRODUCTION_ORIGIN}/api/post-ad/wearables/sessions`, { redirect: "manual", headers: { Accept: "application/json" } });
-  let body = null;
-  try { body = await res.json(); } catch { /* not JSON: cannot prove OFF */ }
-  // The route checks the flag before authentication: OFF -> exact "coming soon" message. Anything else is not proof.
-  return res.status === 400 && body?.error === PRODUCTION_FLAG_OFF_MESSAGE;
+/** A 404 is evidence only for the independently reviewed READY Production source. */
+export async function productionFlagIsOff(repo, token, request = fetch) {
+  const probe = url => request(`${url}/api/post-ad/wearables/sessions`, {
+    method: "GET", cache: "no-store", redirect: "manual", credentials: "omit", signal: AbortSignal.timeout(15_000),
+    headers: { Accept: "application/json" },
+  });
+  const api = async path => {
+    const res = await request(`https://api.github.com/repos/${repo}/${path}`, {
+      redirect: "error", signal: AbortSignal.timeout(15_000),
+      headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${token}`, "X-GitHub-Api-Version": "2022-11-28" },
+    });
+    if (!res.ok) throw new Error("Production provenance unavailable");
+    return res.json();
+  };
+  try {
+    const res = await probe(PRODUCTION_ORIGIN);
+    if (res.status === 400) {
+      const body = await res.json();
+      return body?.error === PRODUCTION_FLAG_OFF_MESSAGE ? { kind: "flag-off-400" } : null;
+    }
+    if (res.status !== 404 || repo !== "vivek2310sharma/FairSwap-Web" || !token) return null;
+    // Check the newest Production deployment, never search past a failed/pending or changed release.
+    // Vercel's successful GitHub status is checked again at runtime against the reviewed READY pin.
+    const deployments = await api("deployments?environment=Production&per_page=100");
+    const deployment = deployments[0];
+    if (deployment?.sha !== PRODUCTION_ABSENCE.sha || deployment.environment !== "Production" ||
+        deployment.creator?.login !== "vercel[bot]" || !Number.isSafeInteger(deployment.id)) return null;
+    const statuses = await api(`deployments/${deployment.id}/statuses?per_page=10`);
+    const status = statuses[0];
+    if (status?.state !== "success" || status.creator?.login !== "vercel[bot]" ||
+        status.environment_url !== PRODUCTION_ABSENCE.url) return null;
+    const commit = await api(`git/commits/${deployment.sha}`);
+    if (commit.sha !== deployment.sha || !SHA40.test(commit.tree?.sha ?? "")) return null;
+    const tree = await api(`git/trees/${commit.tree.sha}?recursive=1`);
+    if (tree.sha !== commit.tree.sha || tree.truncated !== false || !Array.isArray(tree.tree) ||
+        !tree.tree.some(entry => entry.path === "src/app/api/post-ad") ||
+        tree.tree.some(entry => typeof entry.path !== "string" ||
+          /^(?:src\/)?(?:app|pages)\/api\/post-ad\/wearables(?:[/.]|$)/.test(entry.path))) return null;
+    return { kind: "verified-route-absence", sha: deployment.sha,
+      deploymentId: PRODUCTION_ABSENCE.deploymentId, url: PRODUCTION_ABSENCE.url,
+      githubDeploymentId: deployment.id, sourceTreeSha: tree.sha };
+  } catch {
+    // Includes malformed JSON, authentication/API failures, redirects, timeouts and network errors.
+    return null;
+  }
 }
 
 async function main() {
@@ -65,9 +104,10 @@ async function main() {
   const bad = validateRunnerDiff(git("diff", "--no-renames", "--name-status", `${WEB_STAGING_SHA}..${sha}`).split("\n"));
   if (bad) fail("RUNNER_COMMIT_NOT_ISOLATED", bad);
   const deployment = await findDeployment(repo, sha, token);
-  if (!await productionFlagIsOff()) fail("PRODUCTION_FLAG_NOT_PROVEN_OFF", "anonymous probe did not return the flag-off response");
+  const productionProof = await productionFlagIsOff(repo, token);
+  if (!productionProof) fail("PRODUCTION_FLAG_NOT_PROVEN_OFF", "neither exact flag-off response nor verified Production route absence");
   mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "preflight.json"), `${JSON.stringify({ runnerSha: sha, deployedWebSha: deployment.sha, deploymentId: deployment.id, baseUrl: deployment.url, webFlagEnabledInProduction: false, testActivationRunId: activation, runId }, null, 2)}\n`);
+  writeFileSync(join(dir, "preflight.json"), `${JSON.stringify({ runnerSha: sha, deployedWebSha: deployment.sha, deploymentId: deployment.id, baseUrl: deployment.url, webFlagEnabledInProduction: false, productionProof, testActivationRunId: activation, runId }, null, 2)}\n`);
   console.log(`PREFLIGHT_OK runner=${sha} deployment=${deployment.id}`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) await main();

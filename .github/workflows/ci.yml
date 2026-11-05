@@ -64,6 +64,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Run Wearables preflight and cleanup contracts
+        run: node --test e2e/wearables/*.selftest.mjs
+
       - name: Validate active documentation and retired milestone gates
         run: pnpm docs:check
 
@@ -549,16 +552,28 @@ jobs:
       - name: Phase 1 — Verify Supabase CLI & Pinned Image PG17 Compatibility
         run: |
           echo "=== Phase 1: Checking PostgreSQL 17 compatibility on disposable runner ==="
-          # Create isolated temporary staging directory for PG17 test stack without touching permanent repo config
-          mkdir -p /tmp/sb-pg17-rehearsal/supabase/migrations
-          mkdir -p /tmp/sb-pg17-rehearsal/supabase/tests
+          set -euo pipefail
+          # Unique directory AND project ID: never attach to the default local stack.
+          PG17_REHEARSAL_DIR=$(mktemp -d "${RUNNER_TEMP}/sb-pg17-rehearsal.XXXXXX")
+          export PG17_REHEARSAL_DIR
+          echo "PG17_REHEARSAL_DIR=$PG17_REHEARSAL_DIR" >> "$GITHUB_ENV"
+          mkdir -p "$PG17_REHEARSAL_DIR/supabase/"{migrations,tests}
+          # Rewrite only the disposable copy, including every configured mail/API/DB port.
+          python3 - <<'PYCONFIG'
+          import os, pathlib, re
+          source = pathlib.Path("supabase/config.toml").read_text()
+          source, projects = re.subn(r'^project_id = ".*"$',
+              'project_id = "fairswap-pg17-' + os.environ["GITHUB_RUN_ID"] + '-' + os.environ["GITHUB_RUN_ATTEMPT"] + '"', source, flags=re.M)
+          source, versions = re.subn(r'^major_version = 15$', 'major_version = 17', source, flags=re.M)
+          source, ports = re.subn(r'^(\w*port = )543(\d{2})$', r'\g<1>553\2', source, flags=re.M)
+          if projects != 1 or versions != 1 or ports != 6:
+              raise SystemExit("Unexpected Supabase config: refuse an incomplete isolation rewrite")
+          (pathlib.Path(os.environ["PG17_REHEARSAL_DIR"]) / "supabase/config.toml").write_text(source)
+          PYCONFIG
+          cp -r supabase/templates "$PG17_REHEARSAL_DIR/supabase/"
 
-          # Copy config.toml and override major_version = 17 in isolated directory
-          sed 's/major_version = 15/major_version = 17/' supabase/config.toml > /tmp/sb-pg17-rehearsal/supabase/config.toml
-          cp -r supabase/templates /tmp/sb-pg17-rehearsal/supabase/ || true
-
-          echo "Starting isolated Supabase stack with major_version = 17 in /tmp/sb-pg17-rehearsal..."
-          cd /tmp/sb-pg17-rehearsal
+          echo "Starting isolated PG17 Supabase stack in $PG17_REHEARSAL_DIR..."
+          cd "$PG17_REHEARSAL_DIR"
           supabase start -x studio,analytics,logflare,supavisor
 
           # Query actual server version
@@ -578,7 +593,7 @@ jobs:
       - name: Phase 2 — Reconstruct Production Baseline (Exact 36 Migrations)
         run: |
           echo "=== Phase 2: Reconstructing FairSwapProd 36-migration baseline ==="
-          cd /tmp/sb-pg17-rehearsal
+          cd "$PG17_REHEARSAL_DIR"
 
           # Define the exact 36 production baseline migrations (ordered)
           BASELINE_MIGRATIONS=(
@@ -664,7 +679,7 @@ jobs:
       - name: Phase 3 — Rehearse MOD-02B Security Migrations & Regression Tests
         run: |
           echo "=== Phase 3: Applying and testing MOD-02B security migrations ==="
-          cd /tmp/sb-pg17-rehearsal
+          cd "$PG17_REHEARSAL_DIR"
 
           MOD02B_MIGRATIONS=(
             "20261010071050_invalidate_pending_review_on_media_mutation.sql"
@@ -708,18 +723,18 @@ jobs:
           echo "✓ All 39 migration versions (36 baseline + 3 MOD-02B) verified in migration history with zero discrepancies."
 
           echo "Running pgTAP tests against PG17 with MOD-02B..."
-          cp "$GITHUB_WORKSPACE/supabase/tests/pending_review_media_invalidation.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
-          cp "$GITHUB_WORKSPACE/supabase/tests/admin_reviewed_contract.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
-          cp "$GITHUB_WORKSPACE/supabase/tests/admin_medium_operation.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
-          cp "$GITHUB_WORKSPACE/supabase/tests/schema_listings.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
-          cp "$GITHUB_WORKSPACE/supabase/tests/schema_security.test.sql" /tmp/sb-pg17-rehearsal/supabase/tests/
+          cp "$GITHUB_WORKSPACE/supabase/tests/pending_review_media_invalidation.test.sql" "$PG17_REHEARSAL_DIR/supabase/tests/"
+          cp "$GITHUB_WORKSPACE/supabase/tests/admin_reviewed_contract.test.sql" "$PG17_REHEARSAL_DIR/supabase/tests/"
+          cp "$GITHUB_WORKSPACE/supabase/tests/admin_medium_operation.test.sql" "$PG17_REHEARSAL_DIR/supabase/tests/"
+          cp "$GITHUB_WORKSPACE/supabase/tests/schema_listings.test.sql" "$PG17_REHEARSAL_DIR/supabase/tests/"
+          cp "$GITHUB_WORKSPACE/supabase/tests/schema_security.test.sql" "$PG17_REHEARSAL_DIR/supabase/tests/"
 
           supabase test db \
-            /tmp/sb-pg17-rehearsal/supabase/tests/pending_review_media_invalidation.test.sql \
-            /tmp/sb-pg17-rehearsal/supabase/tests/admin_reviewed_contract.test.sql \
-            /tmp/sb-pg17-rehearsal/supabase/tests/admin_medium_operation.test.sql \
-            /tmp/sb-pg17-rehearsal/supabase/tests/schema_listings.test.sql \
-            /tmp/sb-pg17-rehearsal/supabase/tests/schema_security.test.sql
+            "$PG17_REHEARSAL_DIR/supabase/tests/pending_review_media_invalidation.test.sql" \
+            "$PG17_REHEARSAL_DIR/supabase/tests/admin_reviewed_contract.test.sql" \
+            "$PG17_REHEARSAL_DIR/supabase/tests/admin_medium_operation.test.sql" \
+            "$PG17_REHEARSAL_DIR/supabase/tests/schema_listings.test.sql" \
+            "$PG17_REHEARSAL_DIR/supabase/tests/schema_security.test.sql"
 
           # Run RLS security test suite against PG17 stack
           STATUS_JSON=$(supabase status -o json)
@@ -740,7 +755,7 @@ jobs:
       - name: Phase 4 — Rehearse Dormant MOD-03A Separately
         run: |
           echo "=== Phase 4: Applying and testing dormant MOD-03A migrations ==="
-          cd /tmp/sb-pg17-rehearsal
+          cd "$PG17_REHEARSAL_DIR"
 
           MOD03A_MIGRATIONS=(
             "20261011000038_create_moderation_queue_and_results.sql"
@@ -836,8 +851,10 @@ jobs:
         if: always()
         run: |
           echo "Tearing down isolated PG17 Supabase stack..."
-          cd /tmp/sb-pg17-rehearsal && supabase stop || true
-          rm -rf /tmp/sb-pg17-rehearsal
+          if [ -n "${PG17_REHEARSAL_DIR:-}" ] && [ -f "$PG17_REHEARSAL_DIR/supabase/config.toml" ]; then
+            cd "$PG17_REHEARSAL_DIR"
+            supabase stop --no-backup
+          fi
 
   chat-v2-web-contracts:
     name: Chat V2 Web isolated contracts (flag off)
