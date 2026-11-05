@@ -13,7 +13,8 @@ export type PostingPhoto = {
     url?: string;
     error?: string;
 };
-export default function PreListingMediaUploader({ photos, onChange, sessionId, disabled, onReady, ensureSession, onPrepareSession, onSessionError, guidance = "Front, back, screen on, sides and any wear.", photoLabel = "Phone", locale = "en" }: {
+export default function PreListingMediaUploader({ photos, onChange, sessionId, disabled, onReady, ensureSession, onPrepareSession, onSessionError, guidance = "Front, back, screen on, sides and any wear.", photoLabel = "Phone", mediaBase = "/api/post-ad/sessions", locale = "en" }: {
+    mediaBase?: string;
     photoLabel?: string;
     guidance?: string;
     locale?: PostingLocale;
@@ -51,7 +52,7 @@ export default function PreListingMediaUploader({ photos, onChange, sessionId, d
                     const data = new FormData();
                     data.append("file", photo.blob, "photo.webp");
                     data.append("media_id", photo.id);
-                    const r = await fetch(`/api/post-ad/sessions/${uploadSession}/media`, { method: "POST", body: data });
+                    const r = await fetch(`${mediaBase}/${uploadSession}/media`, { method: "POST", body: data });
                     const result = await r.json();
                     if (!r.ok) {
                         const code = sessionErrorCodeSchema.safeParse(result.code);
@@ -115,7 +116,7 @@ export default function PreListingMediaUploader({ photos, onChange, sessionId, d
                 working.current = true;
                 setBusy(true);
                 try {
-                    const r = await fetch(`/api/post-ad/sessions/${sessionId}/media`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ media_id: p.id }) });
+                    const r = await fetch(`${mediaBase}/${sessionId}/media`, { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ media_id: p.id }) });
                     if (r.ok)
                         change(latest.current.filter(x => x.id !== p.id));
                     else

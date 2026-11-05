@@ -12,7 +12,7 @@ interface SearchFiltersProps {
   categories: Category[];
   cities: City[];
   localities: Locality[];
-  initialFilters: Pick<ListingSearchFilters,"accessory_type"|"accessory_brand"|"device_brand"|"device_model"|"accessory_condition"> & {
+  initialFilters: Pick<ListingSearchFilters,"accessory_type"|"accessory_brand"|"device_brand"|"device_model"|"accessory_condition"|"wearable_type"|"wearable_brand"|"wearable_model"|"wearable_transfer_ready"|"wearable_connectivity"> & {
     q?: string;
     category?: string;
     city?: string;
@@ -307,6 +307,7 @@ export function SearchFilters({
       }
     }
 
+    if(params.get("category")==="wearables")for(const key of ["wearable_type","wearable_brand","wearable_model","wearable_transfer_ready","wearable_connectivity"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     if(params.get("category")==="mobile-accessories")for(const key of ["accessory_type","accessory_brand","device_brand","device_model","accessory_condition"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     params.set("page", "1");
 
@@ -360,6 +361,7 @@ export function SearchFilters({
       }
     }
 
+    if(params.get("category")==="wearables")for(const key of ["wearable_type","wearable_brand","wearable_model","wearable_transfer_ready","wearable_connectivity"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     if(params.get("category")==="mobile-accessories")for(const key of ["accessory_type","accessory_brand","device_brand","device_model","accessory_condition"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     params.set("page", "1");
 
@@ -469,6 +471,7 @@ export function SearchFilters({
       }
     }
 
+    if(params.get("category")==="wearables")for(const key of ["wearable_type","wearable_brand","wearable_model","wearable_transfer_ready","wearable_connectivity"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     if(params.get("category")==="mobile-accessories")for(const key of ["accessory_type","accessory_brand","device_brand","device_model","accessory_condition"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     params.set("page", "1");
 
@@ -515,6 +518,7 @@ export function SearchFilters({
       }
     }
 
+    if(params.get("category")==="wearables")for(const key of ["wearable_type","wearable_brand","wearable_model","wearable_transfer_ready","wearable_connectivity"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     if(params.get("category")==="mobile-accessories")for(const key of ["accessory_type","accessory_brand","device_brand","device_model","accessory_condition"] as const){const value=initialFilters[key];if(value)params.set(key,value);}
     params.set("page", "1");
 
