@@ -149,31 +149,44 @@ test("accepts the existing exact flag-off 400 without requesting provenance", as
 
 test("pins the independently verified current Production identity", () => {
   assert.deepEqual(PRODUCTION_ABSENCE, {
-    sha: "4554dd52a36df3ccd9856f4a9f89dc195c180833",
-    deploymentId: "dpl_E9EunfNE7sgnYd9Qwd3bYz3Pj5kQ",
-    url: "https://fairswap-8qzjyf906-fairswap.vercel.app",
+    sha: "9d70e6bcdf7be9d2dc85efe67a6f061dfb7387d8",
+    deploymentId: "dpl_HLkzVps9scPEJ7YAwgiJ9qWFNhCH",
+    url: "https://fairswap-ckqvd73ki-fairswap.vercel.app",
   });
 });
 
-test("rejects the previous Production pin and mixed old/new deployment provenance", async () => {
-  const previous = {
-    sha: "9a291aeec7c64e4de2cd55d9b21686adedcc3dcd",
-    deploymentId: "dpl_679vqxcCtkfCVQQa8kS7eZxU7HiT",
-    url: "https://fairswap-5i5r6669p-fairswap.vercel.app",
-  };
-  for (const change of [
-    { deployment: { sha: previous.sha }, status: { environment_url: previous.url }, commit: { sha: previous.sha } },
-    { deployment: { sha: previous.sha } },
-    { status: { environment_url: previous.url } },
-    { commit: { sha: previous.sha } },
-    // Never search past a stale newest deployment to find the reviewed pin.
-    { deployments: [
-      { id: 456, sha: previous.sha, environment: "Production", creator: { login: "vercel[bot]" } },
-      { id: 123, sha: PRODUCTION_ABSENCE.sha, environment: "Production", creator: { login: "vercel[bot]" } },
-    ] },
-  ]) {
-    const fixture = productionFixture(change);
-    assert.equal(await productionFlagIsOff(repo, "fixture-token", fixture.request), null, JSON.stringify(change));
+test("rejects both previous Production pins, mixed provenance and stale newest deployments", async () => {
+  const previousIdentities = [
+    {
+      sha: "9a291aeec7c64e4de2cd55d9b21686adedcc3dcd",
+      deploymentId: "dpl_679vqxcCtkfCVQQa8kS7eZxU7HiT",
+      url: "https://fairswap-5i5r6669p-fairswap.vercel.app",
+    },
+    {
+      sha: "4554dd52a36df3ccd9856f4a9f89dc195c180833",
+      deploymentId: "dpl_E9EunfNE7sgnYd9Qwd3bYz3Pj5kQ",
+      url: "https://fairswap-8qzjyf906-fairswap.vercel.app",
+    },
+  ];
+  for (const previous of previousIdentities) {
+    for (const change of [
+      { deployment: { sha: previous.sha }, status: { environment_url: previous.url }, commit: { sha: previous.sha } },
+      { deployment: { sha: previous.sha } },
+      { status: { environment_url: previous.url } },
+      { commit: { sha: previous.sha } },
+      // Never search past a stale newest deployment or status to find the reviewed pin.
+      { deployments: [
+        { id: 456, sha: previous.sha, environment: "Production", creator: { login: "vercel[bot]" } },
+        { id: 123, sha: PRODUCTION_ABSENCE.sha, environment: "Production", creator: { login: "vercel[bot]" } },
+      ] },
+      { statuses: [
+        { state: "success", creator: { login: "vercel[bot]" }, environment_url: previous.url },
+        { state: "success", creator: { login: "vercel[bot]" }, environment_url: PRODUCTION_ABSENCE.url },
+      ] },
+    ]) {
+      const fixture = productionFixture(change);
+      assert.equal(await productionFlagIsOff(repo, "fixture-token", fixture.request), null, JSON.stringify(change));
+    }
   }
 });
 

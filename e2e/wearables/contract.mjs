@@ -47,7 +47,7 @@ export const SHA40 = /^[0-9a-f]{40}$/;
 // Independently inspected through Vercel on 2026-11-05: READY, target production,
 // alias fairswap.in. Keep this fail-closed pin until another deployment is reviewed.
 export const PRODUCTION_ABSENCE = Object.freeze({
-  sha: "4554dd52a36df3ccd9856f4a9f89dc195c180833",
-  deploymentId: "dpl_E9EunfNE7sgnYd9Qwd3bYz3Pj5kQ",
-  url: "https://fairswap-8qzjyf906-fairswap.vercel.app",
+  sha: "9d70e6bcdf7be9d2dc85efe67a6f061dfb7387d8",
+  deploymentId: "dpl_HLkzVps9scPEJ7YAwgiJ9qWFNhCH",
+  url: "https://fairswap-ckqvd73ki-fairswap.vercel.app",
 });
