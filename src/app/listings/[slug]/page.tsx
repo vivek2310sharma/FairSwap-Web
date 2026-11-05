@@ -1,3 +1,4 @@
+import { wearablesEnabled } from "@/lib/listings/wearables/enabled";
 import { PublicSummary } from "@/components/ratings/PublicRatings";
 import { ratingsLocale } from "@/lib/ratings/copy";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -14,6 +15,8 @@ import AccessoryListingDetails from "@/components/listings/AccessoryListingDetai
 import {loadAccessoryDetails} from "@/lib/listings/accessories/public";
 import TabletListingDetails from "@/components/listings/TabletListingDetails";
 import {loadTabletDetails} from "@/lib/listings/tablets/public";
+import WearableListingDetails from "@/components/listings/WearableListingDetails";
+import {loadWearableDetails} from "@/lib/listings/wearables/public";
 import MobileListingDetails from "@/components/listings/MobileListingDetails";
 import { loadPublicMobileDetails } from "@/lib/listings/mobiles/public";
 import { CompactSafetyNotice, IndiaSafetyCard } from "@/components/listings/IndiaSafetyAdvice";
@@ -120,6 +123,9 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   const supabase = await createClient();
   const mobileDetails = await loadPublicMobileDetails(supabase,listing.id);
   const tabletDetails=listing.category.slug==="tablets"?await loadTabletDetails(supabase,listing.id):null;
+  const wearableDetails = listing.category.slug === "wearables" && wearablesEnabled()
+    ? await loadWearableDetails(supabase, listing.id)
+    : null;
   const accessoryDetails=listing.category.slug==="mobile-accessories"?await loadAccessoryDetails(supabase,listing.id):null;
   const [sellerOtherListings, { data: authData }, { data: sellerIdvData }] = await Promise.all([
     listing.seller_id
@@ -339,6 +345,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
               </div>
 
               {tabletDetails&&<TabletListingDetails details={tabletDetails}/>}
+              {wearableDetails&&<WearableListingDetails details={wearableDetails}/>}
               {accessoryDetails&&<AccessoryListingDetails details={accessoryDetails}/>}
               {/* Category-specific attributes if any */}
               {specificationsUnavailable&&<p role="status">Saved specifications could not be verified. No raw category values are displayed.</p>}

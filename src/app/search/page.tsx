@@ -1,5 +1,7 @@
 import AccessorySearchFilters from "@/components/listings/AccessorySearchFilters";
 import {accessoryType} from "@/lib/listings/accessories/catalogue";
+import WearableSearchFilters from "@/components/listings/WearableSearchFilters";
+import { wearablesEnabled } from "@/lib/listings/wearables/enabled";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ListingCard } from "@/components/listings/ListingCard";
@@ -82,7 +84,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const city = cities.find(c => c.id === filters.city);
   const locality = localities.find(l => l.id === filters.locality && l.city_id === filters.city);
   const accessoryValues=[filters.accessory_type,filters.accessory_brand,filters.device_brand,filters.device_model,filters.accessory_condition];
+  const wearableValues=[filters.wearable_type,filters.wearable_brand,filters.wearable_model,filters.wearable_transfer_ready,filters.wearable_connectivity];
   const invalidFilters = !parsed.success || duplicateParams ||
+    (wearableValues.some(Boolean)&&filters.category!=="wearables") ||
     (accessoryValues.some(Boolean)&&filters.category!=="mobile-accessories") || Boolean(filters.accessory_type&&!accessoryType(filters.accessory_type)) ||
     Boolean(filters.city && !city) || Boolean(filters.locality && (!city || !locality)) ||
     Boolean(filters.category && !categories.some(c => c.slug === filters.category)) ||
@@ -145,6 +149,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
           {invalidFilters && <p role="alert" className="mb-4 text-sm">Some search filters are invalid or unavailable. Change or clear them to continue.</p>}
           {filters.category==="mobile-accessories"&&<AccessorySearchFilters filters={rawFilters}/>}
+          {filters.category==="wearables"&&wearablesEnabled()&&<WearableSearchFilters filters={rawFilters}/>}
           <SearchLocation key={searchContext} filters={rawFilters} area={area} />
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
             {/* Filter Sidebar */}

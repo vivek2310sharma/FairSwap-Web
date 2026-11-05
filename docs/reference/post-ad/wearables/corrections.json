@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "note": "Reviewed overrides for the immutable source CSV. Keys are 'brand|model'. The generator fails on any key that is not in the CSV. Evidence is in-repo only (model names, device_type column); nothing here is manufacturer-verified. 'excluded' = outside V1 policy; 'quarantined' = unresolved data, hidden from the picker and not acceptable through Other.",
+  "reclassify": {
+    "Nothing|CMF Band": { "device_type": "fitness_band", "evidence": "Model name says Band; CSV lists smartwatch." },
+    "Nothing|CMF Band Pro": { "device_type": "fitness_band", "evidence": "Model name says Band; CSV lists smartwatch." },
+    "Realme|Realme TechLife Band": { "device_type": "fitness_band", "evidence": "Model name says Band; CSV lists smartwatch." },
+    "Realme|Realme TechLife Smart Band": { "device_type": "fitness_band", "evidence": "Model name says Smart Band; CSV lists smartwatch." }
+  },
+  "status": {
+    "Fitbit|Fitbit Ace 3": { "status": "excluded", "reason": "kids_tracker", "note": "Child-oriented tracker; V1 does not enable kid-tracking devices." },
+    "Whoop|Whoop 3.0": { "status": "excluded", "reason": "subscription_only", "note": "Subscription-dependent device; V1 does not silently enable subscription-only devices." },
+    "Whoop|Whoop 4.0": { "status": "excluded", "reason": "subscription_only", "note": "Subscription-dependent device." },
+    "Whoop|Whoop 5.0": { "status": "excluded", "reason": "subscription_only", "note": "Subscription-dependent device." },
+    "Whoop|Whoop MG": { "status": "excluded", "reason": "subscription_only", "note": "Subscription-dependent device." },
+    "Ultrahuman|Ultrahuman Home": { "status": "excluded", "reason": "not_a_wearable", "note": "Listed as smart_ring but the name indicates a home product, not a ring." },
+    "Amazfit|Amazfit Helio Strap": { "status": "quarantined", "reason": "type_mismatch", "note": "Listed as smart_ring but the name indicates a strap." },
+    "Fossil|Fossil Hybrid HR": { "status": "quarantined", "reason": "classification_unverified", "note": "Hybrid analog-style watch; Fashion vs smartwatch boundary unresolved." },
+    "Fossil|Fossil Hybrid Smartwatch": { "status": "quarantined", "reason": "classification_unverified", "note": "Hybrid analog-style watch; Fashion vs smartwatch boundary unresolved." },
+    "Noise|Noise Luna Ring Gold": { "status": "quarantined", "reason": "possible_variant", "note": "Looks like a finish of Noise Luna Ring, not a separate model." },
+    "Noise|Noise Luna Ring Matte": { "status": "quarantined", "reason": "possible_variant", "note": "Looks like a finish of Noise Luna Ring, not a separate model." },
+    "Oura|Oura Ring Ceramic": { "status": "quarantined", "reason": "possible_variant", "note": "May be a finish/edition of another Oura model; unresolved." },
+    "Oura|Oura Ring Heritage": { "status": "quarantined", "reason": "possible_variant", "note": "May be a finish/edition of another Oura model; unresolved." },
+    "Oura|Oura Ring Horizon": { "status": "quarantined", "reason": "possible_variant", "note": "May be a finish/edition of another Oura model; unresolved." },
+    "Ultrahuman|Ultrahuman Rare": { "status": "quarantined", "reason": "possible_variant", "note": "May be an edition of Ultrahuman Ring; unresolved." },
+    "Ultrahuman|Ultrahuman Ring AIR Bionic Gold": { "status": "quarantined", "reason": "possible_variant", "note": "Finish of Ultrahuman Ring AIR." },
+    "Ultrahuman|Ultrahuman Ring AIR Matte Grey": { "status": "quarantined", "reason": "possible_variant", "note": "Finish of Ultrahuman Ring AIR." },
+    "Ultrahuman|Ultrahuman Ring AIR Raw Titanium": { "status": "quarantined", "reason": "possible_variant", "note": "Finish of Ultrahuman Ring AIR." },
+    "Ultrahuman|Ultrahuman Ring AIR Space Silver": { "status": "quarantined", "reason": "possible_variant", "note": "Finish of Ultrahuman Ring AIR." },
+    "Ultrahuman|Ultrahuman Ring AIR Titanium": { "status": "quarantined", "reason": "possible_variant", "note": "Finish of Ultrahuman Ring AIR." }
+  }
+}

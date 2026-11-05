@@ -310,6 +310,11 @@ export function getEffectiveSort(q?: string, sortParam?: string): SearchSortOpti
 }
 
 export const searchFiltersSchema = z.object({
+  wearable_type:z.enum(["smartwatch","fitness_band","sports_gps_watch","smart_ring",""]).optional().transform(v=>v===""?undefined:v),
+  wearable_brand:z.string().regex(/^wb_[a-z0-9-]+$/).or(z.literal("")).optional().transform(v=>v===""?undefined:v),
+  wearable_model:z.string().regex(/^wm_[0-9a-f]{12}$/).or(z.literal("")).optional().transform(v=>v===""?undefined:v),
+  wearable_transfer_ready:z.enum(["true",""]).optional().transform(v=>v===""?undefined:v),
+  wearable_connectivity:z.enum(["bluetooth","lte",""]).optional().transform(v=>v===""?undefined:v),
   accessory_type:z.string().trim().max(60).optional(),
   accessory_brand:z.string().trim().max(80).optional(),
   device_brand:z.string().trim().max(80).optional(),
