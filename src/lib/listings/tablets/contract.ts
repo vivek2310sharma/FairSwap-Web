@@ -3,13 +3,25 @@ import { phoneRiskSignals } from "../mobiles/contract";
 export { CONDITIONS, RAM } from "../mobiles/contract";
 export const STORAGE = ["16 GB","32 GB","64 GB","128 GB","256 GB","512 GB","1 TB","2 TB","Not sure"] as const;
 export const CONNECTIVITY = {wifi:"Wi-Fi only",lte:"Wi-Fi + 4G/LTE",five_g:"Wi-Fi + 5G",unknown:"Not sure"} as const;
+export const OTHER_TABLET_BRAND = "Other";
+const singleLine = (length: number) => z.string().trim().max(length).refine(
+ value => Array.from(value).every(character => character.charCodeAt(0)>31 && character.charCodeAt(0)!==127),
+ "Enter a single line.",
+);
+const capacity = (pattern: RegExp) => z.string().trim().refine(value => pattern.test(value), "Enter a capacity such as 8 GB.");
+export const tabletCustomSpecs = {
+ storage_other: capacity(/^[1-9][0-9]{0,3} GB$|^[1-9][0-9]? TB$/).optional(),
+ ram_other: capacity(/^[1-9][0-9]{0,2} GB$/).optional(),
+ connectivity_other: singleLine(60).refine(value => value.length >= 2, "Enter the connectivity type.").optional(),
+};
 export const SCREEN = {working:"Fully functional",marked:"Cracked or marked but works",fault:"Touch / display fault",unknown:"Unsure"} as const;
 export const BATTERY = {normal:"Normal",reduced:"Reduced battery life",charging_fault:"Charging problem",untested:"Cannot test"} as const;
 export const LOCK = {clear:"Transferable: no Activation Lock, FRP or company/school management",locked:"Cannot transfer without an account or management lock",unknown:"Not sure"} as const;
 export const INCLUDED = ["Original box","Bill/invoice","Charger","Charging cable","Stylus/pen","Keyboard","Protective cover/case","Under warranty"] as const;
 export const tabletSelection = z.object({category:z.literal("mobiles"),subcategory:z.literal("tablets"),version:z.literal(1)}).strict();
 export const tabletBase = z.object({
- selection:tabletSelection,session_id:z.string().uuid(),brand_id:z.string().uuid(),model_id:z.string().uuid(),other_model:z.string().trim().max(100),
+ selection:tabletSelection,session_id:z.string().uuid(),brand_id:z.string().uuid(),model_id:z.string().uuid(),other_model:singleLine(100),
+ other_brand:singleLine(100).optional(),...tabletCustomSpecs,
  storage:z.enum(STORAGE),connectivity:z.enum(["wifi","lte","five_g","unknown"]),ram:z.string().regex(/^(?:[23468]|12|16) GB$|^$/),colour:z.string().trim().max(40),hardware_model_number:z.string().regex(/^[A-Za-z][A-Za-z0-9-]{1,19}$|^$/),
  condition:z.enum(["new","like_new","good","fair","poor"]),screen_touch_status:z.enum(["working","marked","fault","unknown"]),battery_charging_status:z.enum(["normal","reduced","charging_fault","untested"]),transfer_lock_status:z.enum(["clear","locked","unknown"]),
  powers_on:z.enum(["yes","no","untested"]),repair_history:z.enum(["none","screen","battery","other","unknown"]),other_defects:z.string().trim().max(1000),
@@ -26,21 +38,38 @@ export function tabletRefinements(v:z.infer<typeof tabletBase>,ctx:z.RefinementC
  if((v.trade==="sell"&&v.price_paise<1)||(v.trade==="giveaway"&&(v.price_paise!==0||v.negotiable)))issue("price_paise","Check price and trade type.");
  if(new Set(v.media_ids).size!==v.media_ids.length)issue("media_ids","Choose distinct photos.");
  if(new Set(v.included).size!==v.included.length)issue("included","Choose distinct accessories.");
+ for(const [field, allowed] of [
+  ["storage_other", v.storage==="Not sure"],
+  ["ram_other", v.ram===""],
+  ["connectivity_other", v.connectivity==="unknown"],
+ ] as const){
+  const value=v[field];
+  if(value!==undefined && (v.other_brand===undefined || !allowed))issue(field,"Enter a valid value for the Other option.");
+  if(tabletRiskSignals({[field]:value}).length)issue(field,"Remove personal identifiers, contact/payment links and advance-payment requests.");
+ }
+ for(const field of ["other_brand","other_model"] as const)
+  if(tabletRiskSignals({[field]:v[field]}).length)issue(field,"Remove personal identifiers, contact/payment links and advance-payment requests.");
  if(tabletRiskSignals(v).length)issue("description","Remove personal identifiers, contact/payment links and advance-payment requests.");
 }
 export const tabletSchema=tabletBase.superRefine(tabletRefinements);
 export type TabletSubmission=z.infer<typeof tabletSchema>;
 export const tabletCatalogueSchema=z.object({version:z.literal(1),revision:z.literal("tablets-v1"),selection:tabletSelection,listing_category_id:z.string().uuid(),enabled:z.boolean(),brands:z.array(z.object({id:z.string().uuid(),name:z.string(),aliases:z.array(z.string()),sort_order:z.number()})),models:z.array(z.object({id:z.string().uuid(),brand_id:z.string().uuid(),name:z.string(),aliases:z.array(z.string()),sort_order:z.number(),other:z.boolean(),family:z.string(),generation:z.string(),screen_inches:z.string(),storage:z.array(z.enum(STORAGE)).min(1),connectivity:z.array(z.enum(["wifi","lte","five_g","unknown"])).min(1)}))});
 export type TabletCatalogue=z.infer<typeof tabletCatalogueSchema>;
-export function tabletCatalogueIssues(v:{brand_id:string;model_id:string;storage:string;connectivity:string;other_model:string},c:TabletCatalogue){
- const m=c.models.find(m=>m.id===v.model_id&&m.brand_id===v.brand_id);const issues:{field:string;message:string}[]=[];
- if(!c.brands.some(b=>b.id===v.brand_id))issues.push({field:"brand_id",message:"Choose a brand."});
- if(!m)issues.push({field:"model_id",message:"Choose a model for this brand."});
- if(m){if(!m.storage.some(s=>s===v.storage))issues.push({field:"storage",message:"Choose storage supported by this model."});if(!m.connectivity.some(s=>s===v.connectivity))issues.push({field:"connectivity",message:"Choose connectivity supported by this model."});if(m.other?v.other_model.trim().length<2:!!v.other_model)issues.push({field:"other_model",message:"Enter a model name only for Other model."});}
+export function tabletCatalogueIssues(v:{brand_id:string;model_id:string;other_model:string;other_brand?:string},c:TabletCatalogue){
+ const brand=c.brands.find(b=>b.id===v.brand_id);
+ const model=c.models.find(m=>m.id===v.model_id&&m.brand_id===brand?.id);
+ const otherBrand=brand?.name===OTHER_TABLET_BRAND;
+ const issues:{field:string;message:string}[]=[];
+ if(!brand)issues.push({field:"brand_id",message:"Choose a brand."});
+ if(!model || (otherBrand && !model.other))issues.push({field:"model_id",message:"Choose a model for this brand."});
+ if(v.other_brand!==undefined && (otherBrand ? v.other_brand.trim().length<2 : !!v.other_brand.trim()))
+  issues.push({field:"other_brand",message:"Enter a brand name only for Other Brand."});
+ if(model && (model.other ? v.other_model.trim().length<2 : !!v.other_model.trim()))
+  issues.push({field:"other_model",message:"Enter a model name only for Other model."});
  return issues;
 }
 export function tabletRiskSignals(v:Partial<TabletSubmission>){
- const text=[v.title,v.description,v.other_model,v.colour,v.hardware_model_number,v.other_defects,v.stylus_description,v.keyboard_description].filter(Boolean).join(" ").normalize("NFKC");
+ const text=[v.title,v.description,v.other_brand,v.other_model,v.connectivity_other,v.colour,v.hardware_model_number,v.other_defects,v.stylus_description,v.keyboard_description].filter(Boolean).join(" ").normalize("NFKC");
  return [...phoneRiskSignals(text),...(/(?:pay|send|transfer|भेज|भुगतान).{0,40}(?:advance|deposit|booking|security|पहले|अग्रिम)|(?:advance|deposit|booking amount).{0,40}(?:required|reserve|first|pay)/i.test(text)?["advance_payment_request"]:[]),...(/\b\d(?:[ -]?\d){13,}\b|\b(?:imei|serial(?: number)?|password|passcode)\s*[:=#]\s*\S+|\b(?=[A-Z0-9]*\d)[A-Z0-9]{10,}\b|https?:\/\/|\b\S+@\S+\.\S+/i.test(text)?["sensitive_identifier_or_link"]:[])];
 }
 export function selectPostingCategory(input:unknown,c:TabletCatalogue){const v=tabletSelection.parse(input);if(!c.enabled)throw Error("Tablets are unavailable.");return v;}
