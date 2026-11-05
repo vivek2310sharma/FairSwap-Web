@@ -19,9 +19,25 @@ export const TEST_PROJECT_REF = "wpppxlnbzqynvhpeuavd";
 export const PROD_PROJECT_REF = "kriuhwppxgxsyyrbjsau";
 export const WEB_STAGING_SHA = "e37e28df1d387a02bcbea19487dfe0f82d198f74";
 export const FOUNDATION_SHA256 = "41122396afe11952126eaf474d272e88e81444863e97d0b2e646ee4cbac48b06";
-export const ACTIVATION_SHA256 = "c5a50f11df325a9743f39b13d7aa536a1b7b12cca9467fc318da8f659527b10b";
-// The runner commit may differ from WEB_STAGING_SHA only in these paths (Backend WEARABLES_E2E.runnerPaths).
-export const RUNNER_PATHS = Object.freeze([/^\.github\/workflows\/wearables-e2e-test\.yml$/, /^e2e\/wearables\/[A-Za-z0-9._/-]+$/]);
+export const ACTIVATION_SHA256 = "ec102db34e4414a713aed950b756ea617888209515031c5a615306d30e08ac54";
+// Existing runner paths plus ONLY the 12 reviewed Tablets V2 paths from 5348f261e0683b049d256030bd0498d9365b1d0f.
+// Keep WEB_STAGING_SHA at the original tested Wearables commit; Backend must enforce the same exact allowlist.
+export const RUNNER_PATHS = Object.freeze([
+  /^\.github\/workflows\/wearables-e2e-test\.yml$/,
+  /^e2e\/wearables\/[A-Za-z0-9._/-]+$/,
+  /^docs\/operations\/TABLETS_POST_AD_V2\.md$/,
+  /^src\/app\/api\/post-ad\/tablets\/submit\/route\.ts$/,
+  /^src\/components\/listings\/TabletForm\.tsx$/,
+  /^src\/components\/listings\/posting\/SearchCombobox\.tsx$/,
+  /^src\/components\/listings\/posting\/tablet-wizard\.ts$/,
+  /^src\/lib\/listings\/tablets\/contract\.ts$/,
+  /^src\/lib\/listings\/tablets\/public\.ts$/,
+  /^tests\/browser\/tablets-v1\.spec\.ts$/,
+  /^tests\/unit\/tablet-public-details\.test\.tsx$/,
+  /^tests\/unit\/tablet-submit-boundary\.test\.ts$/,
+  /^tests\/unit\/tablets-v1\.test\.ts$/,
+  /^tools\/tablets-v1\/verify\.mjs$/,
+]);
 export const MAX_RUNNER_FILES = 100;
 export const PRODUCTION_ORIGIN = "https://fairswap.in";
 export const PRODUCTION_FLAG_OFF_MESSAGE = "Wearable posting is coming soon.";
