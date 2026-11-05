@@ -1,0 +1,96 @@
+name: Wearables V1 Test E2E
+
+# Produces the Wearables V1 evidence consumed by FairSwap-Backend's release verifier (wearables-v1-e2e/1).
+# Targets ONLY the FairSwapTest-backed, non-Production deployment of this exact commit. Never uses Production credentials.
+# Dispatch from `staging` at the reviewed runner commit, after the Test activation run (input) has succeeded.
+on:
+  workflow_dispatch:
+    inputs:
+      test_activation_run_id:
+        description: Backend Test activation run ID (TA) this evidence is bound to
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  deployments: read
+
+concurrency:
+  group: wearables-e2e-test
+  cancel-in-progress: false
+
+jobs:
+  wearables-e2e:
+    name: Wearables V1 authenticated journey (FairSwapTest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Protected Test environment holding the Test-only accounts/secrets below. Fails closed if absent.
+    environment: Test
+    env:
+      E2E_EVIDENCE_DIR: ${{ github.workspace }}/wearables-e2e-evidence
+      TEST_ACTIVATION_RUN_ID: ${{ inputs.test_activation_run_id }}
+      GITHUB_TOKEN: ${{ github.token }}
+      E2E_SUPABASE_URL: ${{ vars.E2E_SUPABASE_URL }}
+      E2E_ALLOWED_EMAIL_DOMAIN: ${{ vars.E2E_ALLOWED_EMAIL_DOMAIN }}
+      E2E_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+      E2E_SELLER_EMAIL: ${{ secrets.E2E_SELLER_EMAIL }}
+      E2E_SELLER_PASSWORD: ${{ secrets.E2E_SELLER_PASSWORD }}
+      E2E_BUYER_EMAIL: ${{ secrets.E2E_BUYER_EMAIL }}
+      E2E_BUYER_PASSWORD: ${{ secrets.E2E_BUYER_PASSWORD }}
+      E2E_MODERATOR_EMAIL: ${{ secrets.E2E_MODERATOR_EMAIL }}
+      E2E_MODERATOR_PASSWORD: ${{ secrets.E2E_MODERATOR_PASSWORD }}
+      E2E_MODERATOR_TOTP_SECRET: ${{ secrets.E2E_MODERATOR_TOTP_SECRET }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - name: Checkout runner commit (full history for the isolation check)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Guard - refuse unless this is staging
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/staging" ]; then echo "Run only from the staging branch."; exit 1; fi
+
+      - name: Guard - required Test prerequisites present
+        run: |
+          missing=0
+          for v in E2E_SUPABASE_URL E2E_ALLOWED_EMAIL_DOMAIN E2E_SUPABASE_ANON_KEY E2E_SELLER_EMAIL E2E_SELLER_PASSWORD E2E_BUYER_EMAIL E2E_BUYER_PASSWORD E2E_MODERATOR_EMAIL E2E_MODERATOR_PASSWORD E2E_MODERATOR_TOTP_SECRET; do
+            if [ -z "${!v}" ]; then echo "PREREQUISITE_MISSING: $v"; missing=1; fi
+          done
+          exit $missing
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Preflight (runner isolation, READY non-Production deployment, Production flag OFF)
+        run: node e2e/wearables/preflight.mjs
+
+      - name: Run Wearables authenticated journey
+        run: corepack pnpm exec playwright test -c e2e/wearables/playwright.config.ts
+
+      - name: Write evidence (only after every required check passed)
+        if: success()
+        run: node e2e/wearables/write-evidence.mjs
+
+      - name: Upload evidence
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pinned v4.6.2
+        with:
+          name: wearables-e2e-test-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ github.workspace }}/wearables-e2e-evidence/wearables-v1-e2e-test.json
+            ${{ github.workspace }}/wearables-e2e-evidence/SHA256SUMS_e2e
+          if-no-files-found: error
+          retention-days: 30
