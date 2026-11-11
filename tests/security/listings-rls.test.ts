@@ -262,7 +262,7 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .update({
         status: "active",
         published_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 365 * 86400 * 1000).toISOString(),
       })
       .eq("id", publicListingId);
 
@@ -368,7 +368,7 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .update({
         status: "active",
         published_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 365 * 86400 * 1000).toISOString(),
       })
       .eq("id", listingId);
 
@@ -621,7 +621,7 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .update({
         status: "active",
         published_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 365 * 86400 * 1000).toISOString(),
       })
       .eq("id", listingId);
 
@@ -881,7 +881,7 @@ describe("Milestone 1.3 Direct-API RLS, Lifecycle & Binding Amendments", () => {
       .from("listings")
       .update({
         status: "active",
-        expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + 365 * 86400 * 1000).toISOString(),
       })
       .eq("id", listingId);
 
