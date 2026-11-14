@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Repeatable wearables catalogue build. Pure function buildCatalogue() + CLI.
-//   node scripts/wearables/build-catalogue.mjs [--check] [--migration <path>]
-// Inputs (immutable/reviewed): the source CSV and corrections.json.
+//   node scripts/wearables/build-catalogue.mjs [--check]
+// Inputs (immutable/reviewed): CSV, corrections.json and supplement.v1.1.json.
 // Outputs: catalogue.generated.json (server-only, approved rows), a seed SQL
 // block (all rows incl. quarantined/excluded), CATALOGUE_AUDIT.md.
 import { createHash } from "node:crypto";
@@ -15,6 +15,7 @@ const ref = resolve(root, "docs/reference/post-ad/wearables");
 export const PATHS = {
   csv: resolve(ref, "fairswap_smartwatch_wearables_catalogue_india.csv"),
   corrections: resolve(ref, "corrections.json"),
+  supplement: resolve(ref, "supplement.v1.1.json"),
   json: resolve(root, "src/lib/listings/wearables/catalogue.generated.json"),
   seed: resolve(ref, "catalogue-seed.generated.sql"),
   audit: resolve(ref, "CATALOGUE_AUDIT.md"),
@@ -40,7 +41,7 @@ export function parseCsv(text) {
   return rows;
 }
 
-export function buildCatalogue(csvBuffer, corrections) {
+export function buildCatalogue(csvBuffer, corrections, supplement) {
   const hasBom = csvBuffer[0] === 0xef && csvBuffer[1] === 0xbb && csvBuffer[2] === 0xbf;
   if (!hasBom) throw new Error("CSV must be UTF-8 with BOM");
   const [header, ...body] = parseCsv(csvBuffer.toString("utf8").replace(/^﻿/, ""));
@@ -73,22 +74,54 @@ export function buildCatalogue(csvBuffer, corrections) {
     };
   });
   for (const section of ["reclassify", "status"]) for (const k of Object.keys(corrections[section] ?? {})) if (!used.has(`${section}:${k}`)) throw new Error(`Stale corrections key: ${section} ${k}`);
+  if (supplement) {
+    if (supplement.version !== 1 || !Array.isArray(supplement.entries) || !Array.isArray(supplement.overrides)) throw new Error("Invalid supplement version/shape");
+    const sourceRows = new Set(rows.map(r => r.source_row)), overridden = new Set();
+    const evidence = r => {
+      if (![r.brand, r.name, r.reason, r.availability].every(v => typeof v === "string" && v.trim() === v && v.length)) throw new Error("Invalid supplement text");
+      const url = new URL(r.manufacturer_url);
+      if (url.protocol !== "https:" || url.username || url.password || !/^\d{4}-\d{2}-\d{2}$/.test(r.verified_on) || !Number.isFinite(Date.parse(r.verified_on)) || new Date(r.verified_on).toISOString().slice(0,10) !== r.verified_on) throw new Error("Invalid supplement evidence");
+      if (!TYPES.includes(r.device_type) || !["approved", "quarantined", "excluded"].includes(r.status)) throw new Error("Invalid supplement type/status");
+    };
+    for (const r of supplement.overrides) {
+      evidence(r);
+      const old = rows.find(x => x.brand === r.brand && x.name === r.name);
+      if (!old || overridden.has(old.id) || r.disposition !== "reclassify") throw new Error("Stale/duplicate supplement override");
+      overridden.add(old.id);
+      old.corrections.push({ field: "device_type", from: old.device_type, to: r.device_type, evidence: r.manufacturer_url });
+      old.device_type = r.device_type; old.status = r.status; old.reason = r.status === "approved" ? null : r.reason;
+      old.note = r.note ?? r.reason;
+    }
+    for (const r of supplement.entries) {
+      evidence(r);
+      if (r.disposition !== "add" || !Number.isSafeInteger(r.source_row) || r.source_row < 1000001 || sourceRows.has(r.source_row) || typeof r.series !== "string" || !r.series.trim()) throw new Error("Invalid supplement source_row/series");
+      const dupe = `${r.brand}|${r.name}`.toLowerCase(), nk = nameKey(r.name);
+      const id = "wm_" + sha(Buffer.from(dupe.normalize("NFKC"))).slice(0, 12);
+      if (!nk || seen.has(dupe) || ids.has(id) || keys.has(nk)) throw new Error("duplicate supplement model/name_key");
+      seen.add(dupe); ids.set(id, r.name); keys.set(nk, r.name); sourceRows.add(r.source_row);
+      rows.push({ id, brand_id: "wb_" + slug(r.brand), brand: r.brand, series: r.series, name: r.name,
+        source_type: r.device_type, device_type: r.device_type, status: r.status, reason: r.status === "approved" ? null : r.reason,
+        source_row: r.source_row, source_year: null, corrections: [], note: r.reason });
+    }
+  }
+  for (const r of rows) if (!/^wb_[a-z0-9-]+$/.test(r.brand_id) || !TYPES.includes(r.device_type) || !["approved", "quarantined", "excluded"].includes(r.status) || (r.status === "approved") !== (r.reason === null)) throw new Error("Invalid catalogue type/status/reason");
   rows.sort((a, b) => (a.brand.toLowerCase() < b.brand.toLowerCase() ? -1 : a.brand.toLowerCase() > b.brand.toLowerCase() ? 1 : a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1));
   rows.forEach((r, i) => { r.sort_order = i + 1; });
   const csvSha = sha(csvBuffer), corrSha = sha(Buffer.from(JSON.stringify(corrections)));
+  const supplementSha = supplement ? sha(Buffer.from(JSON.stringify(supplement))) : "";
   const canonical = JSON.stringify(rows.map((r) => [r.id, r.brand_id, r.device_type, r.series, r.name, r.status, r.reason, r.source_row]));
-  const revision = sha(Buffer.from(canonical + csvSha + corrSha)).slice(0, 16);
+  const revision = sha(Buffer.from(canonical + csvSha + corrSha + supplementSha)).slice(0, 16);
   const approved = rows.filter((r) => r.status === "approved");
   const brandMap = new Map();
   for (const r of rows) if (!brandMap.has(r.brand_id)) brandMap.set(r.brand_id, r.brand);
   const brands = [...brandMap].map(([id, name]) => ({ id, name, types: [...new Set(approved.filter((r) => r.brand_id === id).map((r) => r.device_type))].sort() })).filter((b) => b.types.length);
   const json = {
-    revision, csv_sha256: csvSha, corrections_sha256: corrSha, rows_total: rows.length, rows_approved: approved.length,
+    revision, csv_sha256: csvSha, corrections_sha256: corrSha, ...(supplement ? { supplement_sha256: supplementSha } : {}), rows_total: rows.length, rows_approved: approved.length,
     types: TYPES,
     brands,
     models: approved.map((r) => ({ id: r.id, brand_id: r.brand_id, type: r.device_type, series: r.series, name: r.name })),
   };
-  return { rows, json, revision, csvSha, corrSha, brandMap };
+  return { rows, json, revision, csvSha, corrSha, brandMap, supplement };
 }
 
 const q = (s) => `'${String(s).replace(/'/g, "''")}'`;
@@ -109,7 +142,7 @@ export function auditMd(c) {
   const t = by((r) => r.status), yrs = by((r) => r.source_year);
   const lines = [
     "# Wearables catalogue audit", "",
-    "Generated by `scripts/wearables/build-catalogue.mjs`; do not hand-edit. Nothing here is manufacturer-verified.", "",
+    "Generated by `scripts/wearables/build-catalogue.mjs`; do not hand-edit. The original CSV is unverified; only supplement entries/overrides have manufacturer evidence.", "",
     `- Source CSV sha256: \`${c.csvSha}\` (immutable, UTF-8 BOM)`, `- corrections.json sha256: \`${c.corrSha}\``, `- Catalogue revision: \`${c.revision}\``, "",
     "## Counts", "",
     `| Imported | Approved (picker) | Quarantined | Excluded | Reclassified | Brands | Series |`, `|---|---|---|---|---|---|---|`,
@@ -121,6 +154,9 @@ export function auditMd(c) {
     ...c.rows.filter((r) => r.corrections.length).map((r) => `| ${r.source_row} | ${r.name} | ${r.corrections[0].from} | ${r.corrections[0].to} | ${r.corrections[0].evidence} |`), "",
     "## Quarantined and excluded", "", "Not selectable in the picker. A matching Other-model entry is rejected server-side.", "", "| Row | Brand | Model | Status | Reason | Note |", "|---|---|---|---|---|---|",
     ...c.rows.filter((r) => r.status !== "approved").sort((a, b) => a.source_row - b.source_row).map((r) => `| ${r.source_row} | ${r.brand} | ${r.name} | ${r.status} | ${r.reason} | ${r.note} |`), "",
+    "## Verified supplement", "", "Supplement source_row values >= 1000001 are permanent synthetic provenance keys, never CSV line numbers.", "",
+    "| Model | Disposition | Type | Status | Verified | Availability | Manufacturer | Reason |", "|---|---|---|---|---|---|---|---|",
+    ...(c.supplement ? [...c.supplement.entries, ...c.supplement.overrides].map(r => `| ${r.name} | ${r.disposition} | ${r.device_type} | ${r.status} | ${r.verified_on} | ${r.availability} | ${r.manufacturer_url} | ${r.reason} |`) : []), "",
     "## Reported only (no action taken)", "",
     "- Every year value is unverified. Series names are kept exactly as in the source.", "- Subscription-dependent features of other brands (for example Oura membership) are not verified here and are not claimed in product copy.", "",
   ];
@@ -130,17 +166,9 @@ export function auditMd(c) {
 function cli() {
   const args = process.argv.slice(2);
   const csv = readFileSync(PATHS.csv), corrections = JSON.parse(readFileSync(PATHS.corrections, "utf8"));
-  const c = buildCatalogue(csv, corrections);
+  const c = buildCatalogue(csv, corrections, JSON.parse(readFileSync(PATHS.supplement, "utf8")));
   const out = { [PATHS.json]: JSON.stringify(c.json) + "\n", [PATHS.seed]: seedSql(c), [PATHS.audit]: auditMd(c) };
-  const mi = args.indexOf("--migration");
-  let migration = null;
-  if (mi >= 0) {
-    const p = resolve(args[mi + 1]);
-    const text = readFileSync(p, "utf8"), a = text.indexOf(BEGIN), b = text.indexOf(END);
-    if (a < 0 || b < 0) throw new Error("Migration is missing generated-catalogue markers");
-    migration = [p, text.slice(0, a) + seedSql(c).trimEnd() + text.slice(b + END.length)];
-    out[p] = migration[1];
-  }
+  if (args.includes("--migration")) throw new Error("Historical foundation migrations are immutable; use build-update.mjs for V1.1");
   if (args.includes("--check")) {
     const stale = Object.entries(out).filter(([p, v]) => !existsSync(p) || readFileSync(p, "utf8") !== v).map(([p]) => p);
     if (stale.length) { console.error("STALE:\n" + stale.join("\n")); process.exit(1); }

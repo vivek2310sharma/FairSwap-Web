@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "backendBase": "4122670aee37dcd859b54d117f9d701ed6758e02",
+  "files": {
+    "scripts/ci/test-wearables-v1.mjs": "9c079946d4e76337976e3f1d3c3fe00bb8811de9e5ce831eab0633197f7f232e",
+    "scripts/ci/test-wearables-tablets-v1.mjs": "34c3f0532a4021a2192c2b8615b641d63102c515c737acdba8022ceee9ff44e6",
+    "scripts/ci/posting-v2-fixture.mjs": "bcf503a595507c20f308bebbbd468f0ce79f08b945112dc1dbbf22d766a8af49",
+    "scripts/release/wearables-v11-release.mjs": "b82890ef35264582924916e7c6b00800f90fb99bf99126c27e1bce0a0d2ba898",
+    "supabase/forward-migrations/wearables-v11/catalogue-manifest.json": "c76c0131d193fb5b398005813a915b825a8dea937f08960a8df749cd07c1c494",
+    "supabase/forward-migrations/wearables-v11/supabase/migrations/20261111195641_wearables_v11_catalogue.sql": "de4a8581988ec53e51c34b28836e24228df49b83dade94ef09d025be19900cf3",
+    "tests/wearables-v1/web-fixture/src/lib/listings/wearables/catalogue.generated.json": "db9df09586da1d58d34e6017822556af2ae161946dccf5a9dfa27158bbe378bf",
+    "tests/wearables-v11/web-fixture/src/lib/listings/wearables/catalogue.generated.json": "82dc2e3248e2898df2d6dc89c98902191e37cb2209e01551c405b28103dbd884",
+    "tests/wearables-v11/web-fixture/scripts/wearables/name-key.mjs": "9cab12088583e31d7f0a0899f7f2421674f22aee28ef1c5d5a1ef1bd3a65fb47"
+  }
+}
