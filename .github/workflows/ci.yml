@@ -172,7 +172,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: vivek2310sharma/FairSwap-Backend
-          ref: 18511802f1f55806b13a699f026348de41d50bc6
+          ref: 4122670aee37dcd859b54d117f9d701ed6758e02
           token: ${{ steps.backend-token.outputs.token }}
           path: .fairswap-wearables-backend-ci-source
           persist-credentials: false
@@ -190,9 +190,39 @@ jobs:
           (
             cd .fairswap-wearables-backend-ci-source
             PG="$PWD/tests/ratings/node_modules/@electric-sql/pglite/dist/index.js"
-            node scripts/ci/test-wearables-v1.mjs --pglite-module="$PG" --web="$GITHUB_WORKSPACE"
-            node scripts/ci/test-wearables-tablets-v1.mjs --pglite-module="$PG" --web="$GITHUB_WORKSPACE"
+            node scripts/ci/test-wearables-v1.mjs --pglite-module="$PG" --web="$PWD/tests/wearables-v1/web-fixture"
+            node scripts/ci/test-wearables-tablets-v1.mjs --pglite-module="$PG" --web="$PWD/tests/wearables-v1/web-fixture"
           )
+
+      - name: Validate immutable Wearables V1.1 Backend pin
+        id: wearable-update-pin
+        env:
+          CANDIDATE_SHA: ${{ vars.WEARABLES_V11_BACKEND_SHA }}
+        run: |
+          node --test scripts/wearables/ci-contract.selftest.mjs
+          node scripts/wearables/verify-ci-source.mjs --ref-only "$CANDIDATE_SHA"
+          echo "sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout content-pinned Wearables V1.1 Backend
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: vivek2310sharma/FairSwap-Backend
+          ref: ${{ steps.wearable-update-pin.outputs.sha }}
+          token: ${{ steps.backend-token.outputs.token }}
+          path: .fairswap-wearables-v11-backend-ci-source
+          persist-credentials: false
+
+      - name: Require Wearables V1.1 update and coexistence against this exact Web checkout
+        timeout-minutes: 12
+        env:
+          CANDIDATE_SHA: ${{ steps.wearable-update-pin.outputs.sha }}
+        run: |
+          BACKEND="$GITHUB_WORKSPACE/.fairswap-wearables-v11-backend-ci-source"
+          node scripts/wearables/verify-ci-source.mjs "$BACKEND" scripts/wearables/backend-ci-contract.json "$CANDIDATE_SHA"
+          npm ci --prefix "$BACKEND/tests/ratings" --ignore-scripts --no-audit --no-fund
+          PG="$BACKEND/tests/ratings/node_modules/@electric-sql/pglite/dist/index.js"
+          node "$BACKEND/scripts/ci/test-wearables-v1.mjs" --catalogue-update --pglite-module="$PG" --web="$GITHUB_WORKSPACE"
+          node "$BACKEND/scripts/ci/test-wearables-tablets-v1.mjs" --catalogue-update --pglite-module="$PG" --web="$GITHUB_WORKSPACE"
 
   database-security-tests:
     name: Supabase Local DB & Security Tests
