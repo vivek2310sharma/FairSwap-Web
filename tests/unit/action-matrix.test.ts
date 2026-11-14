@@ -123,6 +123,8 @@ describe("resolveListingActions", () => {
     });
 
     expect(actions.primary.id).toBe("renew");
+    expect(actions.primary.requiresConfirmation).toBe(true);
+    expect(actions.primary.confirmationMessage).toContain("365 days from publication");
     expect(actions.primary.label).toBe("Renew (2 left)");
     expect(actions.secondary.map((a) => a.id)).toEqual(["edit"]);
   });

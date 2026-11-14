@@ -1,3 +1,5 @@
+> Listing validity candidate, 11 November 2026: approved listings and approved renewals last 365 days; three renewals maximum. Backend-first Test → automatic Production delivery remains a ChatGPT release handoff. [Files, checks and rollout](docs/operations/LISTING_VALIDITY_365.md).
+
 > Accessories V1 local candidate (2 November 2026): dedicated schema/RPC, compatibility declarations, protected uploads and isolated drafts, premium five-stage posting and structured buyer filters. Additive Backend foundation then matching Web/activation and automated Test acceptance precede Production. No GitHub/hosted operations or Actions changes. See [Accessories implementation and release handoff](docs/operations/ACCESSORIES_V1.md).
 
 > Ratings V1 local candidate (26 October 2026): authenticated review, buyer selection/confirmation, public reputation and typed chat cards use the canonical Backend contract. Both server flags default OFF. No Web migrations or hosted changes. See [release and verification notes](docs/operations/RATINGS_V1_WEB_HANDOFF.md).

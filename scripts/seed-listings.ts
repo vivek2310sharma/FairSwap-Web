@@ -238,7 +238,7 @@ async function main() {
         .update({
           status: "active",
           published_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+          expires_at: new Date(Date.now() + 365 * 86400 * 1000).toISOString(),
         })
         .eq("id", listingId);
     } else if (item.status === "pending_review") {
@@ -255,7 +255,7 @@ async function main() {
         .update({
           status: "reserved",
           published_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+          expires_at: new Date(Date.now() + 365 * 86400 * 1000).toISOString(),
         })
         .eq("id", listingId);
     } else if (item.status === "paused") {
@@ -264,7 +264,7 @@ async function main() {
         .update({
           status: "paused",
           published_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 30 * 86400 * 1000).toISOString(),
+          expires_at: new Date(Date.now() + 365 * 86400 * 1000).toISOString(),
         })
         .eq("id", listingId);
     } else if (item.status === "sold") {
