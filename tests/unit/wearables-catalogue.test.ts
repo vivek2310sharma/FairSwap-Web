@@ -12,8 +12,9 @@ const csvPath = join(ref, "fairswap_smartwatch_wearables_catalogue_india.csv");
 const load = async <T,>(p: string) => (await import(/* @vite-ignore */ pathToFileURL(join(root, p)).href)) as T;
 type Row = { id: string; brand_id: string; brand: string; name: string; series: string; source_type: string; device_type: string; status: string; reason: string | null; corrections: unknown[] };
 type Cat = { rows: Row[]; brandMap: Map<string, string>; revision: string; json: { revision: string } };
-type Gen = { buildCatalogue: (b: Buffer, c: unknown) => Cat; seedSql: (c: unknown) => string; auditMd: (c: unknown) => string; BEGIN: string; END: string; PATHS: Record<string, string> };
+type Gen = { buildCatalogue: (b: Buffer, c: unknown, s?: unknown) => Cat; seedSql: (c: unknown) => string; auditMd: (c: unknown) => string; BEGIN: string; END: string; PATHS: Record<string, string> };
 type Key = { nameKey: (s: string) => string; baseKey: (s: string) => string };
+const supplement = () => JSON.parse(readFileSync(join(ref, "supplement.v1.1.json"), "utf8"));
 const corrections = () => JSON.parse(readFileSync(join(ref, "corrections.json"), "utf8"));
 type Model = { id: string; brand_id: string; type: string; series: string; name: string };
 const json = () => JSON.parse(readFileSync(join(root, "src/lib/listings/wearables/catalogue.generated.json"), "utf8")) as { revision: string; rows_total: number; rows_approved: number; models: Model[]; brands: unknown[] };
@@ -46,16 +47,16 @@ describe("wearables catalogue import", () => {
   });
   it("never exposes release years or unapproved rows in the server catalogue", () => {
     const j = json();
-    expect(j.rows_total).toBe(607); expect(j.rows_approved).toBe(587); expect(j.models).toHaveLength(587);
+    expect(j.rows_total).toBe(607 + supplement().entries.length); expect(j.rows_approved).toBe(587 + supplement().entries.filter((e: {status:string})=>e.status==="approved").length); expect(j.models).toHaveLength(587 + supplement().entries.filter((e: {status:string})=>e.status==="approved").length);
     expect(JSON.stringify(j)).not.toMatch(/year|source_row|reason|status/i);
     expect(j.models.map((m: Model) => m.name)).not.toContain("Oura Ring Ceramic");
   });
   it("uses deterministic, collision-checked ids; regeneration is idempotent and committed outputs are current", async () => {
     const g = await load<Gen>("scripts/wearables/build-catalogue.mjs");
-    const a = g.buildCatalogue(readFileSync(csvPath), corrections()), b = g.buildCatalogue(readFileSync(csvPath), corrections());
+    const a = g.buildCatalogue(readFileSync(csvPath), corrections(), supplement()), b = g.buildCatalogue(readFileSync(csvPath), corrections(), supplement());
     expect(a.revision).toBe(b.revision); expect(a.rows.map((r: Row) => r.id)).toEqual(b.rows.map((r: Row) => r.id));
     expect(a.rows.every((r: Row) => /^wm_[0-9a-f]{12}$/.test(r.id) && /^wb_[a-z0-9-]+$/.test(r.brand_id))).toBe(true);
-    expect(new Set(a.rows.map((r: Row) => r.id)).size).toBe(607);
+    expect(new Set(a.rows.map((r: Row) => r.id)).size).toBe(607 + supplement().entries.length);
     expect(JSON.stringify(a.json) + "\n").toBe(readFileSync(g.PATHS.json, "utf8"));
     expect(g.seedSql(a)).toBe(readFileSync(g.PATHS.seed, "utf8"));
     expect(g.auditMd(a)).toBe(readFileSync(g.PATHS.audit, "utf8"));
@@ -77,13 +78,38 @@ describe("wearables catalogue import", () => {
     expect(baseKey("Noise Luna Ring Gold")).toBe(baseKey("Noise Luna Ring"));
     expect(nameKey("Noise Luna Ring Gold")).not.toBe(nameKey("Noise Luna Ring"));
   });
-  it("seed block in the Backend migration matches the generated seed (when the sibling Backend checkout is present)", async () => {
-    const dir = resolve(root, "../FairSwap-Backend/supabase/forward-migrations/wearables-v1/supabase/migrations");
-    if (!existsSync(dir)) return; // Web CI has no Backend checkout; Backend runner asserts the live DB against the JSON.
-    const file = readdirSync(dir).find(f => f.endsWith(".sql"))!;
-    const { BEGIN, END, seedSql, buildCatalogue } = await load<Gen>("scripts/wearables/build-catalogue.mjs");
-    const text = readFileSync(join(dir, file), "utf8"), block = text.slice(text.indexOf(BEGIN), text.indexOf(END) + END.length);
-    expect(block.trimEnd()).toBe(seedSql(buildCatalogue(readFileSync(csvPath), corrections())).trimEnd());
+  it("preserves all 607 IDs and source rows; verifies additions, types and evidence", async () => {
+    const g = await load<Gen>("scripts/wearables/build-catalogue.mjs");
+    const raw = readFileSync(csvPath), original = g.buildCatalogue(raw, corrections()), next = g.buildCatalogue(raw, corrections(), supplement());
+    expect(original.revision).toBe("8dd5783ac9b7e12e");
+    for (const row of original.rows) {
+      const updated = next.rows.find(r => r.id === row.id)!;
+      expect(updated).toMatchObject({ id: row.id, brand_id: row.brand_id, name: row.name, series: row.series, source_row: (row as Row & {source_row: number}).source_row });
+    }
+    expect(next.rows).toHaveLength(607 + supplement().entries.length);
+    expect(next.rows.filter(r=>r.status==="approved")).toHaveLength(587 + supplement().entries.filter((e: {status:string})=>e.status==="approved").length);
+    for(const [name,type]of [["Galaxy Watch9","smartwatch"],["Galaxy Watch Ultra2","sports_gps_watch"],["Pixel Watch 5","smartwatch"]]) {expect(next.rows.filter(r=>r.name===name)).toHaveLength(1);expect(next.rows.find(r=>r.name===name)).toMatchObject({device_type:type,status:"approved"});}
+    for(const e of supplement().entries)expect(e.manufacturer_url).not.toMatch(/\/collections\/[^/]+$/);
+    expect(next.rows.find(r=>r.name==="Amazfit Active Edge")?.device_type).toBe("smartwatch");
+    expect(next.rows.find(r=>r.name==="Amazfit Helio Strap")).toMatchObject({device_type:"fitness_band",status:"quarantined",reason:"screenless_contract"});
+    for (const e of [...supplement().entries, ...supplement().overrides]) { expect(e.manufacturer_url).toMatch(/^https:/); expect(e.verified_on).toMatch(/^2026-11-(11|14)$/); }
+  });
+  it("rejects supplement duplicate keys, provenance collisions, stale overrides and invalid statuses/types", async () => {
+    const g = await load<Gen>("scripts/wearables/build-catalogue.mjs");
+    const check = (change: (s: ReturnType<typeof supplement>)=>void) => {const s=supplement(); change(s); return ()=>g.buildCatalogue(readFileSync(csvPath),corrections(),s);};
+    expect(check(s=>s.entries.push({...s.entries[0],source_row:1000999}))).toThrow(/duplicate/);
+    expect(check(s=>s.entries[0].source_row=2)).toThrow(/source_row/);
+    expect(check(s=>s.entries[0].status="bogus")).toThrow(/status/);
+    expect(check(s=>s.entries[0].device_type="tablet")).toThrow(/type/);
+    expect(check(s=>s.overrides[0].name="missing")).toThrow(/Stale/);
+    expect(check(s=>s.entries[0].manufacturer_url="http://example.com")).toThrow(/evidence/);
+  });
+  it("regenerates the new Backend update without altering the historical foundation", async () => {
+    const dir = resolve(root, "../FairSwap-Backend/supabase/forward-migrations/wearables-v11/supabase/migrations");
+    if (!existsSync(dir)) return;
+    const {updateSql} = await load<{updateSql:(s:unknown)=>string}>("scripts/wearables/build-update.mjs");
+    const file = readdirSync(dir).find(f=>f.endsWith(".sql"))!;
+    expect(updateSql(supplement())).toBe(readFileSync(join(dir,file),"utf8"));
   });
   it("lazy loading budgets: brands and the largest brand+type model list stay tiny", () => {
     const j = json(), per = new Map<string, { id: string; name: string; series: string }[]>();
