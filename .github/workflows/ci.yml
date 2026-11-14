@@ -197,7 +197,7 @@ jobs:
       - name: Validate immutable Wearables V1.1 Backend pin
         id: wearable-update-pin
         env:
-          CANDIDATE_SHA: ${{ vars.WEARABLES_V11_BACKEND_SHA }}
+          CANDIDATE_SHA: fb3b808a7e6eabcd94d5edf42dbb74fffcac7a19
         run: |
           node --test scripts/wearables/ci-contract.selftest.mjs
           node scripts/wearables/verify-ci-source.mjs --ref-only "$CANDIDATE_SHA"
