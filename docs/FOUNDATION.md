@@ -229,8 +229,8 @@ stateDiagram-v2
     RESERVED --> ACTIVE : Buyer falls through
     RESERVED --> SOLD : Deal completed
 
-    ACTIVE --> EXPIRED : 30 days without bump
-    EXPIRED --> ACTIVE : Seller renews (max 3 renewals)
+    ACTIVE --> EXPIRED : 365 days from publication
+    EXPIRED --> PENDING_REVIEW : Seller renews (max 3 renewals)
 
     ACTIVE --> REMOVED : Seller deletes
     ACTIVE --> SUSPENDED : Takedown / spam report
@@ -246,9 +246,9 @@ stateDiagram-v2
 1. **Strict Material-Edit Re-Review Policy**: Any seller modification to material listing fields (`title`, `description`, `category_id`, `condition`, `price_type`, `price_paise`, `cover_photo_id`, or photographs via add/delete/reorder) on an approved listing while in `active`, `reserved`, or `paused` states automatically transitions the listing to `pending_review` and increments `revision`. A paused listing that has been materially edited cannot be resumed directly to `active`.
 2. **Rejected-to-Draft Edit Transition**: An allowed edit to a `rejected` listing automatically transitions it back to `draft`, increments `revision`, clears `rejection_reason` from the listing row, and preserves the historical rejection reason in `listing_status_transitions`.
 3. **Private, Server-Mediated Storage Pipeline**: Supabase Storage buckets (`listing-originals`, `listing-derivatives`) are strictly private with no anonymous or authenticated RLS access policies. All uploads, deletions, and derivative deliveries are server-mediated. Direct database table `DELETE` on `listing_media` is revoked from `authenticated`; media deletion is mediated by `DELETE /api/listings/[id]/media/[mediaId]`, which removes Storage objects before triggering internal database deletion.
-4. **Renewal Bound**: Listings have a central pilot maximum of 3 renewals from `expired` back to `active`.
+4. **Renewal Bound**: Listings have a maximum of 3 renewals from `expired` to `pending_review`; approval publishes the listing for a new 365-day term.
 5. **Account Suspension**: If a seller's profile is suspended, active listings are suppressed from search and visibility.
-6. **Automatic Expiry**: Active listings expire automatically after 30 days (`expires_at`), verifiable via idempotent scheduled task.
+6. **Automatic Expiry**: Approved active listings expire 365 days from publication (`expires_at`), verifiable via idempotent scheduled task.
 
 ---
 

@@ -90,7 +90,7 @@ Use configurable defaults rather than blocking on nonessential product questions
 - Categories: electronics, furniture, home appliances, bicycles and sports, books, and hobbies. Exclude regulated/high-risk categories initially.
 - Adults-only self-declaration as a proposed product rule, without claiming legal sufficiency or collecting unnecessary dates of birth/identity documents.
 - Email/password authentication with mandatory email confirmation; Google sign-in is active in production for existing FairSwap accounts with matching verified email (`/auth/sign-in`). Google-first account registration is intentionally disabled because FairSwap signup captures required terms/privacy acceptance and 18+ age confirmation. Phone-number authentication is not implemented (Issue #12 closed as Not Planned, PR #60 closed without merge).
-- Manual listing review for the pilot; configurable listing expiry, initially 30 days.
+- Manual listing review for the pilot; listing validity of 365 days from publication after approval, including approved renewals (maximum three renewals).
 - Approximate city/locality, optional PIN code as a string; no public home address or required precise GPS.
 - No monetization or purchase of listed goods through the platform in Phase 1.
 
