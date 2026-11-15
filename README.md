@@ -1,3 +1,5 @@
+> 14 November 2026: [Wearables catalogue V1.1 local implementation and release sequence](docs/operations/WEARABLES_CATALOGUE_V11.md); hosted verification NOT RUN.
+
 > Listing validity candidate, 11 November 2026: approved listings and approved renewals last 365 days; three renewals maximum. Backend-first Test → automatic Production delivery remains a ChatGPT release handoff. [Files, checks and rollout](docs/operations/LISTING_VALIDITY_365.md).
 
 > Accessories V1 local candidate (2 November 2026): dedicated schema/RPC, compatibility declarations, protected uploads and isolated drafts, premium five-stage posting and structured buyer filters. Additive Backend foundation then matching Web/activation and automated Test acceptance precede Production. No GitHub/hosted operations or Actions changes. See [Accessories implementation and release handoff](docs/operations/ACCESSORIES_V1.md).
