@@ -238,6 +238,7 @@ export default async function ListingsDashboardPage({ searchParams = Promise.res
         </Link>
       </div>
 
+      <p className="mt-2 text-sm text-gray-600">Approved listings are valid for 365 days from publication, unless sold or removed sooner. Renewals require review, with a maximum of 3 renewals.</p>
       <div className="mt-6"><MyAdsStatusTabs activeTab={activeTab} counts={counts} /></div>
       {counts === null && <p role="status" className="mt-2 text-sm text-gray-600">Status counts are temporarily unavailable.</p>}
       {error && (
