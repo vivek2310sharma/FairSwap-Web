@@ -157,6 +157,9 @@ export function resolveListingActions(
             label: `Renew (${renewalsRemaining} left)`,
             type: "transition_action",
             transitionAction: "renew",
+            requiresConfirmation: true,
+            confirmationTitle: "Renew listing?",
+            confirmationMessage: "Renewing uses one of your 3 renewals and sends the listing for review. Once approved, it is valid for 365 days from publication, unless sold or removed sooner.",
           },
           secondary: [editAction],
         };
