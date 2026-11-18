@@ -1,4 +1,6 @@
 import "server-only";
+import { assertIdentityVerified, identityErrorResponse, IdentityVerificationRequiredError } from "@/lib/idv/gate-server";
+import { isIdentityRequired } from "@/lib/idv/gate";
 import { z } from "zod";
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -37,6 +39,7 @@ export async function postingGuard(request: Request, mutation = true) {
   if (!policy.allowed) throw new Error("Current policy acceptance is required.");
   const account = await client.from("user_accounts").select("account_status").eq("user_id",user.id).maybeSingle();
   if (account.error || account.data?.account_status !== "active") throw new Error("An active account is required.");
+  if (mutation && request.method === "POST") await assertIdentityVerified(client); // DigiLocker V1: UX pre-flight; DB enforces
   return {client, user};
 }
 export async function sessionCall(client: SupabaseClient, session_id: string, operation: string, media_id?: string) {
@@ -48,6 +51,7 @@ export async function sessionCall(client: SupabaseClient, session_id: string, op
 }
 function sessionRpcError(error: {code?:string;message?:string}) {
   // Only known constants/legacy messages may cross the RPC boundary. Never echo SQL.
+  if (isIdentityRequired(error)) return new IdentityVerificationRequiredError(); // DigiLocker V1
   if (error.message === "UPLOAD_SESSION_LIMIT" || error.message === "Too many upload sessions") return new PostingSessionError("UPLOAD_SESSION_LIMIT");
   if (error.message === "UPLOAD_SESSION_EXPIRED" || error.message === "Upload session expired" || error.message === "Upload session is expiring; start a new posting") return new PostingSessionError("UPLOAD_SESSION_EXPIRED");
   if (error.message === "UPLOAD_SESSION_PROTECTED") return new PostingSessionError("UPLOAD_SESSION_PROTECTED");
@@ -82,6 +86,7 @@ export async function acquireDraftSession(client: SupabaseClient, owner: string,
   return sessionCall(client,nonce,"create");
 }
 export function postingError(error: unknown, status = 400) {
+  const identity = identityErrorResponse(error); if (identity) return identity; // DigiLocker V1
   if (error instanceof PostingSessionError) return Response.json({error:error.message,code:error.code},{status:sessionErrors[error.code].status,headers:{"Cache-Control":"private, no-store"}});
   const message = error instanceof Error && /^(Mobile posting|Request origin|Posting is temporarily|Sign in|Current policy|An active|Upload in progress|Session unavailable)/.test(error.message) ? error.message : "Could not complete the request. Your saved details are safe; please retry.";
   return Response.json({error:message},{status,headers:{"Cache-Control":"private, no-store"}});

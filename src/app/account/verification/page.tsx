@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { VerificationHub, type VerificationState } from "@/components/account/VerificationHub";
 import { checkIsExpired } from "@/lib/idv/server-helpers";
+import { isDigiLockerEnabled } from "@/lib/idv/digilocker";
+import { DigiLockerVerification } from "@/components/account/DigiLockerVerification";
 import type { AccountLocale } from "@/lib/account/copy";
 import type { Metadata } from "next";
 
@@ -17,6 +19,8 @@ interface VerificationPageProps {
     status?: string;
     error?: string;
     lang?: string;
+    dl?: string;
+    required?: string;
   }>;
 }
 
@@ -28,12 +32,20 @@ export default async function VerificationPage({ searchParams }: VerificationPag
     redirect("/auth/sign-in?next=/account/verification");
   }
 
-  const { state: callbackState, status: callbackStatus, error: callbackError, lang } = await searchParams;
+  const { state: callbackState, status: callbackStatus, error: callbackError, lang, dl, required } = await searchParams;
 
   // Resolve locale from query param or NEXT_LOCALE cookie, defaulting to en
   const cookieStore = await cookies();
   const cookieLocale = cookieStore.get("NEXT_LOCALE")?.value;
   const locale: AccountLocale = lang === "hi" || cookieLocale === "hi" ? "hi" : "en";
+
+  // DigiLocker direct account verification (one-time). When enabled it replaces the document-based hub.
+  if (isDigiLockerEnabled()) {
+    const { data: idv } = await supabase.rpc("get_my_identity_verification");
+    const rec = (idv && typeof idv === "object" ? idv : {}) as Record<string, unknown>;
+    const verified = rec.badge_issued === true && rec.status === "verified" && !checkIsExpired(rec.valid_until);
+    return <DigiLockerVerification verified={verified} result={dl} showRequiredNotice={required === "1"} locale={lang === "hi" || cookieLocale === "hi" ? "hi" : "en"} />;
+  }
 
   // Feature gate check: default false across all environments until credentials & launch
   const isFeatureEnabled = process.env.FAIRSWAP_IDV_ENABLED === "true";

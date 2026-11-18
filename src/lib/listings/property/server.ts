@@ -1,4 +1,5 @@
 import 'server-only';
+import { friendlyIdentityError } from "@/lib/idv/gate";
 import {z} from 'zod';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {Database,Json} from '@/types/database';
@@ -44,7 +45,7 @@ export async function savePropertyDraft(client:SupabaseClient<Database>,form:For
   const checked=validatePropertyDraft(JSON.parse(String(form.get('category_attributes'))),JSON.parse(String(form.get('property_financial'))),form.get('property_society_name')||null,path);if(checked.error||!checked.data)return {error:checked.error};
   const common=draftListingSchema.omit({condition:true,price_type:true,price_paise:true,category_attributes:true}).safeParse({title:form.get('title'),category_id:categoryId,city_id:form.get('city_id')||null,locality_id:form.get('locality_id')||null,description:form.get('description')||null,pin_code:form.get('pin_code')||null,landmark:form.get('landmark')||null});if(!common.success)return {error:common.error.issues[0].message};
   const {data,error}=await client.rpc('save_property_draft',{p_listing_id:(listingId??null) as unknown as string,p_listing:{...common.data,condition:null,price_type:null,price_paise:null,category_attributes:checked.data.answers} as Json,p_version_id:versionId,p_financial:checked.data.financial as Json,p_society_name:checked.data.society_name as unknown as string});
-  return error?{error:error.message}:{success:true,listingId:data};
+  return error?{error:friendlyIdentityError(error.message)??error.message}:{success:true,listingId:data};
  }catch(e){return {error:e instanceof z.ZodError?e.issues[0].message:'Malformed Property draft payload'};}
 }
 export function financialFromContext(context:PropertyContext){return propertyFinancialSchema.parse(context.financial);}

@@ -196,6 +196,9 @@ export async function POST(
     if (insertError?.message?.includes("PHOTO_LIMIT_REACHED")) {
       return mediaApiError("PHOTO_LIMIT_REACHED");
     }
+    if (insertError?.message?.includes("IDENTITY_VERIFICATION_REQUIRED")) {
+      return mediaApiError("IDENTITY_VERIFICATION_REQUIRED"); // DigiLocker V1: Backend gate
+    }
     return mediaApiError("MEDIA_UPLOAD_FAILED", "Failed to create media record.");
   }
 
