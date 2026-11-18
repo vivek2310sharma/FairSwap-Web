@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/listings/ListingForm";
 import {isPropertyEnabled,loadPropertyReferences} from '@/lib/listings/property/server';
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
+import { needsIdentityVerification } from "@/lib/idv/gate-server";
 import { Category, CategoryAttribute, City } from "@/types/listing";
 import GoodsPostAdEntry from "@/components/listings/GoodsPostAdEntry";
 import { isGoodsPostAdEnabled, loadGoodsReferences } from "@/lib/listings/post-ad-server";
@@ -60,6 +61,9 @@ export default async function NewListingPage({
     const signInQuery = new URLSearchParams({ next });
     redirect(`/auth/sign-in?${signInQuery.toString()}`);
   }
+
+  // DigiLocker V1 UX pre-check only (flag-gated, fails open): the Backend triggers are the enforcement.
+  if (await needsIdentityVerification(supabase)) redirect("/account/verification?required=1");
 
   const integrationEnabled = isGoodsPostAdEnabled();
   const query = await searchParams;

@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
 import { isSellerWriteMaintenanceEnabled } from "@/lib/maintenance/seller-writes";
+import { assertIdentityVerified } from "@/lib/idv/gate-server";
 
 /**
  * Common posting guard with NO category feature flag. Same order and messages as the Mobile Phones
@@ -20,5 +21,6 @@ export async function postingBaseGuard(request: Request, mutation = true) {
   if (!policy.allowed) throw new Error("Current policy acceptance is required.");
   const account = await client.from("user_accounts").select("account_status").eq("user_id", user.id).maybeSingle();
   if (account.error || account.data?.account_status !== "active") throw new Error("An active account is required.");
+  if (mutation && request.method === "POST") await assertIdentityVerified(client); // DigiLocker V1: UX pre-flight; DB enforces
   return { client, user };
 }

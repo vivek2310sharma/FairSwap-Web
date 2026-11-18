@@ -6,6 +6,8 @@ import { checkPolicyAcceptanceStatus } from "@/lib/compliance/policy-acceptance"
 import { logger } from "@/lib/logger";
 import type { Database } from "@/types/database";
 import {hasSavedSubmissionFamily} from '@/lib/listings/saved-submission-family';
+import { needsIdentityVerification } from "@/lib/idv/gate-server";
+import { IDENTITY_REQUIRED_MESSAGE } from "@/lib/idv/gate";
 
 export const MEDIA_ERROR_CODES = [
   "UNAUTHENTICATED",
@@ -26,6 +28,7 @@ export const MEDIA_ERROR_CODES = [
   "COVER_UPDATE_FAILED",
   "SELLER_WRITES_DISABLED",
   "MEDIA_SERVICE_UNAVAILABLE",
+  "IDENTITY_VERIFICATION_REQUIRED",
 ] as const;
 
 export type MediaErrorCode = (typeof MEDIA_ERROR_CODES)[number];
@@ -49,6 +52,7 @@ export const ERROR_CODE_TO_HTTP_STATUS: Record<MediaErrorCode, number> = {
   COVER_UPDATE_FAILED: 422,
   SELLER_WRITES_DISABLED: 503,
   MEDIA_SERVICE_UNAVAILABLE: 503,
+  IDENTITY_VERIFICATION_REQUIRED: 403,
 };
 
 export const DEFAULT_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
@@ -70,6 +74,7 @@ export const DEFAULT_ERROR_MESSAGES: Record<MediaErrorCode, string> = {
   COVER_UPDATE_FAILED: "Failed to update cover photo. Please try again.",
   SELLER_WRITES_DISABLED: SELLER_WRITE_MAINTENANCE_MESSAGE,
   MEDIA_SERVICE_UNAVAILABLE: "Media service is temporarily unavailable. Please try again later.",
+  IDENTITY_VERIFICATION_REQUIRED: IDENTITY_REQUIRED_MESSAGE,
 };
 
 export interface SafeMediaItem {
@@ -259,6 +264,14 @@ export async function verifySellerMediaMutationGuard(
     return {
       allowed: false,
       response: mediaApiError("POLICY_ACCEPTANCE_REQUIRED"),
+    };
+  }
+
+  // 3b. DigiLocker V1 identity gate (UX pre-flight; Backend triggers enforce and fail closed)
+  if (await needsIdentityVerification(client)) {
+    return {
+      allowed: false,
+      response: mediaApiError("IDENTITY_VERIFICATION_REQUIRED"),
     };
   }
 

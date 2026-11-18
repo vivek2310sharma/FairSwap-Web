@@ -1,4 +1,6 @@
 import "server-only";
+import { identityErrorResponse, IdentityVerificationRequiredError } from "@/lib/idv/gate-server";
+import { isIdentityRequired } from "@/lib/idv/gate";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -38,6 +40,7 @@ export async function wearablePostingGuard(request: Request, mutation = true) {
 }
 
 function sessionRpcError(error: { code?: string; message?: string }) {
+  if (isIdentityRequired(error)) return new IdentityVerificationRequiredError(); // DigiLocker V1
   const m = error.message ?? "";
   if (m === "UPLOAD_SESSION_LIMIT") return new PostingSessionError("UPLOAD_SESSION_LIMIT");
   if (m === "UPLOAD_SESSION_EXPIRED" || m === "Upload session expired") return new PostingSessionError("UPLOAD_SESSION_EXPIRED");
@@ -90,6 +93,7 @@ export async function prepareWearableMedia(client: SupabaseClient, user: { id: s
 /** Safe error boundary: only known constants/messages cross to the client; never SQL. */
 export function wearablePostingError(error: unknown, status = 400) {
   const headers = { "Cache-Control": "private, no-store" };
+  const identity = identityErrorResponse(error); if (identity) return identity; // DigiLocker V1
   if (error instanceof PostingSessionError) return Response.json({ error: error.message, code: error.code }, { status: sessionErrors[error.code].status, headers });
   const raw = error instanceof Error ? error.message : "";
   const mapped = wearableRpcMessage(raw);
