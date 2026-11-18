@@ -23,7 +23,8 @@ await edit('src/app/layout.tsx',s=>s.replace('import { Manrope, Noto_Sans_Devana
 await fs.writeFile(path.join(fixture,'src/components/providers/AuthProvider.tsx'),'"use client"; export function AuthProvider({children}:{children:React.ReactNode}){return children} export function useAuth(){return {user:{id:"11111111-1111-4111-8111-111111111111"},isLoading:false,unreadMessagesCount:0,unreadNotificationsCount:0,refreshUnreadCounts:async()=>{},signOut:async()=>{}}}');
 const id='11111111-1111-4111-8111-111111111111',brand='22222222-2222-4222-8222-222222222222',model='33333333-3333-4333-8333-333333333333',city='55555555-5555-4555-8555-555555555555';
 const catalogue={version:2,revision:'automated-fixture',listing_category_id:id,selection:{category:'mobiles',subcategory:'mobile-phones',version:2},enabled:true,brands:[{id:brand,name:'Apple',aliases:['iPhone'],sort_order:1}],models:[{id:model,brand_id:brand,name:'iPhone 15',aliases:[],older_group:false,other:false,sort_order:1}]};
-const tabletCatalogue={version:1,revision:"tablets-v1",selection:{category:"mobiles",subcategory:"tablets",version:1},enabled:true,listing_category_id:id,brands:[{id:brand,name:"Apple",aliases:[],sort_order:1}],models:[{id:model,brand_id:brand,name:"iPad (9th generation)",aliases:[],sort_order:1,other:false,family:"iPad",generation:"9th generation / 2021",screen_inches:"10.2",storage:["64 GB","256 GB"],connectivity:["wifi","lte"]}]};
+const tabletCategoryId='77777777-7777-4777-8777-777777777777';
+const tabletCatalogue={version:1,revision:"tablets-v1",selection:{category:"mobiles",subcategory:"tablets",version:1},enabled:true,listing_category_id:tabletCategoryId,brands:[{id:brand,name:"Apple",aliases:[],sort_order:1}],models:[{id:model,brand_id:brand,name:"iPad (9th generation)",aliases:[],sort_order:1,other:false,family:"iPad",generation:"9th generation / 2021",screen_inches:"10.2",storage:["64 GB","256 GB"],connectivity:["wifi","lte"]}]};
 // Synthetic performance fixture. No generated names are published in the runtime catalogue.
 const fixtureId=number=>`aaaaaaaa-aaaa-4aaa-8aaa-${String(number).padStart(12,'0')}`;
 for(let index=0;index<29;index++) {
@@ -35,7 +36,35 @@ for(let index=0;index<29;index++) {
 for(const [index,option] of tabletCatalogue.brands.entries())
  tabletCatalogue.models.push({...tabletCatalogue.models[0],id:fixtureId(1000+index),brand_id:option.id,name:'Other model',other:true,sort_order:1000});
 console.log(`Synthetic catalogue: ${tabletCatalogue.brands.length} brands, ${tabletCatalogue.models.length} models, ${Buffer.byteLength(JSON.stringify(tabletCatalogue))} JSON bytes`);
-await fs.writeFile(path.join(fixture,'src/lib/supabase/server.ts'),`import {cookies} from "next/headers";const tabletCatalogue=${JSON.stringify(tabletCatalogue)};const catalogue=${JSON.stringify(catalogue)};export async function createClient(){const c=await cookies();return {auth:{getUser:async()=>({data:{user:c.get('fixture-auth')?.value==='denied'?null:{id:'${id}'}},error:null})},rpc:async(name:string)=>({data:name==='tablets_v1_catalogue'?tabletCatalogue:name==='accessories_v1_catalogue'?{version:1,revision:'accessories-v1',enabled:true,listing_category_id:'${id}'}:catalogue,error:null}),from:(table:string)=>{const data=table==='cities'?[{id:'${city}',name:'Bengaluru',state:'Karnataka',is_active:true}]:table==='categories'?[{id:'${id}',name:'Electronics',slug:'electronics',macro_category:'goods',is_active:true,new_listing_enabled:true,sort_order:1}]:[];const q:any={select:()=>q,eq:()=>q,in:()=>q,order:()=>q,then:(resolve:any)=>Promise.resolve({data,error:null}).then(resolve)};return q}}}`);
+// Reuse the approved test-only tree; independent specialist IDs must agree.
+const taxonomy=JSON.parse(await fs.readFile(path.join(repo,'tests/unit/taxonomy-v2-fixture.json'),'utf8'));
+for(const node of taxonomy.nodes){
+ if(node.parent_id!==null){
+  const categoryId=node.slug==='mobile-phones'?catalogue.listing_category_id:node.slug==='tablets'?tabletCatalogue.listing_category_id:null;
+  if(categoryId)node.id=categoryId;
+  node.status=categoryId?'live':'coming_soon';
+  node.posting_enabled=categoryId!==null;
+ }
+}
+await fs.writeFile(path.join(fixture,'src/lib/supabase/server.ts'),`import {cookies} from "next/headers";
+const tabletCatalogue=${JSON.stringify(tabletCatalogue)};
+const catalogue=${JSON.stringify(catalogue)};
+const taxonomy=${JSON.stringify(taxonomy)};
+export async function createClient(){
+ const c=await cookies();
+ return {
+  auth:{getUser:async()=>({data:{user:c.get('fixture-auth')?.value==='denied'?null:{id:'${id}'}},error:null})},
+  rpc:async(name:string)=>{
+   if(name==='get_category_catalogue_v2')return {data:taxonomy,error:null};
+   if(name==='tablets_v1_catalogue')return {data:tabletCatalogue,error:null};
+   if(name==='posting_v2_catalogue')return {data:catalogue,error:null};
+   if(name==='accessories_v1_catalogue')return {data:{version:1,revision:'accessories-v1',enabled:true,listing_category_id:'${id}'},error:null};
+   if(name==='wearables_v1_catalogue')return {data:null,error:null};
+   return {data:null,error:{message:'Unmocked fixture RPC'}};
+  },
+  from:(table:string)=>{const data=table==='cities'?[{id:'${city}',name:'Bengaluru',state:'Karnataka',is_active:true}]:table==='categories'?[{id:'${id}',name:'Electronics',slug:'electronics',macro_category:'goods',is_active:true,new_listing_enabled:true,sort_order:1}]:[];const q:any={select:()=>q,eq:()=>q,in:()=>q,order:()=>q,then:(resolve:any)=>Promise.resolve({data,error:null}).then(resolve)};return q}
+ }
+}`);
 await edit('src/lib/listings/mobiles/server.ts',s=>s.replace(/export function mobilesEnabled\(\) \{[^}]*\}/,'export function mobilesEnabled() { return true; }'));
 await edit('src/lib/listings/tablets/server.ts',s=>s.replace(/export function tabletsEnabled\(\)\{[^}]*\}/,'export function tabletsEnabled(){return true;}'));
 await edit('src/lib/listings/post-ad-server.ts',s=>s.replace(/export function isGoodsPostAdEnabled\(\) \{[^}]*\}/,'export function isGoodsPostAdEnabled() { return true; }'));
