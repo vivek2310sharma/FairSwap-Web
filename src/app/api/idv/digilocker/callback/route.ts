@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { NO_STORE_HEADERS, getEdgeFunctionsBaseUrl } from "@/lib/idv/server-helpers";
+import { NO_STORE_HEADERS, getEdgeFunctionsBaseUrl, getSupabasePublicApiKey } from "@/lib/idv/server-helpers";
 import { isDigiLockerEnabled, resultForBackend, STATE_PATTERN, type DigiLockerResult } from "@/lib/idv/digilocker";
 
 export const runtime = "nodejs";
@@ -37,11 +37,13 @@ export async function GET(req: NextRequest) {
 
   let base: string;
   try { base = getEdgeFunctionsBaseUrl(); } catch { return back(req, "failed"); }
+  const apikey = getSupabasePublicApiKey();
+  if (!apikey) return back(req, "failed");
 
   try {
     const res = await fetch(`${base}/idv-digilocker-complete`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "" },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, apikey },
       body: JSON.stringify(providerError ? { state, error: "denied" } : { state, code }),
       cache: "no-store",
     });

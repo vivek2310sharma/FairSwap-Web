@@ -20,6 +20,8 @@ beforeEach(() => {
   process.env.FAIRSWAP_DIGILOCKER_ENABLED = "true";
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
   delete process.env.SUPABASE_FUNCTIONS_URL;
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_test";
+  delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 });
 
 describe("DigiLocker callback route", () => {
@@ -57,6 +59,23 @@ describe("DigiLocker callback route", () => {
     expect(url).toBe("https://wpppxlnbzqynvhpeuavd.supabase.co/functions/v1/idv-digilocker-complete");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer jwt");
   });
+  it("sends the publishable key as apikey, falls back to legacy anon key, and keeps the user JWT", async () => {
+    signedIn();
+    const f = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response("{}", { status: 200 }));
+    await GET(cb(`state=${STATE}&code=c`));
+    let h = (f.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+    expect(h.apikey).toBe("sb_publishable_test"); expect(h.Authorization).toBe("Bearer jwt");
+    delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY; process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "legacy_anon";
+    await GET(cb(`state=${STATE}&code=c`));
+    h = (f.mock.calls[1][1] as RequestInit).headers as Record<string, string>;
+    expect(h.apikey).toBe("legacy_anon");
+  });
+  it("fails closed without any public key (no backend call)", async () => {
+    signedIn(); delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY; process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "  ";
+    const f = vi.spyOn(globalThis, "fetch");
+    expect((await GET(cb(`state=${STATE}&code=c`))).headers.get("location")).toContain("dl=failed");
+    expect(f).not.toHaveBeenCalled();
+  });
   it("maps backend/provider failures to fixed result keys and never echoes provider text", async () => {
     signedIn();
     const f = vi.spyOn(globalThis, "fetch");
@@ -90,6 +109,24 @@ describe("DigiLocker start route", () => {
     f.mockResolvedValueOnce(new Response(JSON.stringify({ success: true, redirectUrl: "https://digilocker.meripehchaan.gov.in/public/oauth2/1/authorize?state=s" }), { status: 200 }));
     const ok = await POST(post({ consentAcknowledged: true }));
     expect(ok.status).toBe(200); expect((await ok.json()).redirectUrl).toContain("digilocker.meripehchaan.gov.in");
+  });
+  it("sends the publishable key as apikey, falls back to legacy anon key, and keeps the user JWT", async () => {
+    signedIn();
+    const f = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(JSON.stringify({ success: true, alreadyVerified: true }), { status: 200 }));
+    await POST(post({ consentAcknowledged: true }));
+    let h = (f.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+    expect(h.apikey).toBe("sb_publishable_test"); expect(h.Authorization).toBe("Bearer jwt");
+    delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY; process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "legacy_anon";
+    await POST(post({ consentAcknowledged: true }));
+    h = (f.mock.calls[1][1] as RequestInit).headers as Record<string, string>;
+    expect(h.apikey).toBe("legacy_anon");
+  });
+  it("fails closed without any public key (no backend call)", async () => {
+    signedIn(); delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY; delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const f = vi.spyOn(globalThis, "fetch");
+    const r = await POST(post({ consentAcknowledged: true }));
+    expect(r.status).toBe(500); expect((await r.json()).error).toBe("CONFIGURATION_ERROR");
+    expect(f).not.toHaveBeenCalled();
   });
   it("already-verified users get status with no redirect; disabled flag is 503", async () => {
     signedIn();
