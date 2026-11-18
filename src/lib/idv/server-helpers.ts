@@ -53,6 +53,18 @@ export function getEdgeFunctionsBaseUrl(): string {
 }
 
 /**
+ * Resolves the public Supabase key sent as the `apikey` header to Edge Functions.
+ * Prefers the publishable key; falls back to the legacy anon key. Returns null when
+ * neither is configured so callers fail closed. Never reads service-role credentials.
+ */
+export function getSupabasePublicApiKey(): string | null {
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  return key || null;
+}
+
+/**
  * Validates that an external redirect URL points to an approved provider origin.
  */
 export function validateProviderRedirectUrl(rawUrl: string): boolean {
