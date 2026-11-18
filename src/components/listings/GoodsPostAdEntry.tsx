@@ -1,7 +1,7 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
 import PostAdFlow from "./PostAdFlow";
-import { goodsCategoryKey, type FamilyState, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
+import { goodsCategoryKey, type MainCategory, type FamilyState, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
 import ListingForm from "./ListingForm";
 import { buildMacroCategoryUrl, parseMacroCategory } from "@/lib/listings/macro-category";
 import type { GoodsReferences } from "@/lib/listings/post-ad-server";
@@ -10,7 +10,7 @@ import type { VehicleReferences } from "@/lib/listings/two-wheeler/server";
 import type { PropertyReferences } from '@/lib/listings/property/server';
 import type { ListingCategoryReference, ListingAttributeReference } from '@/types/listing';
 
-export default function GoodsPostAdEntry({references, vehicles, property, locations, isMaintenanceActive, maintenanceMessage, submission, mobilePhones=false, accessories=false, tablets=false, wearables=false}: {wearables?:boolean;tablets?:boolean;accessories?:boolean;mobilePhones?:boolean; submission?: {twoWheelers: boolean; cars: boolean; property: boolean}; references: GoodsReferences; vehicles?: VehicleReferences; property?:PropertyReferences; locations?:PostAdLocations; isMaintenanceActive: boolean; maintenanceMessage?: string}) {
+export default function GoodsPostAdEntry({catalogue,references, vehicles, property, locations, isMaintenanceActive, maintenanceMessage, submission, mobilePhones=false, accessories=false, tablets=false, wearables=false}: {catalogue?:readonly MainCategory[] | null;wearables?:boolean;tablets?:boolean;accessories?:boolean;mobilePhones?:boolean; submission?: {twoWheelers: boolean; cars: boolean; property: boolean}; references: GoodsReferences; vehicles?: VehicleReferences; property?:PropertyReferences; locations?:PostAdLocations; isMaintenanceActive: boolean; maintenanceMessage?: string}) {
   const router = useRouter();
   const query = useSearchParams();
   const values = query.getAll("macro");
@@ -27,7 +27,7 @@ export default function GoodsPostAdEntry({references, vehicles, property, locati
     propertyPaths: usable(property) ? property!.categories.map(c => c.path.slice(1).join("/")) : [],
   };
   return <div className="space-y-6">
-    <PostAdFlow capabilities={capabilities} vehiclesAvailable={!!vehicles} propertyAvailable={!!property} macro={parsed.status === "valid" ? parsed.macroCategory : null} invalidQuery={parsed.status === "invalid"} hrefForSection={buildMacroCategoryUrl} navigate={(macro, replace) => { const url = macro ? buildMacroCategoryUrl(macro) : "/account/listings/new"; if (replace) router.replace(url); else router.push(url); }} renderForm={({section,...controls}) => {
+    <PostAdFlow catalogue={catalogue} capabilities={capabilities} vehiclesAvailable={!!vehicles} propertyAvailable={!!property} macro={parsed.status === "valid" ? parsed.macroCategory : null} invalidQuery={parsed.status === "invalid"} hrefForSection={buildMacroCategoryUrl} navigate={(macro, replace) => { const url = macro ? buildMacroCategoryUrl(macro) : "/account/listings/new"; if (replace) router.replace(url); else router.push(url); }} renderForm={({section,...controls}) => {
       if(locations?.status==='error')return <p role="alert">{locations.message}</p>;
       let categories:ListingCategoryReference[];
       let attributes:ListingAttributeReference[]=[];

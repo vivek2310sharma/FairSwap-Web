@@ -111,3 +111,5 @@ HDR-03 Production release preparation (23 October 2026): selected merged staging
 The Ratings monitor has an independent scheduler and keeps product flags OFF.
 See [environment and release requirements](docs/operations/RATINGS_V1_OPERATIONS.md).
 
+
+2026-11-18 local candidate: [Taxonomy V2 Web 3A](docs/operations/TAXONOMY_V2_WEB_3A.md) adds RPC-driven category presentation and keeps existing posting contracts separate. Hosted rollout remains unverified.

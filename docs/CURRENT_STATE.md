@@ -79,3 +79,5 @@ HDR-03 Production release preparation (23 October 2026): selected merged staging
 Local operational source is prepared; hosted configuration and deployment are NOT RUN.
 See [Ratings operations](operations/RATINGS_V1_OPERATIONS.md). Ratings flags remain OFF.
 
+
+2026-11-18 local candidate: [Taxonomy V2 Web 3A](operations/TAXONOMY_V2_WEB_3A.md) adds RPC-driven category presentation and keeps existing posting contracts separate. Hosted rollout remains unverified.
