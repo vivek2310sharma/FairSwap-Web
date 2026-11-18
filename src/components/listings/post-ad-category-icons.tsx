@@ -101,7 +101,8 @@ function lookup(map: IconMap, id: string): LucideIcon {
   return Object.prototype.hasOwnProperty.call(map, id) ? map[id] : Shapes;
 }
 
-export const getMainCategoryIcon = (id: string): LucideIcon => lookup(MAIN_CATEGORY_ICONS, id);
+const canonicalIcons: IconMap = {"v2-mobiles-tablets":Smartphone,"v2-cars-commercial-vehicles":CarFront,"v2-bikes-scooters":Bike,"v2-property":House,"v2-computers-gaming":Laptop,"v2-tvs-audio-cameras":Camera,"v2-home-appliances":Refrigerator,"v2-furniture-home":Armchair,"v2-fashion":Shirt,"v2-kids-baby":Baby,"v2-books-sports-hobbies":BookOpen,"v2-pets-supplies":PawPrint,"v2-other":Shapes,"v2-services":Wrench,"v2-jobs":BriefcaseBusiness};
+export const getMainCategoryIcon = (id: string): LucideIcon => lookup(canonicalIcons, id);
 export const getSubcategoryIcon = (parentId: string, id: string): LucideIcon =>
   Object.prototype.hasOwnProperty.call(SUBCATEGORY_ICONS, parentId)
     ? lookup(SUBCATEGORY_ICONS[parentId], id) : Shapes;

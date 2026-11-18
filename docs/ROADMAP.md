@@ -78,3 +78,5 @@ Release dependency: additive Backend operations migration, environment-specific 
 schedulers and automated verification, followed by owner production Auth/MFA checks.
 See [Ratings operations](operations/RATINGS_V1_OPERATIONS.md). Activation remains separate.
 
+
+2026-11-18 local candidate: [Taxonomy V2 Web 3A](operations/TAXONOMY_V2_WEB_3A.md) adds RPC-driven category presentation and keeps existing posting contracts separate. Hosted rollout remains unverified.

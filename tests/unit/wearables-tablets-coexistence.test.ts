@@ -1,7 +1,8 @@
+import { POST_AD_CATALOGUE } from "./legacy-category-fixture";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { POST_AD_CATALOGUE, resolveSub, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
+import {  resolveSub, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
 import { selectionSchema, wearableSchema, DEVICE_TYPES } from "@/lib/listings/wearables/contract";
 
 // Cross-category regression: Wearables V1 must not alter Mobile Phones, Accessories or Tablets behaviour, and must never

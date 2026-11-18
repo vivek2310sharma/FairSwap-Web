@@ -1,5 +1,6 @@
+import { POST_AD_CATALOGUE } from "./legacy-category-fixture";
 import { describe, expect, it } from 'vitest';
-import { POST_AD_CATALOGUE, resolveSub, searchCatalogue, type PostAdCapabilities } from '@/lib/listings/post-ad-category-catalogue';
+import {  resolveSub, searchCatalogue, type PostAdCapabilities } from '@/lib/listings/post-ad-category-catalogue';
 import { isEligibleGoodsCategory, validateGoodsAnswerContract } from '@/lib/listings/post-ad-server';
 
 const caps: PostAdCapabilities = { goodsCategories: [], cars: 'off', twoWheelers: 'off', property: 'off', propertyPaths: [] };
@@ -57,7 +58,7 @@ describe('India category contracts', () => {
     ['power backup', 'power-backup-solar'], ['इन्वर्टर', 'power-backup-solar'],
     ['pram', 'strollers-prams'], ['बर्तन', 'kitchenware-utensils'],
   ])('finds %s in the intended category', (query, id) => {
-    expect(searchCatalogue(query).some(hit => hit.sub?.id === id)).toBe(true);
+    expect(searchCatalogue(query, POST_AD_CATALOGUE).some(hit => hit.sub?.id === id)).toBe(true);
   });
 
   it('requires the exact loaded Goods key for every newly routable leaf', () => {
