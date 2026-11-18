@@ -110,8 +110,8 @@ export default function PostAdSubcategoryChooser({ main, actions }: { main: Main
   return (
     <div className="space-y-3">
       {list}
-      {main.id === "property" && <p className={styles.notice}>Beware of fake landlords. Verify the property and the landlord&apos;s authority before paying any advance or security deposit. Never pay merely to arrange a viewing.</p>}
-      {main.id === "fashion" && <p className={styles.muted}>Men, Women and Kids include clothing and footwear.</p>}
+      {(main.id === "property" || main.id === "v2-property") && <p className={styles.notice}>Beware of fake landlords. Verify the property and the landlord&apos;s authority before paying any advance or security deposit. Never pay merely to arrange a viewing.</p>}
+      {(main.id === "fashion" || main.id === "v2-fashion") && <p className={styles.muted}>Men, Women and Kids include clothing and footwear.</p>}
       <SubNotice sub={selectedSub && !resolveSub(selectedSub, actions.caps).macro ? selectedSub : undefined} />
     </div>
   );

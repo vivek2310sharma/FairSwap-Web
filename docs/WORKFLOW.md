@@ -70,3 +70,5 @@ Apply the reviewed operations migration to Test before Prod, deploy compatible W
 monitor source and configure schedulers, keeping all Ratings flags OFF. No manual
 staging gate applies. See [Ratings operations](operations/RATINGS_V1_OPERATIONS.md).
 
+
+2026-11-18 local candidate: [Taxonomy V2 Web 3A](operations/TAXONOMY_V2_WEB_3A.md) adds RPC-driven category presentation and keeps existing posting contracts separate. Hosted rollout remains unverified.

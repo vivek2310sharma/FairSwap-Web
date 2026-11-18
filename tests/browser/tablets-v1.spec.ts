@@ -52,3 +52,38 @@ test('changing category keeps independent phone and tablet recovery records',asy
  const records=await page.evaluate(async(owner)=>{const db=await new Promise<IDBDatabase>(resolve=>{const r=indexedDB.open('fairswap-posting-v2',1);r.onsuccess=()=>resolve(r.result);});const read=(key:string)=>new Promise<unknown>(resolve=>{const r=db.transaction('drafts').objectStore('drafts').get(key);r.onsuccess=()=>resolve(r.result);});const result=await Promise.all([read(owner),read(owner+':tablets-v1')]);db.close();return result;},owner);
  expect(records[0]).toEqual({marker:'phone-draft-kept'});expect(records[1]).toMatchObject({version:1,owner,draft:{selection:{subcategory:'tablets'}}});
 });
+
+
+test('canonical phone and tablet links retain independent specialist routes',async({page})=>{
+ const fixture=await api(page);
+ await page.goto('/account/listings/new');
+ await expect(page.locator('[data-main-category]')).toHaveCount(15);
+ await page.getByRole('button',{name:/^Mobiles & Tablets/}).click();
+ await expect(page.getByRole('link',{name:'Mobile Phones',exact:true})).toHaveAttribute('href','/account/listings/new?posting=mobile-phones');
+ await page.getByRole('link',{name:'Tablets',exact:true}).click();
+ await expect(page).toHaveURL(/posting=tablets/);
+ await expect(page.getByRole('button',{name:'Step 2: Tablet details',exact:true})).toBeDisabled();
+ await expect(page.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();
+ expect(fixture.calls).toHaveLength(0);
+ expect(fixture.submits()).toBe(0);
+});
+
+test('canonical Coming Soon categories cannot enter tablet or legacy forms',async({page})=>{
+ await page.setViewportSize({width:390,height:1000});
+ const fixture=await api(page);
+ await page.goto('/account/listings/new');
+ const search=page.getByRole('searchbox',{name:'Search categories'});
+ for(const label of ['Projectors','Dogs','Cars']){
+  await search.fill(label);
+  await expect(page.getByRole('link',{name:new RegExp(label)})).toHaveCount(0);
+  const choice=page.getByRole('button').filter({has:page.getByText(label,{exact:true})});
+  await expect(choice).toContainText('Coming soon');
+  await choice.click();
+  await expect(page.getByRole('status')).toContainText('Coming soon');
+  await expect(page).toHaveURL(/\/account\/listings\/new$/);
+  expect(fixture.calls).toHaveLength(0);
+  expect(fixture.submits()).toBe(0);
+ }
+ await search.fill('Tablets');
+ await expect(page.getByRole('link',{name:/^Tablets/})).toHaveAttribute('href','/account/listings/new?posting=tablets');
+});

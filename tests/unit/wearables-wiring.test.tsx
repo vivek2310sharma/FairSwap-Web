@@ -1,7 +1,8 @@
+import { POST_AD_CATALOGUE } from "./legacy-category-fixture";
 import React from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { POST_AD_CATALOGUE, resolveSub, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
+import {  resolveSub, type PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
 import { SubChoice } from "@/components/listings/PostAdSubcategoryChooser";
 import WearableListingDetails from "@/components/listings/WearableListingDetails";
 import { searchFiltersSchema } from "@/types/listing";

@@ -263,3 +263,47 @@ test('reload after a lost prepared-claim response reuses the protected server se
  await uploadWithFixtureRetry(page);expect(fixture.activeCount()).toBe(1);expect(fixture.calls[2]).toEqual({id:nonce,operation:'acquire_draft'});expect(fixture.media.size).toBe(1);
  await expect.poll(()=>localSessionId(page)).toBe(server);
 });
+
+// Failure controls exist only in the isolated server fixture, never production.
+for (const failure of ['malformed', 'error'] as const) {
+ test(`taxonomy ${failure} fails closed and preserves safe compatibility routes`, async ({page, context, baseURL}) => {
+  const fixture = await api(page);
+  await context.addCookies([{name:'fixture-taxonomy',value:failure,url:baseURL!}]);
+  await page.goto('/account/listings/new');
+  await expect(page.getByRole('status')).toContainText('Categories are temporarily unavailable');
+  await expect(page.getByRole('button',{name:/^Mobiles & Tablets/})).toHaveCount(0);
+  await page.getByRole('searchbox',{name:'Search categories'}).fill('Projectors');
+  await expect(page.getByRole('link',{name:/Projectors/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/Projectors/})).toHaveCount(0);
+  await page.getByText('Existing posting options',{exact:true}).click();
+  await expect(page.getByRole('button',{name:'Existing goods forms',exact:true})).toBeVisible();
+  const accessories = page.getByRole('link',{name:'Existing Accessories',exact:true});
+  await expect(accessories).toHaveAttribute('href','/account/listings/new?posting=mobile-accessories');
+  await accessories.click();
+  await expect(page.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();
+  expect(fixture.calls).toHaveLength(0);
+  expect(fixture.submits()).toBe(0);
+ });
+}
+for (const width of [390, 1440]) {
+ test(`${width}: canonical Coming Soon leaves cannot enter legacy forms`, async ({page}) => {
+  await page.setViewportSize({width,height:1000});
+  const fixture = await api(page);
+  await page.goto('/account/listings/new');
+  await expect(page.locator('[data-main-category]')).toHaveCount(15);
+  const search = page.getByRole('searchbox',{name:'Search categories'});
+  for (const label of ['Projectors','Cars','Dogs']) {
+   await search.fill(label);
+   await expect(page.getByRole('link',{name:new RegExp(label)})).toHaveCount(0);
+   const choice = page.getByRole('button').filter({has:page.getByText(label,{exact:true})});
+   await expect(choice).toContainText('Coming soon');
+   await choice.click();
+   await expect(page.getByRole('status')).toContainText('Coming soon');
+   await expect(page).toHaveURL(/\/account\/listings\/new$/);
+   expect(fixture.calls).toHaveLength(0);
+   expect(fixture.submits()).toBe(0);
+  }
+  await search.fill('iph');
+  await expect(page.getByRole('link',{name:/Mobile Phones/})).toHaveAttribute('href','/account/listings/new?posting=mobile-phones');
+ });
+}

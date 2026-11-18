@@ -4,7 +4,7 @@ import MacroCategorySelector from "./MacroCategorySelector";
 import { ListingDetailsFields, ListingPricingFields, type CommonDetails } from "./ListingFormFields";
 import type { CategoryAttribute } from "@/types/listing";
 import type { MacroCategory } from "@/lib/listings/macro-category";
-import type { PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
+import type { MainCategory, PostAdCapabilities } from "@/lib/listings/post-ad-category-catalogue";
 export interface PostAdCategory { id: string; name: string; macro: MacroCategory; group?: string }
 export type CategoryData = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; categories: PostAdCategory[]; attributes: CategoryAttribute[] };
 export interface PostAdDraft extends Omit<CommonDetails, "condition"> { condition: string | null; category_id: string; section: MacroCategory; price_type: string; price_rupees: string; location: string; pin_code: string; category_attributes: Record<string, unknown> }
@@ -22,6 +22,7 @@ export default function PostAdFlow(props: Props | LiveProps) {
   return "renderForm" in props ? <LivePostAdFlow {...props} /> : <PreviewPostAdFlow {...props} />;
 }
 interface LiveProps {
+  catalogue?: readonly MainCategory[] | null;
   capabilities?: PostAdCapabilities;
   vehiclesAvailable?: boolean;
   propertyAvailable?: boolean;
@@ -31,7 +32,7 @@ interface LiveProps {
   hrefForSection: (macro: MacroCategory) => string;
   renderForm: (controls: { section: MacroCategory | null; onAttributesChanged: (entered: boolean) => void; resetCategoryVersion: number }) => ReactNode;
 }
-function LivePostAdFlow({macro: routeMacro, invalidQuery, navigate, hrefForSection, renderForm,vehiclesAvailable=false,propertyAvailable=false,capabilities}: LiveProps) {
+function LivePostAdFlow({catalogue,macro: routeMacro, invalidQuery, navigate, hrefForSection, renderForm,vehiclesAvailable=false,propertyAvailable=false,capabilities}: LiveProps) {
   const [observed, setObserved] = useState(routeMacro);
   const [macro, setMacro] = useState(routeMacro);
   const [formSection,setFormSection]=useState(routeMacro??'goods');
@@ -53,7 +54,7 @@ function LivePostAdFlow({macro: routeMacro, invalidQuery, navigate, hrefForSecti
   return <div className="space-y-6">
     {invalidQuery && <p role="alert">Invalid or repeated section value. Choose a section to continue.</p>}
     <div hidden={macro !== null}>
-      <MacroCategorySelector integrated capabilities={capabilities} availability={{goods: {available: true}, vehicles: {available: vehiclesAvailable, reason: "Vehicle posting is not integrated yet."}, property: {available: propertyAvailable, reason: "Property posting is not integrated yet."}}} hrefForSection={hrefForSection} onChooseSection={request} />
+      <MacroCategorySelector catalogue={catalogue} integrated capabilities={capabilities} availability={{goods: {available: true}, vehicles: {available: vehiclesAvailable, reason: "Vehicle posting is not integrated yet."}, property: {available: propertyAvailable, reason: "Property posting is not integrated yet."}}} hrefForSection={hrefForSection} onChooseSection={request} />
     </div>
     <div hidden={macro === null} className="flex flex-wrap items-center justify-between gap-3">
       <div><p className="text-sm text-emerald-700">Selected section</p><h1 className="text-2xl font-bold">{macro === "goods" ? "Goods" : macro === "vehicles" ? "Vehicles" : "Property"}</h1>{macro && macro !== "goods" && !(macro === "vehicles" && vehiclesAvailable) && !(macro==='property'&&propertyAvailable) && <p role="status">Unavailable: {macro === "vehicles" ? "Vehicle" : "Property"} posting is not integrated yet.</p>}</div>
