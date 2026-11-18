@@ -1,3 +1,4 @@
+import { loadTaxonomy } from "@/lib/listings/taxonomy-v2-server";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import styles from "@/components/listings/posting/Posting.module.css";
@@ -101,7 +102,7 @@ export default async function NewListingPage({
   if (integrationEnabled) {
     const typed=supabase as SupabaseClient<Database>;
     const locationRequest=loadPostAdLocations(supabase);
-    const [references,tw,cars,property,locations]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest]);
+    const [references,tw,cars,property,locations,catalogue]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest,loadTaxonomy(supabase,{"specialist:phone":mobileCatalogue?.listing_category_id,"specialist:tablet":tabletCatalogue?.listing_category_id,"specialist:wearable":wearableCatalogue?.listing_category_id})]);
     // Each vehicle family is judged on its own loader result; a failing family is dropped
     // so it can neither block nor enable the other. No healthy family => no vehicle form.
     const healthy=(v?:{categories:unknown[];error?:string})=>!!v&&!v.error&&v.categories.length>0;
@@ -111,7 +112,7 @@ export default async function NewListingPage({
     const submission={twoWheelers:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"two-wheelers"),cars:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"cars"),property:testSubmission||isVerifiedProductionFamilyLaunchEnvironment(process.env,"property")};
     return <main id="posting-content" className={styles.journey}>
       <Link href="/account/listings" className={styles.back}><ArrowLeft size={18} aria-hidden="true"/> My ads</Link>
-      <div className="mt-6"><GoodsPostAdEntry wearables={!!wearableCatalogue} tablets={!!tabletCatalogue} accessories={!!accessoryCatalogue} mobilePhones={!!mobileCatalogue} submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
+      <div className="mt-6"><GoodsPostAdEntry catalogue={catalogue} wearables={!!wearableCatalogue} tablets={!!tabletCatalogue} accessories={!!accessoryCatalogue} mobilePhones={!!mobileCatalogue} submission={submission} references={references} vehicles={vehicles} property={property} locations={locations} isMaintenanceActive={isMaintenanceActive} maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined} /></div>
     </main>;
   }
 
