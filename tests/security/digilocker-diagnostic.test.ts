@@ -5,21 +5,33 @@ import { createHash } from "node:crypto";
 const getUser = vi.fn();
 const getSession = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser, getSession } }) }));
+const jar = new Map<string, string>();
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (n: string) => (jar.has(n) ? { name: n, value: jar.get(n)! } : undefined),
+    set: (n: string, v: string, o?: { maxAge?: number }) => { if (o?.maxAge === 0) jar.delete(n); else jar.set(n, v); },
+  }),
+}));
 
 import { GET as callback } from "@/app/api/idv/digilocker/callback/route";
 import { POST as diagStart } from "@/app/api/idv/digilocker/diagnostic/start/route";
 import {
-  DIAG_RESULT_COOKIE, DIAG_STATE_COOKIE, isDigiLockerDiagEnabled, isDiagAuthorizeUrl, readDiagResultCookie, sanitizeDiagResult,
+  DIAG_RESULT_COOKIE, DIAG_STATE_COOKIE, consumeDiagResult, isDigiLockerDiagEnabled, isDiagAuthorizeUrl, openDiagResult,
+  sanitizeDiagResult, sealDiagResult, type DiagView,
 } from "@/lib/idv/digilocker-diagnostic";
 import { NextRequest } from "next/server";
 
 const STATE = "c".repeat(64);
+const RESULT_KEY = "r".repeat(48);
 const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 const AUTH_URL = `https://digilocker.meripehchaan.gov.in/public/oauth2/1/authorize?response_type=code&state=${STATE}&scope=openid&acr=aadhaar&code_challenge_method=S256&code_challenge=x`;
 const ORIGIN = "https://fairswap-web-git-staging-fairswap.vercel.app";
-const signedIn = () => {
-  getUser.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
-  getSession.mockResolvedValue({ data: { session: { access_token: "jwt" } } });
+const B64 = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
+const accessToken = (sub: string, sid: string) => `${B64({ alg: "HS256" })}.${B64({ sub, session_id: sid })}.sig`;
+const BIND = { userId: "u1", sessionId: "s1" };
+const signedIn = (user = "u1", sid = "s1") => {
+  getUser.mockResolvedValue({ data: { user: { id: user } }, error: null });
+  getSession.mockResolvedValue({ data: { session: { access_token: accessToken(user, sid) } } });
 };
 const startReq = (origin = ORIGIN) =>
   new Request(`${ORIGIN}/api/idv/digilocker/diagnostic/start`, { method: "POST", headers: { origin, "Content-Type": "application/json" }, body: "{}" });
@@ -29,15 +41,17 @@ const diagCookie = (state = STATE) => `${DIAG_STATE_COOKIE}=${hash(state)}`;
 const edge = (body: unknown, status = 200) => vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(body), { status }));
 const VERIFIED = {
   outcome: "VERIFIED", code: null, endpoints: { authorize: "1", token: "2" },
-  checks: { signature: "verified", issuer: "verified", audience: true, expiry: true, nonce: "match", acr: "aadhaar" },
-};
-const resultCookie = (r: Response) => {
+  checks: { signature: "verified", issuer: "verified", audience: true, expiry: true, subject: true, issuedAt: true, nonce: "match", acr: "aadhaar" },
+} as const satisfies DiagView;
+const rawResultCookie = (r: Response) => {
   const raw = r.headers.getSetCookie().find((c) => c.startsWith(`${DIAG_RESULT_COOKIE}=`));
-  return raw ? readDiagResultCookie(decodeURIComponent(raw.split(";")[0].slice(DIAG_RESULT_COOKIE.length + 1))) : null;
+  return raw ? decodeURIComponent(raw.split(";")[0].slice(DIAG_RESULT_COOKIE.length + 1)) : undefined;
 };
+const resultCookie = (r: Response, bind = BIND) => openDiagResult(rawResultCookie(r), bind);
 
 beforeEach(() => {
-  vi.restoreAllMocks(); getUser.mockReset(); getSession.mockReset();
+  vi.restoreAllMocks(); getUser.mockReset(); getSession.mockReset(); jar.clear();
+  process.env.DIGILOCKER_DIAG_RESULT_KEY = RESULT_KEY;
   process.env.FAIRSWAP_DIGILOCKER_DIAG_ENABLED = "true";
   process.env.FAIRSWAP_DIGILOCKER_ENABLED = "true";
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
@@ -49,9 +63,10 @@ beforeEach(() => {
 describe("DigiLocker diagnostic gate", () => {
   it("is default OFF, never on Vercel Production, never against a non-Test project", () => {
     expect(isDigiLockerDiagEnabled({ NEXT_PUBLIC_SUPABASE_URL: "https://wpppxlnbzqynvhpeuavd.supabase.co" })).toBe(false);
-    expect(isDigiLockerDiagEnabled({ FAIRSWAP_DIGILOCKER_DIAG_ENABLED: "true", VERCEL_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "https://wpppxlnbzqynvhpeuavd.supabase.co" })).toBe(false);
-    expect(isDigiLockerDiagEnabled({ FAIRSWAP_DIGILOCKER_DIAG_ENABLED: "true", NEXT_PUBLIC_SUPABASE_URL: "https://kriuhwppxgxsyyrbjsau.supabase.co" })).toBe(false);
-    expect(isDigiLockerDiagEnabled({ FAIRSWAP_DIGILOCKER_DIAG_ENABLED: "true", VERCEL_ENV: "preview", NEXT_PUBLIC_SUPABASE_URL: "https://wpppxlnbzqynvhpeuavd.supabase.co" })).toBe(true);
+    expect(isDigiLockerDiagEnabled({ FAIRSWAP_DIGILOCKER_DIAG_ENABLED: "true", DIGILOCKER_DIAG_RESULT_KEY: RESULT_KEY, VERCEL_ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "https://wpppxlnbzqynvhpeuavd.supabase.co" })).toBe(false);
+    expect(isDigiLockerDiagEnabled({ FAIRSWAP_DIGILOCKER_DIAG_ENABLED: "true", DIGILOCKER_DIAG_RESULT_KEY: RESULT_KEY, NEXT_PUBLIC_SUPABASE_URL: "https://kriuhwppxgxsyyrbjsau.supabase.co" })).toBe(false);
+    expect(isDigiLockerDiagEnabled({ FAIRSWAP_DIGILOCKER_DIAG_ENABLED: "true", DIGILOCKER_DIAG_RESULT_KEY: RESULT_KEY, VERCEL_ENV: "preview", NEXT_PUBLIC_SUPABASE_URL: "https://wpppxlnbzqynvhpeuavd.supabase.co" })).toBe(true);
+    expect(isDigiLockerDiagEnabled({ FAIRSWAP_DIGILOCKER_DIAG_ENABLED: "true", DIGILOCKER_DIAG_RESULT_KEY: "short", NEXT_PUBLIC_SUPABASE_URL: "https://wpppxlnbzqynvhpeuavd.supabase.co" })).toBe(false);
   });
 
   it("start: disabled is 404 without any backend call; cross-origin is 403", async () => {
@@ -194,6 +209,85 @@ describe("Shared callback routing", () => {
   it("result sanitizer: unknown outcomes, lowercase codes or injected text never render as VERIFIED", () => {
     expect(sanitizeDiagResult({ outcome: "VERIFIED ✓", code: null })).toMatchObject({ outcome: "FAILED", code: "INVALID_RESULT" });
     expect(sanitizeDiagResult({ outcome: "UNCONFIRMED", code: "<b>x</b>" })).toMatchObject({ outcome: "FAILED" });
-    expect(readDiagResultCookie("{not json")).toBeNull();
+  });
+});
+
+describe("Result cookie integrity and binding", () => {
+  const sealed = () => sealDiagResult(VERIFIED, BIND)!;
+
+  it("a genuine sealed result opens only for the same user and session", () => {
+    expect(openDiagResult(sealed(), BIND)).toEqual(VERIFIED);
+    expect(openDiagResult(sealed(), { userId: "u2", sessionId: "s1" })).toBeNull(); // cross-user
+    expect(openDiagResult(sealed(), { userId: "u1", sessionId: "s2" })).toBeNull(); // other session / device
+  });
+
+  it("forged unsigned JSON (the previous cookie format) never opens", () => {
+    for (const forged of [JSON.stringify(VERIFIED), B64(VERIFIED), `${B64({ v: 1, u: "u1", s: "s1", exp: 9e9, jti: "a".repeat(32), r: VERIFIED })}.`]) {
+      expect(openDiagResult(forged, BIND)).toBeNull();
+    }
+  });
+
+  it("tampered payload, tampered signature, wrong key and malformed values never open", () => {
+    const [p, sig] = sealed().split(".");
+    const payload = JSON.parse(Buffer.from(p, "base64url").toString());
+    const failedPayload = B64({ ...payload, r: { ...VERIFIED, outcome: "FAILED" } });
+    expect(openDiagResult(`${B64({ ...payload, u: "u2" })}.${sig}`, { userId: "u2", sessionId: "s1" })).toBeNull();
+    expect(openDiagResult(`${failedPayload}.${sig}`, BIND)).toBeNull();
+    expect(openDiagResult(`${p}.${sig.slice(0, -2)}AA`, BIND)).toBeNull();
+    expect(openDiagResult(`${p}.${sig}.extra`, BIND)).toBeNull();
+    expect(openDiagResult("", BIND)).toBeNull();
+    expect(openDiagResult("x".repeat(5000), BIND)).toBeNull();
+    process.env.DIGILOCKER_DIAG_RESULT_KEY = "k".repeat(48);
+    expect(openDiagResult(`${p}.${sig}`, BIND)).toBeNull();
+  });
+
+  it("expired results (and ones claiming an over-long lifetime) never open", () => {
+    const now = Date.now();
+    const v = sealDiagResult(VERIFIED, BIND, now)!;
+    expect(openDiagResult(v, BIND, now + 59_000)).toEqual(VERIFIED);
+    expect(openDiagResult(v, BIND, now + 61_000)).toBeNull();
+    expect(openDiagResult(sealDiagResult(VERIFIED, BIND, now + 3_600_000)!, BIND, now)).toBeNull();
+  });
+
+  it("replay: a result is consumed once and the cookie is deleted; re-reading shows nothing", async () => {
+    signedIn();
+    jar.set(DIAG_RESULT_COOKIE, sealed());
+    expect(await consumeDiagResult()).toEqual(VERIFIED);
+    expect(jar.has(DIAG_RESULT_COOKIE)).toBe(false);
+    expect(await consumeDiagResult()).toBeNull();
+  });
+
+  it("replay into another user's or session's browser is deleted and never shown", async () => {
+    const stolen = sealed();
+    for (const [u, s] of [["u2", "s9"], ["u1", "s2"]]) {
+      signedIn(u, s);
+      jar.set(DIAG_RESULT_COOKIE, stolen);
+      expect(await consumeDiagResult()).toBeNull();
+      expect(jar.has(DIAG_RESULT_COOKIE)).toBe(false);
+    }
+  });
+
+  it("consumption is closed when the diagnostic is off or the session has no session_id", async () => {
+    jar.set(DIAG_RESULT_COOKIE, sealed());
+    process.env.FAIRSWAP_DIGILOCKER_DIAG_ENABLED = "false";
+    expect(await consumeDiagResult()).toBeNull();
+    process.env.FAIRSWAP_DIGILOCKER_DIAG_ENABLED = "true";
+    getUser.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+    getSession.mockResolvedValue({ data: { session: { access_token: `${B64({})}.${B64({ sub: "u1" })}.x` } } });
+    expect(await consumeDiagResult()).toBeNull();
+  });
+
+  it("the callback seals results for the signed-in user and session only; start clears any old result", async () => {
+    signedIn("u1", "s1");
+    edge({ success: true, result: VERIFIED });
+    const r = await callback(cb(`state=${STATE}&code=c`, diagCookie()));
+    const raw = rawResultCookie(r)!;
+    expect(raw).not.toContain("VERIFIED"); // not plain JSON
+    expect(openDiagResult(raw, BIND)).toEqual(VERIFIED);
+    expect(openDiagResult(raw, { userId: "u1", sessionId: "other" })).toBeNull();
+    vi.mocked(globalThis.fetch).mockRestore?.();
+    edge({ success: true, redirectUrl: AUTH_URL });
+    const s = await diagStart(startReq());
+    expect(s.headers.getSetCookie().find((c) => c.startsWith(`${DIAG_RESULT_COOKIE}=`))).toMatch(/Max-Age=0/);
   });
 });

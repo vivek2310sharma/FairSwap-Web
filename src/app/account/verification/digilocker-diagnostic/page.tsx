@@ -1,11 +1,9 @@
 import { notFound, redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import {
-  DIAG_PAGE_PATH, DIAG_RESULT_COOKIE, isDigiLockerDiagEnabled, readDiagResultCookie,
-} from "@/lib/idv/digilocker-diagnostic";
+import { DIAG_PAGE_PATH, isDigiLockerDiagEnabled } from "@/lib/idv/digilocker-diagnostic";
 import { DigiLockerDiagnosticPanel } from "@/components/account/DigiLockerDiagnosticPanel";
+import { consumeDiagnosticResult } from "./actions";
 
 export const metadata: Metadata = {
   title: "DigiLocker diagnostic (Stage) — FairSwap",
@@ -19,6 +17,7 @@ export default async function DigiLockerDiagnosticPage() {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) redirect(`/auth/sign-in?next=${encodeURIComponent(DIAG_PAGE_PATH)}`);
-  const result = readDiagResultCookie((await cookies()).get(DIAG_RESULT_COOKIE)?.value);
-  return <DigiLockerDiagnosticPanel result={result} />;
+  // The sealed result is never read here: the panel consumes it once through a Server Action, which verifies the
+  // HMAC, user, session and expiry and deletes the cookie (Server Components cannot delete cookies).
+  return <DigiLockerDiagnosticPanel consumeResult={consumeDiagnosticResult} />;
 }

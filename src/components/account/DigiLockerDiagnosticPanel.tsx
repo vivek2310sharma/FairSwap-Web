@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { DiagView } from "@/lib/idv/digilocker-diagnostic";
 
@@ -20,9 +20,17 @@ const START_ERRORS: Record<string, string> = {
   NOT_FOUND: "The diagnostic is not enabled.",
 };
 
-export function DigiLockerDiagnosticPanel({ result }: { result: DiagView | null }) {
+export function DigiLockerDiagnosticPanel({ consumeResult }: { consumeResult: () => Promise<DiagView | null> }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<DiagView | null>(null);
+  const consumed = useRef(false);
+
+  useEffect(() => {
+    if (consumed.current) return; // single read: the server deletes the sealed result on first consumption
+    consumed.current = true;
+    consumeResult().then((r) => { if (r) setResult(r); }).catch(() => {});
+  }, [consumeResult]);
 
   async function start() {
     setBusy(true);
@@ -61,6 +69,8 @@ export function DigiLockerDiagnosticPanel({ result }: { result: DiagView | null 
               <dt>Issuer</dt><dd>{result.checks.issuer}</dd>
               <dt>Audience</dt><dd>{result.checks.audience ? "ok" : "failed"}</dd>
               <dt>Expiry</dt><dd>{result.checks.expiry ? "ok" : "failed"}</dd>
+              <dt>Subject</dt><dd>{result.checks.subject ? "ok" : "failed"}</dd>
+              <dt>Issued at</dt><dd>{result.checks.issuedAt ? "ok" : "failed"}</dd>
               <dt>Nonce</dt><dd>{result.checks.nonce}</dd>
               <dt>ACR</dt><dd>{result.checks.acr}</dd>
             </dl>

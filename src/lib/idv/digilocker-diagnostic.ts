@@ -1,6 +1,7 @@
 import "server-only";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { NO_STORE_HEADERS, getEdgeFunctionsBaseUrl, getSupabasePublicApiKey } from "@/lib/idv/server-helpers";
@@ -14,13 +15,21 @@ export const DIAG_PAGE_PATH = "/account/verification/digilocker-diagnostic";
 export const DIAG_STATE_COOKIE = "__Host-fs_dl_diag";
 export const DIAG_RESULT_COOKIE = "__Host-fs_dl_diag_result";
 const DIAG_STATE_TTL_S = 300;
-const DIAG_RESULT_TTL_S = 120;
+const DIAG_RESULT_TTL_S = 60;
 const TEST_SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
+const MIN_RESULT_KEY_LENGTH = 32;
 
-/** Default OFF. Never on a Vercel Production deployment, and only when this deployment targets FairSwapTest. */
+function resultKey(env: Record<string, string | undefined> = process.env): string | null {
+  const k = (env.DIGILOCKER_DIAG_RESULT_KEY ?? "").trim();
+  return k.length >= MIN_RESULT_KEY_LENGTH ? k : null;
+}
+
+/** Default OFF. Never on a Vercel Production deployment, only when this deployment targets FairSwapTest, and only
+ *  with a server-only result-signing key configured (no key: closed, so results can never be shown unsigned). */
 export function isDigiLockerDiagEnabled(env: Record<string, string | undefined> = process.env): boolean {
   if (env.FAIRSWAP_DIGILOCKER_DIAG_ENABLED !== "true") return false;
   if (env.VERCEL_ENV === "production") return false;
+  if (!resultKey(env)) return false;
   return env.NEXT_PUBLIC_SUPABASE_URL === TEST_SUPABASE_URL;
 }
 
@@ -44,7 +53,7 @@ const resultSchema = z.object({
   code: z.string().regex(/^[A-Z_]{1,40}$/).nullable(),
   endpoints: z.object({ authorize: z.enum(["1", "2"]), token: z.literal("2") }).nullable().optional(),
   checks: z.object({
-    signature: tri, issuer: tri, audience: z.boolean(), expiry: z.boolean(),
+    signature: tri, issuer: tri, audience: z.boolean(), expiry: z.boolean(), subject: z.boolean(), issuedAt: z.boolean(),
     nonce: z.enum(["match", "absent", "mismatch"]), acr: z.enum(["aadhaar", "missing", "other"]),
   }).strip().nullable().optional(),
 }).strip();
@@ -56,20 +65,73 @@ export function sanitizeDiagResult(raw: unknown): DiagView {
   return p.success ? p.data : { outcome: "FAILED", code: "INVALID_RESULT", endpoints: null, checks: null };
 }
 
-export function readDiagResultCookie(value: string | undefined): DiagView | null {
-  if (!value) return null;
-  try { return sanitizeDiagResult(JSON.parse(value)); } catch { return null; }
-}
-
 const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
 const json = (body: unknown, status: number) => NextResponse.json(body, { status, headers: NO_STORE_HEADERS });
 
-async function userBearer(): Promise<string | null> {
+/** Authenticated caller: verified user id (getUser) plus the Supabase session id of the same access token. */
+export interface DiagBinding { token: string; userId: string; sessionId: string }
+
+async function currentBinding(): Promise<DiagBinding | null> {
   const supabase = await createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData?.user) return null;
+  if (userError || !userData?.user?.id) return null;
   const { data: sessionData } = await supabase.auth.getSession();
-  return sessionData?.session?.access_token ?? null;
+  const token = sessionData?.session?.access_token;
+  if (!token) return null;
+  let claims: { sub?: unknown; session_id?: unknown };
+  try { claims = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString("utf8")); } catch { return null; }
+  if (claims.sub !== userData.user.id || typeof claims.session_id !== "string" || !claims.session_id) return null;
+  return { token, userId: userData.user.id, sessionId: claims.session_id };
+}
+
+// ---- Result cookie: HMAC-SHA256 sealed, bound to user + session, 60 s, single read (deleted when consumed). ----
+const resultPayloadSchema = z.object({
+  v: z.literal(1), u: z.string().min(1), s: z.string().min(1), exp: z.number().int(), jti: z.string().regex(/^[0-9a-f]{32}$/), r: z.unknown(),
+}).strict();
+const mac = (key: string, payload: string) => createHmac("sha256", key).update(`fs:dl:diag:result:v1.${payload}`).digest("base64url");
+
+export function sealDiagResult(view: DiagView, bind: Pick<DiagBinding, "userId" | "sessionId">, nowMs = Date.now()): string | null {
+  const key = resultKey();
+  if (!key) return null;
+  const payload = Buffer.from(JSON.stringify({
+    v: 1, u: bind.userId, s: bind.sessionId, exp: Math.floor(nowMs / 1000) + DIAG_RESULT_TTL_S,
+    jti: randomBytes(16).toString("hex"), r: view,
+  })).toString("base64url");
+  return `${payload}.${mac(key, payload)}`;
+}
+
+/** Returns the result only if untampered, unexpired and issued to this exact user and session; otherwise null. */
+export function openDiagResult(value: string | undefined, bind: Pick<DiagBinding, "userId" | "sessionId">, nowMs = Date.now()): DiagView | null {
+  const key = resultKey();
+  if (!key || !value || value.length > 4096) return null;
+  const [payload, sig, extra] = value.split(".");
+  if (!payload || !sig || extra !== undefined) return null;
+  const expected = Buffer.from(mac(key, payload));
+  const given = Buffer.from(sig);
+  if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
+  let parsed: z.infer<typeof resultPayloadSchema>;
+  try {
+    const p = resultPayloadSchema.safeParse(JSON.parse(Buffer.from(payload, "base64url").toString("utf8")));
+    if (!p.success) return null;
+    parsed = p.data;
+  } catch {
+    return null;
+  }
+  const now = Math.floor(nowMs / 1000);
+  if (parsed.u !== bind.userId || parsed.s !== bind.sessionId) return null;
+  if (parsed.exp <= now || parsed.exp > now + DIAG_RESULT_TTL_S) return null;
+  return sanitizeDiagResult(parsed.r);
+}
+
+/** Server Action helper: reads, verifies and always deletes the result cookie, so a result renders at most once. */
+export async function consumeDiagResult(): Promise<DiagView | null> {
+  if (!isDigiLockerDiagEnabled()) return null;
+  const jar = await cookies();
+  const value = jar.get(DIAG_RESULT_COOKIE)?.value;
+  if (!value) return null;
+  jar.set(DIAG_RESULT_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
+  const bind = await currentBinding();
+  return bind ? openDiagResult(value, bind) : null;
 }
 
 async function callEdge(token: string, body: unknown): Promise<{ status: number; data: Record<string, unknown> } | null> {
@@ -96,9 +158,9 @@ const START_ERRORS = new Set(["UNAUTHORIZED", "FORBIDDEN", "RATE_LIMIT_EXCEEDED"
 /** POST /api/idv/digilocker/diagnostic/start. Caller has already passed the same-origin check. */
 export async function startDiagnostic(): Promise<NextResponse> {
   if (!isDigiLockerDiagEnabled()) return json({ error: "NOT_FOUND" }, 404);
-  const token = await userBearer();
-  if (!token) return json({ error: "UNAUTHORIZED" }, 401);
-  const r = await callEdge(token, { action: "start" });
+  const bind = await currentBinding();
+  if (!bind) return json({ error: "UNAUTHORIZED" }, 401);
+  const r = await callEdge(bind.token, { action: "start" });
   if (!r) return json({ error: "EDGE_FUNCTION_UNAVAILABLE" }, 502);
   if (r.status !== 200) {
     const e = typeof r.data.error === "string" && START_ERRORS.has(r.data.error) ? r.data.error : "START_FAILED";
@@ -112,6 +174,7 @@ export async function startDiagnostic(): Promise<NextResponse> {
   res.cookies.set(DIAG_STATE_COOKIE, sha256(state), {
     httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: DIAG_STATE_TTL_S,
   });
+  res.cookies.set(DIAG_RESULT_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
   return res;
 }
 
@@ -137,30 +200,29 @@ export async function handleDiagnosticCallback(req: NextRequest): Promise<NextRe
   const state = q.get("state") ?? "";
   if (!matchesDiagCookie(req, state)) return null;
 
+  const bind = await currentBinding();
   const finish = (view: DiagView | "signin") => {
-    const target = view === "signin" ? new URL("/auth/sign-in", req.url) : new URL(DIAG_PAGE_PATH, req.url);
-    if (view === "signin") target.searchParams.set("next", DIAG_PAGE_PATH);
+    const signin = view === "signin" || !bind;
+    const target = signin ? new URL("/auth/sign-in", req.url) : new URL(DIAG_PAGE_PATH, req.url);
+    if (signin) target.searchParams.set("next", DIAG_PAGE_PATH);
     const res = NextResponse.redirect(target, 303); // drops code/state from the address bar and history
     for (const [k, v] of Object.entries(NO_STORE_HEADERS)) res.headers.set(k, v);
     res.headers.set("Referrer-Policy", "no-referrer");
     res.cookies.set(DIAG_STATE_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
-    if (view !== "signin") {
-      res.cookies.set(DIAG_RESULT_COOKIE, JSON.stringify(view), {
-        httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: DIAG_RESULT_TTL_S,
-      });
-    }
+    const sealed = bind && view !== "signin" ? sealDiagResult(view, bind) : null;
+    res.cookies.set(DIAG_RESULT_COOKIE, sealed ?? "", {
+      httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: sealed ? DIAG_RESULT_TTL_S : 0,
+    });
     return res;
   };
   const failed = (code: string): DiagView => ({ outcome: "FAILED", code, endpoints: null, checks: null });
+  if (!bind) return finish("signin");
 
   const code = q.get("code");
   const providerError = q.get("error");
   if ((!code && !providerError) || (code && code.length > 2048)) return finish(failed("INVALID_CALLBACK"));
 
-  const token = await userBearer();
-  if (!token) return finish("signin");
-
-  const r = await callEdge(token, providerError ? { action: "complete", state, error: "denied" } : { action: "complete", state, code });
+  const r = await callEdge(bind.token, providerError ? { action: "complete", state, error: "denied" } : { action: "complete", state, code });
   if (!r) return finish(failed("EDGE_FUNCTION_UNAVAILABLE"));
   if (r.status === 200 && r.data.success === true) return finish(sanitizeDiagResult(r.data.result));
   const e = typeof r.data.error === "string" ? COMPLETE_ERRORS[r.data.error] : undefined;
