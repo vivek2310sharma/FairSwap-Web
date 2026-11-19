@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { VerificationHub, type VerificationState } from "@/components/account/VerificationHub";
 import { checkIsExpired } from "@/lib/idv/server-helpers";
 import { isDigiLockerEnabled } from "@/lib/idv/digilocker";
+import { isMyDigiLockerVerified } from "@/lib/idv/digilocker-badge-server";
 import { DigiLockerVerification } from "@/components/account/DigiLockerVerification";
 import type { AccountLocale } from "@/lib/account/copy";
 import type { Metadata } from "next";
@@ -41,9 +42,8 @@ export default async function VerificationPage({ searchParams }: VerificationPag
 
   // DigiLocker direct account verification (one-time). When enabled it replaces the document-based hub.
   if (isDigiLockerEnabled()) {
-    const { data: idv } = await supabase.rpc("get_my_identity_verification");
-    const rec = (idv && typeof idv === "object" ? idv : {}) as Record<string, unknown>;
-    const verified = rec.badge_issued === true && rec.status === "verified" && !checkIsExpired(rec.valid_until);
+    // Server-authoritative: get_my_marketplace_access().digilocker_verified. The `dl` query parameter is never proof.
+    const verified = await isMyDigiLockerVerified(supabase);
     return <DigiLockerVerification verified={verified} result={dl} showRequiredNotice={required === "1"} locale={lang === "hi" || cookieLocale === "hi" ? "hi" : "en"} />;
   }
 

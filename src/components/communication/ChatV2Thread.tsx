@@ -121,7 +121,7 @@ export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedIn
       const result = await sendMessageAction(conversation.id, draft.content, draft.requestId);
       if (!alive.current) return;
       if (!result.success || !result.messageId) {
-        setOutbox(old => old.map(row => row.requestId === draft.requestId ? { ...row, state: "failed", redirectTo: result.requiresPolicyReview ? result.redirectTo : undefined } : row));
+        setOutbox(old => old.map(row => row.requestId === draft.requestId ? { ...row, state: "failed", redirectTo: result.requiresPolicyReview || result.redirectTo?.startsWith("/account/verification") ? result.redirectTo : undefined } : row));
         return;
       }
       // Acknowledged IDs have no invented timestamp or delivery receipt. Fetch canonical rows.
@@ -166,7 +166,7 @@ export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedIn
         </div>;
       })}
       {outbox.map(draft => <div key={draft.requestId} className="flex flex-col items-end"><p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl bg-action-600 px-3 py-2 text-sm text-white [overflow-wrap:anywhere]">{draft.content}</p><span role="status" className="text-xs text-muted">{copy[draft.state]}</span>
-        {draft.state === "failed" && <div className="flex gap-3 text-sm">{draft.redirectTo && <Link href={draft.redirectTo} className="underline">{copy.policy}</Link>}<button className="p-2 underline" onClick={() => void send(draft)} disabled={blocked || closed}>{copy.retry}</button></div>}
+        {draft.state === "failed" && <div className="flex gap-3 text-sm">{draft.redirectTo && <Link href={draft.redirectTo} className="underline">{draft.redirectTo.startsWith("/account/verification") ? "Verify with DigiLocker" : copy.policy}</Link>}<button className="p-2 underline" onClick={() => void send(draft)} disabled={blocked || closed}>{copy.retry}</button></div>}
       </div>)}
     </div>
     {readError && <div role="alert" className="px-3 py-2 text-xs">{copy.readError} <button className="underline" onClick={() => setReadRetry(value => value + 1)}>{copy.retry}</button></div>}

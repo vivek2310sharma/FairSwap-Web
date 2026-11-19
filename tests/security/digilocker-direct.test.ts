@@ -81,6 +81,9 @@ describe("DigiLocker callback route", () => {
     const f = vi.spyOn(globalThis, "fetch");
     f.mockResolvedValueOnce(new Response(JSON.stringify({ error: "IDENTITY_ALREADY_LINKED", message: "SECRET-DETAIL" }), { status: 409 }));
     expect((await GET(cb(`state=${STATE}&code=c`))).headers.get("location")).toContain("dl=already_linked");
+    f.mockResolvedValueOnce(new Response(JSON.stringify({ error: "PROVIDER_REJECTED", message: "SECRET-DETAIL" }), { status: 400 }));
+    const rej = (await GET(cb(`state=${STATE}&code=c`))).headers.get("location");
+    expect(rej).toContain("dl=not_confirmed"); expect(rej).not.toContain("SECRET");
     f.mockResolvedValueOnce(new Response("{}", { status: 504 }));
     expect((await GET(cb(`state=${STATE}&code=c`))).headers.get("location")).toContain("dl=failed");
     f.mockRejectedValueOnce(new Error("boom SECRET"));
@@ -88,7 +91,7 @@ describe("DigiLocker callback route", () => {
     expect(r.headers.get("location")).toContain("dl=provider_error"); expect(r.headers.get("location")).not.toContain("SECRET");
     f.mockResolvedValueOnce(new Response("{}", { status: 400 }));
     expect((await GET(cb(`state=${STATE}&error=access_denied&error_description=x`))).headers.get("location")).toBeTruthy();
-    expect(JSON.parse((f.mock.calls[3][1] as RequestInit).body as string)).toEqual({ state: STATE, error: "denied" });
+    expect(JSON.parse((f.mock.calls[4][1] as RequestInit).body as string)).toEqual({ state: STATE, error: "access_denied" });
   });
 });
 
@@ -147,6 +150,9 @@ describe("helpers", () => {
     expect(resultForBackend(true, undefined)).toBe("verified");
     expect(resultForBackend(false, "CONSENT_DENIED")).toBe("denied");
     expect(resultForBackend(false, "anything-else")).toBe("failed");
+    expect(resultForBackend(false, "PROVIDER_REJECTED")).toBe("not_confirmed");
+    expect(resultForBackend(false, "ID_TOKEN_INVALID")).toBe("not_confirmed");
+    expect(resultForBackend(false, "ASSURANCE_NOT_PROVEN")).toBe("not_confirmed");
     expect(friendlyIdentityError("IDENTITY_VERIFICATION_REQUIRED")).toMatch(/verify your account/i);
     expect(friendlyIdentityError("other")).toBeNull();
   });

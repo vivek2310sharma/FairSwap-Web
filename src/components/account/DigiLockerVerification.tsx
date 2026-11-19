@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
+import { DigiLockerBadge } from "@/components/idv/DigiLockerBadge";
 import { digiLockerCopy, type DigiLockerLocale } from "@/lib/idv/digilocker-copy";
 
 type ResultKey = keyof (typeof digiLockerCopy)["en"]["results"];
@@ -52,13 +53,13 @@ export function DigiLockerVerification({ verified: initialVerified, result, show
 
   return (
     <main id="verification-content" className="mx-auto w-full max-w-xl px-4 py-6">
-      <h1 className="flex items-center gap-2 text-xl font-semibold">
-        <ShieldCheck aria-hidden="true" size={22} /> {c.heading}
-      </h1>
       {verified ? (
-        <p role="status" className="mt-4 rounded-lg border p-4">{c.verified}</p>
+        <p role="status"><DigiLockerBadge /></p>
       ) : (
         <>
+          <h1 className="flex items-center gap-2 text-xl font-semibold">
+            <ShieldCheck aria-hidden="true" size={22} /> {c.heading}
+          </h1>
           <p className="mt-3">{c.body}</p>
           {showRequiredNotice && <p className="mt-3 text-sm">{c.required}</p>}
           {(resultMessage || error) && (
