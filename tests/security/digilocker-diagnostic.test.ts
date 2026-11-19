@@ -170,11 +170,32 @@ describe("Shared callback routing", () => {
     expect(String(f.mock.calls[0][0])).toMatch(/idv-digilocker-complete$/);
   });
 
-  it("cancelled login relays only error=denied", async () => {
+  it("provider errors relay only a standard OAuth code, never error_description or odd values", async () => {
+    signedIn();
+    for (const [qs, relayed] of [
+      ["error=server_error&error_description=raw+provider+text", "server_error"],
+      ["error=access_denied&error_description=x", "access_denied"],
+      ["error=%3Cscript%3E&error_description=x", "denied"],
+      [`error=${"a".repeat(40)}`, "denied"],
+    ] as const) {
+      vi.mocked(globalThis.fetch).mockRestore?.();
+      const f = edge({ success: true, result: { outcome: "FAILED", code: "PROVIDER_ERR_SERVER_ERROR", endpoints: null, checks: null } });
+      await callback(cb(`state=${STATE}&${qs}`, diagCookie()));
+      expect(JSON.parse(String((f.mock.calls[0][1] as RequestInit).body))).toEqual({ action: "complete", state: STATE, error: relayed });
+    }
+  });
+
+  it("claim names pass through the sealed result; values or malformed names never do", () => {
+    const withNames = { ...VERIFIED, claimNames: ["sub", "user_sso_id", "pan_number"] };
+    expect(openDiagResult(sealDiagResult(withNames as never, BIND)!, BIND)).toMatchObject({ claimNames: ["sub", "user_sso_id", "pan_number"] });
+    expect(sanitizeDiagResult({ ...withNames, claimNames: ["sub", "DL-93f3390c-secret"] })).toMatchObject({ outcome: "FAILED", code: "INVALID_RESULT" });
+  });
+
+  it("cancelled login relays only the sanitized error code", async () => {
     signedIn();
     const f = edge({ success: true, result: { outcome: "CANCELLED", code: "CONSENT_DENIED", endpoints: { authorize: "1", token: "2" }, checks: null } });
     const r = await callback(cb(`state=${STATE}&error=access_denied&error_description=raw+provider+text`, diagCookie()));
-    expect(JSON.parse(String((f.mock.calls[0][1] as RequestInit).body))).toEqual({ action: "complete", state: STATE, error: "denied" });
+    expect(JSON.parse(String((f.mock.calls[0][1] as RequestInit).body))).toEqual({ action: "complete", state: STATE, error: "access_denied" });
     expect(resultCookie(r)).toMatchObject({ outcome: "CANCELLED", code: "CONSENT_DENIED" });
     expect(r.headers.getSetCookie().join("")).not.toContain("raw");
   });
