@@ -1,3 +1,5 @@
+> 19 November 2026: Unified Publishing V3 foundation candidate — canonical creation routing, 78 distinct icons and shared five-step specialist controls. Batch 2 adds 35 gated Ordinary Goods contracts. The other 25 remain under the foundation plan. See [scope and release dependencies](docs/operations/UNIFIED_PUBLISHING_V3.md).
+
 > 14 November 2026: [Wearables catalogue V1.1 local implementation and release sequence](docs/operations/WEARABLES_CATALOGUE_V11.md); hosted verification NOT RUN.
 
 > Listing validity candidate, 11 November 2026: approved listings and approved renewals last 365 days; three renewals maximum. Backend-first Test → automatic Production delivery remains a ChatGPT release handoff. [Files, checks and rollout](docs/operations/LISTING_VALIDITY_365.md).

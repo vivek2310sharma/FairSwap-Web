@@ -10,7 +10,7 @@ const availability={goods:{available:true},vehicles:{available:true},property:{a
 const capabilities={mobilePhones:true,tablets:true,wearables:true,cars:"off",twoWheelers:"off",property:"off",goodsCategories:[],propertyPaths:[]} as const;
 afterEach(()=>{cleanup();vi.unstubAllGlobals();vi.restoreAllMocks();});
 it("renders all 15 server-defined groups and preserves safety messaging",()=>{render(<MacroCategorySelector catalogue={catalogue} capabilities={capabilities} availability={availability}/>);for(const g of catalogue)expect(screen.getByRole("button",{name:new RegExp('^'+g.label.en.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))})).toBeVisible();expect(screen.getByText(/UPI PIN/)).toBeVisible();});
-it("searches canonical leaves and routes only released matching specialists",()=>{render(<MacroCategorySelector catalogue={catalogue} capabilities={capabilities} availability={availability}/>);fireEvent.change(screen.getByRole("searchbox"),{target:{value:"Mobile Phones"}});expect(screen.getByRole("link",{name:/Mobile Phones/})).toHaveAttribute("href","/account/listings/new?posting=mobile-phones");fireEvent.change(screen.getByRole("searchbox"),{target:{value:"Projectors"}});expect(screen.queryByRole("link",{name:/Projectors/})).toBeNull();expect(screen.getByRole("button",{name:/Projectors/})).toBeVisible();});
+it("searches canonical leaves and routes only released matching specialists",()=>{render(<MacroCategorySelector catalogue={catalogue} capabilities={capabilities} availability={availability}/>);fireEvent.change(screen.getByRole("searchbox"),{target:{value:"Mobile Phones"}});expect(screen.getByRole("link",{name:/Mobile Phones/})).toHaveAttribute("href","/account/listings/new?category=mobile-phones");fireEvent.change(screen.getByRole("searchbox"),{target:{value:"Projectors"}});expect(screen.queryByRole("link",{name:/Projectors/})).toBeNull();expect(screen.getByRole("button",{name:/Projectors/})).toBeVisible();});
 it("does not fall back to a hardcoded catalogue on failure",()=>{render(<MacroCategorySelector catalogue={null} capabilities={capabilities} availability={availability}/>);expect(screen.getByRole("status")).toHaveTextContent("temporarily unavailable");expect(screen.queryByRole("button",{name:/Mobiles & Tablets/})).toBeNull();});
 
 it("mobile dialog restores focus to the selected group on close",()=>{
@@ -37,3 +37,5 @@ it("preserves rental anti-scam guidance under the canonical property group",()=>
  fireEvent.click(screen.getByRole("button",{name:/^Property/}));
  expect(screen.getByText(/Beware of fake landlords/)).toBeVisible();
 });
+
+it("has one category chooser and no legacy creation escape hatch",()=>{render(<MacroCategorySelector catalogue={catalogue} capabilities={capabilities} availability={availability}/>);expect(screen.queryByText("Existing posting options")).toBeNull();expect(screen.getAllByRole("heading",{level:1})).toHaveLength(1);});
