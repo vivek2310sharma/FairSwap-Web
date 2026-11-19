@@ -20,6 +20,11 @@ function back(req: NextRequest, result: DigiLockerResult | "signin"): NextRespon
   return res;
 }
 
+// Only a standard OAuth error token is relayed (never free text); anything else is treated as a denial.
+function safeOAuthError(raw: string): string {
+  return /^[a-z_]{1,32}$/.test(raw) ? raw : "denied";
+}
+
 export async function GET(req: NextRequest) {
   // Stage-only diagnostic shares this registered callback; it is taken only when this browser holds the
   // diagnostic cookie for exactly this state. Otherwise v1 handling below is unchanged.
@@ -50,7 +55,7 @@ export async function GET(req: NextRequest) {
     const res = await fetch(`${base}/idv-digilocker-complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, apikey },
-      body: JSON.stringify(providerError ? { state, error: "denied" } : { state, code }),
+      body: JSON.stringify(providerError ? { state, error: safeOAuthError(providerError) } : { state, code }),
       cache: "no-store",
     });
     const data = (await res.json().catch(() => ({}))) as { error?: unknown };

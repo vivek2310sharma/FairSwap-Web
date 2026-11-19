@@ -20,7 +20,7 @@ export function isDigiLockerAuthorizeUrl(raw: unknown): raw is string {
 }
 
 export type DigiLockerResult =
-  | "verified" | "denied" | "already_linked" | "unavailable" | "expired" | "provider_error" | "failed";
+  | "verified" | "denied" | "already_linked" | "unavailable" | "expired" | "provider_error" | "assurance_failed" | "failed";
 
 /** Maps a Backend error code to a fixed result key. Provider strings are never echoed to the browser. */
 export function resultForBackend(ok: boolean, code: unknown): DigiLockerResult {
@@ -34,6 +34,8 @@ export function resultForBackend(ok: boolean, code: unknown): DigiLockerResult {
     case "ATTEMPT_EXPIRED":
     case "STATE_ALREADY_USED":
     case "ATTEMPT_NOT_FOUND": return "expired";
+    case "ASSURANCE_NOT_PROVEN":
+    case "ID_TOKEN_INVALID": return "assurance_failed";
     case "PROVIDER_TIMEOUT":
     case "PROVIDER_UNAVAILABLE": return "provider_error";
     default: return "failed";

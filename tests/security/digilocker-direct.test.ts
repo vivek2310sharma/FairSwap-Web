@@ -88,7 +88,7 @@ describe("DigiLocker callback route", () => {
     expect(r.headers.get("location")).toContain("dl=provider_error"); expect(r.headers.get("location")).not.toContain("SECRET");
     f.mockResolvedValueOnce(new Response("{}", { status: 400 }));
     expect((await GET(cb(`state=${STATE}&error=access_denied&error_description=x`))).headers.get("location")).toBeTruthy();
-    expect(JSON.parse((f.mock.calls[3][1] as RequestInit).body as string)).toEqual({ state: STATE, error: "denied" });
+    expect(JSON.parse((f.mock.calls[3][1] as RequestInit).body as string)).toEqual({ state: STATE, error: "access_denied" });
   });
 });
 
