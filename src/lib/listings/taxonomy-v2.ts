@@ -1,5 +1,7 @@
+import { isOrdinaryGoodsSlug, isPropertyIntakeSlug, isSpecialistVehicleDraftSlug } from "./ordinary-goods/categories";
 import { z } from "zod";
 import type { MainCategory, SubRoute } from "./post-ad-category-catalogue";
+import { CANONICAL_CATEGORY_PARENTS, isCanonicalCategorySlug } from "./canonical-category-slugs";
 
 const uuid = z.string().uuid().transform(value => value.toLowerCase());
 const nodeSchema = z.object({
@@ -15,7 +17,7 @@ const nodeSchema = z.object({
   catalogue_mode: z.enum(["none", "brand_only", "brand_model"]).nullable(),
   sort_order: z.number().int(),
   posting_enabled: z.boolean(),
-});
+}).strict();
 
 export const taxonomySchema = z.object({
   api_version: z.literal(2),
@@ -23,7 +25,7 @@ export const taxonomySchema = z.object({
   revision: z.string().regex(/^[a-f0-9]{32}$/),
   configuration_revision: z.string().regex(/^[a-f0-9]{32}$/),
   nodes: z.array(nodeSchema).length(78),
-}).superRefine(({ nodes }, ctx) => {
+}).strict().superRefine(({ nodes }, ctx) => {
   const ids = new Map(nodes.map(node => [node.id, node]));
   const roots = nodes.filter(node => node.parent_id === null);
   const invalid = (message: string) => ctx.addIssue({ code: "custom", message });
@@ -38,6 +40,10 @@ export const taxonomySchema = z.object({
   }
   for (const node of nodes) {
     const parent = node.parent_id ? ids.get(node.parent_id) : undefined;
+    if (!isCanonicalCategorySlug(node.slug) ||
+      CANONICAL_CATEGORY_PARENTS[node.slug] !== (parent?.slug ?? null)) {
+      invalid("Unknown category slug or canonical parent mismatch");
+    }
     if (node.parent_id
       ? !parent || parent.parent_id !== null || !node.posting_flow || !node.catalogue_mode
       : node.posting_flow !== null || node.catalogue_mode !== null || node.posting_enabled) {
@@ -84,6 +90,13 @@ export function parseTaxonomy(
         if (node.slug === "tablets" && node.posting_flow === "specialist:tablet") route = { kind: "tablets" };
         if (node.slug === "wearables" && node.posting_flow === "specialist:wearable") route = { kind: "wearables" };
       }
+      if (node.posting_enabled && ((node.posting_flow === "generic" && !isSpecialistVehicleDraftSlug(node.slug)) ||
+        (isSpecialistVehicleDraftSlug(node.slug) &&
+          ((node.slug === "v2-cars" && node.posting_flow === "specialist:car") ||
+           (node.slug === "v2-motorcycles-scooters" && node.posting_flow === "specialist:two_wheeler"))) ||
+        (node.posting_flow === "property" && isPropertyIntakeSlug(node.slug)) ||
+        (node.posting_flow === "accessory" && root.slug === "v2-mobiles-tablets")) && isOrdinaryGoodsSlug(node.slug) &&
+        bindings[node.slug] === node.id) route = { kind: "ordinary-goods", categoryId: node.id };
       return {
         id: node.slug,
         label: node.name,

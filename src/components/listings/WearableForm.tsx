@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { ArrowLeft, ArrowRight, Check, Circle, CircleAlert, ShieldAlert } from "lucide-react";
+import { Check, Circle, CircleAlert, ShieldAlert } from "lucide-react";
 import type { City } from "@/types/listing";
 import {
   BATTERY_MODES, CONDITIONS, CONNECTIVITY, DEVICE_TYPES, DEVICE_TYPE_LABELS, GPS_STATUS, INCLUDED_LABELS, PAIRING, PAIRING_BADGE, PHONE_OS, SCREEN, SENSORS, STRAP, WORKING,
@@ -18,6 +18,7 @@ import {
   WEARABLE_STEP_LABELS, blankWearableDraft, canPrepareBlankWearableSession, fieldStep, reachableWearableStep, validateWearableWizard, wearableRecoveryKey, wearableRecoverySchema, wearableTitle,
   type WearableDraft, type WearableRecovery, type WizardIssue,
 } from "./posting/wearable-wizard";
+import { PostingWizardHeading, PostingWizardSteps, PostingWizardReview, PostingWizardFooter } from "./posting/PostingWizard";
 import styles from "./posting/Posting.module.css";
 
 const API = "/api/post-ad/wearables";
@@ -325,7 +326,7 @@ export default function WearableForm({ catalogue, ownerId, cities, maintenance =
   const pairing = draft.pairing_status;
   const facts = [type ? DEVICE_TYPE_LABELS[type] : "", draft.condition ? CONDITIONS[draft.condition] : "", draft.case_size_mm ? `${draft.case_size_mm} mm` : "", draft.ring_size ? `Ring size ${draft.ring_size}` : "", draft.connectivity ? CONNECTIVITY[draft.connectivity] : "", draft.trade === "sell" && draft.negotiable ? "Negotiable" : ""];
   const notices = [pairing && pairing !== "locked" ? PAIRING_BADGE[pairing] : ""];
-  return <div className={step === 5 ? styles.reviewing : undefined} lang="en"><p className={styles.eyebrow}>SMARTWATCHES &amp; WEARABLES · {step === 5 ? "REVIEW" : `STEP ${step + 1} OF 5`}</p><h1 className={styles.wizardHeading} ref={heading} tabIndex={-1}>{step === 5 ? "Ready for a second life?" : "Your next owner is out there."}</h1>
+  return <div className={step === 5 ? styles.reviewing : undefined} lang="en"><PostingWizardHeading category="SMARTWATCHES & WEARABLES" step={step} headingRef={heading}/>
     {maintenance && <p role="alert" className={styles.errorBox}>{maintenanceMessage ?? "Posting is temporarily unavailable. Your saved details are safe."}</p>}{message && <p role="alert" className={styles.errorBox}>{message}</p>}
     {sessionState === "initializing" && <p role="status">Preparing photo upload…</p>}
     {sessionState === "failed" && <button type="button" className={styles.button} onClick={async () => { if (retryInFlight.current) return; retryInFlight.current = true; setMessage(""); try { await initializeSession(draft.session_id); } finally { retryInFlight.current = false; } }}>Retry photo upload</button>}
@@ -333,7 +334,7 @@ export default function WearableForm({ catalogue, ownerId, cities, maintenance =
     {(sessionCode === "UPLOAD_SESSION_LIMIT" || sessionCode === "UPLOAD_SESSION_PROTECTED") && <section className={styles.card} aria-label="Photo session recovery"><h2>Recover photo session capacity</h2><p>Review only a photo-free session you no longer need. Sessions with any photo history or a submission in progress are protected. No photos or saved listing details will be deleted here.</p><button type="button" className={styles.button} disabled={sessionAction} onClick={() => void loadSessionChoices().catch(() => setMessage("Could not refresh session choices. Retry shortly."))}>Refresh session choices</button><ul>{sessionChoices.map(c => <li key={c.id}><p>Started {new Date(c.created_at).toLocaleString("en-IN")} · {c.id.slice(0, 8)} · {c.can_rotate ? "Certified blank: eligible" : c.can_abandon ? "Photo-free" : "Protected"}</p>{c.can_abandon && <button type="button" className={styles.button} aria-pressed={releaseChoice === c.id} onClick={() => setReleaseChoice(c.id)}>Select to release</button>}</li>)}</ul>{releaseChoice && <button type="button" className={styles.primary} disabled={sessionAction} onClick={() => void releaseSession()}>Release selected session</button>}</section>}
     {sessionCode === "UPLOAD_SESSION_EXPIRED" && <div className={styles.notice}>{replaceExpired ? <><p>Keep your listing details and retry blobs in a new session? Photos without a local copy must be added again. Previous server photos are not deleted by this action.</p><button type="button" className={styles.button} onClick={() => setReplaceExpired(false)}>Keep expired draft</button><button type="button" className={styles.primary} onClick={restartExpiredSession}>Start new session and re-upload photos</button></> : <button type="button" className={styles.button} onClick={() => setReplaceExpired(true)}>Start a new photo session</button>}</div>}
     <div className={styles.columns}><div>
-      <ol className={styles.steps} aria-label="Posting steps">{WEARABLE_STEP_LABELS.map((label, i) => <li key={label}><button type="button" disabled={busy || maintenance || (i > step && (!sessionReady || i > reachable))} data-complete={i < reachable} aria-label={`Step ${i + 1}: ${label}`} aria-current={step === i ? "step" : undefined} onClick={() => navigate(i)}><b>{i < reachable ? <><Check aria-hidden="true" size={18}/><span className="sr-only">Completed</span></> : i + 1}</b><span>{label}</span></button></li>)}</ol>
+      <PostingWizardSteps labels={WEARABLE_STEP_LABELS} step={step} reachable={reachable} busy={busy} maintenance={maintenance} sessionReady={sessionReady} onNavigate={navigate}/>
       <form ref={form} noValidate onSubmit={e => { e.preventDefault(); if (step < 5) next(); }}><fieldset disabled={busy || maintenance} className="min-w-0">
         <section {...attr("media_ids")} tabIndex={-1} className={styles.card} style={{ display: step === 0 ? undefined : "none" }} aria-label="Photos"><PreListingMediaUploader mediaBase={`${API}/sessions`} photoLabel="Wearable" guidance="Front, back, screen on, strap or band, charger and any wear." photos={photos} onChange={p => { setPhotos(p); clearIssue("media_ids"); }} sessionId={draft.session_id} disabled={busy || maintenance || frozen || sessionAction} onPrepareSession={prepareBlankSession} ensureSession={() => sessionReady ? Promise.resolve(draft.session_id) : initializeSession(draft.session_id)} onSessionError={code => { setSessionState("failed"); setSessionCode(code); setMessage(sessionErrors[code].message); }} onReady={async () => { await refresh(activeSession.current); }}/>{error("media_ids")}</section>
 
@@ -378,11 +379,14 @@ export default function WearableForm({ catalogue, ownerId, cities, maintenance =
         </section>
 
         <section className={`${styles.card} ${styles.location}`} style={{ display: step === 4 ? undefined : "none" }} aria-label="Location"><h2>Find someone nearby.</h2><PincodeLocationPicker validationErrors={{ pin_code: issue("pin_code"), city_id: issue("city_id"), locality_id: issue("locality_id") }} key={`${ownerId}-${draft.session_id}`} locale="en" hideLandmark onResolvedChange={locationChanged} cities={cities} initialPinCode={draft.pin_code} initialCityId={draft.city_id} initialLocalityId={draft.locality_id}/>{error("pin_code")}{error("city_id")}{error("locality_id")}</section>
-        {step === 5 && <section className={styles.card} aria-label="Submission review"><h2>Review your listing</h2><p>Check your photos and details in the buyer preview.</p><fieldset><legend>Listing plan</legend><label className="flex min-h-12 items-center gap-3"><input type="radio" name="plan_id" value="free-v1" checked readOnly style={{ width: 20, minHeight: 20 }}/>Free — submit your listing for review</label></fieldset><p className={styles.muted}>Pickup only. Everything here is seller-reported; FairSwap does not verify the device, serial number or account status.</p>{WEARABLE_STEP_LABELS.map((label, i) => <button type="button" key={label} className={styles.button} onClick={() => navigate(i)}>Edit {label}</button>)}</section>}
+        {step === 5 && <PostingWizardReview labels={WEARABLE_STEP_LABELS} onNavigate={navigate}>Pickup only. Everything here is seller-reported; FairSwap does not verify the device, serial number or account status.</PostingWizardReview>}
       </fieldset></form></div>
       <WearableBuyerPreview title={title} price={price} description={draft.description} area={area} photos={photos} facts={facts} notices={notices}/></div>
     <aside className={styles.safety}><ShieldAlert aria-hidden="true" size={22}/><p>To receive money, you never need to enter a UPI PIN, scan a payment QR code or share an OTP.</p></aside>
     {frozen && <p role="status" className={styles.notice}>Your photos are prepared for submission. Retry the same submission to complete it.</p>}
-    <footer className={styles.footer}><div><span className={styles.save} role="status">{saveState.startsWith("Could not") ? saveState : savedCurrent ? "Saved on this device" : "Saving on this device…"}</span><button type="button" className={styles.button} disabled={busy} onClick={() => { if (step === 0) { push("/account/listings/new"); return; } setStep(s => Math.max(0, s - 1)); setIssues([]); }}><ArrowLeft size={18} aria-hidden="true"/>Back</button><button type="button" className={styles.primary} disabled={busy || maintenance || !sessionReady || sessionAction} onClick={() => step === 5 ? void submit() : next()}>{busy ? "Submitting…" : step === 5 ? "Submit for review" : step === 4 ? "Review listing" : "Continue"}{step < 5 && <ArrowRight size={18} aria-hidden="true"/>}</button></div></footer>
+    <PostingWizardFooter step={step} busy={busy} continueDisabled={maintenance || !sessionReady || sessionAction}
+      saveStatus={saveState.startsWith("Could not") ? saveState : savedCurrent ? "Saved on this device" : "Saving on this device…"}
+      onBack={() => { if (step === 0) { push("/account/listings/new"); return; } setStep(s => Math.max(0, s - 1)); setIssues([]); }}
+      onContinue={() => step === 5 ? void submit() : next()}/>
   </div>;
 }

@@ -3,10 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 const idv = { value: { status: "not_started", badge_issued: false } as Record<string, unknown> };
+const access = { value: { digilocker_verified: false } as unknown };
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: "u-unverified" } }, error: null }) },
-    rpc: async (fn: string) => (fn === "get_my_identity_verification" ? { data: idv.value, error: null } : { data: null, error: null }),
+    rpc: async (fn: string) =>
+      fn === "get_my_marketplace_access" ? { data: access.value, error: null }
+      : fn === "get_my_identity_verification" ? { data: idv.value, error: null }
+      : { data: null, error: null },
   }),
 }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
@@ -18,7 +22,7 @@ import { digiLockerCopy } from "@/lib/idv/digilocker-copy";
 
 const en = digiLockerCopy.en;
 
-beforeEach(() => { process.env.FAIRSWAP_DIGILOCKER_ENABLED = "true"; idv.value = { status: "not_started", badge_issued: false }; });
+beforeEach(() => { process.env.FAIRSWAP_DIGILOCKER_ENABLED = "true"; idv.value = { status: "not_started", badge_issued: false }; access.value = { digilocker_verified: false }; });
 afterEach(() => { cleanup(); delete process.env.FAIRSWAP_DIGILOCKER_ENABLED; });
 
 describe("Verified UI cannot be spoofed by the callback query", () => {
@@ -36,13 +40,17 @@ describe("Verified UI cannot be spoofed by the callback query", () => {
     expect(screen.getByRole("button", { name: en.button })).toBeTruthy();
   });
 
-  it("page: forged dl values and a revoked/expired backend record never show Verified", async () => {
-    for (const record of [
-      { status: "revoked", badge_issued: false },
-      { status: "verified", badge_issued: false },
-      { status: "verified", badge_issued: true, valid_until: "2000-01-01T00:00:00Z" },
+  it("page: forged dl values, malformed access data and a legacy verified record never show Verified", async () => {
+    // A legacy (non-DigiLocker-V2) verified projection must not grant the DigiLocker badge on its own.
+    idv.value = { status: "verified", badge_issued: true, valid_until: null };
+    for (const value of [
+      { digilocker_verified: false, identity_verified: true },
+      { digilocker_verified: "true" },
+      { identity_verified: true },
+      null,
+      [true],
     ]) {
-      idv.value = record;
+      access.value = value;
       const ui = await VerificationPage({ searchParams: Promise.resolve({ dl: "verified" }) });
       render(ui);
       expect(screen.queryByText(en.verified)).toBeNull();
@@ -50,8 +58,8 @@ describe("Verified UI cannot be spoofed by the callback query", () => {
     }
   });
 
-  it("page: only the authenticated backend status shows Verified", async () => {
-    idv.value = { status: "verified", badge_issued: true, valid_until: null };
+  it("page: only the authenticated digilocker_verified status shows Verified", async () => {
+    access.value = { digilocker_verified: true, identity_verified: true, verification_required: false };
     render(await VerificationPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText(en.verified)).toBeTruthy();
   });

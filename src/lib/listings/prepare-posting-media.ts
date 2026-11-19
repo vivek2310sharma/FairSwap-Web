@@ -1,10 +1,15 @@
 import "server-only";
 import {createHash} from "node:crypto";
 import {createServiceRoleClient} from "@/lib/supabase/service";
-import {sessionCall,stagedPrefix} from "./mobiles/server";
+import {sessionCall,stagedPrefix,type UploadSession} from "./mobiles/server";
 import type {SupabaseClient} from "@supabase/supabase-js";
 export async function preparePostingMedia(client:SupabaseClient,user:{id:string},payload:{session_id:string;media_ids:string[]}) {
   const snapshot=await sessionCall(client,payload.session_id,"prepare");
+  await copyPreparedPostingMedia(snapshot,user,payload);
+}
+
+/** Shared private object promotion, after the family RPC authorizes and freezes the session. */
+export async function copyPreparedPostingMedia(snapshot:UploadSession,user:{id:string},payload:{session_id:string;media_ids:string[]}) {
   if(snapshot.session.state!=="submitted") {
    const service=createServiceRoleClient();
    for(const id of payload.media_ids) {

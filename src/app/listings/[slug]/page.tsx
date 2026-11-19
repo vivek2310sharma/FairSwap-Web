@@ -35,7 +35,7 @@ import {reviewableField,reviewPacketSchema} from '@/lib/listings/submission-read
 import {propertyRentSummary,paiseToPropertyRupees} from '@/lib/listings/property/contract';
 import type {Database} from '@/types/database';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import { isBadgeValid } from "@/lib/idv/server-helpers";
+import { hasDigiLockerBadge } from "@/lib/idv/digilocker-badge-server";
 import { DigiLockerBadge } from "@/components/idv/DigiLockerBadge";
 import {
   MapPin,
@@ -124,25 +124,14 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   const tabletDetails=listing.category.slug==="tablets"?await loadTabletDetails(supabase,listing.id):null;
   const wearableDetails=listing.category.slug==="wearables"?await loadWearableDetails(supabase,listing.id):null;
   const accessoryDetails=listing.category.slug==="mobile-accessories"?await loadAccessoryDetails(supabase,listing.id):null;
-  const [sellerOtherListings, { data: authData }, { data: sellerIdvData }] = await Promise.all([
+  const [sellerOtherListings, { data: authData }, isSellerVerified] = await Promise.all([
     listing.seller_id
       ? getSellerPublicListings(listing.seller_id, listing.id)
       : Promise.resolve([]),
     supabase.auth.getUser(),
-    listing.seller_id
-      ? supabase
-          .from("user_identity_verifications")
-          .select("badge_issued, verification_status, valid_until")
-          .eq("user_id", listing.seller_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
+    // Server-authoritative DigiLocker badge RPC; fails closed (no badge) on any error.
+    hasDigiLockerBadge(supabase, listing.seller_id),
   ]);
-
-  const isSellerVerified = isBadgeValid(
-    sellerIdvData?.badge_issued,
-    sellerIdvData?.verification_status,
-    sellerIdvData?.valid_until
-  );
 
   let isFavourited = false;
   if (authData?.user) {

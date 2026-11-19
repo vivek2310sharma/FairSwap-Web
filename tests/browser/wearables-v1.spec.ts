@@ -2,11 +2,18 @@ import { test, expect, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { wearableApi } from "./wearables-fixture";
 import { wearableSchema } from "../../src/lib/listings/wearables/contract";
-async function choose(page: Page, label: string, value: string) { const input = page.getByRole("combobox", { name: label, exact: true }); await input.fill(value); await input.press("ArrowDown"); await input.press("Enter"); }
+async function choose(page: Page, label: string, value: string) {
+  const input = page.getByRole("combobox", { name: label, exact: true });
+  const models = label === "Brand" ? page.waitForResponse(response => new URL(response.url()).pathname === "/api/post-ad/wearables/models" && response.ok()) : null;
+  await expect(input).toBeEnabled(); await input.click(); await input.fill(value);
+  await expect(page.getByRole("option", { name: value, exact: true })).toBeVisible();
+  await input.press("ArrowDown"); await input.press("Enter"); await expect(input).toHaveValue(value);
+  if (models) { await models; await expect(page.getByRole("combobox", { name: "Model", exact: true })).toBeEnabled(); }
+}
 const next = (page: Page) => page.getByRole("button", { name: "Continue", exact: true }).click();
-for (const width of [320, 360]) test(`Wearable five-step journey, device switching, lock/pairing gates and recovery at ${width}px`, async ({ page }) => {
+for (const width of [320, 360, 390]) test(`Wearable five-step journey, device switching, lock/pairing gates and recovery at ${width}px`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1000 }); const fixture = await wearableApi(page);
-  await page.goto("/account/listings/new?posting=wearables");
+  await page.goto("/account/listings/new?category=wearables");
   await expect(page.getByRole("button", { name: "Step 2: Wearable details" })).toBeDisabled();
   const photo = await sharp({ create: { width: 32, height: 32, channels: 3, background: "#08704a" } }).png().toBuffer();
   await page.locator("#mobile-photo-files").setInputFiles({ name: "watch.png", mimeType: "image/png", buffer: photo });
@@ -22,7 +29,7 @@ for (const width of [320, 360]) test(`Wearable five-step journey, device switchi
   await page.getByRole("button", { name: "Good condition", exact: true }).click();
   for (const [group, option] of [["Screen", "Perfect"], ["Touch and buttons", "Working"], ["Strap or band", "Good"], ["Sensors", "Working"], ["Charging", "Working"], ["Battery", "Not tested"]] as const) await page.getByRole("group", { name: group }).getByRole("button", { name: option, exact: true }).click();
   await page.getByLabel("I own this device and it is not lost, stolen or reported as such.").check();
-  await page.getByLabel("Description").fill("Used for a year with a screen guard. Charger included.");
+  await page.getByRole("textbox", { name: "Description", exact: true }).fill("Used for a year with a screen guard. Charger included.");
   await page.getByLabel("Activation or account lock is on").check(); await expect(page.getByRole("alert").filter({ hasText: "can’t be listed" })).toBeVisible(); await next(page); await expect(page.getByText("STEP 3 OF 5")).toBeVisible();
   await page.getByLabel("Still paired with my account / phone").check(); await next(page); await expect(page.getByText(/Confirm you will unpair/)).toBeVisible();
   await page.getByLabel("Signed out of my account, not reset").check(); await next(page);
@@ -39,7 +46,7 @@ for (const width of [320, 360]) test(`Wearable five-step journey, device switchi
 });
 test("category chooser links to the wearables journey and keeps the phone draft record independent", async ({ page }) => {
   await wearableApi(page); await page.goto("/account/listings/new"); await page.getByRole("button", { name: /Mobiles & Tablets/ }).click();
-  await expect(page.getByRole("link", { name: /Smartwatches & Wearables/ })).toHaveAttribute("href", "/account/listings/new?posting=wearables");
+  await expect(page.getByRole("link", { name: /Smartwatches & Wearables/ })).toHaveAttribute("href", "/account/listings/new?category=wearables");
   const owner = await page.evaluate(async () => { const db = await new Promise<IDBDatabase>((res, rej) => { const r = indexedDB.open("fairswap-posting-v2", 1); r.onupgradeneeded = () => r.result.createObjectStore("drafts"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); const keys = await new Promise<IDBValidKey[]>(res => { const r = db.transaction("drafts").objectStore("drafts").getAllKeys(); r.onsuccess = () => res(r.result); }); db.close(); return keys; });
   expect(owner.every(k => !String(k).endsWith(":wearables:v1"))).toBe(true);
 });

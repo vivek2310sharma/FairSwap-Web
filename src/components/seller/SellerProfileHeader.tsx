@@ -9,7 +9,7 @@ interface SellerProfileHeaderProps {
   profile: PublicSellerProfile;
   /** Public locality + district only (from public_profile_location). Never a PIN. */
   location?: { locality: string | null; district: string | null } | null;
-  /** Server-verified badge from public.user_identity_verifications projection */
+  /** "Verified with DigiLocker" badge, from the server-authoritative DigiLocker badge RPC (get_digilocker_badges). */
   isVerified?: boolean;
 }
 

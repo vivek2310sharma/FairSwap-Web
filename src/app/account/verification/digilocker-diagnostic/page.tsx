@@ -5,6 +5,8 @@ import { DIAG_PAGE_PATH, isDigiLockerDiagEnabled } from "@/lib/idv/digilocker-di
 import { DigiLockerDiagnosticPanel } from "@/components/account/DigiLockerDiagnosticPanel";
 import { consumeDiagnosticResult } from "./actions";
 
+export const dynamic = "force-dynamic"; // never cached or prerendered
+
 export const metadata: Metadata = {
   title: "DigiLocker diagnostic (Stage) — FairSwap",
   robots: { index: false, follow: false },
