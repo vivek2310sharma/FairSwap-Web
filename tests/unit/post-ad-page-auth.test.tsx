@@ -1,6 +1,6 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup } from "@testing-library/react";
 import NewListingPage from "@/app/account/listings/new/page";
 
 const mocks = vi.hoisted(() => ({
@@ -61,33 +61,12 @@ describe("New-listing page auth return only", () => {
     }
   );
 
-  it.each([false, true])("keeps signed-in form/reference behavior with maintenance=%s", async (maintenance) => {
+  it.each([false, true])("redirects old signed-in creation routes with maintenance=%s", async (maintenance) => {
     mocks.getUser.mockResolvedValue({ data: { user: { id: "fixture-owner" } } });
     mocks.maintenance.mockReturnValue(maintenance);
-    const chain = { select: mocks.select, eq: mocks.eq, order: mocks.order };
-    mocks.from.mockReturnValue(chain);
-    mocks.select.mockReturnValue(chain);
-    mocks.eq.mockReturnValue(chain);
-    const categories = [{ id: "legacy-fixture", name: "Bicycles & Sports" }];
-    const attributes = [{ category_id: "legacy-fixture", name: "type" }];
-    const cities = [{ id: "fixture-city" }];
-    mocks.order.mockResolvedValueOnce({ data: categories }).mockResolvedValueOnce({ data: attributes }).mockResolvedValueOnce({ data: cities });
-    render(await NewListingPage({ searchParams: Promise.resolve({ macro: ["goods", "vehicles"] }) }));
-    expect(screen.getByRole("heading", { name: "Post Ad" })).toBeVisible();
-    expect(screen.getByTestId("existing-form")).toBeVisible();
-    expect(screen.queryByText("What would you like to list?")).toBeNull();
-    expect(mocks.from.mock.calls).toEqual([["categories"], ["category_attributes"], ["cities"]]);
-    expect(mocks.select.mock.calls).toEqual([["*"], ["*"], ["*"]]);
-    expect(mocks.eq.mock.calls).toEqual([["is_active", true], ["is_active", true]]);
-    expect(mocks.order.mock.calls).toEqual([
-      ["sort_order", { ascending: true }], ["sort_order", { ascending: true }], ["name", { ascending: true }],
-    ]);
-    expect(mocks.form.mock.calls[0][0]).toEqual({
-      categories, allAttributes: attributes, cities,
-      isMaintenanceActive: maintenance,
-      maintenanceMessage: maintenance ? "Fixture maintenance pause" : undefined,
-    });
-    expect(mocks.redirect).not.toHaveBeenCalled();
+    await expect(NewListingPage({ searchParams: Promise.resolve({ macro: ["goods", "vehicles"] }) })).rejects.toThrow("REDIRECT:/account/listings/new");
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.form).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
 });

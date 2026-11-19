@@ -5,7 +5,7 @@ import {tabletSchema} from "../../src/lib/listings/tablets/contract";
 async function choose(page:Page,label:string,value:string){const input=page.getByRole('combobox',{name:label,exact:true});await input.fill(value);await input.press('ArrowDown');await input.press('Enter');}
 for(const width of [320,360,390,768,1024,1440])test(`Tablet six-state journey, keyboard and recovery at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:1000});const fixture=await api(page);
- await page.goto('/account/listings/new?posting=tablets');await expect(page.getByRole('button',{name:'Step 2: Tablet details'})).toBeDisabled();expect(fixture.calls).toHaveLength(0);
+ await page.goto('/account/listings/new?category=tablets');await expect(page.getByRole('button',{name:'Step 2: Tablet details'})).toBeDisabled();expect(fixture.calls).toHaveLength(0);
  const photo=await sharp({create:{width:32,height:32,channels:3,background:'#08704a'}}).png().toBuffer();await page.locator('#mobile-photo-files').setInputFiles({name:'tablet.png',mimeType:'image/png',buffer:photo});
  await page.getByRole('button',{name:'Upload / retry photos',exact:true}).click();await expect(page.getByText('Temporary upload failure',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Upload / retry photos',exact:true}).click();await page.getByRole('button',{name:'Continue',exact:true}).click();
  await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.getByRole('combobox',{name:'Brand',exact:true})).toBeFocused();await choose(page,'Brand','Apple');await choose(page,'Model','iPad');
@@ -42,13 +42,13 @@ for(const width of [320,360,390,768,1024,1440])test(`Tablet six-state journey, k
  await expect(page.getByText('Saved on this device',{exact:true})).toBeVisible();await page.reload();await page.getByRole('button',{name:'Resume saved listing'}).click();await expect(page.getByRole('button',{name:'Step 1: Photos'})).toHaveAttribute('aria-current','step');await page.getByRole('button',{name:'Step 5: Location'}).click();await page.getByRole('button',{name:'Review listing',exact:true}).click();
  const sent=page.waitForRequest(r=>r.url().endsWith('/api/post-ad/tablets/submit'));await page.getByRole('button',{name:'Submit for review',exact:true}).dblclick();const payload=(await sent).postDataJSON();expect(tabletSchema.safeParse(payload).success).toBe(true);expect(payload).toMatchObject({storage_other:"8 GB",ram:"4 GB",connectivity:"five_g",other_brand:width<=390?"Example":"",other_model:width<=390?"Legacy Tab":""});expect(payload.trade).toBe(width===320?'giveaway':'sell');await expect(page.getByRole('heading',{name:'Submitted for review'})).toBeVisible();expect(fixture.submits()).toBe(1);
 });
-test('tablet category route is available',async({page})=>{await api(page);await page.goto('/account/listings/new');await page.getByRole('button',{name:/Mobiles & Tablets/}).click();await expect(page.getByRole('link',{name:'Tablets',exact:true})).toHaveAttribute('href','/account/listings/new?posting=tablets');});
+test('tablet category route is available',async({page})=>{await api(page);await page.goto('/account/listings/new');await page.getByRole('button',{name:/Mobiles & Tablets/}).click();await expect(page.getByRole('link',{name:'Tablets',exact:true})).toHaveAttribute('href','/account/listings/new?category=tablets');});
 
 test('changing category keeps independent phone and tablet recovery records',async({page})=>{
- await api(page);await page.goto('/account/listings/new?posting=tablets');await expect(page.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();await expect(page.getByText('Saved on this device',{exact:true})).toBeVisible();
+ await api(page);await page.goto('/account/listings/new?category=tablets');await expect(page.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();await expect(page.getByText('Saved on this device',{exact:true})).toBeVisible();
  const owner='11111111-1111-4111-8111-111111111111';
  await page.evaluate(async(owner)=>{const db=await new Promise<IDBDatabase>((resolve,reject)=>{const r=indexedDB.open('fairswap-posting-v2',1);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});await new Promise<void>((resolve,reject)=>{const t=db.transaction('drafts','readwrite');t.objectStore('drafts').put({marker:'phone-draft-kept'},owner);t.oncomplete=()=>resolve();t.onerror=()=>reject(t.error);});db.close();},owner);
- await page.getByRole('link',{name:'Categories',exact:true}).click();await page.goto('/account/listings/new?posting=tablets');await page.getByRole('button',{name:'Resume saved listing'}).click();
+ await page.getByRole('link',{name:'Categories',exact:true}).click();await page.goto('/account/listings/new?category=tablets');await page.getByRole('button',{name:'Resume saved listing'}).click();
  const records=await page.evaluate(async(owner)=>{const db=await new Promise<IDBDatabase>(resolve=>{const r=indexedDB.open('fairswap-posting-v2',1);r.onsuccess=()=>resolve(r.result);});const read=(key:string)=>new Promise<unknown>(resolve=>{const r=db.transaction('drafts').objectStore('drafts').get(key);r.onsuccess=()=>resolve(r.result);});const result=await Promise.all([read(owner),read(owner+':tablets-v1')]);db.close();return result;},owner);
  expect(records[0]).toEqual({marker:'phone-draft-kept'});expect(records[1]).toMatchObject({version:1,owner,draft:{selection:{subcategory:'tablets'}}});
 });
@@ -59,9 +59,9 @@ test('canonical phone and tablet links retain independent specialist routes',asy
  await page.goto('/account/listings/new');
  await expect(page.locator('[data-main-category]')).toHaveCount(15);
  await page.getByRole('button',{name:/^Mobiles & Tablets/}).click();
- await expect(page.getByRole('link',{name:'Mobile Phones',exact:true})).toHaveAttribute('href','/account/listings/new?posting=mobile-phones');
+ await expect(page.getByRole('link',{name:'Mobile Phones',exact:true})).toHaveAttribute('href','/account/listings/new?category=mobile-phones');
  await page.getByRole('link',{name:'Tablets',exact:true}).click();
- await expect(page).toHaveURL(/posting=tablets/);
+ await expect(page).toHaveURL(/category=tablets/);
  await expect(page.getByRole('button',{name:'Step 2: Tablet details',exact:true})).toBeDisabled();
  await expect(page.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();
  expect(fixture.calls).toHaveLength(0);
@@ -85,5 +85,5 @@ test('canonical Coming Soon categories cannot enter tablet or legacy forms',asyn
   expect(fixture.submits()).toBe(0);
  }
  await search.fill('Tablets');
- await expect(page.getByRole('link',{name:/^Tablets/})).toHaveAttribute('href','/account/listings/new?posting=tablets');
+ await expect(page.getByRole('link',{name:/^Tablets/})).toHaveAttribute('href','/account/listings/new?category=tablets');
 });

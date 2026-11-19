@@ -24,9 +24,9 @@ describe("category wiring", () => {
     const phones = mobiles.subs.find(s => s.id === "mobile-phones")!;
     expect(resolveSub(phones, caps({ wearables: true })).readiness).toBe("coming-soon");
   });
-  it("links to ?posting=wearables and does not hijack the click when available", () => {
+  it("links to ?category=wearables and does not hijack the click when available", () => {
     render(<SubChoice sub={sub} parent={mobiles} actions={{ caps: caps({ wearables: true }), hrefForSection: () => "/account/listings/new?x=1", onChooseSection: () => { throw new Error("must not intercept"); } } as never}/>);
-    const link = screen.getByRole("link", { name: /Smartwatches & Wearables/ }); expect(link).toHaveAttribute("href", "/account/listings/new?posting=wearables");
+    const link = screen.getByRole("link", { name: /Smartwatches & Wearables/ }); expect(link).toHaveAttribute("href", "/account/listings/new?category=wearables");
     let prevented = true; link.addEventListener("click", e => { prevented = e.defaultPrevented; e.preventDefault(); }, { once: true }); fireEvent.click(link);
     expect(prevented).toBe(false); // the app handler did not intercept navigation
   });

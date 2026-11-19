@@ -5,11 +5,13 @@ import { parseTaxonomy } from "./taxonomy-v2";
 /** Uses the request's ordinary server client; never a service-role client. */
 export async function loadTaxonomy(
   client: SupabaseClient,
-  bindings: Readonly<Record<string, string | undefined>> = {},
+  bindings: Readonly<Record<string, string | undefined>> | Promise<Readonly<Record<string, string | undefined>>> = {},
 ) {
   try {
-    const { data, error } = await client.rpc("get_category_catalogue_v2");
-    return error ? null : parseTaxonomy(data, bindings);
+    const [{ data, error }, resolvedBindings] = await Promise.all([
+      client.rpc("get_category_catalogue_v2"), bindings,
+    ]);
+    return error ? null : parseTaxonomy(data, resolvedBindings);
   } catch {
     return null;
   }

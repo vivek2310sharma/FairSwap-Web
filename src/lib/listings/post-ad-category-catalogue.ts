@@ -32,6 +32,7 @@ export type SubRoute =
   | { kind: "accessories" }
   | { kind: "tablets" }
   | { kind: "wearables" }
+  | { kind: "ordinary-goods"; categoryId: string }
   /** General (broad) Goods continuation only; the unchanged form is where the category is chosen. */
   | { kind: "goods"; key: string }
   | { kind: "vehicles"; family: "two-wheelers" | "cars" }
@@ -86,6 +87,7 @@ export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readin
     case "tablets": return caps.tablets ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "wearables": return caps.wearables ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "mobile-phones": return caps.mobilePhones ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
+    case "ordinary-goods": return { readiness: "available", macro: "goods" };
     case "goods": return caps.goodsCategories.includes(r.key) ? { readiness: "available", macro: "goods" } : { readiness: "coming-soon" };
     case "vehicles": {
       const readiness = fromFamily(familyOf(caps, r.family));

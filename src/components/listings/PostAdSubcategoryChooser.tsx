@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import { canonicalCategoryHref } from "@/lib/listings/canonical-posting-route";
+import { isCanonicalCategorySlug, CANONICAL_CATEGORY_PARENTS } from "@/lib/listings/canonical-category-slugs";
 import styles from "./posting/Posting.module.css";
 import { SubcategoryIcon } from "./post-ad-category-icons";
 import type { ReactNode } from "react";
@@ -44,12 +46,11 @@ export function SubChoice({ sub, parent, actions, showParent = false }: {
     </>
   );
   const cls = selected ? styles.selected : undefined;
-  if (macro) {
+  if (macro && isCanonicalCategorySlug(sub.id) && CANONICAL_CATEGORY_PARENTS[sub.id] !== null) {
     return (
       <Link
-        href={sub.route.kind === "wearables" ? "/account/listings/new?posting=wearables" : sub.route.kind === "tablets" ? "/account/listings/new?posting=tablets" : sub.route.kind === "mobile-phones" ? "/account/listings/new?posting=mobile-phones" : sub.route.kind === "accessories" ? "/account/listings/new?posting=mobile-accessories" : actions.hrefForSection(macro)}
+        href={canonicalCategoryHref(sub.id as import("@/lib/listings/canonical-category-slugs").CanonicalLeafSlug)}
         prefetch={false}
-        onClick={sub.route.kind !== "wearables" && sub.route.kind !== "tablets" && sub.route.kind !== "mobile-phones" && sub.route.kind !== "accessories" && actions.onChooseSection ? (e) => { e.preventDefault(); actions.onChooseSection?.(macro); } : undefined}
         className={cls}
       >
         {body}
