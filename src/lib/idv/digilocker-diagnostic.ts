@@ -56,6 +56,8 @@ const resultSchema = z.object({
     signature: tri, issuer: tri, audience: z.boolean(), expiry: z.boolean(), subject: z.boolean(), issuedAt: z.boolean(),
     nonce: z.enum(["match", "absent", "mismatch"]), acr: z.enum(["aadhaar", "missing", "other"]),
   }).strip().nullable().optional(),
+  // Claim NAMES only (never values); lets the owner see which assurance evidence the provider sends.
+  claimNames: z.array(z.string().regex(/^[a-z][a-z0-9_]{0,31}$/)).max(40).nullable().optional(),
 }).strip();
 export type DiagView = z.infer<typeof resultSchema>;
 
@@ -222,7 +224,9 @@ export async function handleDiagnosticCallback(req: NextRequest): Promise<NextRe
   const providerError = q.get("error");
   if ((!code && !providerError) || (code && code.length > 2048)) return finish(failed("INVALID_CALLBACK"));
 
-  const r = await callEdge(bind.token, providerError ? { action: "complete", state, error: "denied" } : { action: "complete", state, code });
+  // Only a standard OAuth error code (lowercase letters/underscore) is relayed, never free text such as error_description.
+  const relayedError = providerError && /^[a-z_]{1,24}$/.test(providerError) ? providerError : "denied";
+  const r = await callEdge(bind.token, providerError ? { action: "complete", state, error: relayedError } : { action: "complete", state, code });
   if (!r) return finish(failed("EDGE_FUNCTION_UNAVAILABLE"));
   if (r.status === 200 && r.data.success === true) return finish(sanitizeDiagResult(r.data.result));
   const e = typeof r.data.error === "string" ? COMPLETE_ERRORS[r.data.error] : undefined;
