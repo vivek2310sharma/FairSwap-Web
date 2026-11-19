@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 const getUser = vi.fn();
 const getSession = vi.fn();
@@ -20,6 +20,10 @@ import {
   sanitizeDiagResult, sealDiagResult, type DiagView,
 } from "@/lib/idv/digilocker-diagnostic";
 import { NextRequest } from "next/server";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { DiagnosticResultView } from "@/components/account/DigiLockerDiagnosticPanel";
+import { decodeJwt, fieldState } from "@/lib/idv/digilocker-diagnostic-decode";
 
 const STATE = "c".repeat(64);
 const RESULT_KEY = "r".repeat(48);
@@ -44,8 +48,12 @@ const VERIFIED = {
   checks: { signature: "verified", issuer: "verified", audience: true, expiry: true, subject: true, issuedAt: true, nonce: "match", acr: "aadhaar" },
 } as const satisfies DiagView;
 const rawResultCookie = (r: Response) => {
-  const raw = r.headers.getSetCookie().find((c) => c.startsWith(`${DIAG_RESULT_COOKIE}=`));
-  return raw ? decodeURIComponent(raw.split(";")[0].slice(DIAG_RESULT_COOKIE.length + 1)) : undefined;
+  const names = [DIAG_RESULT_COOKIE, `${DIAG_RESULT_COOKIE}_1`, `${DIAG_RESULT_COOKIE}_2`];
+  const parts = names.map((n) => {
+    const raw = r.headers.getSetCookie().find((c) => c.startsWith(`${n}=`));
+    return raw ? decodeURIComponent(raw.split(";")[0].slice(n.length + 1)) : "";
+  });
+  return parts.join("") || undefined;
 };
 const resultCookie = (r: Response, bind = BIND) => openDiagResult(rawResultCookie(r), bind);
 
@@ -127,7 +135,7 @@ describe("DigiLocker diagnostic gate", () => {
 describe("Shared callback routing", () => {
   it("diagnostic cookie + matching state: relays to the diagnostic function only, sets a sanitized result, clears the state cookie", async () => {
     signedIn();
-    const f = edge({ success: true, result: { ...VERIFIED, aadhaar: "999999990019", id_token: "eyJ.secret", raw: { pan: "ABCDE1234F" } } });
+    const f = edge({ success: true, result: { ...VERIFIED, aadhaar: "999999990019", id_token: "eyJ.secret", extra: { pan: "ABCDE1234F" } } });
     const r = await callback(cb(`state=${STATE}&code=secret-code`, diagCookie()));
     expect(r.status).toBe(303);
     const loc = r.headers.get("location")!;
@@ -170,18 +178,18 @@ describe("Shared callback routing", () => {
     expect(String(f.mock.calls[0][0])).toMatch(/idv-digilocker-complete$/);
   });
 
-  it("provider errors relay only a standard OAuth code, never error_description or odd values", async () => {
+  it("provider errors relay the original code and description; a malformed code becomes denied", async () => {
     signedIn();
-    for (const [qs, relayed] of [
-      ["error=server_error&error_description=raw+provider+text", "server_error"],
-      ["error=access_denied&error_description=x", "access_denied"],
-      ["error=%3Cscript%3E&error_description=x", "denied"],
-      [`error=${"a".repeat(40)}`, "denied"],
+    for (const [qs, body] of [
+      ["error=server_error&error_description=raw+provider+text", { error: "server_error", error_description: "raw provider text" }],
+      ["error=access_denied", { error: "access_denied" }],
+      ["error=%3Cscript%3E&error_description=x", { error: "denied", error_description: "x" }],
+      [`error=${"a".repeat(80)}`, { error: "denied" }],
     ] as const) {
       vi.mocked(globalThis.fetch).mockRestore?.();
       const f = edge({ success: true, result: { outcome: "FAILED", code: "PROVIDER_ERR_SERVER_ERROR", endpoints: null, checks: null } });
       await callback(cb(`state=${STATE}&${qs}`, diagCookie()));
-      expect(JSON.parse(String((f.mock.calls[0][1] as RequestInit).body))).toEqual({ action: "complete", state: STATE, error: relayed });
+      expect(JSON.parse(String((f.mock.calls[0][1] as RequestInit).body))).toEqual({ action: "complete", state: STATE, ...body });
     }
   });
 
@@ -191,13 +199,12 @@ describe("Shared callback routing", () => {
     expect(sanitizeDiagResult({ ...withNames, claimNames: ["sub", "DL-93f3390c-secret"] })).toMatchObject({ outcome: "FAILED", code: "INVALID_RESULT" });
   });
 
-  it("cancelled login relays only the sanitized error code", async () => {
+  it("cancelled login relays the provider error code and description", async () => {
     signedIn();
     const f = edge({ success: true, result: { outcome: "CANCELLED", code: "CONSENT_DENIED", endpoints: { authorize: "1", token: "2" }, checks: null } });
     const r = await callback(cb(`state=${STATE}&error=access_denied&error_description=raw+provider+text`, diagCookie()));
-    expect(JSON.parse(String((f.mock.calls[0][1] as RequestInit).body))).toEqual({ action: "complete", state: STATE, error: "access_denied" });
+    expect(JSON.parse(String((f.mock.calls[0][1] as RequestInit).body))).toEqual({ action: "complete", state: STATE, error: "access_denied", error_description: "raw provider text" });
     expect(resultCookie(r)).toMatchObject({ outcome: "CANCELLED", code: "CONSENT_DENIED" });
-    expect(r.headers.getSetCookie().join("")).not.toContain("raw");
   });
 
   it("wrong state, replay, expired state and provider rejection map to fixed FAILED codes", async () => {
@@ -248,18 +255,16 @@ describe("Result cookie integrity and binding", () => {
     }
   });
 
-  it("tampered payload, tampered signature, wrong key and malformed values never open", () => {
-    const [p, sig] = sealed().split(".");
-    const payload = JSON.parse(Buffer.from(p, "base64url").toString());
-    const failedPayload = B64({ ...payload, r: { ...VERIFIED, outcome: "FAILED" } });
-    expect(openDiagResult(`${B64({ ...payload, u: "u2" })}.${sig}`, { userId: "u2", sessionId: "s1" })).toBeNull();
-    expect(openDiagResult(`${failedPayload}.${sig}`, BIND)).toBeNull();
-    expect(openDiagResult(`${p}.${sig.slice(0, -2)}AA`, BIND)).toBeNull();
-    expect(openDiagResult(`${p}.${sig}.extra`, BIND)).toBeNull();
+  it("tampered ciphertext or tag, wrong key and malformed values never open", () => {
+    const [v, iv, data] = sealed().split(".");
+    const flip = (d: string) => `${d.slice(0, -2)}${d.endsWith("AA") ? "BB" : "AA"}`;
+    expect(openDiagResult(`${v}.${iv}.${flip(data)}`, BIND)).toBeNull();
+    expect(openDiagResult(`${v}.${iv}.${data}.extra`, BIND)).toBeNull();
+    expect(openDiagResult(`v1.${iv}.${data}`, BIND)).toBeNull();
     expect(openDiagResult("", BIND)).toBeNull();
-    expect(openDiagResult("x".repeat(5000), BIND)).toBeNull();
+    expect(openDiagResult("x".repeat(12_000), BIND)).toBeNull();
     process.env.DIGILOCKER_DIAG_RESULT_KEY = "k".repeat(48);
-    expect(openDiagResult(`${p}.${sig}`, BIND)).toBeNull();
+    expect(openDiagResult(`${v}.${iv}.${data}`, BIND)).toBeNull();
   });
 
   it("expired results (and ones claiming an over-long lifetime) never open", () => {
@@ -310,5 +315,88 @@ describe("Result cookie integrity and binding", () => {
     edge({ success: true, redirectUrl: AUTH_URL });
     const s = await diagStart(startReq());
     expect(s.headers.getSetCookie().find((c) => c.startsWith(`${DIAG_RESULT_COOKIE}=`))).toMatch(/Max-Age=0/);
+  });
+});
+
+const TOKEN_JSON = {
+  access_token: "AT-raw", refresh_token: "RT-raw", token_type: "Bearer", expires_in: 3600, digilockerid: "dl-123", eaadhaar: null, name: "", dob: "01011990",
+};
+const mkJwt = (header: object, payload: object) => `${B64(header)}.${B64(payload)}.c2ln`;
+const IDT = mkJwt({ alg: "RS256", kid: "k1" }, { iss: "https://digilocker.meripehchaan.gov.in", aud: "cid", acr: "aadhaar", name: "Test User", eaadhaar: "Y", sub: "s" });
+const RAW_RESULT = {
+  ...VERIFIED,
+  raw: {
+    providerCallback: null,
+    tokenResponse: { httpStatus: 200, contentType: "application/json", json: { ...TOKEN_JSON, id_token: IDT }, text: null },
+    expected: { issuer: "https://digilocker.meripehchaan.gov.in", audience: "cid", nonce: "n1", checkedAtEpoch: 1_800_000_000 },
+  },
+} as const;
+const view = (r: unknown) => renderToStaticMarkup(createElement(DiagnosticResultView, { result: r as DiagView, onClear: () => {} }));
+
+describe("Unredacted result display", () => {
+  it("the full token response survives seal/open exactly, including null and empty values", () => {
+    const opened = openDiagResult(sealDiagResult(RAW_RESULT as never, BIND)!, BIND);
+    expect(opened?.raw?.tokenResponse?.json).toEqual({ ...TOKEN_JSON, id_token: IDT });
+    expect(opened?.raw?.tokenResponse?.httpStatus).toBe(200);
+  });
+
+  it("the cookie is encrypted: no token or claim value is readable in it; the response is no-store", async () => {
+    signedIn();
+    edge({ success: true, result: RAW_RESULT });
+    const r = await callback(cb(`state=${STATE}&code=c`, diagCookie()));
+    const all = decodeURIComponent(r.headers.getSetCookie().join("\n"));
+    for (const secret of ["AT-raw", "RT-raw", "dl-123", IDT, "Test User", "01011990"]) expect(all).not.toContain(secret);
+    expect(resultCookie(r)?.raw?.tokenResponse?.json).toMatchObject({ access_token: "AT-raw", refresh_token: "RT-raw", eaadhaar: null });
+    expect(r.headers.get("cache-control")).toContain("no-store");
+  });
+
+  it("a large response is split across cookies and reassembled; one that cannot fit is dropped whole, never truncated", async () => {
+    const mk = (json: unknown) => ({ ...RAW_RESULT, raw: { ...RAW_RESULT.raw, tokenResponse: { ...RAW_RESULT.raw.tokenResponse, json } } });
+    signedIn();
+    edge({ success: true, result: mk({ id_token: IDT, filler: randomBytes(4000).toString("base64") }) });
+    const r = await callback(cb(`state=${STATE}&code=c`, diagCookie()));
+    expect(r.headers.getSetCookie().filter((c) => /^__Host-fs_dl_diag_result(_\d)?=[^;]/.test(c)).length).toBeGreaterThan(1);
+    expect(resultCookie(r)?.raw?.tokenResponse?.json).toMatchObject({ id_token: IDT });
+    vi.mocked(globalThis.fetch).mockRestore?.();
+    edge({ success: true, result: mk({ filler: randomBytes(20_000).toString("base64") }) });
+    expect(resultCookie(await callback(cb(`state=${STATE}&code=c`, diagCookie())))).toMatchObject({ outcome: "VERIFIED", rawOmitted: true, raw: null });
+  });
+
+  it("consuming deletes every result cookie chunk and shows the data once", async () => {
+    signedIn();
+    const chunks = sealDiagResult(RAW_RESULT as never, BIND)!.match(/.{1,3600}/g)!;
+    chunks.forEach((c, i) => jar.set(i === 0 ? DIAG_RESULT_COOKIE : `${DIAG_RESULT_COOKIE}_${i}`, c));
+    expect((await consumeDiagResult())?.raw?.tokenResponse?.json).toMatchObject({ access_token: "AT-raw" });
+    expect([...jar.keys()].filter((k) => k.startsWith(DIAG_RESULT_COOKIE))).toEqual([]);
+    expect(await consumeDiagResult()).toBeNull();
+  });
+
+  it("decodes the ID token and distinguishes absent, null and empty fields", () => {
+    const d = decodeJwt(IDT)!;
+    expect(d.header).toEqual({ alg: "RS256", kid: "k1" });
+    expect(d.payload).toMatchObject({ acr: "aadhaar", eaadhaar: "Y" });
+    expect(decodeJwt("a.b")).toBeNull();
+    expect(decodeJwt("!!.!!.x")).toBeNull();
+    const o = { a: null, b: "", c: [], d: {}, e: 0, f: "x" };
+    expect(["a", "b", "c", "d", "e", "f", "g"].map((k) => fieldState(o, k))).toEqual(["null", "empty", "empty", "empty", "present", "present", "absent"]);
+  });
+
+  it("the screen shows raw tokens, claims, check detail and field states; absent fields are not invented", () => {
+    const html = view(RAW_RESULT);
+    for (const t of ["AT-raw", "RT-raw", IDT, "&quot;acr&quot;: &quot;aadhaar&quot;", "Test User", "dl-123", "HTTP 200", "expected &quot;cid&quot;", "Clear result"]) expect(html).toContain(t);
+    expect(html).toMatch(/eaadhaar<\/td><td[^>]*>response: null<\/td><td>claims: present/);
+    expect(html).toMatch(/name<\/td><td[^>]*>response: empty/);
+    expect(html).toMatch(/digilockerid<\/td><td[^>]*>response: present<\/td><td>claims: absent/);
+    const only = view({ ...RAW_RESULT, raw: { ...RAW_RESULT.raw, tokenResponse: { ...RAW_RESULT.raw.tokenResponse, json: { id_token: IDT } } } });
+    expect(only).toContain("refresh_token: absent");
+    expect(only).not.toContain('data-testid="dl-diag-refresh_token"');
+  });
+
+  it("provider errors and non-JSON bodies are shown as received, as text", () => {
+    const err = { outcome: "FAILED", code: "PROVIDER_REJECTED", endpoints: null, checks: null, raw: { providerCallback: null, expected: null, tokenResponse: { httpStatus: 400, contentType: "application/json", json: { error: "invalid_grant", error_description: "Code expired" }, text: null } } };
+    const h1 = view(err);
+    for (const t of ["HTTP 400", "invalid_grant", "Code expired"]) expect(h1).toContain(t);
+    const h2 = view({ ...err, raw: { ...err.raw, tokenResponse: { httpStatus: 502, contentType: "text/html", json: null, text: "<b>bad</b>" } } });
+    expect(h2).toContain("&lt;b&gt;bad&lt;/b&gt;");
   });
 });
