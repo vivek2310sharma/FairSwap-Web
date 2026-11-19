@@ -1,3 +1,5 @@
+import { CANONICAL_POSTING_PATH, resolveCreationQuery } from "@/lib/listings/canonical-posting-route";
+import { loadGoodsBindings, loadGoodsDefinition } from "@/lib/listings/ordinary-goods/server";
 import { loadTaxonomy } from "@/lib/listings/taxonomy-v2-server";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
@@ -64,6 +66,35 @@ export default async function NewListingPage({
 
   const integrationEnabled = isGoodsPostAdEnabled();
   const query = await searchParams;
+  if (query.category !== undefined) {
+    const choice = resolveCreationQuery(query);
+    if (choice.kind !== "category") redirect(CANONICAL_POSTING_PATH);
+
+    const catalogue = await loadTaxonomy(supabase, loadGoodsBindings(supabase));
+    const selected = catalogue?.flatMap(group => group.subs).find(node => node.id === choice.slug);
+    const definition = selected?.route.kind === "ordinary-goods"
+      ? await loadGoodsDefinition(supabase, choice.slug).catch(() => null)
+      : null;
+    const back = <Link className={styles.back} href={CANONICAL_POSTING_PATH}><ArrowLeft size={18} aria-hidden="true"/> Categories</Link>;
+    if (!selected || selected.route.kind !== "ordinary-goods" || !definition ||
+        definition.category_id !== selected.route.categoryId) {
+      return <main id="posting-content" className={styles.journey}>{back}<h1>This category isn’t available right now</h1></main>;
+    }
+
+    const [{ default: OrdinaryGoodsForm }, locations] = await Promise.all([
+      import("@/components/listings/posting/OrdinaryGoodsForm"), loadPostAdLocations(supabase),
+    ]);
+    if (locations.status !== "ready") {
+      return <main id="posting-content" className={styles.journey}>{back}<p role="alert">We couldn’t load your area options. Please try again shortly.</p></main>;
+    }
+    return <main id="posting-content" className={styles.journey}>{back}
+      <OrdinaryGoodsForm key={`${user.id}:${choice.slug}:${definition.revision}`}
+        definition={definition} label={selected.label} cities={locations.cities} ownerId={user.id}
+        maintenance={isMaintenanceActive}
+        maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}/>
+    </main>;
+  }
+
   const [mobileCatalogue,accessoryCatalogue,tabletCatalogue,wearableCatalogue] = await Promise.all([loadMobileCatalogue(supabase),loadAccessoryCatalogue(supabase),loadTabletCatalogue(supabase),loadWearableCatalogue(supabase)]);
   if(query.posting==="wearables"){
     if(!wearableCatalogue)return <main id="posting-content" className={styles.journey}><h1>This category isn’t available right now</h1><Link className={styles.back} href="/account/listings/new">Choose a category</Link></main>;
@@ -98,7 +129,10 @@ export default async function NewListingPage({
   if (integrationEnabled) {
     const typed=supabase as SupabaseClient<Database>;
     const locationRequest=loadPostAdLocations(supabase);
-    const [references,tw,cars,property,locations,catalogue]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest,loadTaxonomy(supabase,{"specialist:phone":mobileCatalogue?.listing_category_id,"specialist:tablet":tabletCatalogue?.listing_category_id,"specialist:wearable":wearableCatalogue?.listing_category_id})]);
+    const [references,tw,cars,property,locations,catalogue]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest,loadTaxonomy(supabase,loadGoodsBindings(supabase).then(goods => ({
+      ...goods, "specialist:phone":mobileCatalogue?.listing_category_id,
+      "specialist:tablet":tabletCatalogue?.listing_category_id,"specialist:wearable":wearableCatalogue?.listing_category_id,
+    })))]);
     // Each vehicle family is judged on its own loader result; a failing family is dropped
     // so it can neither block nor enable the other. No healthy family => no vehicle form.
     const healthy=(v?:{categories:unknown[];error?:string})=>!!v&&!v.error&&v.categories.length>0;
