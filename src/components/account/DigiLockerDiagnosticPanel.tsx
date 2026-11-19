@@ -75,6 +75,9 @@ export function DigiLockerDiagnosticPanel({ consumeResult }: { consumeResult: ()
               <dt>ACR</dt><dd>{result.checks.acr}</dd>
             </dl>
           )}
+          {result.claimNames && result.claimNames.length > 0 && (
+            <p className="mt-3 break-words text-sm">Claims present (names only): {result.claimNames.join(", ")}</p>
+          )}
         </section>
       )}
 
