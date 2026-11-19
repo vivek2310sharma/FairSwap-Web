@@ -1,5 +1,6 @@
 import "server-only";
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { deflateRawSync, inflateRawSync } from "node:zlib";
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
@@ -10,10 +11,18 @@ import { DIGILOCKER_AUTHORIZE_ORIGIN, STATE_PATTERN } from "@/lib/idv/digilocker
 // STAGE-ONLY DigiLocker OIDC v2 diagnostic. It never issues or displays a FairSwap verification badge.
 // Authorization (allowlisted testers), one-time state, token validation and the Test-project lock are enforced in
 // the Backend Edge function; this module only gates exposure, binds the flow to this browser and relays.
+// The allowlisted FairSwapTest tester sees the provider's token response UNREDACTED, once: it travels only in a sealed
+// (AES-256-GCM), user+session-bound, 60 s, single-read cookie, is never persisted, logged or sent to analytics, and is
+// deleted when read.
 
 export const DIAG_PAGE_PATH = "/account/verification/digilocker-diagnostic";
 export const DIAG_STATE_COOKIE = "__Host-fs_dl_diag";
 export const DIAG_RESULT_COOKIE = "__Host-fs_dl_diag_result";
+/** The sealed result may span several cookies (browsers cap one cookie at ~4 KB): base name, then `_1`, `_2`. */
+export const DIAG_RESULT_COOKIE_NAMES = [DIAG_RESULT_COOKIE, `${DIAG_RESULT_COOKIE}_1`, `${DIAG_RESULT_COOKIE}_2`] as const;
+const COOKIE_CHUNK_CHARS = 3600;
+const MAX_SEALED_CHARS = COOKIE_CHUNK_CHARS * DIAG_RESULT_COOKIE_NAMES.length;
+const MAX_INFLATED_BYTES = 256 * 1024;
 const DIAG_STATE_TTL_S = 300;
 const DIAG_RESULT_TTL_S = 60;
 const TEST_SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
@@ -58,6 +67,18 @@ const resultSchema = z.object({
   }).strip().nullable().optional(),
   // Claim NAMES only (never values); lets the owner see which assurance evidence the provider sends.
   claimNames: z.array(z.string().regex(/^[a-z][a-z0-9_]{0,31}$/)).max(40).nullable().optional(),
+  // Unredacted provider material for the allowlisted tester (see the header comment). Shape only is validated.
+  raw: z.object({
+    providerCallback: z.object({ error: z.string().max(64), error_description: z.string().max(500).nullable() }).nullable().optional(),
+    tokenResponse: z.object({
+      httpStatus: z.number().int(), contentType: z.string().max(200).nullable(), json: z.unknown(), text: z.string().max(4000).nullable(),
+    }).nullable().optional(),
+    expected: z.object({
+      issuer: z.string().max(300), audience: z.string().max(300), nonce: z.string().max(300), checkedAtEpoch: z.number().int(),
+    }).nullable().optional(),
+  }).strip().nullable().optional(),
+  /** True when the provider material did not fit the result cookie and was dropped (verdict and checks are kept). */
+  rawOmitted: z.boolean().optional(),
 }).strip();
 export type DiagView = z.infer<typeof resultSchema>;
 
@@ -86,34 +107,54 @@ async function currentBinding(): Promise<DiagBinding | null> {
   return { token, userId: userData.user.id, sessionId: claims.session_id };
 }
 
-// ---- Result cookie: HMAC-SHA256 sealed, bound to user + session, 60 s, single read (deleted when consumed). ----
+// ---- Result cookie: AES-256-GCM sealed (deflated first), bound to user + session, 60 s, single read. ----
 const resultPayloadSchema = z.object({
-  v: z.literal(1), u: z.string().min(1), s: z.string().min(1), exp: z.number().int(), jti: z.string().regex(/^[0-9a-f]{32}$/), r: z.unknown(),
+  v: z.literal(2), u: z.string().min(1), s: z.string().min(1), exp: z.number().int(), jti: z.string().regex(/^[0-9a-f]{32}$/), r: z.unknown(),
 }).strict();
-const mac = (key: string, payload: string) => createHmac("sha256", key).update(`fs:dl:diag:result:v1.${payload}`).digest("base64url");
+const encKey = (key: string) => createHmac("sha256", key).update("fs:dl:diag:result:enc:v2").digest();
 
-export function sealDiagResult(view: DiagView, bind: Pick<DiagBinding, "userId" | "sessionId">, nowMs = Date.now()): string | null {
+function sealPayload(view: DiagView, bind: Pick<DiagBinding, "userId" | "sessionId">, nowMs: number): string | null {
   const key = resultKey();
   if (!key) return null;
-  const payload = Buffer.from(JSON.stringify({
-    v: 1, u: bind.userId, s: bind.sessionId, exp: Math.floor(nowMs / 1000) + DIAG_RESULT_TTL_S,
+  const plain = deflateRawSync(Buffer.from(JSON.stringify({
+    v: 2, u: bind.userId, s: bind.sessionId, exp: Math.floor(nowMs / 1000) + DIAG_RESULT_TTL_S,
     jti: randomBytes(16).toString("hex"), r: view,
-  })).toString("base64url");
-  return `${payload}.${mac(key, payload)}`;
+  })));
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", encKey(key), iv);
+  const ct = Buffer.concat([c.update(plain), c.final()]);
+  return `v2.${iv.toString("base64url")}.${Buffer.concat([ct, c.getAuthTag()]).toString("base64url")}`;
+}
+
+/** Seals the result. If the provider material does not fit the cookie budget it is dropped (rawOmitted), never truncated. */
+export function sealDiagResult(view: DiagView, bind: Pick<DiagBinding, "userId" | "sessionId">, nowMs = Date.now()): string | null {
+  const full = sealPayload(view, bind, nowMs);
+  if (full && full.length <= MAX_SEALED_CHARS) return full;
+  return sealPayload({ ...view, raw: null, rawOmitted: true }, bind, nowMs);
+}
+
+/** Splits a sealed result into cookie-sized chunks (base name first). */
+export function splitSealed(sealed: string): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < sealed.length; i += COOKIE_CHUNK_CHARS) out.push(sealed.slice(i, i + COOKIE_CHUNK_CHARS));
+  return out;
 }
 
 /** Returns the result only if untampered, unexpired and issued to this exact user and session; otherwise null. */
 export function openDiagResult(value: string | undefined, bind: Pick<DiagBinding, "userId" | "sessionId">, nowMs = Date.now()): DiagView | null {
   const key = resultKey();
-  if (!key || !value || value.length > 4096) return null;
-  const [payload, sig, extra] = value.split(".");
-  if (!payload || !sig || extra !== undefined) return null;
-  const expected = Buffer.from(mac(key, payload));
-  const given = Buffer.from(sig);
-  if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
+  if (!key || !value || value.length > MAX_SEALED_CHARS) return null;
+  const [ver, ivB64, dataB64, extra] = value.split(".");
+  if (ver !== "v2" || !ivB64 || !dataB64 || extra !== undefined) return null;
   let parsed: z.infer<typeof resultPayloadSchema>;
   try {
-    const p = resultPayloadSchema.safeParse(JSON.parse(Buffer.from(payload, "base64url").toString("utf8")));
+    const iv = Buffer.from(ivB64, "base64url");
+    const data = Buffer.from(dataB64, "base64url");
+    if (iv.length !== 12 || data.length < 17) return null;
+    const d = createDecipheriv("aes-256-gcm", encKey(key), iv);
+    d.setAuthTag(data.subarray(data.length - 16));
+    const plain = Buffer.concat([d.update(data.subarray(0, data.length - 16)), d.final()]);
+    const p = resultPayloadSchema.safeParse(JSON.parse(inflateRawSync(plain, { maxOutputLength: MAX_INFLATED_BYTES }).toString("utf8")));
     if (!p.success) return null;
     parsed = p.data;
   } catch {
@@ -125,15 +166,15 @@ export function openDiagResult(value: string | undefined, bind: Pick<DiagBinding
   return sanitizeDiagResult(parsed.r);
 }
 
-/** Server Action helper: reads, verifies and always deletes the result cookie, so a result renders at most once. */
+/** Server Action helper: reads, verifies and always deletes the result cookie(s), so a result renders at most once. */
 export async function consumeDiagResult(): Promise<DiagView | null> {
   if (!isDigiLockerDiagEnabled()) return null;
   const jar = await cookies();
-  const value = jar.get(DIAG_RESULT_COOKIE)?.value;
-  if (!value) return null;
-  jar.set(DIAG_RESULT_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
+  const parts = DIAG_RESULT_COOKIE_NAMES.map((n) => jar.get(n)?.value);
+  if (!parts[0]) return null;
+  for (const n of DIAG_RESULT_COOKIE_NAMES) jar.set(n, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
   const bind = await currentBinding();
-  return bind ? openDiagResult(value, bind) : null;
+  return bind ? openDiagResult(parts.filter((p): p is string => typeof p === "string").join(""), bind) : null;
 }
 
 async function callEdge(token: string, body: unknown): Promise<{ status: number; data: Record<string, unknown> } | null> {
@@ -176,7 +217,7 @@ export async function startDiagnostic(): Promise<NextResponse> {
   res.cookies.set(DIAG_STATE_COOKIE, sha256(state), {
     httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: DIAG_STATE_TTL_S,
   });
-  res.cookies.set(DIAG_RESULT_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
+  for (const n of DIAG_RESULT_COOKIE_NAMES) res.cookies.set(n, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
   return res;
 }
 
@@ -212,8 +253,11 @@ export async function handleDiagnosticCallback(req: NextRequest): Promise<NextRe
     res.headers.set("Referrer-Policy", "no-referrer");
     res.cookies.set(DIAG_STATE_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 0 });
     const sealed = bind && view !== "signin" ? sealDiagResult(view, bind) : null;
-    res.cookies.set(DIAG_RESULT_COOKIE, sealed ?? "", {
-      httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: sealed ? DIAG_RESULT_TTL_S : 0,
+    const chunks = sealed ? splitSealed(sealed) : [];
+    DIAG_RESULT_COOKIE_NAMES.forEach((n, i) => {
+      res.cookies.set(n, chunks[i] ?? "", {
+        httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: chunks[i] ? DIAG_RESULT_TTL_S : 0,
+      });
     });
     return res;
   };
@@ -224,9 +268,13 @@ export async function handleDiagnosticCallback(req: NextRequest): Promise<NextRe
   const providerError = q.get("error");
   if ((!code && !providerError) || (code && code.length > 2048)) return finish(failed("INVALID_CALLBACK"));
 
-  // Only a standard OAuth error code (lowercase letters/underscore) is relayed, never free text such as error_description.
-  const relayedError = providerError && /^[a-z_]{1,24}$/.test(providerError) ? providerError : "denied";
-  const r = await callEdge(bind.token, providerError ? { action: "complete", state, error: relayedError } : { action: "complete", state, code });
+  // The provider's error code and description are relayed as received (tester display only; rendered as plain text).
+  // A malformed code (not a plain OAuth token) is replaced by "denied" rather than forwarded.
+  const relayedError = providerError && /^[A-Za-z0-9_.-]{1,64}$/.test(providerError) ? providerError : "denied";
+  const description = q.get("error_description");
+  const r = await callEdge(bind.token, providerError
+    ? { action: "complete", state, error: relayedError, ...(description ? { error_description: description.slice(0, 500) } : {}) }
+    : { action: "complete", state, code });
   if (!r) return finish(failed("EDGE_FUNCTION_UNAVAILABLE"));
   if (r.status === 200 && r.data.success === true) return finish(sanitizeDiagResult(r.data.result));
   const e = typeof r.data.error === "string" ? COMPLETE_ERRORS[r.data.error] : undefined;
