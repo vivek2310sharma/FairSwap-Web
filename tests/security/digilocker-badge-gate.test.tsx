@@ -1,11 +1,13 @@
 import React from "react";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/link", () => ({ default: ({ href, children, ...r }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) => <a href={href} {...r}>{children}</a> }));
 
-import { DigiLockerBadge, DIGILOCKER_BADGE_LABEL, DIGILOCKER_LOGO_SRC } from "@/components/idv/DigiLockerBadge";
+import { DigiLockerBadge, DIGILOCKER_BADGE_LABEL, DIGILOCKER_ICON_SRC } from "@/components/idv/DigiLockerBadge";
 import { GateAwareError } from "@/components/idv/IdentityRequiredCta";
 import { DigiLockerVerification } from "@/components/account/DigiLockerVerification";
 import { digiLockerCopy } from "@/lib/idv/digilocker-copy";
@@ -19,7 +21,11 @@ describe("DigiLocker badge", () => {
     const { container } = render(<DigiLockerBadge />);
     expect(DIGILOCKER_BADGE_LABEL).toBe("Verified with DigiLocker");
     expect(container.textContent).toBe("Verified with DigiLocker");
-    expect(container.querySelector("img")?.getAttribute("src")).toBe(DIGILOCKER_LOGO_SRC);
+    expect(container.querySelector("img")?.getAttribute("src")).toBe(DIGILOCKER_ICON_SRC);
+    expect(DIGILOCKER_ICON_SRC).toBe("/brand/digilocker-icon.png");
+    expect(existsSync(join(process.cwd(), "public", DIGILOCKER_ICON_SRC))).toBe(true);
+    expect(container.querySelectorAll("img")).toHaveLength(1);
+    expect(container.textContent).not.toMatch(/your documents|anytime/i);
     expect(container.textContent).not.toMatch(/aadhaar/i);
   });
   it("account page shows only the badge when the database says verified, in both locales", () => {
