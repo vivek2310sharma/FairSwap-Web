@@ -4,7 +4,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import NewListingPage from "@/app/account/listings/new/page";
 
 const mocks = vi.hoisted(() => ({
-  getUser: vi.fn(), from: vi.fn(), select: vi.fn(), eq: vi.fn(), order: vi.fn(),
+  getUser: vi.fn(), rpc: vi.fn(), from: vi.fn(), select: vi.fn(), eq: vi.fn(), order: vi.fn(),
   createClient: vi.fn(), form: vi.fn(), maintenance: vi.fn(),
   redirect: vi.fn((target: string): never => { throw new Error(`REDIRECT:${target}`); }),
 }));
@@ -25,7 +25,7 @@ describe("New-listing page auth return only", () => {
     vi.stubGlobal("fetch", vi.fn(() => { throw new Error("Network forbidden in page test"); }));
     mocks.maintenance.mockReturnValue(false);
     mocks.getUser.mockResolvedValue({ data: { user: null } });
-    mocks.createClient.mockResolvedValue({ auth: { getUser: mocks.getUser }, from: mocks.from });
+    mocks.createClient.mockResolvedValue({ auth: { getUser: mocks.getUser }, from: mocks.from, rpc: mocks.rpc });
   });
   afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -60,6 +60,30 @@ describe("New-listing page auth return only", () => {
         .toBe("/account/listings/new");
     }
   );
+
+
+  it("keeps a Production V3 candidate closed when the backend has no enabled binding", async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: "fixture-owner" } } });
+    mocks.rpc.mockImplementation(async (name: string) => name === "ordinary_goods_v3"
+      ? { data: {}, error: null }
+      : { data: (await import("./taxonomy-v2-fixture.json")).default, error: null });
+    render(await NewListingPage({ searchParams: Promise.resolve({ category: "v2-tvs" }) }));
+    expect(screen.getByRole("heading", { name: "This category isn’t available right now" })).toBeVisible();
+    expect(mocks.rpc.mock.calls).toEqual([["ordinary_goods_v3"], ["get_category_catalogue_v2"]]);
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.form).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { category: "v2-tvs", posting: "mobile-accessories" },
+    { category: ["v2-tvs", "v2-tvs"] },
+    { category: "v2-services" },
+  ])("returns ambiguous or unsupported V3 category choices to the current chooser", async (query) => {
+    mocks.getUser.mockResolvedValue({ data: { user: { id: "fixture-owner" } } });
+    await expect(NewListingPage({ searchParams: Promise.resolve(query) })).rejects.toThrow("REDIRECT:/account/listings/new");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.form).not.toHaveBeenCalled();
+  });
 
   it.each([false, true])("keeps signed-in form/reference behavior with maintenance=%s", async (maintenance) => {
     mocks.getUser.mockResolvedValue({ data: { user: { id: "fixture-owner" } } });

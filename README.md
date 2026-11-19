@@ -113,3 +113,6 @@ See [environment and release requirements](docs/operations/RATINGS_V1_OPERATIONS
 
 
 2026-11-18 local candidate: [Taxonomy V2 Web 3A](docs/operations/TAXONOMY_V2_WEB_3A.md) adds RPC-driven category presentation and keeps existing posting contracts separate. Hosted rollout remains unverified.
+
+The local Unified Publishing V3 Production candidate preserves existing posting routes and
+requires the Backend disabled batch before Web deployment. [Release notes](docs/operations/UNIFIED_PUBLISHING_V3.md)
