@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { NO_STORE_HEADERS, getEdgeFunctionsBaseUrl, getSupabasePublicApiKey } from "@/lib/idv/server-helpers";
 import { isDigiLockerEnabled, resultForBackend, STATE_PATTERN, type DigiLockerResult } from "@/lib/idv/digilocker";
+import { handleDiagnosticCallback } from "@/lib/idv/digilocker-diagnostic";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,11 @@ function back(req: NextRequest, result: DigiLockerResult | "signin"): NextRespon
 }
 
 export async function GET(req: NextRequest) {
+  // Stage-only diagnostic shares this registered callback; it is taken only when this browser holds the
+  // diagnostic cookie for exactly this state. Otherwise v1 handling below is unchanged.
+  const diagnostic = await handleDiagnosticCallback(req);
+  if (diagnostic) return diagnostic;
+
   if (!isDigiLockerEnabled()) return back(req, "unavailable");
 
   const q = req.nextUrl.searchParams;
