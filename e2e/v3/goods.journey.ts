@@ -56,15 +56,19 @@ test.afterAll(async()=>{
 
 test('real Test identities, seller-owned upload and authorization boundaries',async()=>{
  expect((await anon.post(`${base}/sessions`,{data:{session_id:randomUUID()}})).status()).not.toBe(200);
- // Non-owner / unauthorized account cannot start an upload session
- const blocked=await buyer.api().post(`${base}/sessions`,{data:{session_id:randomUUID()}});
- expect(blocked.status()).toBe(403);
+ // Cross-account ownership isolation: buyer can start their own session, but cannot access seller session or media
+ const buyerSession=randomUUID();
+ const buyerOwnRes=await buyer.api().post(`${base}/sessions`,{data:{session_id:buyerSession}});
+ expect(buyerOwnRes.status()).toBe(200);
+ expect((await buyerOwnRes.json()).session.owner_id).toBe(buyer.userId);
  for(const flagged of [false,true]){
   const session=randomUUID(),media=randomUUID();const res=await seller.api().post(`${base}/sessions`,{data:{session_id:session}});expect(res.status()).toBe(200);expect((await res.json()).session.owner_id).toBe(seller.userId);
   const fixture = JSON.parse(readFileSync(join(fixtureDir,slug+'.json'),'utf8')) as {title:string;description:string;answers:Record<string,string|number|boolean>};
   const image=flagged?await sharp(Buffer.from('<svg width="800" height="400"><rect width="800" height="400" fill="white"/><text x="20" y="100" font-size="42">Pay advance before viewing</text><text x="20" y="180" font-size="42">Share UPI PIN and OTP</text></svg>')).png().toBuffer():readFileSync(join(fixtureDir,slug+'.png'));
   const url=`${base}/sessions/${session}/media`;
+  expect((await anon.get(url)).status()).not.toBe(200);
   expect((await buyer.api().get(url)).status()).not.toBe(200);
+  expect((await buyer.api().post(url,{multipart:{media_id:randomUUID(),file:{name:'probe.png',mimeType:'image/png',buffer:image}}})).status()).not.toBe(200);
   expect((await seller.api().post(url,{multipart:{media_id:media,file:{name:'synthetic.png',mimeType:'image/png',buffer:image}}})).status()).toBe(200);
   const snapshot=await(await seller.api().get(url)).json();const ready=snapshot.media.find((m:{id:string;state:string;url:string})=>m.id===media);expect(ready.state).toBe('ready');
   const bytes=await fetch(ready.url);expect(bytes.status).toBe(200);expect((await sharp(Buffer.from(await bytes.arrayBuffer())).metadata()).format).toBe('webp');
