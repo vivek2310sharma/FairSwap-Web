@@ -1,0 +1,10 @@
+{
+  "title": "Synthetic sports equipment",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Standard item",
+    "sport": "Standard item",
+    "brand": "Generic",
+    "size": "Standard item"
+  }
+}

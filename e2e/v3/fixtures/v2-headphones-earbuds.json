@@ -1,0 +1,10 @@
+{
+  "title": "Synthetic headphones earbuds",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Wired headphones",
+    "brand": "Generic",
+    "model": "Standard item",
+    "compatibility": "Standard item"
+  }
+}

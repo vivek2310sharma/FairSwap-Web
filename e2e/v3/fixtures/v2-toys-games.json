@@ -1,0 +1,10 @@
+{
+  "title": "Synthetic toys games",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Board game",
+    "age": "Standard item",
+    "included": "Standard item",
+    "safety": "Complete and undamaged"
+  }
+}

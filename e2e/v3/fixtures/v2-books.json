@@ -1,0 +1,10 @@
+{
+  "title": "Synthetic books",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "book_title": "Collected Stories",
+    "author": "Standard item",
+    "edition": "Standard item",
+    "language": "Standard item"
+  }
+}

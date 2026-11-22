@@ -1,0 +1,10 @@
+{
+  "title": "Synthetic watches",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Standard item",
+    "brand": "Generic",
+    "model": "Standard item",
+    "movement": "Standard item"
+  }
+}

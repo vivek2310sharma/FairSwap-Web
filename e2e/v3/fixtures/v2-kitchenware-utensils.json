@@ -1,0 +1,9 @@
+{
+  "title": "Synthetic kitchenware utensils",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Standard item",
+    "material": "Standard item",
+    "quantity": 1
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Synthetic tvs",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "brand": "Generic",
+    "model": "Standard item",
+    "screen": 5,
+    "technology": "Standard item",
+    "resolution": "Standard item"
+  }
+}

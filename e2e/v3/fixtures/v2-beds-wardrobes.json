@@ -1,0 +1,9 @@
+{
+  "title": "Synthetic beds wardrobes",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Standard item",
+    "material": "Standard item",
+    "dimensions": "Standard item"
+  }
+}

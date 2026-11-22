@@ -1,0 +1,10 @@
+{
+  "title": "Synthetic textbooks exam prep",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "book_title": "Collected Stories",
+    "subject": "Standard item",
+    "edition": "Standard item",
+    "publisher": "Standard item"
+  }
+}

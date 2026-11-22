@@ -1,9 +1,11 @@
+import {readFileSync as readCategories} from 'node:fs';
+const categories=JSON.parse(readCategories(new URL('./categories.json',import.meta.url),'utf8'));
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {execFileSync} from 'node:child_process';
 const e=process.env;
 if(e.GITHUB_REPOSITORY!=='vivek2310sharma/FairSwap-Web'||e.GITHUB_REF!=='refs/heads/staging'||e.GITHUB_EVENT_NAME!=='workflow_dispatch'
- ||!['v2-books','v2-tables-chairs'].includes(e.V3_SLUG)||!/^https:\/\/wpppxlnbzqynvhpeuavd\.supabase\.co\/?$/.test(e.E2E_SUPABASE_URL??'')
+ ||!Object.hasOwn(categories,e.V3_SLUG??'')||!/^https:\/\/wpppxlnbzqynvhpeuavd\.supabase\.co\/?$/.test(e.E2E_SUPABASE_URL??'')
  ||!e.GITHUB_TOKEN||!e.E2E_EVIDENCE_DIR||!/^[a-f0-9]{40}$/.test(e.GITHUB_SHA??'')||!/^[1-9][0-9]*$/.test(e.TEST_ACTIVATION_RUN_ID??'')
  ||execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()!==e.GITHUB_SHA)throw Error('V3_TEST_CONTEXT_REQUIRED');
 const get=async path=>{const r=await fetch('https://api.github.com/repos/'+e.GITHUB_REPOSITORY+'/'+path,{headers:{Authorization:'Bearer '+e.GITHUB_TOKEN,Accept:'application/vnd.github+json'}});if(!r.ok)throw Error('V3_DEPLOYMENT_UNAVAILABLE');return r.json();};
