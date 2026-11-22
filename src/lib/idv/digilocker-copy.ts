@@ -19,6 +19,11 @@ export const digiLockerCopy = {
     pending: "We could not confirm your verification yet. Refresh this page in a moment; if your account still shows as not verified, please try again.",
     unavailable: "Verification is not available yet.",
     recovery: "Need help with your account? Contact support.",
+    gate: {
+      post: { title: "Verify to post an ad", body: "Verify your FairSwap account with DigiLocker before posting an ad. This helps reduce fake listings and impersonation." },
+      messages: { title: "Verify to send messages", body: "Verify your FairSwap account with DigiLocker before contacting a seller or sending messages. This helps reduce fake accounts and fraud." },
+    },
+    continue: "Continue",
     results: {
       denied: "You did not give permission in DigiLocker, so nothing was verified. You can try again.",
       already_linked: "This DigiLocker account is already linked to another FairSwap account. Contact support to recover your account.",
@@ -43,6 +48,11 @@ export const digiLockerCopy = {
     pending: "हम अभी आपके सत्यापन की पुष्टि नहीं कर सके। थोड़ी देर बाद यह पेज रीफ़्रेश करें; अगर खाता अब भी असत्यापित दिखे, तो फिर से प्रयास करें।",
     unavailable: "सत्यापन अभी उपलब्ध नहीं है।",
     recovery: "खाते में मदद चाहिए? सहायता से संपर्क करें।",
+    gate: {
+      post: { title: "विज्ञापन पोस्ट करने के लिए सत्यापित करें", body: "विज्ञापन पोस्ट करने से पहले अपने FairSwap खाते को DigiLocker से सत्यापित करें। इससे नकली लिस्टिंग और छद्म पहचान को कम करने में मदद मिलती है।" },
+      messages: { title: "संदेश भेजने के लिए सत्यापित करें", body: "विक्रेता से संपर्क करने या संदेश भेजने से पहले अपने FairSwap खाते को DigiLocker से सत्यापित करें। इससे नकली खाते और धोखाधड़ी को कम करने में मदद मिलती है।" },
+    },
+    continue: "जारी रखें",
     results: {
       denied: "आपने DigiLocker में अनुमति नहीं दी, इसलिए कुछ भी सत्यापित नहीं हुआ। आप फिर से प्रयास कर सकते हैं।",
       already_linked: "यह DigiLocker खाता पहले से किसी अन्य FairSwap खाते से जुड़ा है। खाता पुनः प्राप्त करने के लिए सहायता से संपर्क करें।",

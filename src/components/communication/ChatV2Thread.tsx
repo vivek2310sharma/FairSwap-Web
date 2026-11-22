@@ -1,5 +1,6 @@
 "use client";
 
+import { IdentityRequiredScreen } from "@/components/idv/IdentityRequiredScreen";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { loadChatMessages, loadChatFindings } from "@/lib/chat-v2/actions";
@@ -17,8 +18,8 @@ import { createClient } from "@/lib/supabase/client";
 type Draft = { requestId: string; content: string; state: "pending" | "sent" | "failed"; redirectTo?: string };
 const updateInbox = () => window.dispatchEvent(new Event("fairswap:chat-v2-inbox-refresh"));
 
-export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedInitial = false, locale = "en" }: {
-  conversation: Conversation; initial: MessagesPage; currentUserId: string; isBlockedInitial?: boolean; locale?: ChatLocale;
+export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedInitial = false, identityRequired = false, locale = "en" }: {
+  conversation: Conversation; initial: MessagesPage; currentUserId: string; isBlockedInitial?: boolean; identityRequired?: boolean; locale?: ChatLocale;
 }) {
   const copy = chatCopy(locale), { refreshUnreadCounts } = useAuth();
   const [messages, setMessages] = useState(initial.items), [peer, setPeer] = useState(initial.peer_read_cursor);
@@ -170,7 +171,7 @@ export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedIn
       </div>)}
     </div>
     {readError && <div role="alert" className="px-3 py-2 text-xs">{copy.readError} <button className="underline" onClick={() => setReadRetry(value => value + 1)}>{copy.retry}</button></div>}
-    {blocked || closed ? <p className="border-t border-border p-3 text-sm">{blocked ? copy.blocked : copy.closed}</p> : <form className="flex shrink-0 items-end gap-2 border-t border-border p-3" onSubmit={submit}>
+    {blocked || closed ? <p className="border-t border-border p-3 text-sm">{blocked ? copy.blocked : copy.closed}</p> : identityRequired ? <div className="shrink-0 border-t border-border"><IdentityRequiredScreen context="messages" returnTo={`/account/messages/${conversation.id}`} locale={locale === "hi" ? "hi" : "en"} compact /></div> : <form className="flex shrink-0 items-end gap-2 border-t border-border p-3" onSubmit={submit}>
       <textarea className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-card p-3 text-sm" aria-label={copy.placeholder} placeholder={copy.placeholder} rows={2} maxLength={2000} value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }} />
       <button type="submit" className="rounded-xl bg-action-600 px-3 py-3 text-sm font-semibold text-white disabled:opacity-40" disabled={!input.trim()}>{copy.send}</button>
     </form>}

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { digiLockerCopy } from "@/lib/idv/digilocker-copy";
 import { isDigiLockerEnabled } from "@/lib/idv/digilocker";
 import { isMyDigiLockerVerified } from "@/lib/idv/digilocker-badge-server";
+import { safeVerificationReturnPath } from "@/lib/idv/return-path";
 import { DigiLockerVerification } from "@/components/account/DigiLockerVerification";
 import type { AccountLocale } from "@/lib/account/copy";
 import type { Metadata } from "next";
@@ -18,6 +19,8 @@ interface VerificationPageProps {
     lang?: string;
     dl?: string;
     required?: string;
+    context?: string;
+    next?: string;
   }>;
 }
 
@@ -29,7 +32,7 @@ export default async function VerificationPage({ searchParams }: VerificationPag
     redirect("/auth/sign-in?next=/account/verification");
   }
 
-  const { lang, dl, required } = await searchParams;
+  const { lang, dl, required, next } = await searchParams;
 
   // Resolve locale from query param or NEXT_LOCALE cookie, defaulting to en
   const cookieStore = await cookies();
@@ -40,7 +43,7 @@ export default async function VerificationPage({ searchParams }: VerificationPag
   if (isDigiLockerEnabled()) {
     // Server-authoritative: get_my_marketplace_access().digilocker_verified. The `dl` query parameter is never proof.
     const verified = await isMyDigiLockerVerified(supabase);
-    return <DigiLockerVerification verified={verified} result={dl} showRequiredNotice={required === "1"} locale={locale} />;
+    return <DigiLockerVerification verified={verified} result={dl} showRequiredNotice={required === "1"} locale={locale} returnTo={safeVerificationReturnPath(next)} />;
   }
 
   // DigiLocker is the only verification journey. The legacy document-based hub is not reachable from here.

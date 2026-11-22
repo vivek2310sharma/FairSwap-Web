@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-const m = vi.hoisted(()=>({rpc:vi.fn(),getUser:vi.fn(),policy:vi.fn(),account:vi.fn(),lookup:vi.fn(),maintenance:vi.fn()}));
+const m = vi.hoisted(()=>({rpc:vi.fn(),access:vi.fn(),getUser:vi.fn(),policy:vi.fn(),account:vi.fn(),lookup:vi.fn(),maintenance:vi.fn()}));
 vi.mock("server-only",()=>({}));
-vi.mock("@/lib/supabase/server",()=>({createClient:async()=>({rpc:m.rpc,auth:{getUser:m.getUser},from:(table:string)=>{const filters:Record<string,string>={};const query={select:()=>query,eq:(key:string,value:string)=>{filters[key]=value;return query;},maybeSingle:()=>table==="user_accounts"?m.account():m.lookup({...filters})};return query;}})}));
+vi.mock("@/lib/supabase/server",()=>({createClient:async()=>({rpc:(fn:string,...args:unknown[])=>fn==="get_my_marketplace_access"?m.access():m.rpc(fn,...args),auth:{getUser:m.getUser},from:(table:string)=>{const filters:Record<string,string>={};const query={select:()=>query,eq:(key:string,value:string)=>{filters[key]=value;return query;},maybeSingle:()=>table==="user_accounts"?m.account():m.lookup({...filters})};return query;}})}));
 vi.mock("@/lib/compliance/policy-acceptance",()=>({requireCurrentPolicyAcceptance:m.policy}));
 vi.mock("@/lib/maintenance/seller-writes",()=>({isSellerWriteMaintenanceEnabled:m.maintenance}));
 import { POST, GET, DELETE } from "@/app/api/post-ad/sessions/route";
@@ -11,7 +11,7 @@ import { sessionCall, postingError } from "@/lib/listings/mobiles/server";
 const id="11111111-1111-4111-8111-111111111111";
 const snapshot={session:{id,owner_id:id,listing_id:id,state:"open"},media:[]};
 const request=(method:string,body:unknown={session_id:id},origin="http://localhost")=>new Request("http://localhost/api/post-ad/sessions",{method,headers:{origin,"Content-Type":"application/json"},...(method!=="GET"?{body:JSON.stringify(body)}:{})});
-beforeEach(()=>{vi.clearAllMocks();vi.stubEnv("POST_AD_MOBILES_V2_ENABLED","true");m.getUser.mockResolvedValue({data:{user:{id}},error:null});m.policy.mockResolvedValue({allowed:true});m.account.mockResolvedValue({data:{account_status:"active"},error:null});m.maintenance.mockReturnValue(false);m.lookup.mockResolvedValue({data:null,error:null});m.rpc.mockResolvedValue({data:snapshot,error:null});});
+beforeEach(()=>{vi.clearAllMocks();vi.stubEnv("POST_AD_MOBILES_V2_ENABLED","true");m.getUser.mockResolvedValue({data:{user:{id}},error:null});m.policy.mockResolvedValue({allowed:true});m.account.mockResolvedValue({data:{account_status:"active"},error:null});m.maintenance.mockReturnValue(false);m.lookup.mockResolvedValue({data:null,error:null});m.rpc.mockResolvedValue({data:snapshot,error:null});m.access.mockResolvedValue({data:{verification_required:false,digilocker_verified:false},error:null});});
 afterEach(()=>vi.unstubAllEnvs());
 describe("Owner upload-session HTTP/RPC boundary",()=>{
  it.each(["UPLOAD_SESSION_LIMIT","Too many upload sessions"])("returns a safe specific capacity error for %s",async message=>{

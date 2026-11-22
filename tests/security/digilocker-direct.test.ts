@@ -163,23 +163,27 @@ describe("actionable 'Verify your account' errors (DB stays the enforcement)", a
   const { isIdentityRequired, IDENTITY_REQUIRED_MESSAGE } = await import("@/lib/idv/gate");
   const pgError = { code: "42501", message: "IDENTITY_VERIFICATION_REQUIRED", details: null, hint: null };
 
-  it("pre-flight is off by default (no RPC round trip)", async () => {
+  it("pre-flight needs no Web env switch: the authenticated RPC alone drives it (strict digilocker_verified)", async () => {
     delete process.env.FAIRSWAP_IDENTITY_GATE_ENABLED;
-    const rpc = vi.fn(async () => ({ data: { verification_required: true, identity_verified: false }, error: null }));
-    expect(await needsIdentityVerification({ rpc })).toBe(false);
-    expect(rpc).not.toHaveBeenCalled();
+    const rpc = vi.fn(async () => ({ data: { verification_required: true, digilocker_verified: false }, error: null }));
+    expect(await needsIdentityVerification({ rpc })).toBe(true);
+    expect(rpc).toHaveBeenCalledWith("get_my_marketplace_access");
   });
 
-  it("pre-flight is true only when the gate is on and the user is unverified; fails open otherwise", async () => {
-    process.env.FAIRSWAP_IDENTITY_GATE_ENABLED = "true";
+  it("pre-flight is true only when the gate is on and digilocker_verified is not exactly true; unknown never blocks or verifies", async () => {
+    const { getIdentityGate } = await import("@/lib/idv/gate-server");
     const c = (data: unknown, error: unknown = null) => ({ rpc: async () => ({ data, error }) });
-    expect(await needsIdentityVerification(c({ verification_required: true, identity_verified: false }))).toBe(true);
-    expect(await needsIdentityVerification(c({ verification_required: true, identity_verified: true }))).toBe(false);
-    expect(await needsIdentityVerification(c({ verification_required: false, identity_verified: false }))).toBe(false);
-    expect(await needsIdentityVerification(c(null, { message: "down" }))).toBe(false);
-    expect(await needsIdentityVerification({ rpc: async () => { throw new Error("x"); } })).toBe(false);
-    expect(await needsIdentityVerification({})).toBe(false);
-    delete process.env.FAIRSWAP_IDENTITY_GATE_ENABLED;
+    expect(await needsIdentityVerification(c({ verification_required: true, digilocker_verified: false }))).toBe(true);
+    // Generic legacy identity_verified is never proof.
+    expect(await needsIdentityVerification(c({ verification_required: true, identity_verified: true, digilocker_verified: false }))).toBe(true);
+    expect(await needsIdentityVerification(c({ verification_required: true, identity_verified: true }))).toBe(true);
+    expect(await needsIdentityVerification(c({ verification_required: true, digilocker_verified: "true" }))).toBe(true);
+    expect(await needsIdentityVerification(c({ verification_required: true, digilocker_verified: true }))).toBe(false);
+    expect(await needsIdentityVerification(c({ verification_required: false, digilocker_verified: false }))).toBe(false);
+    for (const bad of [c(null, { message: "down" }), c(null), c([true]), c({ digilocker_verified: false }), c({ verification_required: "true" }), { rpc: async () => { throw new Error("x"); } }, {}]) {
+      expect(await getIdentityGate(bad)).toBe("unknown");
+      expect(await needsIdentityVerification(bad)).toBe(false);
+    }
   });
 
   it("maps the Backend error (any shape) and the pre-flight error to a 403 with the actionable message", async () => {
