@@ -1,14 +1,19 @@
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { getAccountCopy } from "@/lib/account/copy";
+import { DigiLockerBadge } from "@/components/idv/DigiLockerBadge";
+import { digiLockerCopy, type DigiLockerLocale } from "@/lib/idv/digilocker-copy";
 
 /**
- * Mobile-first identity verification banner.
- * Links to /account/verification with clear "Coming soon" status.
+ * Server-derived DigiLocker state for the account banner.
+ * `verified` only ever comes from the Backend (`get_my_marketplace_access().digilocker_verified`); `disabled` means the
+ * server feature flag is off; `unknown` means the Backend status could not be read. Never derived from query or client state.
  */
-export function VerificationBanner() {
-  const copy = getAccountCopy();
-  const v = copy.verification;
+export type VerificationBannerState = "verified" | "unverified" | "disabled" | "unknown";
+
+/** Mobile-first DigiLocker verification banner. Purely presentational; the page decides the state. */
+export function VerificationBanner({ state, locale = "en" }: { state: VerificationBannerState; locale?: DigiLockerLocale }) {
+  const c = digiLockerCopy[locale];
+  const body = state === "unverified" ? c.bannerBody : state === "disabled" ? c.bannerUnavailable : state === "unknown" ? c.bannerUnknown : null;
 
   return (
     <section
@@ -21,24 +26,21 @@ export function VerificationBanner() {
         </span>
         <div className="min-w-0">
           <h2 id="verification-heading" className="text-base font-bold text-foreground sm:text-lg">
-            {v.heading}
+            {state === "verified" ? <DigiLockerBadge /> : c.heading}
           </h2>
-          <p className="mt-1 text-sm text-muted">{v.body}</p>
-          <p className="mt-2 inline-flex rounded-full bg-action-100 px-2.5 py-0.5 text-xs font-semibold text-action-800 dark:bg-action-900 dark:text-action-100">
-            {v.status}
-          </p>
+          {body && <p className="mt-1 text-sm text-muted">{body}</p>}
         </div>
       </div>
-      <div className="flex items-center gap-3 max-sm:w-full">
-        <Link
-          href="/account/verification"
-          className="inline-flex min-h-[44px] shrink-0 flex-col items-center justify-center rounded-lg bg-action-600 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-action-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 focus-visible:ring-offset-2 max-sm:w-full"
-        >
-          <span>{v.cta}</span>
-          <span className="text-[11px] font-medium opacity-90">{copy.comingSoon}</span>
-        </Link>
-      </div>
+      {state === "unverified" && (
+        <div className="flex items-center gap-3 max-sm:w-full">
+          <Link
+            href="/account/verification"
+            className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-lg bg-action-600 px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-action-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 focus-visible:ring-offset-2 max-sm:w-full"
+          >
+            {c.button}
+          </Link>
+        </div>
+      )}
     </section>
   );
 }
-

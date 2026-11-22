@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
 vi.mock("@/components/providers/AuthProvider", () => ({ useAuth: () => ({ signOut: vi.fn() }) }));
 
 describe("ACC-02 My Account Page UI Tests", () => {
@@ -267,17 +268,11 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(screen.getByRole("heading", { level: 1, name: "FairSwap member" })).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/[←-⇿]|\[City\]|\[n\]/);
 
-    // Identity verification banner and Coming Soon navigation semantics
-    const idvBanner = screen.getByRole("region", { name: "Identity verification" });
-    expect(idvBanner).toBeInTheDocument();
-    expect(within(idvBanner).getByRole("heading", { level: 2, name: "Identity verification" })).toBeInTheDocument();
-    expect(within(idvBanner).getAllByText("Coming soon").length).toBeGreaterThanOrEqual(1);
-
-    const verifyLink = within(idvBanner).getByRole("link", { name: /Verify identity/ });
-    expect(verifyLink).toHaveAttribute("href", "/account/verification");
-    // Verify that the link is a navigation anchor and not an interactive form submission that could trigger verification
-    expect(verifyLink.tagName.toLowerCase()).toBe("a");
-    expect(within(idvBanner).queryByRole("button", { name: /verify/i })).toBeNull();
+    // DigiLocker flag is off in tests: honest unavailable wording, no CTA, no Coming soon badge inside the banner
+    const idvBanner = screen.getByRole("region", { name: "Verify with DigiLocker" });
+    expect(within(idvBanner).getByText("DigiLocker verification is not available right now. Please check back later.")).toBeInTheDocument();
+    expect(within(idvBanner).queryByRole("link")).toBeNull();
+    expect(within(idvBanner).queryByRole("button")).toBeNull();
 
     expect(screen.queryByRole("button", { name: /sign out/i })).not.toBeInTheDocument();
     expect(options.getByRole("link", { name: /My ads/ })).toHaveTextContent("Manage the ads you've posted on FairSwap.");

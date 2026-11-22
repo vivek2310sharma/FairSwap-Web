@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { VerificationHub, type VerificationState } from "@/components/account/VerificationHub";
-import { checkIsExpired } from "@/lib/idv/server-helpers";
+import { digiLockerCopy } from "@/lib/idv/digilocker-copy";
 import { isDigiLockerEnabled } from "@/lib/idv/digilocker";
 import { isMyDigiLockerVerified } from "@/lib/idv/digilocker-badge-server";
 import { DigiLockerVerification } from "@/components/account/DigiLockerVerification";
@@ -16,9 +15,6 @@ export const metadata: Metadata = {
 
 interface VerificationPageProps {
   searchParams: Promise<{
-    state?: string;
-    status?: string;
-    error?: string;
     lang?: string;
     dl?: string;
     required?: string;
@@ -33,7 +29,7 @@ export default async function VerificationPage({ searchParams }: VerificationPag
     redirect("/auth/sign-in?next=/account/verification");
   }
 
-  const { state: callbackState, status: callbackStatus, error: callbackError, lang, dl, required } = await searchParams;
+  const { lang, dl, required } = await searchParams;
 
   // Resolve locale from query param or NEXT_LOCALE cookie, defaulting to en
   const cookieStore = await cookies();
@@ -44,65 +40,14 @@ export default async function VerificationPage({ searchParams }: VerificationPag
   if (isDigiLockerEnabled()) {
     // Server-authoritative: get_my_marketplace_access().digilocker_verified. The `dl` query parameter is never proof.
     const verified = await isMyDigiLockerVerified(supabase);
-    return <DigiLockerVerification verified={verified} result={dl} showRequiredNotice={required === "1"} locale={lang === "hi" || cookieLocale === "hi" ? "hi" : "en"} />;
+    return <DigiLockerVerification verified={verified} result={dl} showRequiredNotice={required === "1"} locale={locale} />;
   }
 
-  // Feature gate check: default false across all environments until credentials & launch
-  const isFeatureEnabled = process.env.FAIRSWAP_IDV_ENABLED === "true";
-
-  let verificationState: VerificationState = "not_verified";
-  let verifiedAt: string | null = null;
-  let validUntil: string | null = null;
-  let revocationReason: string | null = null;
-  const activeAttemptId: string | null = null;
-
-  try {
-    const { data: idvData } = await supabase.rpc("get_my_identity_verification");
-    if (idvData && typeof idvData === "object") {
-      const rec = idvData as Record<string, unknown>;
-      const isExpired = checkIsExpired(rec.valid_until);
-      
-      if (rec.status === "revoked") {
-        verificationState = "revoked";
-      } else if (isExpired || rec.status === "expired") {
-        verificationState = "expired";
-      } else if (rec.badge_issued === true && rec.status === "verified" && !isExpired) {
-        verificationState = "verified";
-      } else if (rec.status === "in_progress") {
-        verificationState = "in_progress";
-      } else if (rec.status === "failed") {
-        verificationState = "failed";
-      }
-      verifiedAt = (rec.verified_at as string) || null;
-      validUntil = (rec.valid_until as string) || null;
-      revocationReason = (rec.revocation_reason as string) || null;
-    }
-  } catch {
-    verificationState = "not_verified";
-  }
-
-  // Handle callback return from DigiLocker when user returns
-  // Note: Never trust query parameters as proof of identity.
-  // The client or server will invoke independent backend verification using the single-use state nonce.
-  if (verificationState !== "verified" && isFeatureEnabled) {
-    if (callbackError || callbackStatus === "failed" || callbackStatus === "cancelled") {
-      verificationState = callbackStatus === "cancelled" ? "cancelled" : "failed";
-    } else if (callbackState) {
-      verificationState = "in_progress";
-    }
-  }
-
+  // DigiLocker is the only verification journey. The legacy document-based hub is not reachable from here.
   return (
-    <VerificationHub
-      initialState={verificationState}
-      attemptId={activeAttemptId}
-      verifiedAt={verifiedAt}
-      validUntil={validUntil}
-      revocationReason={revocationReason}
-      isFeatureEnabled={isFeatureEnabled}
-      locale={locale}
-      callbackState={callbackState}
-    />
+    <main id="verification-content" className="mx-auto w-full max-w-xl px-4 py-6">
+      <h1 className="text-xl font-semibold">{digiLockerCopy[locale].heading}</h1>
+      <p role="status" className="mt-3">{digiLockerCopy[locale].unavailable}</p>
+    </main>
   );
 }
-

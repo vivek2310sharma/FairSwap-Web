@@ -6,9 +6,10 @@ import { BellRing, Handshake, Heart, LifeBuoy, Lock, MessageSquare, Settings, Sh
 import { AccountIdentity } from "@/components/account/AccountIdentity";
 import { AccountTile } from "@/components/account/AccountTile";
 import { ComingSoonDialog } from "@/components/account/ComingSoonDialog";
-import { VerificationBanner } from "@/components/account/VerificationBanner";
+import { VerificationBanner, type VerificationBannerState } from "@/components/account/VerificationBanner";
 import { getAccountCopy, type PreviewKey } from "@/lib/account/copy";
 import { HELP_CENTRE_URL } from "@/lib/help-centre";
+import type { DigiLockerLocale } from "@/lib/idv/digilocker-copy";
 
 interface AccountOverviewProps {
   ratingsAvailable?: boolean;
@@ -21,6 +22,9 @@ interface AccountOverviewProps {
   needsProfileCompletion?: boolean;
   publicProfileHref: string | null;
   showVerification: boolean;
+  /** Server-derived (feature flag + authoritative badge RPC); never from query/client state. */
+  verificationState?: VerificationBannerState;
+  locale?: DigiLockerLocale;
   isRestricted: boolean;
   notices?: ReactNode;
 }
@@ -39,6 +43,8 @@ export function AccountOverview({
   needsProfileCompletion = false,
   publicProfileHref,
   showVerification,
+  verificationState = "disabled",
+  locale = "en",
   isRestricted,
   notices,
 }: AccountOverviewProps) {
@@ -90,7 +96,7 @@ export function AccountOverview({
         </section>
       )}
 
-      {showVerification && <VerificationBanner />}
+      {showVerification && <VerificationBanner state={verificationState} locale={locale} />}
 
       <nav aria-label="Account options">
         <ul className="grid grid-cols-1 overflow-hidden rounded-2xl border border-border bg-card max-sm:divide-y max-sm:divide-border sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:border-0 sm:bg-transparent lg:grid-cols-3">
