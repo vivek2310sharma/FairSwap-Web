@@ -80,3 +80,65 @@ it.each(["v2-cars", "v2-motorcycles-scooters", "v2-commercial-vehicles", "v2-ele
       .toContain("This vehicle can only be saved as a draft.");
   },
 );
+
+// Field rows mirror Backend V3 migration 20261119092042_ordinary_goods_v3.sql (pinned 58531d2).
+const pilot = {
+  "v2-books": { risk: "general", fields: [
+    { key: "book_title", label: "Book title", required: true, kind: "text" },
+    { key: "author", label: "Author", required: false, kind: "text" },
+    { key: "edition", label: "Edition", required: false, kind: "text" },
+    { key: "language", label: "Language", required: false, kind: "text" },
+  ], answers: { book_title: "Collected stories" } },
+  "v2-tables-chairs": { risk: "general", fields: [
+    { key: "item_type", label: "Table or chair type", required: true, kind: "text" },
+    { key: "material", label: "Material", required: false, kind: "text" },
+    { key: "dimensions", label: "Dimensions (cm)", required: false, kind: "text" },
+    { key: "quantity", label: "Quantity", required: false, kind: "number", min: 1, max: 100 },
+  ], answers: { item_type: "Dining chair" } },
+} as const;
+
+describe.each(Object.entries(pilot))("%s pilot contract", (pilotSlug, spec) => {
+  const id = goods.find(node => node.slug === pilotSlug)!.id;
+  const contract = goodsDefinition.parse({ slug: pilotSlug, category_id: id, revision: 1, risk: spec.risk, fields: spec.fields });
+  const pilotSchema = selectedGoodsSubmission(contract);
+  const base = { ...payload, slug: pilotSlug, category_id: id, answers: { ...spec.answers, safety_confirmed: true, power_safe: true, defects: "" } };
+  const required = spec.fields.find(f => f.required)!.key;
+
+  it("is an enabled-by-taxonomy Goods leaf and accepts its minimal valid submission", () => {
+    expect(isOrdinaryGoodsSlug(pilotSlug)).toBe(true);
+    expect(pilotSchema.safeParse(base).success).toBe(true);
+  });
+  it.each([
+    ["missing required answer", (a: Record<string, unknown>) => { delete a[required]; return a; }],
+    ["blank required answer", (a: Record<string, unknown>) => ({ ...a, [required]: "   " })],
+    ["unknown answer key", (a: Record<string, unknown>) => ({ ...a, injected: "x" })],
+    ["over-long answer", (a: Record<string, unknown>) => ({ ...a, [required]: "x".repeat(101) })],
+    ["prototype key", (a: Record<string, unknown>) => ({ ...a, constructor: "x" })],
+    ["numeric required answer", (a: Record<string, unknown>) => ({ ...a, [required]: 5 })],
+  ])("rejects %s", (_name, mutate) => {
+    expect(pilotSchema.safeParse({ ...base, answers: mutate({ ...base.answers }) }).success).toBe(false);
+  });
+  it.each([
+    { category_id: uuid }, { revision: 2 }, { slug: "v2-tvs" }, { price_type: null }, { price_paise: 99 },
+    { price_type: "free" }, { media_ids: [] }, { description: "Call me on +91 98765 43210 to pay" },
+    { title: "Pay via https://fake.example" }, { condition: "fair" },
+  ])("rejects invalid envelope %j", override => {
+    expect(pilotSchema.safeParse({ ...base, ...override }).success).toBe(false);
+  });
+  it("accepts a described fair-condition item and the giveaway price", () => {
+    expect(pilotSchema.safeParse({ ...base, condition: "fair", answers: { ...base.answers, defects: "Corner scuffs" } }).success).toBe(true);
+    expect(pilotSchema.safeParse({ ...base, price_type: "free", price_paise: 0 }).success).toBe(true);
+  });
+  it("refuses to treat a different category's definition as this one", () => {
+    expect(selectedGoodsSubmission({ ...contract, slug: "v2-tvs" }).safeParse(base).success).toBe(false);
+  });
+});
+
+it("Tables & Chairs enforces its bounded optional quantity", () => {
+  const id = goods.find(node => node.slug === "v2-tables-chairs")!.id;
+  const contract = goodsDefinition.parse({ slug: "v2-tables-chairs", category_id: id, revision: 1, risk: "general", fields: pilot["v2-tables-chairs"].fields });
+  const run = (quantity: unknown) => selectedGoodsSubmission(contract).safeParse({ ...payload, slug: "v2-tables-chairs", category_id: id,
+    answers: { item_type: "Dining chair", quantity, safety_confirmed: true, power_safe: true, defects: "" } }).success;
+  expect([run(1), run(100), run(4)]).toEqual([true, true, true]);
+  expect([run(0), run(101), run("4"), run(Number.NaN), run(Infinity)]).toEqual([false, false, false, false, false]);
+});

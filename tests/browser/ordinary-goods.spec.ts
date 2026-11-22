@@ -11,6 +11,7 @@ const cases = [
   ["v2-tvs", "TVs", "Screen size (inches)", "55", 360],
   ["v2-refrigerators", "Refrigerators", "Capacity (litres)", "250", 390],
   ["v2-sofas-dining", "Sofas & Dining", "Sofa or dining furniture type", "Three-seater sofa", 320],
+  ["v2-tables-chairs", "Tables & Chairs", "Table or chair type", "Dining chair", 360],
   ["v2-women", "Women", "Labelled size", "M", 360],
   ["v2-books", "Books", "Book title", "Collected stories", 390],
   ["v2-headphones-earbuds", "Headphones & Earbuds", "Item type", "Wired headphones", 320],

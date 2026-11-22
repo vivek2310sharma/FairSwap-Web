@@ -121,6 +121,27 @@ jobs:
       - name: Run Tablets V1 isolated browser journeys
         run: node tools/tablets-v1/verify.mjs --max-failures=1
 
+      - name: Run V3 Ordinary Goods contract and route-boundary tests (Books, Tables & Chairs)
+        run: >-
+          pnpm vitest run
+          tests/unit/ordinary-goods.test.ts
+          tests/security/ordinary-goods-boundary.test.ts
+          tests/security/ordinary-goods-pilot-boundary.test.ts
+
+      - name: Checkout content-pinned Backend V3 release for Goods browser fixtures
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: vivek2310sharma/FairSwap-Backend
+          ref: 58531d274cef13ceb8e47d6f63e18b3427c61404
+          token: ${{ steps.backend-token.outputs.token }}
+          path: .fairswap-goods-backend-ci-source
+          persist-credentials: false
+
+      - name: Run V3 Ordinary Goods isolated browser journeys
+        env:
+          FAIRSWAP_GOODS_BACKEND_DIR: .fairswap-goods-backend-ci-source
+        run: node tools/tablets-v1/verify.mjs --goods --max-failures=1
+
       - name: Run Wearables V1 typed posting, catalogue, session and Tablet-coexistence unit tests
         run: >-
           pnpm vitest run
