@@ -1,2 +1,3 @@
 import base from '../wearables/playwright.config';
-export default {...base,testDir:'.',testMatch:/goods\.journey\.ts$/};
+const config={...base,testDir:'.',testMatch:/goods\.journey\.ts$/};
+export default config;
