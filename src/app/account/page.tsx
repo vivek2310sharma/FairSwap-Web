@@ -1,7 +1,11 @@
 import { pendingCount, ratingsEnabled } from "@/lib/ratings/server";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { AccountOverview } from "@/components/account/AccountOverview";
+import { isDigiLockerEnabled } from "@/lib/idv/digilocker";
+import { getMyDigiLockerStatus } from "@/lib/idv/digilocker-badge-server";
+import type { VerificationBannerState } from "@/components/account/VerificationBanner";
 import { type MyPrivateDetails, type Profile, type UserAccount } from "@/types/account";
 
 function formatMemberSince(value: string | null | undefined): string | null {
@@ -47,6 +51,15 @@ export default async function AccountPage() {
   const isDeleted = !isAccountUnavailable && account?.account_status === "deleted";
   const isActive = !isAccountUnavailable && account?.account_status === "active";
   const isRestricted = isSuspended || isDeletionPending || isDeleted || isAccountUnavailable;
+
+  // DigiLocker banner state: server flag first, then the authoritative Backend badge status. Fails closed.
+  let verificationState: VerificationBannerState = "disabled";
+  if (isActive && isDigiLockerEnabled()) {
+    const status = await getMyDigiLockerStatus(supabase);
+    verificationState = status === "verified" ? "verified" : status === "unverified" ? "unverified" : "unknown";
+  }
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("NEXT_LOCALE")?.value === "hi" ? "hi" : "en";
 
   const notices = (
     <>
@@ -112,6 +125,8 @@ export default async function AccountPage() {
       needsProfileCompletion={isActive && privateDetails !== null && !privateDetails.onboarding_completed}
       publicProfileHref={isActive ? `/seller/${userData.user.id}` : null}
       showVerification={isActive}
+      verificationState={verificationState}
+      locale={locale}
       isRestricted={isRestricted}
       notices={notices}
     />

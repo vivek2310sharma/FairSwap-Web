@@ -59,15 +59,25 @@ export async function hasDigiLockerBadge(client: unknown, userId: string | null 
   return ids.has(userId.toLowerCase());
 }
 
-/** Whether the signed-in user is DigiLocker-verified, per `get_my_marketplace_access().digilocker_verified`. */
-export async function isMyDigiLockerVerified(client: unknown): Promise<boolean> {
+export type MyDigiLockerStatus = "verified" | "unverified" | "unknown";
+
+/**
+ * Tri-state status from `get_my_marketplace_access().digilocker_verified`. "unknown" means the Backend could not be
+ * read (RPC error, throw or malformed shape); callers must never render the badge for it.
+ */
+export async function getMyDigiLockerStatus(client: unknown): Promise<MyDigiLockerStatus> {
   try {
     const c = client as RpcCapable;
-    if (typeof c?.rpc !== "function") return false;
+    if (typeof c?.rpc !== "function") return "unknown";
     const { data, error } = await c.rpc("get_my_marketplace_access");
-    if (error || !data || typeof data !== "object" || Array.isArray(data)) return false;
-    return (data as { digilocker_verified?: unknown }).digilocker_verified === true;
+    if (error || !data || typeof data !== "object" || Array.isArray(data)) return "unknown";
+    return (data as { digilocker_verified?: unknown }).digilocker_verified === true ? "verified" : "unverified";
   } catch {
-    return false;
+    return "unknown";
   }
+}
+
+/** Whether the signed-in user is DigiLocker-verified. False on any failure. */
+export async function isMyDigiLockerVerified(client: unknown): Promise<boolean> {
+  return (await getMyDigiLockerStatus(client)) === "verified";
 }
