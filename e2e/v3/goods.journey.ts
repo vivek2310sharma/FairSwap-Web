@@ -1,0 +1,99 @@
+import {randomUUID} from 'node:crypto';
+import {writeFileSync} from 'node:fs';
+import {join} from 'node:path';
+import {expect,test} from '@playwright/test';
+import sharp from 'sharp';
+import {loadEnv,signIn,anonApi,anonClient,upgradeToAal2,type Actor} from '../wearables/helpers';
+import {retireListings,scanSearchPages} from '../wearables/cleanup.mjs';
+import {selectedGoodsSubmission} from '../../src/lib/listings/ordinary-goods/contract';
+
+const slug=process.env.V3_SLUG!;
+const ids:Record<string,string>={'v2-books':'c0ba9c51-8d6a-5c81-99e1-6be9c60a8fc5','v2-tables-chairs':'ec6a3d86-1ce8-574e-9a7b-bef64e1ccf41'};
+if(!ids[slug])throw Error('V3_PILOT_REQUIRED');
+let env:ReturnType<typeof loadEnv>,seller:Actor,buyer:Actor,moderator:Actor,anon:Awaited<ReturnType<typeof anonApi>>,sb:ReturnType<typeof anonClient>;
+let definition:any,place:any;
+const samples:any[]=[];const registered={ids:[] as string[],titles:[] as string[]};
+const state:any={steps:{}};
+const save=()=>writeFileSync(join(env.evidenceDir,'v3-steps.json'),JSON.stringify(state));
+const mark=(...names:string[])=>{for(const n of names)state.steps[n]=true;save();};
+const base=`/api/post-ad/goods/${slug}`;
+const own=async(id:string)=>{const r=await seller.client.from('listings').select('id,seller_id,status,title,revision,slug').eq('id',id).single();expect(r.error).toBeNull();return r.data!;};
+const workflow=async(id:string)=>{const r=await seller.client.rpc('get_seller_moderation_workflow_status',{listing_id:id});expect(r.error).toBeNull();return r.data;};
+const search=async(client:any,page=1)=>{const r=await client.rpc('search_public_listings',{query:null,category_slug:slug,city_id:null,locality_id:null,condition:null,price_min:null,price_max:null,sort:'newest',page,per_page:12});expect(r.error).toBeNull();return r.data;};
+const hidden=async(id:string)=>{for(const c of [buyer.client,sb]){const r=await c.from('listings').select('id').eq('id',id);expect(r.error).toBeNull();expect(r.data).toEqual([]);}};
+const review=async(a:Actor,l:any)=>{const row=await own(l.id);return a.client.rpc('moderate_listing_reviewed',{listing_id:l.id,action:'approve',reason:'Synthetic V3 hosted Test guard check',expected_revision:row.revision,expected_status:row.status});};
+
+test.describe.configure({mode:'serial'});
+test.beforeAll(async()=>{
+ env=loadEnv();
+ if(!env.anonKey.startsWith('sb_publishable_')){const claims=JSON.parse(Buffer.from(env.anonKey.split('.')[1]??'', 'base64url').toString());expect(claims.role).toBe('anon');}
+ [seller,buyer,moderator]=await Promise.all([signIn(env,'seller',env.seller),signIn(env,'buyer',env.buyer),signIn(env,'moderator',env.moderator)]);
+ expect(new Set([seller.userId,buyer.userId,moderator.userId]).size).toBe(3);
+ anon=await anonApi(env);sb=anonClient(env);
+ const d=await seller.client.rpc('ordinary_goods_v3',{slug});expect(d.error).toBeNull();definition=d.data;
+ expect(definition.category_id).toBe(ids[slug]);expect(definition.revision).toBe(1);
+ const loc=await (await seller.api().get('/api/location/pincode/560034')).json();expect(loc.localities.length).toBeGreaterThan(0);
+ place={pin_code:'560034',city_id:loc.city_id,locality_id:loc.localities[0].id};
+});
+
+test.afterAll(async()=>{
+ test.setTimeout(300000);
+ try{
+  const result=await retireListings({sellerId:seller?.userId,ids:registered.ids,titles:registered.titles},{
+   readOwn:async q=>{const map=new Map<string,any>();for(const [key,values]of [['id',q.ids],['title',q.titles]] as const){if(!values.length)continue;const r=await seller.client.from('listings').select('id,seller_id,status,title,revision,slug').eq('seller_id',seller.userId).in(key,values);expect(r.error).toBeNull();for(const row of r.data??[])map.set(row.id,row);}return [...map.values()];},
+   ensureModeratorAal2:async()=>{if(await moderator.aal()!=='aal2')await upgradeToAal2(moderator,env.moderator.totpSecret);},
+   remove:async row=>({error:(await moderator.client.rpc('moderate_listing_reviewed',{listing_id:row.id,action:'remove',reason:'Synthetic V3 hosted Test cleanup',expected_revision:row.revision,expected_status:row.status})).error}),
+   discoverable:async rows=>{const wanted=new Set(rows.map(r=>r.id));const leaked=new Set<string>();for(const c of [buyer.client,sb]){const r=await c.from('listings').select('id').in('id',[...wanted]);expect(r.error).toBeNull();for(const x of r.data??[])leaked.add(x.id);for(const id of await scanSearchPages(p=>search(c,p),wanted))leaked.add(id);}for(const r of rows){if(r.slug){const response=await anon.get(`/listings/${r.slug}`);if(response.status()===200&&(await response.text()).includes(r.title))leaked.add(r.id);}}return [...leaked];},sleep:ms=>new Promise(r=>setTimeout(r,ms))});
+  state.cleanup={verified:true,requested:registered.ids.length,retired:result.retired.length,alreadyInactive:result.alreadyInactive.length};save();
+ }finally{await Promise.all([seller?.api().dispose(),buyer?.api().dispose(),moderator?.api().dispose(),anon?.dispose()]);}
+});
+
+test('real Test identities, seller-owned upload and authorization boundaries',async()=>{
+ expect((await anon.post(`${base}/sessions`,{data:{session_id:randomUUID()}})).status()).not.toBe(200);
+ // Existing buyer account must be unverified: a verified buyer cannot establish this negative control.
+ const blocked=await buyer.api().post(`${base}/sessions`,{data:{session_id:randomUUID()}});
+ expect(blocked.status()).not.toBe(200);expect(JSON.stringify(await blocked.json())).toMatch(/IDENTITY_VERIFICATION_REQUIRED|identity|verif/i);
+ for(const flagged of [false,true]){
+  const session=randomUUID(),media=randomUUID();const res=await seller.api().post(`${base}/sessions`,{data:{session_id:session}});expect(res.status()).toBe(200);expect((await res.json()).session.owner_id).toBe(seller.userId);
+  const image=flagged?await sharp(Buffer.from('<svg width="800" height="400"><rect width="800" height="400" fill="white"/><text x="20" y="100" font-size="42">Pay advance before viewing</text><text x="20" y="180" font-size="42">Share UPI PIN and OTP</text></svg>')).png().toBuffer():await sharp(Buffer.from(slug==='v2-books'?'<svg width="800" height="600"><rect width="800" height="600" fill="#eeeeee"/><rect x="200" y="80" width="350" height="440" rx="12" fill="#76543a"/><path d="M225 85V515" stroke="#bba080" stroke-width="10"/><text x="260" y="240" fill="white" font-size="32">Collected Stories</text></svg>':'<svg width="800" height="600"><rect width="800" height="600" fill="#eeeeee"/><g fill="#76543a"><rect x="240" y="100" width="300" height="240"/><rect x="220" y="340" width="340" height="50"/><rect x="240" y="390" width="35" height="160"/><rect x="505" y="390" width="35" height="160"/></g></svg>')).png().toBuffer();
+  const url=`${base}/sessions/${session}/media`;
+  expect((await buyer.api().get(url)).status()).not.toBe(200);
+  expect((await seller.api().post(url,{multipart:{media_id:media,file:{name:'synthetic.png',mimeType:'image/png',buffer:image}}})).status()).toBe(200);
+  const snapshot=await(await seller.api().get(url)).json();const ready=snapshot.media.find((m:any)=>m.id===media);expect(ready.state).toBe('ready');
+  const bytes=await fetch(ready.url);expect(bytes.status).toBe(200);expect((await sharp(Buffer.from(await bytes.arrayBuffer())).metadata()).format).toBe('webp');
+  const answers=Object.fromEntries(definition.fields.filter((f:any)=>f.required).map((f:any)=>[f.key,f.kind==='number'?Math.max(1,f.min):f.choices?.[0]??(slug==='v2-books'?'Collected stories':'Wooden chair')]));
+  samples.push({session,media,flagged,payload:selectedGoodsSubmission(definition).parse({slug,category_id:ids[slug],revision:1,session_id:session,title:`Synthetic Goods ${randomUUID().replace(/[0-9-]/g,'x').slice(0,24)}`,description:'Synthetic Test item for in person inspection only.',condition:'good',price_type:'fixed',price_paise:12500,...place,answers:{...answers,safety_confirmed:true,power_safe:true,defects:''},media_ids:[media]})});
+ }
+ mark('sessions_upload','ownership_identity');
+});
+
+test('real prepare freezes payload; submit and retry preserve one listing; incomplete checks cannot publish',async()=>{
+ for(const l of samples){
+  const prepared=await seller.client.rpc('ordinary_goods_prepare_v3',{payload:l.payload});expect(prepared.error).toBeNull();
+  expect((await seller.client.rpc('ordinary_goods_prepare_v3',{payload:{...l.payload,description:'A different frozen description'}})).error).not.toBeNull();
+  for(const a of [buyer.api(),anon])expect((await a.post(`${base}/submit`,{data:l.payload})).status()).not.toBe(200);
+  registered.titles.push(l.payload.title);
+  const res=await seller.api().post(`${base}/submit`,{data:l.payload});expect(res.status()).toBe(200);l.id=(await res.json()).listing_id;registered.ids.push(l.id);
+  const retry=await seller.api().post(`${base}/submit`,{data:l.payload});expect(retry.status()).toBe(200);expect((await retry.json()).listing_id).toBe(l.id);
+  expect((await own(l.id)).seller_id).toBe(seller.userId);
+  if(l.flagged){
+   expect(['running','retrying']).toContain((await workflow(l.id)).workflow_state);await hidden(l.id);
+   await upgradeToAal2(moderator,env.moderator.totpSecret);expect((await review(moderator,l)).error).not.toBeNull();await hidden(l.id);mark('incomplete_nonpublic');
+  }
+  for(const a of [seller,buyer]){const r=await a.client.from('listings').update({status:'active'}).eq('id',l.id).select('id');expect(r.error||r.data?.length===0).toBeTruthy();expect((await review(a,l)).error).not.toBeNull();}
+ }
+ mark('frozen_retry');
+});
+
+test('genuine clean automatic approval, held fraud fixture, buyer discovery and no staff bypass',async()=>{
+ test.setTimeout(600000);
+ const clean=samples[0],held=samples[1];
+ await expect.poll(async()=>{const s=await workflow(clean.id);return s.workflow_state==='published'&&s.provenance==='automatic';},{timeout:300000,intervals:[5000]}).toBe(true);
+ expect((await own(clean.id)).status).toBe('active');mark('clean_auto_publication');
+ // Require actual processed flagged evidence, never treat an indefinitely queued scan as a flag.
+ await expect.poll(async()=>(await workflow(held.id)).workflow_state,{timeout:180000,intervals:[5000]}).toBe('flagged');
+ expect((await own(held.id)).status).toBe('pending_review');await hidden(held.id);
+ if(await moderator.aal()!=='aal2')await upgradeToAal2(moderator,env.moderator.totpSecret);expect(await moderator.aal()).toBe('aal2');expect((await review(moderator,held)).error).not.toBeNull();await hidden(held.id);mark('held_nonpublic');
+ for(const c of [buyer.client,sb]){const result=await scanSearchPages(p=>search(c,p),new Set([clean.id,held.id]));expect(result.has(clean.id)).toBe(true);expect(result.has(held.id)).toBe(false);}
+ const row=await own(clean.id);const page=await anon.get(`/listings/${row.slug}`);expect(page.status()).toBe(200);expect(await page.text()).toContain(clean.payload.title);mark('buyer_visibility');
+});
