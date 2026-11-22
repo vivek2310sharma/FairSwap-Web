@@ -1,0 +1,11 @@
+{
+  "title": "Synthetic strollers prams",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Stroller",
+    "model": "Standard item",
+    "brakes": "Working",
+    "folding": "Locks securely",
+    "included": "Standard item"
+  }
+}

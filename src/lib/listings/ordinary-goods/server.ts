@@ -1,7 +1,6 @@
 import "server-only";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { identityErrorResponse } from "@/lib/idv/gate-server";
 import { sessionSchema } from "../mobiles/server";
 import { sessionErrorCodeSchema, sessionErrors } from "../mobiles/session-errors";
 import { goodsDefinition, goodsSlug, uuid } from "./contract";
@@ -31,8 +30,14 @@ export async function goodsSession(client: SupabaseClient, slug: string, id: str
 }
 
 export function goodsError(error: unknown) {
-  const identity = identityErrorResponse(error);
-  if (identity) return identity;
+  // The database identity guard is authoritative. Keep this adapter portable to Production.
+  const identity = error && typeof error === "object" ? error as { message?: unknown; code?: unknown } : null;
+  if (identity?.code === "IDENTITY_VERIFICATION_REQUIRED" ||
+    (typeof identity?.message === "string" && identity.message.includes("IDENTITY_VERIFICATION_REQUIRED")) ||
+    (typeof error === "string" && error.includes("IDENTITY_VERIFICATION_REQUIRED"))) {
+    return Response.json({ error: "Verify your account before posting a listing.", code: "IDENTITY_VERIFICATION_REQUIRED",
+      verifyUrl: "/account/verification?required=1" }, { status: 403, headers: goodsHeaders });
+  }
   const message = error && typeof error === "object" && "message" in error ? error.message : null;
   const code = sessionErrorCodeSchema.safeParse(message);
   if (code.success) return Response.json({ error: sessionErrors[code.data].message, code: code.data }, { status: sessionErrors[code.data].status, headers: goodsHeaders });

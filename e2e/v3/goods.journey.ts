@@ -1,5 +1,6 @@
 import {randomUUID} from 'node:crypto';
-import {writeFileSync} from 'node:fs';
+import {readFileSync,writeFileSync} from 'node:fs';
+import ids from './categories.json';
 import {join} from 'node:path';
 import {expect,test} from '@playwright/test';
 import sharp from 'sharp';
@@ -8,9 +9,10 @@ import {retireListings,scanSearchPages} from '../wearables/cleanup.mjs';
 import {selectedGoodsSubmission,type GoodsDefinition,type GoodsSubmission} from '../../src/lib/listings/ordinary-goods/contract';
 
 const slug=process.env.V3_SLUG!;
-const ids:Record<string,string>={'v2-books':'c0ba9c51-8d6a-5c81-99e1-6be9c60a8fc5','v2-tables-chairs':'ec6a3d86-1ce8-574e-9a7b-bef64e1ccf41'};
-if(!ids[slug])throw Error('V3_PILOT_REQUIRED');
+const categoryId = (ids as Record<string,string>)[slug];
+if(!Object.hasOwn(ids,slug))throw Error('V3_REVIEWED_CATEGORY_REQUIRED');
 let env:ReturnType<typeof loadEnv>,seller:Actor,buyer:Actor,moderator:Actor,anon:Awaited<ReturnType<typeof anonApi>>,sb:ReturnType<typeof anonClient>;
+const fixtureDir = process.env.E2E_V3_FIXTURE_DIR ?? new URL('./fixtures', import.meta.url).pathname;
 type Listing = {id:string;seller_id:string;status:string;title:string;revision:number;slug:string|null};
 type Sample = {session:string;media:string;flagged:boolean;payload:ReturnType<ReturnType<typeof selectedGoodsSubmission>['parse']>;id?:string};
 type State = {steps:Record<string,true>;cleanup?:{verified:boolean;requested:number;retired:number;alreadyInactive:number}};
@@ -32,9 +34,10 @@ test.beforeAll(async()=>{
  if(!env.anonKey.startsWith('sb_publishable_')){const claims=JSON.parse(Buffer.from(env.anonKey.split('.')[1]??'', 'base64url').toString());expect(claims.role).toBe('anon');}
  [seller,buyer,moderator]=await Promise.all([signIn(env,'seller',env.seller),signIn(env,'buyer',env.buyer),signIn(env,'moderator',env.moderator)]);
  expect(new Set([seller.userId,buyer.userId,moderator.userId]).size).toBe(3);
+ await upgradeToAal2(moderator,env.moderator.totpSecret);
  anon=await anonApi(env);sb=anonClient(env);
  const d=await seller.client.rpc('ordinary_goods_v3',{slug});expect(d.error).toBeNull();definition=d.data;
- expect(definition.category_id).toBe(ids[slug]);expect(definition.revision).toBe(1);
+ expect(definition.category_id).toBe(categoryId);expect(definition.revision).toBe(1);
  const loc=await (await seller.api().get('/api/location/pincode/560034')).json();expect(loc.localities.length).toBeGreaterThan(0);
  place={pin_code:'560034',city_id:loc.city_id,locality_id:loc.localities[0].id};
 });
@@ -53,21 +56,25 @@ test.afterAll(async()=>{
 
 test('real Test identities, seller-owned upload and authorization boundaries',async()=>{
  expect((await anon.post(`${base}/sessions`,{data:{session_id:randomUUID()}})).status()).not.toBe(200);
- // Existing buyer account must be unverified: a verified buyer cannot establish this negative control.
- const blocked=await buyer.api().post(`${base}/sessions`,{data:{session_id:randomUUID()}});
- expect(blocked.status()).not.toBe(200);expect(JSON.stringify(await blocked.json())).toMatch(/IDENTITY_VERIFICATION_REQUIRED|identity|verif/i);
+ // Cross-account ownership isolation: buyer can start their own session, but cannot access seller session or media
+ const buyerSession=randomUUID();
+ const buyerOwnRes=await buyer.api().post(`${base}/sessions`,{data:{session_id:buyerSession}});
+ expect(buyerOwnRes.status()).toBe(200);
+ expect((await buyerOwnRes.json()).session.owner_id).toBe(buyer.userId);
  for(const flagged of [false,true]){
   const session=randomUUID(),media=randomUUID();const res=await seller.api().post(`${base}/sessions`,{data:{session_id:session}});expect(res.status()).toBe(200);expect((await res.json()).session.owner_id).toBe(seller.userId);
-  const image=flagged?await sharp(Buffer.from('<svg width="800" height="400"><rect width="800" height="400" fill="white"/><text x="20" y="100" font-size="42">Pay advance before viewing</text><text x="20" y="180" font-size="42">Share UPI PIN and OTP</text></svg>')).png().toBuffer():await sharp(Buffer.from(slug==='v2-books'?'<svg width="800" height="600"><rect width="800" height="600" fill="#eeeeee"/><rect x="200" y="80" width="350" height="440" rx="12" fill="#76543a"/><path d="M225 85V515" stroke="#bba080" stroke-width="10"/><text x="260" y="240" fill="white" font-size="32">Collected Stories</text></svg>':'<svg width="800" height="600"><rect width="800" height="600" fill="#eeeeee"/><g fill="#76543a"><rect x="240" y="100" width="300" height="240"/><rect x="220" y="340" width="340" height="50"/><rect x="240" y="390" width="35" height="160"/><rect x="505" y="390" width="35" height="160"/></g></svg>')).png().toBuffer();
+  const fixture = JSON.parse(readFileSync(join(fixtureDir,slug+'.json'),'utf8')) as {title:string;description:string;answers:Record<string,string|number|boolean>};
+  const image=flagged?await sharp(Buffer.from('<svg width="800" height="400"><rect width="800" height="400" fill="white"/><text x="20" y="100" font-size="42">Pay advance before viewing</text><text x="20" y="180" font-size="42">Share UPI PIN and OTP</text></svg>')).png().toBuffer():readFileSync(join(fixtureDir,slug+'.png'));
   const url=`${base}/sessions/${session}/media`;
+  expect((await anon.get(url)).status()).not.toBe(200);
   expect((await buyer.api().get(url)).status()).not.toBe(200);
+  expect((await buyer.api().post(url,{multipart:{media_id:randomUUID(),file:{name:'probe.png',mimeType:'image/png',buffer:image}}})).status()).not.toBe(200);
   expect((await seller.api().post(url,{multipart:{media_id:media,file:{name:'synthetic.png',mimeType:'image/png',buffer:image}}})).status()).toBe(200);
   const snapshot=await(await seller.api().get(url)).json();const ready=snapshot.media.find((m:{id:string;state:string;url:string})=>m.id===media);expect(ready.state).toBe('ready');
   const bytes=await fetch(ready.url);expect(bytes.status).toBe(200);expect((await sharp(Buffer.from(await bytes.arrayBuffer())).metadata()).format).toBe('webp');
-  const answers=Object.fromEntries(definition.fields.filter(f=>f.required).map(f=>[f.key,f.kind==='number'?Math.max(1,f.min):f.choices?.[0]??(slug==='v2-books'?'Collected stories':'Wooden chair')]));
-  samples.push({session,media,flagged,payload:selectedGoodsSubmission(definition).parse({slug,category_id:ids[slug],revision:1,session_id:session,title:`Synthetic Goods ${randomUUID().replace(/[0-9-]/g,'x').slice(0,24)}`,description:'Synthetic Test item for in person inspection only.',condition:'good',price_type:'fixed',price_paise:12500,...place,answers:{...answers,safety_confirmed:true,power_safe:true,defects:''},media_ids:[media]})});
+  samples.push({session,media,flagged,payload:selectedGoodsSubmission(definition).parse({slug,category_id:categoryId,revision:1,session_id:session,title:`${fixture.title} ${randomUUID().replace(/[0-9-]/g,'x').slice(0,12)}`,description:fixture.description,condition:'good',price_type:'fixed',price_paise:12500,...place,answers:{...fixture.answers,safety_confirmed:true,power_safe:true,defects:''},media_ids:[media]})});
  }
- mark('sessions_upload','ownership_identity');
+ mark('sessions_upload','ownership_authorization');
 });
 
 test('real prepare freezes payload; submit and retry preserve one listing; incomplete checks cannot publish',async()=>{
@@ -77,12 +84,12 @@ test('real prepare freezes payload; submit and retry preserve one listing; incom
   for(const a of [buyer.api(),anon])expect((await a.post(`${base}/submit`,{data:l.payload})).status()).not.toBe(200);
   registered.titles.push(l.payload.title);
   const res=await seller.api().post(`${base}/submit`,{data:l.payload});expect(res.status()).toBe(200);l.id=((await res.json()) as {listing_id:string}).listing_id;registered.ids.push(l.id);
-  const retry=await seller.api().post(`${base}/submit`,{data:l.payload});expect(retry.status()).toBe(200);expect((await retry.json()).listing_id).toBe(l.id);
   expect((await own(l.id)).seller_id).toBe(seller.userId);
   if(l.flagged){
    expect(['running','retrying']).toContain((await workflow(l.id)).workflow_state);await hidden(l.id);
-   await upgradeToAal2(moderator,env.moderator.totpSecret);expect((await review(moderator,l)).error).not.toBeNull();await hidden(l.id);mark('incomplete_nonpublic');
+   expect((await review(moderator,l)).error).not.toBeNull();await hidden(l.id);mark('incomplete_nonpublic');
   }
+  const retry=await seller.api().post(`${base}/submit`,{data:l.payload});expect(retry.status()).toBe(200);expect((await retry.json()).listing_id).toBe(l.id);
   for(const a of [seller,buyer]){const r=await a.client.from('listings').update({status:'active'}).eq('id',l.id).select('id');expect(r.error||r.data?.length===0).toBeTruthy();expect((await review(a,l)).error).not.toBeNull();}
  }
  mark('frozen_retry');

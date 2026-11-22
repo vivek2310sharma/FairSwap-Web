@@ -1,0 +1,10 @@
+{
+  "title": "Synthetic other electronics gadgets",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Standard item",
+    "brand": "Generic",
+    "model": "Standard item",
+    "power": "Standard item"
+  }
+}

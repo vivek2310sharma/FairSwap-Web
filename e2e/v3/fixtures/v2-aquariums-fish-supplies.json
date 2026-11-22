@@ -1,0 +1,9 @@
+{
+  "title": "Synthetic aquariums fish supplies",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "item_type": "Empty tank",
+    "model": "Standard item",
+    "capacity": "Standard item"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "title": "Synthetic washing machines",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "brand": "Generic",
+    "model": "Standard item",
+    "capacity": 1,
+    "load_type": "Standard item"
+  }
+}

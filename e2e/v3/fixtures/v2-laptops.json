@@ -1,0 +1,11 @@
+{
+  "title": "Synthetic laptops",
+  "description": "Synthetic test item for automated test verification and inspection only.",
+  "answers": {
+    "brand": "Generic",
+    "model": "Standard item",
+    "processor": "Standard item",
+    "ram": 1,
+    "storage": 1
+  }
+}

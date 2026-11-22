@@ -10,7 +10,51 @@ on:
         description: Hosted Test journey (Wearables remains the default)
         type: choice
         default: wearables
-        options: [wearables, v2-books, v2-tables-chairs]
+        options:
+          - wearables
+          - v2-books
+          - v2-air-conditioners
+          - v2-air-coolers-fans-geysers
+          - v2-aquariums-fish-supplies
+          - v2-bags-luggage
+          - v2-beds-wardrobes
+          - v2-cameras-lenses
+          - v2-computer-accessories-storage
+          - v2-cribs-cots-kids-furniture
+          - v2-desktops-monitors
+          - v2-gaming-consoles-games
+          - v2-gym-fitness
+          - v2-headphones-earbuds
+          - v2-home-decor-garden
+          - v2-kids
+          - v2-kitchen-appliances
+          - v2-kitchenware-utensils
+          - v2-laptops
+          - v2-men
+          - v2-mobile-tablet-accessories
+          - v2-musical-instruments
+          - v2-other-appliances
+          - v2-other-electronics-gadgets
+          - v2-other-hobbies
+          - v2-other-household-items
+          - v2-pet-food-accessories
+          - v2-power-backup-solar
+          - v2-printers-scanners
+          - v2-projectors
+          - v2-refrigerators
+          - v2-school-bags-kids-essentials
+          - v2-sofas-dining
+          - v2-speakers-home-theatre
+          - v2-sports-equipment
+          - v2-strollers-prams
+          - v2-sunglasses-accessories
+          - v2-tables-chairs
+          - v2-textbooks-exam-prep
+          - v2-toys-games
+          - v2-tvs
+          - v2-washing-machines
+          - v2-watches
+          - v2-women
       test_activation_run_id:
         description: Backend Test activation run ID (TA) this evidence is bound to
         required: true
@@ -33,6 +77,7 @@ jobs:
     environment: Test
     env:
       E2E_EVIDENCE_DIR: ${{ github.workspace }}/wearables-e2e-evidence
+      E2E_V3_FIXTURE_DIR: ${{ github.workspace }}/e2e/v3/fixtures
       V3_SLUG: ${{ inputs.mode }}
       TEST_ACTIVATION_RUN_ID: ${{ inputs.test_activation_run_id }}
       GITHUB_TOKEN: ${{ github.token }}
