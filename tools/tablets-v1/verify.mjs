@@ -48,7 +48,17 @@ console.log(`Synthetic catalogue: ${tabletCatalogue.brands.length} brands, ${tab
 const taxonomy=JSON.parse(await fs.readFile(path.join(repo,'tests/unit/taxonomy-v2-fixture.json'),'utf8'));
 const goodsDefinitions={};
 if(goods){
- const folder=path.join(repo,'../Backend/supabase/forward-migrations/unified-publishing-v3/supabase/migrations');
+ // Default stays the sibling ../Backend checkout. CI may pass a content-pinned checkout, which must live inside this workspace.
+ const configured=process.env.FAIRSWAP_GOODS_BACKEND_DIR;
+ let backend=path.join(repo,'../Backend');
+ if(configured!==undefined){
+  const real=await fs.realpath(path.resolve(repo,configured)).catch(()=>{throw Error('FAIRSWAP_GOODS_BACKEND_DIR does not exist.')});
+  const inside=path.relative(await fs.realpath(repo),real);
+  if(!configured||inside===''||inside.startsWith('..')||path.isAbsolute(inside))throw Error('FAIRSWAP_GOODS_BACKEND_DIR must be a subdirectory of the workspace.');
+  backend=real;
+ }
+ const folder=path.join(backend,'supabase/forward-migrations/unified-publishing-v3/supabase/migrations');
+ await fs.access(folder).catch(()=>{throw Error('Backend V3 migrations not found at '+folder)});
  const migrations=(await fs.readdir(folder)).filter(name=>name.endsWith('_ordinary_goods_v3.sql') || name.endsWith('_bounded_goods_v3.sql') || name.endsWith('_pedal_and_parts_v3.sql') || name.endsWith('_property_intake_v3.sql') || name.endsWith('_regulated_vehicle_drafts_v3.sql') || name.endsWith('_specialist_vehicle_draft_binding_v3.sql'));
  const sql=(await Promise.all(migrations.map(name=>fs.readFile(path.join(folder,name),'utf8')))).join('\n');
  for(const match of sql.matchAll(/\('([^']+)','[^']+','([^']+)','([^']+)'(?:,'(?:generic|accessory)'|(?:,'specialist:(?:car|two_wheeler)')?,'vehicles','staff_intake'(?:,true)?|,'property','property','staff_intake')?,'(\[.*?\])'::jsonb\)/g)){
