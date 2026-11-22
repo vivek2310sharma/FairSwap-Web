@@ -5,7 +5,12 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 // Never reuse an unrelated service that happens to own the fixture port.
-await new Promise((resolve,reject)=>{const probe=createServer();probe.once('error',reject);probe.listen(4318,'127.0.0.1',()=>probe.close(resolve));});
+const goods=process.argv.includes('--goods');
+const port=await new Promise((resolve,reject)=>{
+ const probe=createServer();probe.once('error',reject);
+ probe.listen(goods?0:4318,'127.0.0.1',()=>{const selected=probe.address().port;probe.close(()=>resolve(selected));});
+});
+const wearables=process.argv.includes('--wearables');
 const repo=process.cwd();const fixture=await fs.mkdtemp(path.join(os.tmpdir(),'fairswap-tablets-v1-'));
 const copy=async name=>fs.cp(path.join(repo,name),path.join(fixture,name),{recursive:true});
 await copy('src');await copy('public');
@@ -23,6 +28,9 @@ await edit('src/app/layout.tsx',s=>s.replace('import { Manrope, Noto_Sans_Devana
 await fs.writeFile(path.join(fixture,'src/components/providers/AuthProvider.tsx'),'"use client"; export function AuthProvider({children}:{children:React.ReactNode}){return children} export function useAuth(){return {user:{id:"11111111-1111-4111-8111-111111111111"},isLoading:false,unreadMessagesCount:0,unreadNotificationsCount:0,refreshUnreadCounts:async()=>{},signOut:async()=>{}}}');
 const id='11111111-1111-4111-8111-111111111111',brand='22222222-2222-4222-8222-222222222222',model='33333333-3333-4333-8333-333333333333',city='55555555-5555-4555-8555-555555555555';
 const catalogue={version:2,revision:'automated-fixture',listing_category_id:id,selection:{category:'mobiles',subcategory:'mobile-phones',version:2},enabled:true,brands:[{id:brand,name:'Apple',aliases:['iPhone'],sort_order:1}],models:[{id:model,brand_id:brand,name:'iPhone 15',aliases:[],older_group:false,other:false,sort_order:1}]};
+const wearableCategoryId='88888888-8888-4888-8888-888888888888';
+const wearableReference=JSON.parse(await fs.readFile(path.join(repo,'src/lib/listings/wearables/catalogue.generated.json'),'utf8'));
+const wearableCatalogue={version:1,revision:wearableReference.revision,listing_category_id:wearableCategoryId,enabled:wearables};
 const tabletCategoryId='77777777-7777-4777-8777-777777777777';
 const tabletCatalogue={version:1,revision:"tablets-v1",selection:{category:"mobiles",subcategory:"tablets",version:1},enabled:true,listing_category_id:tabletCategoryId,brands:[{id:brand,name:"Apple",aliases:[],sort_order:1}],models:[{id:model,brand_id:brand,name:"iPad (9th generation)",aliases:[],sort_order:1,other:false,family:"iPad",generation:"9th generation / 2021",screen_inches:"10.2",storage:["64 GB","256 GB"],connectivity:["wifi","lte"]}]};
 // Synthetic performance fixture. No generated names are published in the runtime catalogue.
@@ -38,9 +46,32 @@ for(const [index,option] of tabletCatalogue.brands.entries())
 console.log(`Synthetic catalogue: ${tabletCatalogue.brands.length} brands, ${tabletCatalogue.models.length} models, ${Buffer.byteLength(JSON.stringify(tabletCatalogue))} JSON bytes`);
 // Reuse the approved test-only tree; independent specialist IDs must agree.
 const taxonomy=JSON.parse(await fs.readFile(path.join(repo,'tests/unit/taxonomy-v2-fixture.json'),'utf8'));
+const goodsDefinitions={};
+if(goods){
+ // Default stays the sibling ../Backend checkout. CI may pass a content-pinned checkout, which must live inside this workspace.
+ const configured=process.env.FAIRSWAP_GOODS_BACKEND_DIR;
+ let backend=path.join(repo,'../Backend');
+ if(configured!==undefined){
+  const real=await fs.realpath(path.resolve(repo,configured)).catch(()=>{throw Error('FAIRSWAP_GOODS_BACKEND_DIR does not exist.')});
+  const inside=path.relative(await fs.realpath(repo),real);
+  if(!configured||inside===''||inside.startsWith('..')||path.isAbsolute(inside))throw Error('FAIRSWAP_GOODS_BACKEND_DIR must be a subdirectory of the workspace.');
+  backend=real;
+ }
+ const folder=path.join(backend,'supabase/forward-migrations/unified-publishing-v3/supabase/migrations');
+ await fs.access(folder).catch(()=>{throw Error('Backend V3 migrations not found at '+folder)});
+ const migrations=(await fs.readdir(folder)).filter(name=>name.endsWith('_ordinary_goods_v3.sql') || name.endsWith('_bounded_goods_v3.sql') || name.endsWith('_pedal_and_parts_v3.sql') || name.endsWith('_property_intake_v3.sql') || name.endsWith('_regulated_vehicle_drafts_v3.sql') || name.endsWith('_specialist_vehicle_draft_binding_v3.sql'));
+ const sql=(await Promise.all(migrations.map(name=>fs.readFile(path.join(folder,name),'utf8')))).join('\n');
+ for(const match of sql.matchAll(/\('([^']+)','[^']+','([^']+)','([^']+)'(?:,'(?:generic|accessory)'|(?:,'specialist:(?:car|two_wheeler)')?,'vehicles','staff_intake'(?:,true)?|,'property','property','staff_intake')?,'(\[.*?\])'::jsonb\)/g)){
+  const [,slug,category_id,risk,fields]=match;
+  if (['v2-baby-gear-car-seats','v2-other-items'].includes(slug)) continue;
+  goodsDefinitions[slug]={slug,category_id,risk,revision:1,fields:JSON.parse(fields)};
+ }
+ if(Object.keys(goodsDefinitions).length!==56)throw Error('Expected exactly 56 Goods fixture definitions');
+}
 for(const node of taxonomy.nodes){
  if(node.parent_id!==null){
-  const categoryId=node.slug==='mobile-phones'?catalogue.listing_category_id:node.slug==='tablets'?tabletCatalogue.listing_category_id:null;
+  const categoryId=node.slug==='mobile-phones'?catalogue.listing_category_id:node.slug==='tablets'?tabletCatalogue.listing_category_id:node.slug==='wearables'&&wearables?wearableCategoryId:null;
+  if (goodsDefinitions[node.slug]) { node.id=goodsDefinitions[node.slug].category_id; node.status='live'; node.posting_enabled=true; continue; }
   if(categoryId)node.id=categoryId;
   node.status=categoryId?'live':'coming_soon';
   node.posting_enabled=categoryId!==null;
@@ -48,21 +79,24 @@ for(const node of taxonomy.nodes){
 }
 await fs.writeFile(path.join(fixture,'src/lib/supabase/server.ts'),`import {cookies} from "next/headers";
 const tabletCatalogue=${JSON.stringify(tabletCatalogue)};
+const wearableCatalogue=${JSON.stringify(wearableCatalogue)};
 const catalogue=${JSON.stringify(catalogue)};
 const taxonomy=${JSON.stringify(taxonomy)};
+const goodsDefinitions:Record<string,{category_id:string}>=${JSON.stringify(goodsDefinitions)};
 export async function createClient(){
  const c=await cookies();
  return {
   auth:{getUser:async()=>({data:{user:c.get('fixture-auth')?.value==='denied'?null:{id:'${id}'}},error:null})},
-  rpc:async(name:string)=>{
+  rpc:async(name:string,args?:{slug?:string})=>{
+   if(name==='ordinary_goods_v3')return {data:args?.slug?goodsDefinitions[args.slug]??null:Object.fromEntries(Object.entries(goodsDefinitions).map(([slug,d])=>[slug,d.category_id])),error:null};
    if(name==='get_category_catalogue_v2')return {data:taxonomy,error:null};
    if(name==='tablets_v1_catalogue')return {data:tabletCatalogue,error:null};
    if(name==='posting_v2_catalogue')return {data:catalogue,error:null};
    if(name==='accessories_v1_catalogue')return {data:{version:1,revision:'accessories-v1',enabled:true,listing_category_id:'${id}'},error:null};
-   if(name==='wearables_v1_catalogue')return {data:null,error:null};
+   if(name==='wearables_v1_catalogue')return {data:wearableCatalogue,error:null};
    return {data:null,error:{message:'Unmocked fixture RPC'}};
   },
-  from:(table:string)=>{const data=table==='cities'?[{id:'${city}',name:'Bengaluru',state:'Karnataka',is_active:true}]:table==='categories'?[{id:'${id}',name:'Electronics',slug:'electronics',macro_category:'goods',is_active:true,new_listing_enabled:true,sort_order:1}]:[];const q:any={select:()=>q,eq:()=>q,in:()=>q,order:()=>q,then:(resolve:any)=>Promise.resolve({data,error:null}).then(resolve)};return q}
+  from:(table:string)=>{const data=table==='posting_category_definitions'?[{listing_category_id:catalogue.listing_category_id,enabled:true}]:table==='tablet_release_v1'?[{category_id:tabletCatalogue.listing_category_id,enabled:true}]:table==='wearable_release_v1'?[{category_id:wearableCatalogue.listing_category_id,enabled:wearableCatalogue.enabled}]:table==='cities'?[{id:'${city}',name:'Bengaluru',state:'Karnataka',is_active:true}]:table==='categories'?[{id:'${id}',name:'Electronics',slug:'electronics',macro_category:'goods',is_active:true,new_listing_enabled:true,sort_order:1}]:[];const q:any={select:()=>q,eq:()=>q,in:()=>q,order:()=>q,maybeSingle:async()=>({data:data[0]??null,error:null}),then:(resolve:any)=>Promise.resolve({data,error:null}).then(resolve)};return q}
  }
 }`);
 await edit('src/lib/listings/mobiles/server.ts',s=>s.replace(/export function mobilesEnabled\(\) \{[^}]*\}/,'export function mobilesEnabled() { return true; }'));
@@ -72,7 +106,7 @@ await edit('src/lib/listings/two-wheeler/server.ts',s=>s.replace(/export functio
 await edit('src/lib/listings/property/server.ts',s=>s.replace(/export const isPropertyEnabled=.*?;/,'export const isPropertyEnabled=()=>false;'));
 await fs.writeFile(path.join(fixture,'src/app/account/listings/[id]/edit/page.tsx'),'export default function Confirm(){return <h1>Submitted for review</h1>}');
 const log=await fs.open(path.join(fixture,'next.log'),'w');
-const server=spawn(process.execPath,[path.join(repo,'node_modules/next/dist/bin/next'),'dev','--webpack','--hostname','127.0.0.1','--port','4318'],{cwd:fixture,env:{...process.env,NEXT_TELEMETRY_DISABLED:'1'},stdio:['ignore',log.fd,log.fd]});
-try{let ready=false;for(let i=0;i<120;i++){if(server.exitCode!==null)throw Error('Fixture server exited; see '+fixture+'/next.log');try{const r=await fetch('http://127.0.0.1:4318/account/listings/new');if(r.ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,500));}if(!ready)throw Error('Fixture did not start; see '+fixture+'/next.log');
- const test=spawn(process.execPath,[path.join(repo,"node_modules/@playwright/test/cli.js"),'test','--config','tests/browser/tablets-v1.config.ts',...process.argv.slice(2)],{cwd:repo,stdio:'inherit'});const code=await new Promise(resolve=>test.on('exit',resolve));if(code)process.exitCode=Number(code)||1;
+const server=spawn(process.execPath,[path.join(repo,'node_modules/next/dist/bin/next'),'dev','--webpack','--hostname','127.0.0.1','--port',String(port)],{cwd:fixture,env:{...process.env,NEXT_TELEMETRY_DISABLED:'1',POST_AD_MOBILES_V2_ENABLED:'true',POST_AD_TABLETS_V1_ENABLED:'true',POST_AD_WEARABLES_V1_ENABLED:wearables?'true':'false'},stdio:['ignore',log.fd,log.fd]});
+try{let ready=false;for(let i=0;i<120;i++){if(server.exitCode!==null)throw Error('Fixture server exited; see '+fixture+'/next.log');try{const r=await fetch(`http://127.0.0.1:${port}/account/listings/new`);if(r.ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,500));}if(!ready)throw Error('Fixture did not start; see '+fixture+'/next.log');
+ const test=spawn(process.execPath,[path.join(repo,"node_modules/@playwright/test/cli.js"),'test','--config',goods?'tests/browser/ordinary-goods.config.ts':wearables?'tests/browser/wearables-v1.config.ts':'tests/browser/tablets-v1.config.ts',...process.argv.slice(2).filter(arg=>!['--wearables','--goods'].includes(arg))],{cwd:repo,stdio:'inherit',env:{...process.env,FAIRSWAP_GOODS_BROWSER_FIXTURE:JSON.stringify(goodsDefinitions),FAIRSWAP_GOODS_BROWSER_PORT:String(port)}});const code=await new Promise(resolve=>test.on('exit',resolve));if(code)process.exitCode=Number(code)||1;
 }finally{server.kill('SIGTERM');await log.close();console.log('Isolated fixture (no environment files): '+fixture);}
