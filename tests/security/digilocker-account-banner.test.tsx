@@ -61,6 +61,7 @@ describe("Account DigiLocker banner is server-derived", () => {
     const link = within(banner).getByRole("link", { name: en.button });
     expect(link).toHaveAttribute("href", "/account/verification");
     expect(within(banner).queryByText(en.verified)).toBeNull();
+    expect(banner.querySelectorAll("p")).toHaveLength(0);
     expect(banner.textContent).not.toMatch(/coming soon/i);
   });
 
