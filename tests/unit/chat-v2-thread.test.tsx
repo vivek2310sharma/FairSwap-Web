@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { ChatV2Thread } from "@/components/communication/ChatV2Thread";
 import { conversation, ids, message, messages } from "./chat-v2-fixtures";
 import type { ChatMessage } from "@/lib/chat-v2/contracts";
+import { chatCopy } from "@/lib/chat-v2/copy";
 const mocks = vi.hoisted(() => ({ load: vi.fn(), findings: vi.fn(), send: vi.fn(), read: vi.fn(), refresh: vi.fn(), remove: vi.fn(), on: vi.fn(), callback: null as null | ((payload: { new: unknown }) => void) }));
 vi.mock("@/lib/chat-v2/actions", () => ({ loadChatMessages: mocks.load, loadChatFindings: mocks.findings }));
 vi.mock("@/app/account/messages/actions", () => ({ sendMessageAction: mocks.send, markConversationReadAction: mocks.read }));
@@ -96,4 +97,17 @@ it("hides private history and composer when an enabled-path refresh is denied", 
   await waitFor(() => expect(screen.queryByText(message.content)).not.toBeInTheDocument());
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent("do not have access");
+});
+it("DigiLocker gate: unverified participant gets the verification screen instead of a composer; blocked stays distinct", () => {
+  render(<ChatV2Thread conversation={conversation} currentUserId={ids.user} initial={messages} identityRequired />);
+  expect(screen.getByRole("link", { name: "Verify with DigiLocker" }).getAttribute("href")).toContain(`/account/verification?required=1&context=messages&next=%2Faccount%2Fmessages%2F${conversation.id}`);
+  expect(screen.queryByRole("textbox")).toBeNull();
+  expect(screen.getByText("Blue bicycle")).toBeInTheDocument();
+  cleanup();
+  render(<ChatV2Thread conversation={conversation} currentUserId={ids.user} initial={messages} identityRequired isBlockedInitial />);
+  expect(screen.queryByRole("link", { name: "Verify with DigiLocker" })).toBeNull();
+  expect(screen.getByText(chatCopy().blocked)).toBeInTheDocument();
+  cleanup();
+  render(<ChatV2Thread conversation={conversation} currentUserId={ids.user} initial={messages} />);
+  expect(screen.getByRole("textbox")).toBeInTheDocument();
 });

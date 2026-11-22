@@ -6,7 +6,8 @@ import MacroCategorySelector from "@/components/listings/MacroCategorySelector";
 import styles from "@/components/listings/posting/Posting.module.css";
 import { createClient } from "@/lib/supabase/server";
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
-import { needsIdentityVerification } from "@/lib/idv/gate-server";
+import { identityGateLocale, needsIdentityVerification } from "@/lib/idv/gate-server";
+import { IdentityRequiredScreen } from "@/components/idv/IdentityRequiredScreen";
 import { loadGoodsBindings, loadGoodsDefinition } from "@/lib/listings/ordinary-goods/server";
 import { loadTaxonomy } from "@/lib/listings/taxonomy-v2-server";
 import { loadSpecialistBindings } from "@/lib/listings/posting-capabilities-server";
@@ -46,8 +47,21 @@ export default async function NewListingPage({
     redirect(`/auth/sign-in?${signInQuery.toString()}`);
   }
 
-  // DigiLocker V1 UX pre-check only (flag-gated, fails open): the Backend triggers are the enforcement.
-  if (await needsIdentityVerification(supabase)) redirect("/account/verification?required=1");
+  // Mandatory DigiLocker gate, UX only: status comes from the authenticated get_my_marketplace_access() RPC and is
+  // shown BEFORE any ad data loads. The Backend triggers remain the enforcement for every create/draft/media write.
+  if (await needsIdentityVerification(supabase)) {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(await searchParams)) {
+      if (Array.isArray(value)) for (const item of value) query.append(key, item);
+      else if (value !== undefined) query.append(key, value);
+    }
+    const search = query.toString();
+    return (
+      <main id="posting-content">
+        <IdentityRequiredScreen context="post" returnTo={search ? `/account/listings/new?${search}` : "/account/listings/new"} locale={await identityGateLocale()} />
+      </main>
+    );
+  }
 
   const choice = resolveCreationQuery(await searchParams);
   if (choice.kind === "redirect") redirect(CANONICAL_POSTING_PATH);

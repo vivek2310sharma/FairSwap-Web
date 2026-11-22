@@ -4,17 +4,25 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Send, X, AlertCircle } from "lucide-react";
 import { startConversationAction } from "@/app/account/messages/actions";
+import { IdentityRequiredScreen } from "@/components/idv/IdentityRequiredScreen";
+import type { DigiLockerLocale } from "@/lib/idv/digilocker-copy";
 
 interface ContactSellerButtonProps {
   sellerName: string;
   listingId?: string;
+  /** Server-derived (authenticated RPC) UX flag: the signed-in buyer is not DigiLocker-verified while the gate is ON. */
+  identityRequired?: boolean;
+  returnTo?: string;
+  locale?: DigiLockerLocale;
 }
 
-export function ContactSellerButton({ sellerName, listingId }: ContactSellerButtonProps) {
+export function ContactSellerButton({ sellerName, listingId, identityRequired = false, returnTo, locale = "en" }: ContactSellerButtonProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState("Hi, is this still available?");
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // The Backend can also refuse after a stale page (e.g. the setting was switched on); show the same screen then.
+  const [gateRefused, setGateRefused] = useState(false);
   const router = useRouter();
 
   const handleSend = async (e: React.FormEvent) => {
@@ -31,7 +39,9 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
     const result = await startConversationAction(listingId, clean, clientRequestId);
     setIsSending(false);
 
-    if (result.redirectTo) {
+    if (result.redirectTo?.startsWith("/account/verification")) {
+      setGateRefused(true);
+    } else if (result.redirectTo) {
       setModalOpen(false);
       router.push(result.redirectTo);
     } else if (result.error) {
@@ -82,6 +92,9 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
               </div>
             </div>
 
+            {identityRequired || gateRefused ? (
+              <IdentityRequiredScreen context="messages" returnTo={returnTo} locale={locale} compact />
+            ) : (
             <form onSubmit={handleSend} className="mt-4 space-y-4">
               {errorMessage && (
                 <div className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-200 flex items-center gap-2">
@@ -132,6 +145,7 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

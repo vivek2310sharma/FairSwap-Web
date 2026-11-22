@@ -3,7 +3,7 @@ import { IDENTITY_REQUIRED_CODE, IDENTITY_REQUIRED_MESSAGE, IDENTITY_VERIFY_URL,
 
 /**
  * UX only. The Backend triggers are the enforcement and fail closed on every write; this pre-flight exists so users
- * get an actionable message instead of a generic failure. It therefore fails OPEN on errors or unknown shapes.
+ * get an actionable screen/message instead of a generic failure. Status is read from the authenticated database.
  */
 export class IdentityVerificationRequiredError extends Error {
   readonly code = IDENTITY_REQUIRED_CODE;
@@ -14,28 +14,46 @@ export class IdentityVerificationRequiredError extends Error {
 
 type RpcCapable = { rpc?: (fn: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }> };
 
-/** Web-side switch for the pre-flight (default OFF). Turn it on together with the Backend gate setting
- *  `identity_verification_required`; when OFF no extra round trip is made and the DB error mapping still applies. */
-export function identityPreflightEnabled(): boolean {
-  return process.env.FAIRSWAP_IDENTITY_GATE_ENABLED === "true";
-}
+export type IdentityGateState = "required" | "clear" | "unknown";
 
-export async function needsIdentityVerification(client: unknown): Promise<boolean> {
-  if (!identityPreflightEnabled()) return false;
+/**
+ * UX state from the authenticated RPC `get_my_marketplace_access()`. "required" only when the server setting is ON
+ * (`verification_required === true`) and the strict `digilocker_verified` flag is not exactly `true`. The generic
+ * legacy `identity_verified`, query parameters and client claims are never consulted. "unknown" (RPC error, throw or
+ * malformed shape) is not proof of anything: it never renders a verified badge, and the Backend triggers still
+ * refuse every gated write.
+ */
+export async function getIdentityGate(client: unknown): Promise<IdentityGateState> {
   try {
     const c = client as RpcCapable;
-    if (typeof c?.rpc !== "function") return false;
+    if (typeof c?.rpc !== "function") return "unknown";
     const { data, error } = await c.rpc("get_my_marketplace_access");
-    if (error || !data || typeof data !== "object") return false;
-    const a = data as { identity_verified?: unknown; verification_required?: unknown };
-    return a.verification_required === true && a.identity_verified !== true;
+    if (error || !data || typeof data !== "object" || Array.isArray(data)) return "unknown";
+    const a = data as { digilocker_verified?: unknown; verification_required?: unknown };
+    if (typeof a.verification_required !== "boolean") return "unknown";
+    return a.verification_required && a.digilocker_verified !== true ? "required" : "clear";
   } catch {
-    return false;
+    return "unknown";
   }
+}
+
+/** Pre-flight for UX. Unknown status is not blocked here (no global hiding on RPC failure); the DB refuses the write. */
+export async function needsIdentityVerification(client: unknown): Promise<boolean> {
+  return (await getIdentityGate(client)) === "required";
 }
 
 export async function assertIdentityVerified(client: unknown): Promise<void> {
   if (await needsIdentityVerification(client)) throw new IdentityVerificationRequiredError();
+}
+
+/** UI language for the verification-required screen (same cookie the verification page reads). */
+export async function identityGateLocale(): Promise<"en" | "hi"> {
+  try {
+    const { cookies } = await import("next/headers");
+    return (await cookies()).get("NEXT_LOCALE")?.value === "hi" ? "hi" : "en";
+  } catch {
+    return "en";
+  }
 }
 
 /** Maps the gate error (pre-flight or Backend) to a 403 JSON response; null for anything else. */

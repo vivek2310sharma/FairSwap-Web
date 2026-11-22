@@ -9,6 +9,7 @@ import { HELP_CENTRE_URL } from "@/lib/help-centre";
 import { PhotoGallery } from "@/components/listings/PhotoGallery";
 import { FavouriteButton } from "@/components/listings/FavouriteButton";
 import { ContactSellerButton } from "@/components/listings/ContactSellerButton";
+import { getIdentityGate, identityGateLocale } from "@/lib/idv/gate-server";
 import {CONDITIONS as ACCESSORY_CONDITIONS} from "@/lib/listings/accessories/contract";
 import AccessoryListingDetails from "@/components/listings/AccessoryListingDetails";
 import {loadAccessoryDetails} from "@/lib/listings/accessories/public";
@@ -132,6 +133,10 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
     // Server-authoritative DigiLocker badge RPC; fails closed (no badge) on any error.
     hasDigiLockerBadge(supabase, listing.seller_id),
   ]);
+
+  // Mandatory DigiLocker gate (UX only, authenticated RPC). Never for the seller's own preview or signed-out visitors.
+  const identityRequired = !!authData?.user && authData.user.id !== listing.seller_id
+    && (await getIdentityGate(supabase)) === "required";
 
   let isFavourited = false;
   if (authData?.user) {
@@ -432,6 +437,9 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                   <ContactSellerButton
                     sellerName={listing.seller.display_name}
                     listingId={listing.id}
+                    identityRequired={identityRequired}
+                    returnTo={`/listings/${listing.slug}`}
+                    locale={identityRequired ? await identityGateLocale() : "en"}
                   />
 
                   <Link

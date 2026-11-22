@@ -317,4 +317,21 @@ describe("HDR-03 viewed-thread read cursor", () => {
     await act(async () => { resolve({ success: true }); });
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
+
+});
+
+describe("DigiLocker mandatory gate", () => {
+  const gateConversation = { id: "conv-123", listing_id: "listing-456", buyer_id: "user-buyer", seller_id: "user-seller", last_message_at: "2026-09-18T11:56:59.078806+00:00", created_at: "2026-09-18T11:56:59.000000+00:00" } as Conversation;
+  it("DigiLocker gate: unverified participant gets the verification screen instead of the composer; blocked stays distinct", () => {
+    const { unmount } = render(<ChatThread conversation={gateConversation} initialMessages={[]} currentUserId="user-buyer" identityRequired />);
+    expect(screen.getByRole("link", { name: "Verify with DigiLocker" }).getAttribute("href")).toContain("context=messages&next=%2Faccount%2Fmessages%2Fconv-123");
+    expect(screen.queryByLabelText("Send message")).toBeNull();
+    unmount();
+    const blocked = render(<ChatThread conversation={gateConversation} initialMessages={[]} currentUserId="user-buyer" identityRequired isBlockedInitial />);
+    expect(screen.queryByRole("link", { name: "Verify with DigiLocker" })).toBeNull();
+    expect(screen.getByText(/Messaging is currently unavailable between these participants/)).toBeTruthy();
+    blocked.unmount();
+    render(<ChatThread conversation={gateConversation} initialMessages={[]} currentUserId="user-buyer" />);
+    expect(screen.getByLabelText("Send message")).toBeTruthy();
+  });
 });

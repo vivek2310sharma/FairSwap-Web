@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
+import { getIdentityGate, identityGateLocale } from "@/lib/idv/gate-server";
 import { ChatThread } from "@/components/communication/ChatThread";
 import type { Metadata } from "next";
 import { type Conversation, type Message } from "@/types/communication";
@@ -94,6 +95,10 @@ export default async function ConversationPage({
     }
   }
 
+  // Mandatory DigiLocker gate (UX only): lock the composer; the Backend triggers refuse the write regardless.
+  const identityRequired = !isBlocked && (await getIdentityGate(supabase)) === "required";
+  const gateLocale = identityRequired ? await identityGateLocale() : "en";
+
   // Fetch profiles safely
   const userIdsToFetch = [convData.buyer_id, convData.seller_id].filter(Boolean) as string[];
   const { data: profileRows } = userIdsToFetch.length > 0
@@ -153,6 +158,8 @@ export default async function ConversationPage({
               initialMessages={initialMessages}
               currentUserId={userId}
               isBlockedInitial={isBlocked}
+              identityRequired={identityRequired}
+              locale={gateLocale}
             />
           </div>
         </div>

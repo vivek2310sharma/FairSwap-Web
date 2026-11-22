@@ -1,6 +1,7 @@
 "use client";
 
 import { GateAwareError } from "@/components/idv/IdentityRequiredCta";
+import { IdentityRequiredScreen } from "@/components/idv/IdentityRequiredScreen";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
@@ -23,6 +24,9 @@ interface ChatThreadProps {
   initialMessages: Message[];
   currentUserId: string;
   isBlockedInitial?: boolean;
+  /** Server-derived (authenticated RPC) UX flag: this participant is not DigiLocker-verified while the gate is ON. */
+  identityRequired?: boolean;
+  locale?: "en" | "hi";
 }
 
 export function ChatThread({
@@ -30,6 +34,8 @@ export function ChatThread({
   initialMessages,
   currentUserId,
   isBlockedInitial = false,
+  identityRequired = false,
+  locale = "en",
 }: ChatThreadProps) {
   const { refreshUnreadCounts } = useAuth();
   const [readError, setReadError] = useState(false);
@@ -365,6 +371,10 @@ export function ChatThread({
       ) : isListingClosed ? (
         <div className="shrink-0 border-t border-border bg-surface p-4 text-center text-xs text-muted">
           This conversation is closed because the ad was removed or rejected by moderation.
+        </div>
+      ) : identityRequired ? (
+        <div className="shrink-0 border-t border-border bg-card">
+          <IdentityRequiredScreen context="messages" returnTo={`/account/messages/${conversation.id}`} locale={locale} compact />
         </div>
       ) : (
         <form onSubmit={handleSend} className="shrink-0 border-t border-border bg-card p-3">

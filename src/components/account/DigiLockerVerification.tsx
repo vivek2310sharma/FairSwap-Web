@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
 import { DigiLockerBadge } from "@/components/idv/DigiLockerBadge";
 import { digiLockerCopy, type DigiLockerLocale } from "@/lib/idv/digilocker-copy";
+import { safeVerificationReturnPath } from "@/lib/idv/return-path";
 
 type ResultKey = keyof (typeof digiLockerCopy)["en"]["results"];
 
@@ -13,11 +14,19 @@ interface Props {
   result?: string;
   showRequiredNotice?: boolean;
   locale?: DigiLockerLocale;
+  /** Already-sanitised same-origin destination (see safeVerificationReturnPath). */
+  returnTo?: string | null;
+}
+
+const RETURN_KEY = "fairswap.idv.returnTo";
+const subscribeNoop = () => () => {};
+function readStoredReturn(): string | null {
+  try { return safeVerificationReturnPath(window.sessionStorage.getItem(RETURN_KEY)); } catch { return null; }
 }
 
 const PROVIDER_ORIGIN = "https://digilocker.meripehchaan.gov.in";
 
-export function DigiLockerVerification({ verified: initialVerified, result, showRequiredNotice, locale = "en" }: Props) {
+export function DigiLockerVerification({ verified: initialVerified, result, showRequiredNotice, locale = "en", returnTo = null }: Props) {
   const c = digiLockerCopy[locale];
   // Only the authenticated Backend status (server-rendered `verified`, or the start API's alreadyVerified) can show
   // the Verified state. The `dl` callback query parameter is a notification only and is trivially forgeable.
@@ -25,6 +34,13 @@ export function DigiLockerVerification({ verified: initialVerified, result, show
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The provider round trip drops query parameters, so the validated destination is kept for this tab only.
+  const storedReturn = useSyncExternalStore(subscribeNoop, readStoredReturn, () => null);
+  useEffect(() => {
+    const safe = safeVerificationReturnPath(returnTo);
+    try { if (safe) window.sessionStorage.setItem(RETURN_KEY, safe); } catch { /* storage unavailable */ }
+  }, [returnTo]);
+  const continueTo = safeVerificationReturnPath(returnTo) ?? storedReturn;
   const resultMessage =
     result === "verified" ? c.pending : result && result in c.results ? c.results[result as ResultKey] : null;
 
@@ -54,7 +70,14 @@ export function DigiLockerVerification({ verified: initialVerified, result, show
   return (
     <main id="verification-content" className="mx-auto w-full max-w-xl px-4 py-6">
       {verified ? (
-        <p role="status"><DigiLockerBadge /></p>
+        <>
+          <p role="status"><DigiLockerBadge /></p>
+          {continueTo && (
+            <Link href={continueTo} onClick={() => { try { window.sessionStorage.removeItem(RETURN_KEY); } catch { /* storage unavailable */ } }} className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-black px-4 py-3 font-medium text-white">
+              {c.continue}
+            </Link>
+          )}
+        </>
       ) : (
         <>
           <h1 className="flex items-center gap-2 text-xl font-semibold">
