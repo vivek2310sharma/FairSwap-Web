@@ -6,6 +6,11 @@ name: Wearables V1 Test E2E
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: Hosted Test journey (Wearables remains the default)
+        type: choice
+        default: wearables
+        options: [wearables, v2-books, v2-tables-chairs]
       test_activation_run_id:
         description: Backend Test activation run ID (TA) this evidence is bound to
         required: true
@@ -28,6 +33,7 @@ jobs:
     environment: Test
     env:
       E2E_EVIDENCE_DIR: ${{ github.workspace }}/wearables-e2e-evidence
+      V3_SLUG: ${{ inputs.mode }}
       TEST_ACTIVATION_RUN_ID: ${{ inputs.test_activation_run_id }}
       GITHUB_TOKEN: ${{ github.token }}
       E2E_SUPABASE_URL: ${{ vars.E2E_SUPABASE_URL }}
@@ -74,23 +80,41 @@ jobs:
       - name: Install dependencies
         run: corepack pnpm install --frozen-lockfile
 
+      - name: Verify V3 evidence writer rejects incomplete results
+        if: ${{ inputs.mode != 'wearables' }}
+        run: node --test e2e/v3/evidence.test.mjs
+
       - name: Preflight (runner isolation, READY non-Production deployment, Production flag OFF)
-        run: node e2e/wearables/preflight.mjs
+        run: |
+          if [ "$V3_SLUG" = wearables ]; then node e2e/wearables/preflight.mjs; else node e2e/v3/preflight.mjs; fi
 
       - name: Run Wearables authenticated journey
-        run: corepack pnpm exec playwright test -c e2e/wearables/playwright.config.ts
+        run: |
+          if [ "$V3_SLUG" = wearables ]; then corepack pnpm exec playwright test -c e2e/wearables/playwright.config.ts; else corepack pnpm exec playwright test -c e2e/v3/playwright.config.ts; fi
 
       - name: Write evidence (only after every required check passed)
         if: success()
-        run: node e2e/wearables/write-evidence.mjs
+        run: |
+          if [ "$V3_SLUG" = wearables ]; then node e2e/wearables/write-evidence.mjs; else node e2e/v3/evidence.mjs; fi
 
       - name: Upload evidence
-        if: success()
+        if: ${{ success() && inputs.mode == 'wearables' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pinned v4.6.2
         with:
           name: wearables-e2e-test-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ github.workspace }}/wearables-e2e-evidence/wearables-v1-e2e-test.json
             ${{ github.workspace }}/wearables-e2e-evidence/SHA256SUMS_e2e
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload V3 evidence
+        if: ${{ success() && inputs.mode != 'wearables' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: v3-hosted-e2e-${{ inputs.mode }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ github.workspace }}/wearables-e2e-evidence/v3-hosted-e2e.json
+            ${{ github.workspace }}/wearables-e2e-evidence/SHA256SUMS_v3
           if-no-files-found: error
           retention-days: 30

@@ -82,3 +82,5 @@ See [Ratings operations](operations/RATINGS_V1_OPERATIONS.md). Activation remain
 
 
 2026-11-18 local candidate: [Taxonomy V2 Web 3A](operations/TAXONOMY_V2_WEB_3A.md) adds RPC-driven category presentation and keeps existing posting contracts separate. Hosted rollout remains unverified.
+
+Hosted V3 pilot evidence tooling is documented in [e2e/v3/README.md](../e2e/v3/README.md). Hosted execution remains UNVERIFIED; this tooling does not authorize category activation.

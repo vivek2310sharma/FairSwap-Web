@@ -65,7 +65,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Wearables preflight and cleanup contracts
-        run: node --test e2e/wearables/*.selftest.mjs
+        run: |
+          node --test e2e/wearables/*.selftest.mjs
+          node --test e2e/v3/evidence.test.mjs
 
       - name: Validate active documentation and retired milestone gates
         run: pnpm docs:check
