@@ -26,6 +26,8 @@ Production Vercel deployment `dpl_3jVFGxM3KiQJJUseTkvY5V1fZXvq` is READY at Web 
 - Web main/staging have byte-identical `ordinary-goods/contract.ts`, `OrdinaryGoodsForm.tsx`, the three Goods API routes, `taxonomy-v2.ts`, `tests/security/ordinary-goods-boundary.test.ts` and `tests/unit/ordinary-goods.test.ts`.
 - Staging's `tests/browser/ordinary-goods.spec.ts` and `tests/browser/ordinary-goods.config.ts` are absent on main. That Playwright suite uses loopback mocked responses, **not** hosted Supabase/browser acceptance. Reconcile only applicable tests, not IDV code.
 - `ordinary-goods/server.ts` and `posting-base-guard.ts` differ between main/staging due to external IDV error/preflight handling; do not overwrite main from staging while porting Goods tests.
+- The existing staging `.github/workflows/ci.yml` contains no Ordinary Goods/V3 execution step, despite the browser suite existing. Integrate focused Goods tests into that **existing workflow**, keeping the normal CI gates; do not create a new feature-specific workflow.
+- The staging browser suite exercises `v2-books` but does not include a `v2-tables-chairs` case; add both pilot leaf journeys explicitly.
 - No authorized Test-user, cross-account, real-media, real-moderation, end-to-end publication and buyer-discovery acceptance is yet evidenced for these two categories.
 
 ## Acceptance checklist (testable; no early activation)
@@ -40,6 +42,6 @@ Production Vercel deployment `dpl_3jVFGxM3KiQJJUseTkvY5V1fZXvq` is READY at Web 
 ## Coding handoff
 
 Use **Claude Code Sonnet**, plan mode for the focused multi-file test change, with exact paths:
-`tests/browser/ordinary-goods.spec.ts`, `tests/browser/ordinary-goods.config.ts`, `tests/security/ordinary-goods-boundary.test.ts`, `tests/unit/ordinary-goods.test.ts`, and only if an actual gap is proven: `src/lib/listings/ordinary-goods/contract.ts`, `src/components/listings/posting/OrdinaryGoodsForm.tsx`, `src/app/account/listings/new/page.tsx`, or their existing V3 API routes. Read relevant referenced imports on demand, never scan or replace the whole repo. Work from the staging baseline `d5374fda6e9d0ad4370c0fe51542748249c2da4b` in an isolated local worktree; do not modify unrelated IDV changes.
+`tests/browser/ordinary-goods.spec.ts`, `tests/browser/ordinary-goods.config.ts`, `tests/security/ordinary-goods-boundary.test.ts`, `tests/unit/ordinary-goods.test.ts`, `.github/workflows/ci.yml` (existing workflow, when needed for test coverage), and only if an actual gap is proven: `src/lib/listings/ordinary-goods/contract.ts`, `src/components/listings/posting/OrdinaryGoodsForm.tsx`, `src/app/account/listings/new/page.tsx`, or their existing V3 API routes. Read relevant referenced imports on demand, never scan or replace the whole repo. Work from the staging baseline `d5374fda6e9d0ad4370c0fe51542748249c2da4b` in an isolated local worktree; do not modify unrelated IDV changes.
 
 Coding agent writes source/tests and returns exact diffs, test output, hashes and limitations. **No agent GitHub commands, push, branch, PR or merge**. ChatGPT handles GitHub branch `feat/v3-books-tables-acceptance`, commits, PR into `staging`, and later a separate focused `main` release after automated staging acceptance. This documentation-only draft is not category release authorization.
