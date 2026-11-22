@@ -35,14 +35,14 @@ import {reviewableField,reviewPacketSchema} from '@/lib/listings/submission-read
 import {propertyRentSummary,paiseToPropertyRupees} from '@/lib/listings/property/contract';
 import type {Database} from '@/types/database';
 import type {SupabaseClient} from '@supabase/supabase-js';
-import { isBadgeValid } from "@/lib/idv/server-helpers";
+import { hasDigiLockerBadge } from "@/lib/idv/digilocker-badge-server";
+import { DigiLockerBadge } from "@/components/idv/DigiLockerBadge";
 import {
   MapPin,
   Calendar,
   User,
   AlertTriangle,
   Info,
-  ShieldCheck,
 } from "lucide-react";
 
 interface ListingDetailPageProps {
@@ -124,25 +124,14 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
   const tabletDetails=listing.category.slug==="tablets"?await loadTabletDetails(supabase,listing.id):null;
   const wearableDetails=listing.category.slug==="wearables"?await loadWearableDetails(supabase,listing.id):null;
   const accessoryDetails=listing.category.slug==="mobile-accessories"?await loadAccessoryDetails(supabase,listing.id):null;
-  const [sellerOtherListings, { data: authData }, { data: sellerIdvData }] = await Promise.all([
+  const [sellerOtherListings, { data: authData }, isSellerVerified] = await Promise.all([
     listing.seller_id
       ? getSellerPublicListings(listing.seller_id, listing.id)
       : Promise.resolve([]),
     supabase.auth.getUser(),
-    listing.seller_id
-      ? supabase
-          .from("user_identity_verifications")
-          .select("badge_issued, verification_status, valid_until")
-          .eq("user_id", listing.seller_id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
+    // Server-authoritative DigiLocker badge RPC; fails closed (no badge) on any error.
+    hasDigiLockerBadge(supabase, listing.seller_id),
   ]);
-
-  const isSellerVerified = isBadgeValid(
-    sellerIdvData?.badge_issued,
-    sellerIdvData?.verification_status,
-    sellerIdvData?.valid_until
-  );
 
   let isFavourited = false;
   if (authData?.user) {
@@ -423,15 +412,7 @@ export default async function ListingDetailPage({ params, searchParams }: Listin
                           {listing.seller.display_name}
                         </Link>
                       </h3>
-                      {isSellerVerified && (
-                        <span
-                          title="Verified Profile"
-                          className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
-                        >
-                          <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                          <span>Verified</span>
-                        </span>
-                      )}
+                      {isSellerVerified && <DigiLockerBadge className="text-[11px]" />}
                     </div>
                     <p className="text-xs text-muted">Member since {memberSince}</p>
                   </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { GateAwareError } from "@/components/idv/IdentityRequiredCta";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
@@ -352,7 +353,7 @@ export function ChatThread({
       {errorMessage && (
         <div className="mx-4 mb-2 flex items-center gap-2 rounded-xl border border-rose-300 bg-rose-50 p-2.5 text-xs text-rose-800 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-200 shrink-0">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{errorMessage}</span>
+          <span><GateAwareError message={errorMessage} /></span>
         </div>
       )}
 
