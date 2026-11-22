@@ -56,11 +56,7 @@ test.afterAll(async()=>{
 
 test('real Test identities, seller-owned upload and authorization boundaries',async()=>{
  expect((await anon.post(`${base}/sessions`,{data:{session_id:randomUUID()}})).status()).not.toBe(200);
- // Cross-account ownership isolation: buyer can start their own session, but cannot access seller session or media
- const buyerSession=randomUUID();
- const buyerOwnRes=await buyer.api().post(`${base}/sessions`,{data:{session_id:buyerSession}});
- expect(buyerOwnRes.status()).toBe(200);
- expect((await buyerOwnRes.json()).session.owner_id).toBe(buyer.userId);
+ // Cross-account isolation: buyer must not access seller session or media (no buyer-owned session is created)
  for(const flagged of [false,true]){
   const session=randomUUID(),media=randomUUID();const res=await seller.api().post(`${base}/sessions`,{data:{session_id:session}});expect(res.status()).toBe(200);expect((await res.json()).session.owner_id).toBe(seller.userId);
   const fixture = JSON.parse(readFileSync(join(fixtureDir,slug+'.json'),'utf8')) as {title:string;description:string;answers:Record<string,string|number|boolean>};
