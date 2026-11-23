@@ -100,7 +100,7 @@ export function isLabAuthorizeUrl(raw: unknown): raw is string {
     return u.protocol === "https:" && u.origin === DIGILOCKER_AUTHORIZE_ORIGIN && !u.username && !u.password &&
       /^\/public\/oauth2\/[12]\/authorize$/.test(u.pathname) &&
       STATE_PATTERN.test(q.get("state") ?? "") && q.get("response_type") === "code" &&
-      q.get("scope") === "openid" && q.get("acr") === "aadhaar" && q.get("code_challenge_method") === "S256" &&
+      q.get("scope") === "avs" && q.get("acr") === "aadhaar" && q.get("code_challenge_method") === "S256" &&
       (q.get("code_challenge") ?? "").length > 0 && q.get("redirect_uri") === LAB_REDIRECT_URI;
   } catch {
     return false;
@@ -255,8 +255,9 @@ export async function handleLabCallback(req: NextRequest): Promise<NextResponse>
   const providerError = q.get("error");
   if ((!code && !providerError) || (code && providerError) || (code && code.length > 2048)) return finish(failedView("INVALID_CALLBACK"));
 
-  // Provider error text is never relayed: it maps to an allowlisted token or "denied".
-  const mapped = (PROVIDER_ERRORS as readonly string[]).includes(providerError ?? "") ? (providerError as (typeof PROVIDER_ERRORS)[number]) : "denied";
+  // Unknown provider errors (including invalid_scope_avs) are failures, never user consent denial.
+  // Do not forward the original error or its description: only a fixed allowlisted value.
+  const mapped = (PROVIDER_ERRORS as readonly string[]).includes(providerError ?? "") ? (providerError as (typeof PROVIDER_ERRORS)[number]) : "server_error";
   const body = completeRequest.safeParse(providerError
     ? { action: "complete", flow: "lab", state, error: mapped }
     : { action: "complete", flow: "lab", state, code });
