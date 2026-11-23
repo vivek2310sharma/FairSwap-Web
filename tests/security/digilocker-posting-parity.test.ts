@@ -21,6 +21,10 @@ describe("Production DigiLocker posting UX parity", () => {
     expect(s).toContain('mediaApiError("IDENTITY_VERIFICATION_REQUIRED")');
     expect(src("src/lib/media/api-contract.ts")).toContain('"IDENTITY_VERIFICATION_REQUIRED"');
   });
+  it("preserves the selected posting route through DigiLocker and handles stale contact-gate refusal", () => {
+    expect(src("src/app/account/listings/new/page.tsx")).toContain("returnTo={returnTo}");
+    expect(src("src/components/listings/ContactSellerButton.tsx")).toContain('result.redirectTo?.startsWith("/account/verification")');
+  });
   it("both user-facing posting forms offer a DigiLocker action after backend refusal", () => {
     for(const p of ["src/components/listings/ListingForm.tsx","src/components/listings/MediaUploader.tsx"]) {
       expect(src(p)).toContain("<GateAwareError message=");

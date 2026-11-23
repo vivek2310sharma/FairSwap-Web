@@ -36,7 +36,9 @@ export function ContactSellerButton({ sellerName, listingId, identityRequired = 
     const result = await startConversationAction(listingId, clean, clientRequestId);
     setIsSending(false);
 
-    if (result.redirectTo) {
+    if (result.redirectTo?.startsWith("/account/verification")) {
+      setGateRefused(true);
+    } else if (result.redirectTo) {
       setModalOpen(false);
       router.push(result.redirectTo);
     } else if (result.error) {

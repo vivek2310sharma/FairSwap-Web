@@ -81,7 +81,17 @@ export default async function NewListingPage({
 
   // UX preflight only; database triggers enforce the gate on every write.
   if (await needsIdentityVerification(supabase)) {
-    return <main id="posting-content"><IdentityRequiredScreen context="post" returnTo="/account/listings/new" /></main>;
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(await searchParams)) {
+      if (Array.isArray(value)) for (const item of value) params.append(key, item);
+      else if (value !== undefined) params.append(key, value);
+    }
+    const search = params.toString();
+    const returnTo = sanitizeRedirectPath(
+      search ? `/account/listings/new?${search}` : "/account/listings/new",
+      "/account/listings/new"
+    );
+    return <main id="posting-content"><IdentityRequiredScreen context="post" returnTo={returnTo} /></main>;
   }
 
   const integrationEnabled = isGoodsPostAdEnabled();
