@@ -1,5 +1,7 @@
 "use client";
 
+import { IdentityRequiredScreen } from "@/components/idv/IdentityRequiredScreen";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { loadChatMessages, loadChatFindings } from "@/lib/chat-v2/actions";
@@ -17,8 +19,8 @@ import { createClient } from "@/lib/supabase/client";
 type Draft = { requestId: string; content: string; state: "pending" | "sent" | "failed"; redirectTo?: string };
 const updateInbox = () => window.dispatchEvent(new Event("fairswap:chat-v2-inbox-refresh"));
 
-export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedInitial = false, locale = "en" }: {
-  conversation: Conversation; initial: MessagesPage; currentUserId: string; isBlockedInitial?: boolean; locale?: ChatLocale;
+export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedInitial = false, identityRequired = false, locale = "en" }: {
+  conversation: Conversation; initial: MessagesPage; currentUserId: string; isBlockedInitial?: boolean; identityRequired?: boolean; locale?: ChatLocale;
 }) {
   const copy = chatCopy(locale), { refreshUnreadCounts } = useAuth();
   const [messages, setMessages] = useState(initial.items), [peer, setPeer] = useState(initial.peer_read_cursor);
@@ -114,7 +116,7 @@ export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedIn
     finally { olderLock.current = false; if (alive.current) setOlderBusy(false); }
   }
   async function send(draft: Draft) {
-    if (sendLock.current.has(draft.requestId) || blocked || closed || accessError) return;
+    if (sendLock.current.has(draft.requestId) || blocked || closed || accessError || identityRequired) return;
     sendLock.current.add(draft.requestId);
     setOutbox(old => old.map(row => row.requestId === draft.requestId ? { ...row, state: "pending", redirectTo: undefined } : row));
     try {
@@ -131,7 +133,7 @@ export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedIn
     finally { sendLock.current.delete(draft.requestId); }
   }
   function submit(event?: React.FormEvent) {
-    event?.preventDefault(); const content = input.trim(); if (!content || blocked || closed || accessError) return;
+    event?.preventDefault(); const content = input.trim(); if (!content || blocked || closed || accessError || identityRequired) return;
     const draft: Draft = { requestId: crypto.randomUUID(), content, state: "pending" };
     setOutbox(old => [...old, draft]); setInput(""); void send(draft);
   }
@@ -166,11 +168,11 @@ export function ChatV2Thread({ conversation, initial, currentUserId, isBlockedIn
         </div>;
       })}
       {outbox.map(draft => <div key={draft.requestId} className="flex flex-col items-end"><p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl bg-action-600 px-3 py-2 text-sm text-white [overflow-wrap:anywhere]">{draft.content}</p><span role="status" className="text-xs text-muted">{copy[draft.state]}</span>
-        {draft.state === "failed" && <div className="flex gap-3 text-sm">{draft.redirectTo && <Link href={draft.redirectTo} className="underline">{copy.policy}</Link>}<button className="p-2 underline" onClick={() => void send(draft)} disabled={blocked || closed}>{copy.retry}</button></div>}
+        {draft.state === "failed" && <div className="flex gap-3 text-sm">{draft.redirectTo && <Link href={draft.redirectTo} className="underline">{draft.redirectTo.startsWith("/account/verification") ? "Verify with DigiLocker" : copy.policy}</Link>}<button className="p-2 underline" onClick={() => void send(draft)} disabled={blocked || closed}>{copy.retry}</button></div>}
       </div>)}
     </div>
     {readError && <div role="alert" className="px-3 py-2 text-xs">{copy.readError} <button className="underline" onClick={() => setReadRetry(value => value + 1)}>{copy.retry}</button></div>}
-    {blocked || closed ? <p className="border-t border-border p-3 text-sm">{blocked ? copy.blocked : copy.closed}</p> : <form className="flex shrink-0 items-end gap-2 border-t border-border p-3" onSubmit={submit}>
+    {blocked || closed ? <p className="border-t border-border p-3 text-sm">{blocked ? copy.blocked : copy.closed}</p> : identityRequired ? <div className="shrink-0 border-t border-border"><IdentityRequiredScreen context="messages" returnTo={`/account/messages/${conversation.id}`} compact /></div> : <form className="flex shrink-0 items-end gap-2 border-t border-border p-3" onSubmit={submit}>
       <textarea className="min-w-0 flex-1 resize-none rounded-xl border border-border bg-card p-3 text-sm" aria-label={copy.placeholder} placeholder={copy.placeholder} rows={2} maxLength={2000} value={input} onChange={event => setInput(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); submit(); } }} />
       <button type="submit" className="rounded-xl bg-action-600 px-3 py-3 text-sm font-semibold text-white disabled:opacity-40" disabled={!input.trim()}>{copy.send}</button>
     </form>}

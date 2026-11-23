@@ -1,5 +1,8 @@
 "use client";
 
+import { GateAwareError } from "@/components/idv/IdentityRequiredCta";
+import { IdentityRequiredScreen } from "@/components/idv/IdentityRequiredScreen";
+
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
@@ -22,6 +25,7 @@ interface ChatThreadProps {
   initialMessages: Message[];
   currentUserId: string;
   isBlockedInitial?: boolean;
+  identityRequired?: boolean;
 }
 
 export function ChatThread({
@@ -29,6 +33,7 @@ export function ChatThread({
   initialMessages,
   currentUserId,
   isBlockedInitial = false,
+  identityRequired = false,
 }: ChatThreadProps) {
   const { refreshUnreadCounts } = useAuth();
   const [readError, setReadError] = useState(false);
@@ -352,7 +357,7 @@ export function ChatThread({
       {errorMessage && (
         <div className="mx-4 mb-2 flex items-center gap-2 rounded-xl border border-rose-300 bg-rose-50 p-2.5 text-xs text-rose-800 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-200 shrink-0">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{errorMessage}</span>
+          <span><GateAwareError message={errorMessage} /></span>
         </div>
       )}
 
@@ -364,6 +369,10 @@ export function ChatThread({
       ) : isListingClosed ? (
         <div className="shrink-0 border-t border-border bg-surface p-4 text-center text-xs text-muted">
           This conversation is closed because the ad was removed or rejected by moderation.
+        </div>
+      ) : identityRequired ? (
+        <div className="shrink-0 border-t border-border bg-card">
+          <IdentityRequiredScreen context="messages" returnTo={`/account/messages/${conversation.id}`} compact />
         </div>
       ) : (
         <form onSubmit={handleSend} className="shrink-0 border-t border-border bg-card p-3">
