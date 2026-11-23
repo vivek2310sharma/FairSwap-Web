@@ -41,7 +41,7 @@ const signedIn = (user = "u1", sid = "s1") => {
 const AUTH_URL = (over: Record<string, string> = {}) => {
   const u = new URL("https://digilocker.meripehchaan.gov.in/public/oauth2/1/authorize");
   const p: Record<string, string> = {
-    response_type: "code", state: STATE, scope: "avs", acr: "aadhaar", code_challenge_method: "S256", code_challenge: "x", redirect_uri: LAB_REDIRECT_URI, ...over,
+    response_type: "code", state: STATE, scope: "avs", code_challenge_method: "S256", code_challenge: "x", redirect_uri: LAB_REDIRECT_URI, ...over,
   };
   for (const [k, v] of Object.entries(p)) u.searchParams.set(k, v);
   return u.toString();
@@ -131,7 +131,7 @@ describe("Lab start", () => {
   });
   it("authorize URL validation is exact", () => {
     expect(isLabAuthorizeUrl(AUTH_URL())).toBe(true);
-    const bads: Record<string, string>[] = [{ scope: "openid" }, { scope: "openid avs" }, { scope: "avs_parent" },{ acr: "other" }, { code_challenge_method: "plain" }, { response_type: "token" }, { state: "short" }];
+    const bads: Record<string, string>[] = [{ scope: "openid" }, { scope: "openid avs" }, { scope: "avs_parent" }, { acr: "aadhaar" }, { nonce: "unexpected-oidc-nonce" }, { code_challenge_method: "plain" }, { response_type: "token" }, { state: "short" }];
     for (const bad of bads) expect(isLabAuthorizeUrl(AUTH_URL(bad))).toBe(false);
     expect(isLabAuthorizeUrl(AUTH_URL().replace("digilocker.meripehchaan.gov.in", "evil.example"))).toBe(false);
   });
