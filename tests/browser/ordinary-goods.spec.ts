@@ -6,7 +6,7 @@ import { selectedGoodsSubmission } from "../../src/lib/listings/ordinary-goods/c
 const owner = "11111111-1111-4111-8111-111111111111";
 const locality = "66666666-6666-4666-8666-666666666666";
 const listing = "77777777-7777-4777-8777-777777777777";
-const cases = [
+const cases: ReadonlyArray<readonly [string, string, string, string, number]> = [
   ["v2-laptops", "Laptops", "RAM (GB)", "16", 320],
   ["v2-tvs", "TVs", "Screen size (inches)", "55", 360],
   ["v2-refrigerators", "Refrigerators", "Capacity (litres)", "250", 390],
@@ -17,7 +17,7 @@ const cases = [
   ["v2-headphones-earbuds", "Headphones & Earbuds", "Item type", "Wired headphones", 320],
   ["v2-strollers-prams", "Strollers & Prams", "Item type", "Stroller", 360],
   ["v2-aquariums-fish-supplies", "Aquariums & Fish Supplies", "Item type", "Empty tank", 390],
-] as const;
+];
 const definitions = JSON.parse(process.env.FAIRSWAP_GOODS_BROWSER_FIXTURE ?? "{}");
 
 for (const [slug, label, detail, answer, width] of cases) {
