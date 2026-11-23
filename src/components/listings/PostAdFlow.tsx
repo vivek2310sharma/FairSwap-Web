@@ -65,7 +65,7 @@ function LivePostAdFlow({catalogue,macro: routeMacro, invalidQuery, navigate, hr
     {pending && <ConfirmChange description={macro==='property'?'Changing section clears Property details, rental declarations and private society text. Your title, description and location will stay.':macro==='vehicles'?'Changing section clears vehicle answers, Brand and Model selections, and seller-entered Brand/Model text. Your title, description, item pricing and location will stay.':undefined} cancel={() => { if (pending.external) navigate(macro, true); setPending(null); }} confirm={() => { setEntered(false); setResetCategoryVersion(v => v + 1); if (pending.external) setMacro(pending.next); else navigate(pending.next); setPending(null); }} />}
   </div>;
 }
-function PreviewPostAdFlow({macro: routeMacro, invalidQuery, data, hrefForSection, navigate, onPreview, notice, groups, renderCategoryFields}: Props) {
+function PreviewPostAdFlow({macro: routeMacro, invalidQuery, data, navigate, onPreview, notice, groups, renderCategoryFields}: Props) {
   const [observed, setObserved] = useState(routeMacro);
   const [macro, setMacro] = useState(routeMacro);
   const [category, setCategory] = useState("");
@@ -99,7 +99,7 @@ function PreviewPostAdFlow({macro: routeMacro, invalidQuery, data, hrefForSectio
   return <div className="space-y-6">
     {notice}
     {invalidQuery && <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">Invalid or repeated section value. Choose a section to continue.</p>}
-    {!macro ? <MacroCategorySelector availability={{goods: {available: true}, vehicles: {available: true}, property: {available: true}}} hrefForSection={hrefForSection} onChooseSection={next => request(next)} /> : <>
+    {!macro ? <section aria-label="Preview section chooser" className="space-y-4"><h1 className="text-2xl font-bold">Choose a preview section</h1><p className="text-sm text-gray-600">Preview only. Choose a section to explore the sample form.</p><div role="group" aria-label="Preview sections" className="flex flex-wrap gap-3">{(["goods","vehicles","property"] as const).map(section => <button key={section} type="button" className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold" onClick={() => request(section)}>Preview {section === "goods" ? "Goods" : section === "vehicles" ? "Vehicles" : "Property"}</button>)}</div></section> : <>
       <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm text-emerald-700">Selected section</p><h1 className="text-2xl font-bold">{title}</h1>{macro !== "goods" && <p className="text-sm text-amber-800">Preview-only — not a released posting capability.</p>}</div><button type="button" onClick={() => request(null)} className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold">Change section</button></div>
       <form onSubmit={e => { e.preventDefault(); if (selected && macro) onPreview({...common, condition: macro === "property" ? null : common.condition, section: macro, category_id: selected.id, price_type: priceType, price_rupees: priceRupees, location, pin_code: pinCode, category_attributes: attributes}); }} className="space-y-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <section className="space-y-4"><h2 className="border-b pb-2 text-base font-semibold">1. Category & Type</h2>
