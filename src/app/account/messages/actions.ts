@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { logger } from "@/lib/logger";
 import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
+import { friendlyIdentityError } from "@/lib/idv/gate";
 
 export type MessageActionResult = {
   error?: string;
@@ -58,7 +59,7 @@ export async function startConversationAction(
       error_code: error.code || "RPC_ERROR",
       extra: { listing_id: listingId },
     });
-    return { error: error.message };
+    return { error: friendlyIdentityError(error.message) ?? error.message, ...(friendlyIdentityError(error.message) ? { redirectTo: "/account/verification?required=1" } : {}) };
   }
 
   const convId = (data as { conversation_id?: string })?.conversation_id;
@@ -109,7 +110,7 @@ export async function sendMessageAction(
       error_code: error.code || "RPC_ERROR",
       extra: { conversation_id: conversationId },
     });
-    return { error: error.message };
+    return { error: friendlyIdentityError(error.message) ?? error.message, ...(friendlyIdentityError(error.message) ? { redirectTo: "/account/verification?required=1" } : {}) };
   }
 
   const msgId = typeof data === "object" && data ? (data as { message_id?: string; id?: string }).message_id || (data as { id?: string }).id : (data as string);
