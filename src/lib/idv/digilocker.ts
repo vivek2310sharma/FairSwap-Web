@@ -20,15 +20,15 @@ export function isDigiLockerAuthorizeUrl(raw: unknown): raw is string {
 }
 
 export type DigiLockerResult =
-  | "verified" | "denied" | "already_linked" | "unavailable" | "expired" | "provider_error" | "not_confirmed" | "failed";
+  | "verified" | "denied" | "already_linked" | "different_identity" | "unavailable" | "expired" | "provider_error" | "not_confirmed" | "failed";
 
 /** Maps a Backend error code to a fixed result key. Provider strings are never echoed to the browser. */
 export function resultForBackend(ok: boolean, code: unknown): DigiLockerResult {
   if (ok) return "verified";
   switch (code) {
     case "CONSENT_DENIED": return "denied";
-    case "IDENTITY_ALREADY_LINKED":
-    case "ACCOUNT_LINKED_TO_OTHER_IDENTITY": return "already_linked";
+    case "IDENTITY_ALREADY_LINKED": return "already_linked";
+    case "ACCOUNT_LINKED_TO_OTHER_IDENTITY": return "different_identity";
     case "VERIFICATION_UNAVAILABLE":
     case "ACCOUNT_NOT_ELIGIBLE": return "unavailable";
     case "ATTEMPT_EXPIRED":
