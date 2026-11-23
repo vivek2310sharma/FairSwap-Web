@@ -1,4 +1,5 @@
 import "server-only";
+import { friendlyIdentityError } from "@/lib/idv/gate";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/types/database";
@@ -102,6 +103,6 @@ export async function saveVehicleDraft(client: SupabaseClient<Database>, form: F
       // SQL accepts NULL for create; Supabase's generator does not express nullable RPC parameters.
       p_listing_id:(listingId??null) as unknown as string,p_listing:common.data as Json,p_version_id:versionId,p_resolution:resolution as Json,
     });
-    return error ? {error:error.message} : {success:true,listingId:data};
+    return error ? {error:friendlyIdentityError(error.message)??error.message} : {success:true,listingId:data};
   } catch (e) { return {error:e instanceof z.ZodError ? e.issues[0].message : "Malformed vehicle draft payload"}; }
 }

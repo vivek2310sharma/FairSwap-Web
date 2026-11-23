@@ -1,5 +1,7 @@
 "use client";
 
+import { GateAwareError } from "@/components/idv/IdentityRequiredCta";
+
 import React, { useState } from "react";
 import { ListingMedia } from "@/types/listing";
 import { reorderMediaAction, setCoverPhotoAction } from "@/app/account/listings/actions";
@@ -250,7 +252,7 @@ export default function MediaUploader({
 
       {errorMessage && (
         <div className="rounded-md bg-red-50 p-3 text-xs text-red-700 border border-red-200">
-          {errorMessage}
+          <GateAwareError message={errorMessage} />
         </div>
       )}
 

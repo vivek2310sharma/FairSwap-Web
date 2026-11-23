@@ -9,6 +9,7 @@ import { draftListingSchema, ListingCondition, ListingPriceType } from "@/types/
 import type { Database, Json } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireCurrentPolicyAcceptance } from "@/lib/compliance/policy-acceptance";
+import { friendlyIdentityError } from "@/lib/idv/gate";
 import { validatePostAdSelection } from "@/lib/listings/post-ad-server";
 import { saveVehicleDraft } from "@/lib/listings/two-wheeler/server";
 import {savePropertyDraft,isPropertyEnabled} from '@/lib/listings/property/server';
@@ -125,7 +126,7 @@ export async function createDraftListingAction(
       operation: "create_draft_listing",
       error_code: error?.code || "INSERT_ERROR",
     });
-    return { error: error?.message || "Failed to create draft ad." };
+    return { error: friendlyIdentityError(error?.message) ?? (error?.message || "Failed to create draft ad.") };
   }
 
   revalidatePath("/account/listings");
@@ -225,7 +226,7 @@ export async function updateListingAction(
       operation: "update_listing",
       error_code: error.code || "UPDATE_ERROR",
     });
-    return { error: error.message };
+    return { error: friendlyIdentityError(error.message) ?? error.message };
   }
 
   revalidatePath(`/account/listings/${listingId}/edit`);
@@ -259,7 +260,7 @@ export async function submitListingAction(listingId: string, expectedRevision?: 
       const {data,error}=productionFamilyRoute
         ?await productionFamilyRpcClient(supabase as SupabaseClient<Database>).rpc('seller_submit_family_listing',{listing_id:listingId,expected_revision:expectedRevision!})
         :await supabase.rpc('seller_submit_listing',{listing_id:listingId,expected_revision:expectedRevision!});
-      if(error)return {error:error.message};
+      if(error)return {error:friendlyIdentityError(error.message)??error.message};
       revalidatePath('/account/listings');revalidatePath(`/account/listings/${listingId}/edit`);
       const result=data as {result?:string}|null;
       return {success:true,listingId,message:result?.result==='already_pending'?'Already awaiting review.':'Ad submitted for review.'};
@@ -330,7 +331,7 @@ export async function submitListingAction(listingId: string, expectedRevision?: 
     if (error.message.includes("INVALID_PIN_LOCALITY_MAPPING")) {
       return { error: "The selected locality is not valid for this PIN code." };
     }
-    return { error: error.message };
+    return { error: friendlyIdentityError(error.message) ?? error.message };
   }
 
   revalidatePath("/account/listings");
@@ -376,7 +377,7 @@ export async function transitionListingAction(
       operation: "transition_listing",
       error_code: error.code || "RPC_ERROR",
     });
-    return { error: error.message };
+    return { error: friendlyIdentityError(error.message) ?? error.message };
   }
 
   revalidatePath("/account/listings");
@@ -416,7 +417,7 @@ export async function reorderMediaAction(
   });
 
   if (error) {
-    return { error: "Failed to reorder photos. Please try again." };
+    return { error: friendlyIdentityError(error.message) ?? "Failed to reorder photos. Please try again." };
   }
 
   revalidatePath(`/account/listings/${listingId}/edit`);
@@ -448,7 +449,7 @@ export async function setCoverPhotoAction(
   });
 
   if (error) {
-    return { error: "Failed to update cover photo. Please try again." };
+    return { error: friendlyIdentityError(error.message) ?? "Failed to update cover photo. Please try again." };
   }
 
   revalidatePath(`/account/listings/${listingId}/edit`);

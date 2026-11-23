@@ -1,5 +1,7 @@
 "use client";
 
+import { GateAwareError } from "@/components/idv/IdentityRequiredCta";
+
 import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -369,7 +371,7 @@ export default function ListingForm({
 
       {formError && (
         <div role="alert" className="rounded-md bg-red-50 p-4 border border-red-200 text-sm text-red-700">
-          {formError}
+          <GateAwareError message={formError} />
         </div>
       )}
 
