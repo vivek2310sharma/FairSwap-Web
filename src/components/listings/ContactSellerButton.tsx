@@ -4,17 +4,22 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Send, X, AlertCircle } from "lucide-react";
 import { startConversationAction } from "@/app/account/messages/actions";
+import { IdentityRequiredScreen } from "@/components/idv/IdentityRequiredScreen";
+import { isIdentityRequired } from "@/lib/idv/gate";
 
 interface ContactSellerButtonProps {
   sellerName: string;
   listingId?: string;
+  identityRequired?: boolean;
+  returnTo?: string;
 }
 
-export function ContactSellerButton({ sellerName, listingId }: ContactSellerButtonProps) {
+export function ContactSellerButton({ sellerName, listingId, identityRequired = false, returnTo }: ContactSellerButtonProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [message, setMessage] = useState("Hi, is this still available?");
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [gateRefused, setGateRefused] = useState(false);
   const router = useRouter();
 
   const handleSend = async (e: React.FormEvent) => {
@@ -35,7 +40,8 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
       setModalOpen(false);
       router.push(result.redirectTo);
     } else if (result.error) {
-      setErrorMessage(result.error);
+      if (isIdentityRequired(result.error)) setGateRefused(true);
+      else setErrorMessage(result.error);
     } else if (result.conversationId) {
       setModalOpen(false);
       router.push(`/account/messages/${result.conversationId}`);
@@ -82,6 +88,9 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
               </div>
             </div>
 
+            {identityRequired || gateRefused ? (
+              <IdentityRequiredScreen context="messages" returnTo={returnTo} compact />
+            ) : (
             <form onSubmit={handleSend} className="mt-4 space-y-4">
               {errorMessage && (
                 <div className="rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-800 dark:bg-rose-950/60 dark:text-rose-200 flex items-center gap-2">
@@ -132,6 +141,7 @@ export function ContactSellerButton({ sellerName, listingId }: ContactSellerButt
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

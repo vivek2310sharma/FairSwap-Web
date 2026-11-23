@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { Calendar, MapPin, ShieldCheck } from "lucide-react";
+import { Calendar, MapPin } from "lucide-react";
+import { DigiLockerBadge } from "@/components/idv/DigiLockerBadge";
 import type { PublicSellerProfile } from "@/types/account";
 import { formatMemberSince, getAccountCopy } from "@/lib/account/copy";
 import { ShareProfileButton } from "./ShareProfileButton";
@@ -61,15 +62,7 @@ export function SellerProfileHeader({ profile, location, isVerified = false }: S
               <h1 id="seller-name" className="wrap-break-word text-2xl font-bold text-foreground">
                 {name}
               </h1>
-              {isVerified && (
-                <span
-                  title={copy.verification.badges.verified}
-                  className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                  <span>{copy.verification.badges.verified}</span>
-                </span>
-              )}
+              {isVerified && <DigiLockerBadge />}
             </div>
             <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted">
               <Calendar className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
