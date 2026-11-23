@@ -1,6 +1,6 @@
 import { isOrdinaryGoodsSlug, isPropertyIntakeSlug, isSpecialistVehicleDraftSlug } from "./ordinary-goods/categories";
 import { z } from "zod";
-import type { MainCategory, SubRoute } from "./post-ad-category-catalogue";
+import { FAMILY_CHOOSER_ROUTES, type MainCategory, type SubRoute } from "./post-ad-category-catalogue";
 import { CANONICAL_CATEGORY_PARENTS, isCanonicalCategorySlug } from "./canonical-category-slugs";
 
 const uuid = z.string().uuid().transform(value => value.toLowerCase());
@@ -90,11 +90,15 @@ export function parseTaxonomy(
         if (node.slug === "tablets" && node.posting_flow === "specialist:tablet") route = { kind: "tablets" };
         if (node.slug === "wearables" && node.posting_flow === "specialist:wearable") route = { kind: "wearables" };
       }
-      if (node.posting_enabled && ((node.posting_flow === "generic" && !isSpecialistVehicleDraftSlug(node.slug)) ||
-        (isSpecialistVehicleDraftSlug(node.slug) &&
-          ((node.slug === "v2-cars" && node.posting_flow === "specialist:car") ||
-           (node.slug === "v2-motorcycles-scooters" && node.posting_flow === "specialist:two_wheeler"))) ||
-        (node.posting_flow === "property" && isPropertyIntakeSlug(node.slug)) ||
+      const familyRoute = Object.hasOwn(FAMILY_CHOOSER_ROUTES, node.slug) ? FAMILY_CHOOSER_ROUTES[node.slug] : undefined;
+      if (familyRoute && node.posting_enabled && node.status === "live" && root.status === "live" &&
+        ((node.slug === "v2-cars" && node.posting_flow === "specialist:car") ||
+         (node.slug === "v2-motorcycles-scooters" && node.posting_flow === "specialist:two_wheeler") ||
+         (familyRoute.kind === "property" && node.posting_flow === "property"))) route = familyRoute;
+      // Family/unsupported canonical IDs must never fall through to generic writes.
+      if (!familyRoute && !isPropertyIntakeSlug(node.slug) && !isSpecialistVehicleDraftSlug(node.slug) &&
+        !["v2-commercial-vehicles", "v2-electric-cycles-low-speed-evs", "v2-bicycles", "v2-other-items"].includes(node.slug) &&
+        node.posting_enabled && (node.posting_flow === "generic" ||
         (node.posting_flow === "accessory" && root.slug === "v2-mobiles-tablets")) && isOrdinaryGoodsSlug(node.slug) &&
         bindings[node.slug] === node.id) route = { kind: "ordinary-goods", categoryId: node.id };
       return {

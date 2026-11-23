@@ -74,10 +74,24 @@ const RES = "Residential for Rent/";
 const PG = "PG & Co-living/";
 
 
-const familyOf = (caps: PostAdCapabilities, family: "two-wheelers" | "cars") =>
-  family === "cars" ? caps.cars : caps.twoWheelers;
+/** Choosers select existing specialist contracts, never canonical write IDs. */
+export const FAMILY_CHOOSER_ROUTES: Readonly<Record<string, SubRoute>> = {
+  "v2-cars": { kind: "vehicles", family: "cars" },
+  "v2-motorcycles-scooters": { kind: "vehicles", family: "two-wheelers" },
+  "v2-houses-apartments": { kind: "property", paths: [
+    RES + "Apartment or Flat", RES + "Independent House or Villa", RES + "Builder Floor",
+    RES + "Studio Apartment", RES + "Single Room",
+  ] },
+  "v2-pg-hostels-guest-houses": { kind: "property", paths: [
+    PG + "Boys PG", PG + "Girls PG", PG + "Co-living Spaces", PG + "Hostels",
+  ] },
+  "v2-flatmates-shared-rooms": { kind: "property", paths: [PG + "Flatmates & Shared Rooms"] },
+};
+
 const fromFamily = (state: FamilyState): Readiness =>
   state === "live" ? "available" : state === "draft" ? "draft-only" : "coming-soon";
+const familyOf = (caps: PostAdCapabilities, family: "two-wheelers" | "cars") =>
+  family === "cars" ? caps.cars : caps.twoWheelers;
 
 /** The only place a choice becomes actionable. Destination macro is the existing contract. */
 export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readiness: Readiness; macro?: MacroCategory } {
@@ -90,11 +104,13 @@ export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readin
     case "ordinary-goods": return { readiness: "available", macro: "goods" };
     case "goods": return caps.goodsCategories.includes(r.key) ? { readiness: "available", macro: "goods" } : { readiness: "coming-soon" };
     case "vehicles": {
-      const readiness = fromFamily(familyOf(caps, r.family));
+      const state = familyOf(caps, r.family);
+      const readiness = Object.hasOwn(FAMILY_CHOOSER_ROUTES, sub.id) && state !== "live" ? "coming-soon" : fromFamily(state);
       return readiness === "coming-soon" ? { readiness } : { readiness, macro: "vehicles" };
     }
     case "property": {
-      const readiness = caps.property !== "off" && r.paths.some(x => caps.propertyPaths.includes(x))
+      const readiness = caps.property !== "off" &&
+        (!Object.hasOwn(FAMILY_CHOOSER_ROUTES, sub.id) || caps.property === "live") && r.paths.some(x => caps.propertyPaths.includes(x))
         ? fromFamily(caps.property) : "coming-soon";
       return readiness === "coming-soon" ? { readiness } : { readiness, macro: "property" };
     }
