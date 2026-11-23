@@ -17,16 +17,6 @@ const cases = [
   ["v2-headphones-earbuds", "Headphones & Earbuds", "Item type", "Wired headphones", 320],
   ["v2-strollers-prams", "Strollers & Prams", "Item type", "Stroller", 360],
   ["v2-aquariums-fish-supplies", "Aquariums & Fish Supplies", "Item type", "Empty tank", 390],
-  ["v2-bicycles", "Bicycles", "Cycle type", "Road", 320],
-  ["v2-car-accessories-parts", "Car Accessories & Spare Parts", "Part type", "Floor mat", 360],
-  ["v2-bike-accessories-parts", "Bike Accessories & Spare Parts", "Part type", "Luggage bag", 390],
-  ["v2-houses-apartments", "Houses & Apartments", "Property type", "House", 320],
-  ["v2-pg-hostels-guest-houses", "PG, Hostels & Guest Houses", "Accommodation type", "Hostel", 360],
-  ["v2-land-plots", "Land & Plots", "Land classification", "Residential plot", 390],
-  ["v2-commercial-vehicles", "Commercial & Other Vehicles", "Vehicle class", "Goods carrier", 320],
-  ["v2-electric-cycles-low-speed-evs", "Electric Cycles & Low-Speed EVs", "Classification", "Unverified", 390],
-  ["v2-cars", "Cars", "Supported draft subtype", "Hatchback", 360],
-  ["v2-motorcycles-scooters", "Motorcycles & Scooters", "Supported draft subtype", "Commuter motorcycle", 390],
 ] as const;
 const definitions = JSON.parse(process.env.FAIRSWAP_GOODS_BROWSER_FIXTURE ?? "{}");
 
@@ -170,3 +160,17 @@ for (const [slug, label, detail, answer, width] of cases) {
     expect(submitted).toBe(slug === "v2-laptops" ? 2 : 1);
   });
 }
+
+// These leaves must not fall through to the ordinary-goods writer, even if a
+// future catalogue accidentally marks them enabled; family forms are separate.
+test('restricted and specialist canonical leaves have no ordinary-goods fallback',async({page})=>{
+ await api(page);
+ await page.goto('/account/listings/new');
+ const search=page.getByRole('searchbox',{name:'Search categories'});
+ for(const label of ['Bicycles','Car Accessories & Spare Parts','Bike Accessories & Spare Parts',
+  'Land & Plots','Commercial & Other Vehicles','Electric Cycles & Low-Speed EVs',
+  'Cars','Motorcycles & Scooters','Houses & Apartments','PG, Hostels & Guest Houses']){
+  await search.fill(label);
+  await expect(page.getByRole('link',{name:new RegExp('^'+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))})).toHaveCount(0);
+ }
+});
