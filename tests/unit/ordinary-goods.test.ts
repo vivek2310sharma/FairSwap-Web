@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import fixture from "./taxonomy-v2-fixture.json";
 import { isOrdinaryGoodsSlug } from "@/lib/listings/ordinary-goods/categories";
 import { goodsDefinition, parseGoodsPrice, selectedGoodsSubmission } from "@/lib/listings/ordinary-goods/contract";
+import { FAMILY_CHOOSER_ROUTES } from "@/lib/listings/post-ad-category-catalogue";
 import { parseTaxonomy } from "@/lib/listings/taxonomy-v2";
 
+const unavailable = ["v2-commercial-vehicles","v2-electric-cycles-low-speed-evs","v2-bicycles","v2-other-items","v2-shops-offices","v2-land-plots","v2-warehouses-godowns"];
 const goods = fixture.nodes.filter(n => isOrdinaryGoodsSlug(n.slug));
 const definition = goodsDefinition.parse({
   slug: "v2-laptops", category_id: goods.find(n => n.slug === "v2-laptops")?.id, revision: 1,
@@ -25,15 +27,16 @@ describe("Ordinary Goods taxonomy", () => {
     expect(new Set(goods.map(n => n.parent_id)).size).toBe(13);
   });
 
-  it.each(goods)("routes $slug only when both authorities agree on the persisted UUID", node => {
+  it.each(goods)("keeps $slug within its supported posting authority", node => {
     const tree = structuredClone(fixture);
     const leaf = tree.nodes.find(n => n.slug === node.slug)!;
     const route = (bindings: Record<string, string>) => parseTaxonomy(tree, bindings).flatMap(g => g.subs).find(x => x.id === node.slug)?.route;
     expect(route({ [node.slug]: node.id })).toEqual({ kind: "none" });
     leaf.posting_enabled = true;
     leaf.status = "live";
-    expect(route({ [node.slug]: uuid })).toEqual({ kind: "none" });
-    expect(route({ [node.slug]: node.id })).toEqual({ kind: "ordinary-goods", categoryId: node.id });
+    const family = Object.hasOwn(FAMILY_CHOOSER_ROUTES,node.slug) ? FAMILY_CHOOSER_ROUTES[node.slug] : undefined;
+    expect(route({ [node.slug]: uuid })).toEqual(family ?? { kind: "none" });
+    expect(route({ [node.slug]: node.id })).toEqual(family ?? (unavailable.includes(node.slug) ? {kind:"none"} : { kind: "ordinary-goods", categoryId: node.id }));
   });
 });
 
@@ -141,4 +144,14 @@ it("Tables & Chairs enforces its bounded optional quantity", () => {
     answers: { item_type: "Dining chair", quantity, safety_confirmed: true, power_safe: true, defects: "" } }).success;
   expect([run(1), run(100), run(4)]).toEqual([true, true, true]);
   expect([run(0), run(101), run("4"), run(Number.NaN), run(Infinity)]).toEqual([false, false, false, false, false]);
+});
+
+it("preserves all 43 reviewed Goods routes and their existing category IDs",()=>{
+ const reviewed=goods.filter(n=>!Object.hasOwn(FAMILY_CHOOSER_ROUTES,n.slug)&&!unavailable.includes(n.slug)&&
+  !["v2-car-accessories-parts","v2-bike-accessories-parts","v2-baby-gear-car-seats"].includes(n.slug));
+ expect(reviewed).toHaveLength(43);
+ const tree=structuredClone(fixture);
+ for(const node of tree.nodes)if(reviewed.some(n=>n.slug===node.slug)){node.status="live";node.posting_enabled=true;}
+ const catalogue=parseTaxonomy(tree,Object.fromEntries(reviewed.map(n=>[n.slug,n.id]))).flatMap(g=>g.subs);
+ for(const node of reviewed)expect(catalogue.find(n=>n.id===node.slug)?.route).toEqual({kind:"ordinary-goods",categoryId:node.id});
 });
