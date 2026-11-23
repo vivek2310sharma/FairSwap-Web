@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 
 const founders = [
   { name: "Vivek", role: "Director & Founder", photo: "vivek.webp", linkedIn: "https://www.linkedin.com/in/vivek2310sharma/" },
-  { name: "Sourabh", role: "CEO & Co-Founder", photo: "sourabh.webp", linkedIn: "https://www.linkedin.com/in/sourabh-sharma-6622071aa/" },
-  { name: "Raghav", role: "CTO & Co-Founder", photo: "raghav.webp", linkedIn: "https://www.linkedin.com/in/raghav-marwah-72b46b13a/" },
+  { name: "Sourabh", role: "CEO & Co-Founder", photo: "raghav.webp", linkedIn: "https://www.linkedin.com/in/sourabh-sharma-6622071aa/" },
+  { name: "Raghav", role: "CTO & Co-Founder", photo: "sourabh.webp", linkedIn: "https://www.linkedin.com/in/raghav-marwah-72b46b13a/" },
 ];
 
 const teamSections = [
@@ -64,14 +64,15 @@ export default function AboutPage() {
             <h2 id="story-heading" className={sectionHeading}>Our Story and Mission</h2>
             <div className="max-w-2xl space-y-4 leading-relaxed text-muted">
               <p>
-                FairSwap started with a simple idea: useful things can find a
-                second home close by. Local classifieds can help people pass on
-                things they no longer need and find what they need nearby.
+                FairSwap is building a safer, more trustworthy way to buy and
+                sell locally in India. Our approach prioritises data privacy,
+                account security and accountability, with identity verification
+                in mind and one genuine account per user as a design goal.
               </p>
               <p>
-                Our mission is to make buying and selling locally simpler and
-                safer across India. We encourage buyers and sellers to meet in
-                public, inspect items in person and agree on payment directly.
+                Our mission is to make local transactions simpler and safer.
+                AI-assisted moderation is part of our approach to spotting
+                potential fraud, spam and unsafe activity.
               </p>
             </div>
           </section>
@@ -81,13 +82,14 @@ export default function AboutPage() {
             <ol role="list" className="mt-6 grid gap-5 sm:grid-cols-3">
               {founders.map(({ name, role, photo, linkedIn }) => (
                 <li key={name} className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
-                  <div className="relative aspect-square bg-surface">
+                  <div className="relative aspect-square overflow-hidden bg-surface">
                     <Image
                       src={`/images/team/${photo}`}
                       alt={`Portrait of ${name}`}
                       fill
                       sizes="(min-width: 1152px) 350px, (min-width: 640px) 33vw, calc(100vw - 32px)"
-                      className="object-cover object-top"
+                      // Crop out the circular border baked into Sourabh’s source photo.
+                      className={photo === "raghav.webp" ? "scale-[1.45] object-cover" : "object-cover object-top"}
                     />
                   </div>
                   <div className="p-5">
