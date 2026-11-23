@@ -2,7 +2,7 @@ import { z } from "zod";
 import { readPostingBody, sessionSchema } from "@/lib/listings/mobiles/server";
 import { postingBaseGuard } from "@/lib/listings/posting-base-guard";
 import { copyPreparedPostingMedia } from "@/lib/listings/prepare-posting-media";
-import { isRegulatedVehicleDraftSlug } from "@/lib/listings/ordinary-goods/categories";
+import { isSpecialistVehicleDraftSlug } from "@/lib/listings/ordinary-goods/categories";
 import { goodsSlug, selectedGoodsSubmission, uuid } from "@/lib/listings/ordinary-goods/contract";
 import { goodsError, goodsHeaders, loadGoodsDefinition } from "@/lib/listings/ordinary-goods/server";
 
@@ -16,7 +16,7 @@ export async function POST(request: Request, context: { params: Promise<{ slug: 
     const slug = goodsSlug.parse((await context.params).slug);
     const definition = await loadGoodsDefinition(client, slug);
     if (!definition) throw new Error("ORDINARY_GOODS_CONTRACT_UNAVAILABLE");
-    if (isRegulatedVehicleDraftSlug(definition.slug)) {
+    if (isSpecialistVehicleDraftSlug(definition.slug)) {
       return Response.json(
         { code: "REGULATED_VEHICLE_DRAFT_ONLY", error: "Save this vehicle as a draft. Submission requires independent vehicle eligibility verification." },
         { status: 409, headers: goodsHeaders },

@@ -1,4 +1,5 @@
 import type { MacroCategory } from "@/lib/listings/macro-category";
+import { CANONICAL_CATEGORY_PARENTS, isCanonicalCategorySlug } from "./canonical-category-slugs";
 
 /**
  * First-screen Post Ad catalogue. Presentation only: it never creates category
@@ -101,7 +102,16 @@ export function resolveSub(sub: SubCategory, caps: PostAdCapabilities): { readin
     case "tablets": return caps.tablets ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "wearables": return caps.wearables ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
     case "mobile-phones": return caps.mobilePhones ? {readiness:"available",macro:"goods"} : {readiness:"coming-soon"};
-    case "ordinary-goods": return { readiness: "available", macro: "goods" };
+    case "ordinary-goods": {
+      const parent = isCanonicalCategorySlug(sub.id) ? CANONICAL_CATEGORY_PARENTS[sub.id] : null;
+      const macro: MacroCategory =
+        parent === "v2-cars-commercial-vehicles" || parent === "v2-bikes-scooters"
+          ? "vehicles"
+          : parent === "v2-property"
+            ? "property"
+            : "goods";
+      return { readiness: "available", macro };
+    }
     case "goods": return caps.goodsCategories.includes(r.key) ? { readiness: "available", macro: "goods" } : { readiness: "coming-soon" };
     case "vehicles": {
       const state = familyOf(caps, r.family);
