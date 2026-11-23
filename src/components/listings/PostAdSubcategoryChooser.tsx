@@ -5,6 +5,7 @@ import { SubcategoryIcon } from "./post-ad-category-icons";
 import type { ReactNode } from "react";
 import type { MacroCategory } from "@/lib/listings/macro-category";
 import {
+  FAMILY_CHOOSER_ROUTES,
   resolveSub,
   type MainCategory,
   type PostAdCapabilities,
@@ -30,6 +31,7 @@ const badgeText: Record<Readiness, string | null> = {
 export function SubChoice({ sub, parent, actions, showParent = false }: {
   sub: SubCategory; parent: MainCategory; actions: ChooserActions; showParent?: boolean;
 }) {
+  const familyChooser = Object.hasOwn(FAMILY_CHOOSER_ROUTES, sub.id);
   const { readiness, macro } = resolveSub(sub, actions.caps);
   const badge = badgeText[readiness];
   const selected = actions.selectedSubId === sub.id;
@@ -47,9 +49,9 @@ export function SubChoice({ sub, parent, actions, showParent = false }: {
   if (macro) {
     return (
       <Link
-        href={sub.route.kind === "ordinary-goods" ? `/account/listings/new?${new URLSearchParams({ category: sub.id })}` : sub.route.kind === "wearables" ? "/account/listings/new?posting=wearables" : sub.route.kind === "tablets" ? "/account/listings/new?posting=tablets" : sub.route.kind === "mobile-phones" ? "/account/listings/new?posting=mobile-phones" : sub.route.kind === "accessories" ? "/account/listings/new?posting=mobile-accessories" : actions.hrefForSection(macro)}
+        href={familyChooser ? `/account/listings/new?${new URLSearchParams({ category: sub.id })}` : sub.route.kind === "ordinary-goods" ? `/account/listings/new?${new URLSearchParams({ category: sub.id })}` : sub.route.kind === "wearables" ? "/account/listings/new?posting=wearables" : sub.route.kind === "tablets" ? "/account/listings/new?posting=tablets" : sub.route.kind === "mobile-phones" ? "/account/listings/new?posting=mobile-phones" : sub.route.kind === "accessories" ? "/account/listings/new?posting=mobile-accessories" : actions.hrefForSection(macro)}
         prefetch={false}
-        onClick={sub.route.kind !== "ordinary-goods" && sub.route.kind !== "wearables" && sub.route.kind !== "tablets" && sub.route.kind !== "mobile-phones" && sub.route.kind !== "accessories" && actions.onChooseSection ? (e) => { e.preventDefault(); actions.onChooseSection?.(macro); } : undefined}
+        onClick={!familyChooser && sub.route.kind !== "ordinary-goods" && sub.route.kind !== "wearables" && sub.route.kind !== "tablets" && sub.route.kind !== "mobile-phones" && sub.route.kind !== "accessories" && actions.onChooseSection ? (e) => { e.preventDefault(); actions.onChooseSection?.(macro); } : undefined}
         className={cls}
       >
         {body}

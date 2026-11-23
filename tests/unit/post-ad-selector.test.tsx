@@ -43,3 +43,19 @@ it("does not offer obsolete existing posting forms below the category chooser",(
  expect(screen.queryByText("Existing posting options")).toBeNull();
  expect(screen.queryByText("Existing Accessories")).toBeNull();
 });
+
+it("links only enabled family choices and hides links when family readiness is lost",()=>{
+ const value=structuredClone(fixture);
+ const slugs=["v2-cars","v2-motorcycles-scooters","v2-houses-apartments","v2-pg-hostels-guest-houses","v2-flatmates-shared-rooms"];
+ for(const node of value.nodes)if(slugs.includes(node.slug)){node.status="live";node.posting_enabled=true;}
+ const tree=parseTaxonomy(value);
+ const caps={...capabilities,cars:"live",twoWheelers:"live",property:"live",propertyPaths:["Residential for Rent/Apartment or Flat","PG & Co-living/Boys PG","PG & Co-living/Flatmates & Shared Rooms"]} as const;
+ const {rerender}=render(<MacroCategorySelector catalogue={tree} capabilities={caps} availability={availability}/>);
+ for(const slug of slugs){
+  const leaf=value.nodes.find(n=>n.slug===slug)!;
+  fireEvent.change(screen.getByRole("searchbox"),{target:{value:leaf.name}});
+  expect(screen.getByRole("link",{name:new RegExp(leaf.name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"))})).toHaveAttribute("href",`/account/listings/new?category=${slug}`);
+ }
+ rerender(<MacroCategorySelector catalogue={tree} capabilities={capabilities} availability={availability}/>);
+ expect(screen.queryAllByRole("link")).toHaveLength(0);
+});
