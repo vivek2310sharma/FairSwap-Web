@@ -132,7 +132,7 @@ describe("ACC-02 My Account Page UI Tests", () => {
     // Restricted accounts cannot edit, have no public profile link and no verification banner
     expect(screen.queryByRole("link", { name: /Edit profile/i })).toBeNull();
     expect(screen.queryByRole("link", { name: "View public profile" })).toBeNull();
-    expect(screen.queryByRole("region", { name: "Identity verification" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Verify with DigiLocker" })).toBeNull();
     expect(screen.queryByRole("link", { name: /Verify identity/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /Verify account/i })).toBeNull();
 
@@ -268,16 +268,12 @@ describe("ACC-02 My Account Page UI Tests", () => {
     expect(document.body.textContent).not.toMatch(/[←-⇿]|\[City\]|\[n\]/);
 
     // Identity verification banner and Coming Soon navigation semantics
-    const idvBanner = screen.getByRole("region", { name: "Identity verification" });
+    const idvBanner = screen.getByRole("region", { name: "Verify with DigiLocker" });
     expect(idvBanner).toBeInTheDocument();
-    expect(within(idvBanner).getByRole("heading", { level: 2, name: "Identity verification" })).toBeInTheDocument();
-    expect(within(idvBanner).getAllByText("Coming soon").length).toBeGreaterThanOrEqual(1);
-
-    const verifyLink = within(idvBanner).getByRole("link", { name: /Verify identity/ });
-    expect(verifyLink).toHaveAttribute("href", "/account/verification");
-    // Verify that the link is a navigation anchor and not an interactive form submission that could trigger verification
-    expect(verifyLink.tagName.toLowerCase()).toBe("a");
-    expect(within(idvBanner).queryByRole("button", { name: /verify/i })).toBeNull();
+    expect(within(idvBanner).getByRole("heading", { level: 2, name: "Verify with DigiLocker" })).toBeInTheDocument();
+    expect(within(idvBanner).getByText("DigiLocker verification is not available right now. Please check back later.")).toBeInTheDocument();
+    expect(within(idvBanner).queryByRole("link")).toBeNull();
+    expect(idvBanner).not.toHaveTextContent("Coming soon");
 
     expect(screen.queryByRole("button", { name: /sign out/i })).not.toBeInTheDocument();
     expect(options.getByRole("link", { name: /My ads/ })).toHaveTextContent("Manage the ads you've posted on FairSwap.");
