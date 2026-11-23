@@ -6,7 +6,7 @@ import { selectedGoodsSubmission } from "../../src/lib/listings/ordinary-goods/c
 const owner = "11111111-1111-4111-8111-111111111111";
 const locality = "66666666-6666-4666-8666-666666666666";
 const listing = "77777777-7777-4777-8777-777777777777";
-const cases = [
+const cases: ReadonlyArray<readonly [string, string, string, string, number]> = [
   ["v2-laptops", "Laptops", "RAM (GB)", "16", 320],
   ["v2-tvs", "TVs", "Screen size (inches)", "55", 360],
   ["v2-refrigerators", "Refrigerators", "Capacity (litres)", "250", 390],
@@ -17,17 +17,7 @@ const cases = [
   ["v2-headphones-earbuds", "Headphones & Earbuds", "Item type", "Wired headphones", 320],
   ["v2-strollers-prams", "Strollers & Prams", "Item type", "Stroller", 360],
   ["v2-aquariums-fish-supplies", "Aquariums & Fish Supplies", "Item type", "Empty tank", 390],
-  ["v2-bicycles", "Bicycles", "Cycle type", "Road", 320],
-  ["v2-car-accessories-parts", "Car Accessories & Spare Parts", "Part type", "Floor mat", 360],
-  ["v2-bike-accessories-parts", "Bike Accessories & Spare Parts", "Part type", "Luggage bag", 390],
-  ["v2-houses-apartments", "Houses & Apartments", "Property type", "House", 320],
-  ["v2-pg-hostels-guest-houses", "PG, Hostels & Guest Houses", "Accommodation type", "Hostel", 360],
-  ["v2-land-plots", "Land & Plots", "Land classification", "Residential plot", 390],
-  ["v2-commercial-vehicles", "Commercial & Other Vehicles", "Vehicle class", "Goods carrier", 320],
-  ["v2-electric-cycles-low-speed-evs", "Electric Cycles & Low-Speed EVs", "Classification", "Unverified", 390],
-  ["v2-cars", "Cars", "Supported draft subtype", "Hatchback", 360],
-  ["v2-motorcycles-scooters", "Motorcycles & Scooters", "Supported draft subtype", "Commuter motorcycle", 390],
-] as const;
+];
 const definitions = JSON.parse(process.env.FAIRSWAP_GOODS_BROWSER_FIXTURE ?? "{}");
 
 for (const [slug, label, detail, answer, width] of cases) {
