@@ -266,7 +266,7 @@ test('reload after a lost prepared-claim response reuses the protected server se
 
 // Failure controls exist only in the isolated server fixture, never production.
 for (const failure of ['malformed', 'error'] as const) {
- test(`taxonomy ${failure} fails closed and preserves safe compatibility routes`, async ({page, context, baseURL}) => {
+ test(`taxonomy ${failure} fails closed without an alternate creation screen`, async ({page, context, baseURL}) => {
   const fixture = await api(page);
   await context.addCookies([{name:'fixture-taxonomy',value:failure,url:baseURL!}]);
   await page.goto('/account/listings/new');
@@ -275,11 +275,10 @@ for (const failure of ['malformed', 'error'] as const) {
   await page.getByRole('searchbox',{name:'Search categories'}).fill('Projectors');
   await expect(page.getByRole('link',{name:/Projectors/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/Projectors/})).toHaveCount(0);
-  await page.getByText('Existing posting options',{exact:true}).click();
-  await expect(page.getByRole('button',{name:'Existing goods forms',exact:true})).toBeVisible();
-  const accessories = page.getByRole('link',{name:'Existing Accessories',exact:true});
-  await expect(accessories).toHaveAttribute('href','/account/listings/new?posting=mobile-accessories');
-  await accessories.click();
+  await expect(page.getByText('Existing posting options',{exact:true})).toHaveCount(0);
+  // The dedicated accessories route remains supported independently of taxonomy.
+  await page.goto('/account/listings/new?posting=mobile-accessories');
+  await expect(page).toHaveURL(/posting=mobile-accessories/);
   await expect(page.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();
   expect(fixture.calls).toHaveLength(0);
   expect(fixture.submits()).toBe(0);
