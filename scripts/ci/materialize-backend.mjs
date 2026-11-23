@@ -6,7 +6,7 @@ import { constants, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const COMMIT = 'b3d7eae6cb3eaeaf4fc2f4c2a4d288b69aa62367';
+const COMMIT = '5b73662f54b0b4016058e9777c9368baab719c1b';
 const MANIFEST_SHA256 = 'eb2dfee779a15634927cfbf25fcd6ffc59df591a585d1ec8f5f3d40e5caaf1dd';
 const TEST_GIT_BLOBS = Object.freeze({
   'supabase/tests/admin_medium_operation.test.sql': 'f16c9bffec7ec425e1f3cd5539d495f8305c772d',
@@ -40,7 +40,7 @@ const MIRRORED_CODE_GIT_BLOBS = Object.freeze({
   'supabase/templates/mfa_factor_enrolled_notification.html': '1ee64f433d2b34143dff1aa5f5353c5fc611889c',
   'supabase/templates/mfa_factor_unenrolled_notification.html': 'fdc1d806cf91cee1730b450bec07815d782518e3',
   'supabase/templates/magic_link.html': '6750981793cdffe32bd9760eae59dfc50da04d9c',
-  'supabase/functions/_shared/email-outbox-worker.ts': '35274ab227d176bf43d522197884ac6c5c98bb85',
+  'supabase/functions/_shared/email-outbox-worker.ts': '29717defe2eaa94fad7dfab58ef45e87e6cfaea8',
   'supabase/functions/_shared/listing-moderation-worker.ts': '764af1986305bc763d2a53c9909727528a4b2b4e',
   'src/lib/moderation/checker.ts': 'dd8655bf58bc1d6ca0b47c48ee0104d81629eb2c',
   'src/lib/moderation/contract.ts': 'e14984a5f4bdcc36c4e4ab42c309e46c2dc828ca',
