@@ -303,7 +303,8 @@ jobs:
       - name: Start Disposable Local Supabase
         run: |
           supabase stop || true
-          supabase start -x studio,analytics,logflare,supavisor
+          # DB/RLS tests do not use the mail UI; avoid Inbucket's conflicting 54324 host port.
+          supabase start -x studio,analytics,logflare,supavisor,inbucket
 
       - name: Run Schema & Media Invalidation pgTAP Tests
         run: |
