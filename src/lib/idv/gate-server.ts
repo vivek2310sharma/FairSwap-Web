@@ -46,14 +46,9 @@ export async function assertIdentityVerified(client: unknown): Promise<void> {
   if (await needsIdentityVerification(client)) throw new IdentityVerificationRequiredError();
 }
 
-/** UI language for the verification-required screen (same cookie the verification page reads). */
-export async function identityGateLocale(): Promise<"en" | "hi"> {
-  try {
-    const { cookies } = await import("next/headers");
-    return (await cookies()).get("NEXT_LOCALE")?.value === "hi" ? "hi" : "en";
-  } catch {
-    return "en";
-  }
+/** DigiLocker verification currently ships English-only. */
+export async function identityGateLocale(): Promise<"en"> {
+  return "en";
 }
 
 /** Maps the gate error (pre-flight or Backend) to a 403 JSON response; null for anything else. */
