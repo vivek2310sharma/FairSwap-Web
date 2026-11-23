@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 };
 
 const founders = [
-  { name: "Vivek", role: "Director & Founder", photo: "vivek.webp", linkedIn: "https://www.linkedin.com/in/vivek2310sharma/" },
-  { name: "Sourabh", role: "CEO & Co-Founder", photo: "raghav.webp", linkedIn: "https://www.linkedin.com/in/sourabh-sharma-6622071aa/" },
-  { name: "Raghav", role: "CTO & Co-Founder", photo: "sourabh.webp", linkedIn: "https://www.linkedin.com/in/raghav-marwah-72b46b13a/" },
+  { name: "Vivek Kumar", role: "Director & Founder", photo: "vivek.webp", linkedIn: "https://www.linkedin.com/in/vivek2310sharma/" },
+  { name: "Sourabh Sharma", role: "CEO & Co-Founder", photo: "raghav.webp", linkedIn: "https://www.linkedin.com/in/sourabh-sharma-6622071aa/" },
+  { name: "Raghav Marwah", role: "CTO & Co-Founder", photo: "sourabh.webp", linkedIn: "https://www.linkedin.com/in/raghav-marwah-72b46b13a/" },
 ];
 
 const teamSections = [
@@ -21,25 +21,68 @@ const teamSections = [
     id: "leadership",
     title: "Leadership",
     members: [
-      { name: "Rudra", role: "Chief Marketing Officer" },
-      { name: "Abhishek", role: "CFO" },
+      { name: "Rudra Tiwari", role: "Chief Marketing Officer" },
+      { name: "Abhishek Sharma", role: "CFO" },
     ],
   },
   {
     id: "team",
     title: "The Team Behind FairSwap",
     members: [
-      { name: "Tanvi", role: "Project Manager" },
-      { name: "Riya", role: "People and Culture Manager" },
-      { name: "Khushi", role: "Business Development Manager" },
-      { name: "Gauri", role: "Senior Developer" },
-      { name: "Saiesh", role: "Developer" },
-      { name: "Nikhil", role: "QA Tester" },
+      { name: "Tanvi Chawla", role: "Project Manager" },
+      { name: "Riya Purohit", role: "People and Culture Manager" },
+      { name: "Khushi Sharma", role: "Business Development Manager" },
+      { name: "Gauri Bharatkumar Joshi", role: "Senior Developer", photo: "gauri.webp" },
+      { name: "Saiesh Purohit", role: "Developer" },
+      { name: "Nikhil Joshi", role: "QA Tester", photo: "nikhil.webp" },
     ],
   },
 ];
 
 const sectionHeading = "text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl";
+
+const memberGrid = "mt-6 grid gap-5 sm:grid-cols-3";
+
+type Member = {
+  name: string;
+  role: string;
+  photo?: string;
+  linkedIn?: string;
+};
+
+function MemberCard({ name, role, photo, linkedIn }: Member) {
+  return (
+    <li className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+      <div className="relative grid aspect-square place-items-center overflow-hidden bg-surface">
+        {photo ? (
+          <Image
+            src={`/images/team/${photo}`}
+            alt={`Portrait of ${name}`}
+            fill
+            sizes="(min-width: 1152px) 350px, (min-width: 640px) 33vw, calc(100vw - 32px)"
+            className="object-cover object-top"
+          />
+        ) : (
+          <span aria-hidden="true" className="text-5xl font-extrabold tracking-tight text-muted sm:text-6xl">
+            {name.split(" ").map((part) => part[0]).join("")}
+          </span>
+        )}
+      </div>
+      <div className="p-5">
+        <h3 className="text-xl font-bold text-foreground">{name}</h3>
+        <p className="mt-1 text-sm text-muted">{role}</p>
+        {linkedIn && (
+          <a
+            href={linkedIn}
+            className="mt-3 inline-flex min-h-11 items-center rounded-sm text-sm font-semibold text-foreground underline decoration-border underline-offset-4 hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-4"
+          >
+            {name} on LinkedIn
+          </a>
+        )}
+      </div>
+    </li>
+  );
+}
 
 export default function AboutPage() {
   return (
@@ -79,49 +122,16 @@ export default function AboutPage() {
 
           <section aria-labelledby="founders-heading">
             <h2 id="founders-heading" className={sectionHeading}>Meet Our Founders</h2>
-            <ol role="list" className="mt-6 grid gap-5 sm:grid-cols-3">
-              {founders.map(({ name, role, photo, linkedIn }) => (
-                <li key={name} className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
-                  <div className="relative aspect-square overflow-hidden bg-surface">
-                    <Image
-                      src={`/images/team/${photo}`}
-                      alt={`Portrait of ${name}`}
-                      fill
-                      sizes="(min-width: 1152px) 350px, (min-width: 640px) 33vw, calc(100vw - 32px)"
-                      // Crop out the circular border baked into Sourabh’s source photo.
-                      className={photo === "raghav.webp" ? "scale-[1.45] object-cover" : "object-cover object-top"}
-                    />
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-xl font-bold text-foreground">{name}</h3>
-                    <p className="mt-1 text-sm text-muted">{role}</p>
-                    <a
-                      href={linkedIn}
-                      className="mt-3 inline-flex min-h-11 items-center rounded-sm text-sm font-semibold text-foreground underline decoration-border underline-offset-4 hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-4"
-                    >
-                      {name} on LinkedIn
-                    </a>
-                  </div>
-                </li>
-              ))}
+            <ol role="list" className={memberGrid}>
+              {founders.map((member) => <MemberCard key={member.name} {...member} />)}
             </ol>
           </section>
 
           {teamSections.map(({ id, title, members }) => (
             <section key={id} aria-labelledby={`${id}-heading`} className="border-t border-border pt-8 sm:pt-10">
               <h2 id={`${id}-heading`} className={sectionHeading}>{title}</h2>
-              <ul role="list" className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {members.map(({ name, role }) => (
-                  <li key={name} className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4">
-                    <span aria-hidden="true" className="grid size-12 shrink-0 place-items-center rounded-full bg-surface text-lg font-bold text-foreground ring-1 ring-border">
-                      {name[0]}
-                    </span>
-                    <div>
-                      <h3 className="font-bold text-foreground">{name}</h3>
-                      <p className="mt-1 text-sm text-muted">{role}</p>
-                    </div>
-                  </li>
-                ))}
+              <ul role="list" className={memberGrid}>
+                {members.map((member) => <MemberCard key={member.name} {...member} />)}
               </ul>
             </section>
           ))}
