@@ -2,6 +2,9 @@ import { pendingCount, ratingsEnabled } from "@/lib/ratings/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AccountOverview } from "@/components/account/AccountOverview";
+import { isDigiLockerEnabled } from "@/lib/idv/digilocker";
+import { getMyDigiLockerStatus } from "@/lib/idv/digilocker-badge-server";
+import type { VerificationBannerState } from "@/components/account/VerificationBanner";
 import { type MyPrivateDetails, type Profile, type UserAccount } from "@/types/account";
 
 function formatMemberSince(value: string | null | undefined): string | null {
@@ -47,6 +50,12 @@ export default async function AccountPage() {
   const isDeleted = !isAccountUnavailable && account?.account_status === "deleted";
   const isActive = !isAccountUnavailable && account?.account_status === "active";
   const isRestricted = isSuspended || isDeletionPending || isDeleted || isAccountUnavailable;
+
+  // Signed-in user's status comes only from the authoritative Backend badge RPC.
+  let verificationState: VerificationBannerState = "disabled";
+  if (isActive && isDigiLockerEnabled()) {
+    verificationState = await getMyDigiLockerStatus(supabase);
+  }
 
   const notices = (
     <>
@@ -112,6 +121,7 @@ export default async function AccountPage() {
       needsProfileCompletion={isActive && privateDetails !== null && !privateDetails.onboarding_completed}
       publicProfileHref={isActive ? `/seller/${userData.user.id}` : null}
       showVerification={isActive}
+      verificationState={verificationState}
       isRestricted={isRestricted}
       notices={notices}
     />
