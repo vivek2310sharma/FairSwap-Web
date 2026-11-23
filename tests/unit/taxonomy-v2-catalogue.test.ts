@@ -15,13 +15,42 @@ it.each(["mobile-phones","tablets","wearables"])("preserves the verified %s spec
  expect(sub.route.kind).toBe(slug);
  expect(resolveSub(sub,{mobilePhones:true,tablets:true,wearables:true,cars:"off",twoWheelers:"off",property:"off",goodsCategories:[],propertyPaths:[]}).readiness).toBe("available");
 });
-it("never bridges enabled canonical legacy families to old writable forms",()=>{
+it("routes only the five reviewed family choosers alongside existing specialists",()=>{
  const value=structuredClone(fixture);
  for(const node of value.nodes)if(node.parent_id){node.status="live";node.posting_enabled=true;}
  const tree=parseTaxonomy(value,bindings);
- expect(tree.flatMap(group=>group.subs).filter(node=>node.route.kind!=="none").map(node=>node.id)).toEqual(["mobile-phones","tablets","wearables"]);
+ expect(tree.flatMap(group=>group.subs).filter(node=>node.route.kind!=="none").map(node=>node.id)).toEqual(["mobile-phones","tablets","wearables","v2-cars","v2-motorcycles-scooters","v2-houses-apartments","v2-pg-hostels-guest-houses","v2-flatmates-shared-rooms"]);
  for(const name of ["TVs","Projectors","Speakers & Home Theatre","Cameras & Lenses"]){
   expect(tree.find(group=>group.id==="v2-tvs-audio-cameras")?.subs.some(node=>node.label===name)).toBe(true);
  }
  for(const slug of ["v2-services","v2-jobs"])expect(tree.find(group=>group.id===slug)?.subs).toEqual([]);
+});
+
+const familySlugs=["v2-cars","v2-motorcycles-scooters","v2-houses-apartments","v2-pg-hostels-guest-houses","v2-flatmates-shared-rooms"];
+const liveCaps={cars:"live",twoWheelers:"live",property:"live",goodsCategories:[],propertyPaths:["Residential for Rent/Apartment or Flat","PG & Co-living/Boys PG","PG & Co-living/Flatmates & Shared Rooms"]} as const;
+it.each(familySlugs)("%s requires posting_enabled and live family capability; never accepts a generic binding",slug=>{
+ const value=structuredClone(fixture),node=value.nodes.find(n=>n.slug===slug)!;
+ const get=()=>parseTaxonomy(value,{[slug]:node.id}).flatMap(g=>g.subs).find(n=>n.id===slug)!;
+ expect(get().route.kind).toBe("none");
+ node.status="live";node.posting_enabled=true;
+ const sub=get();expect(["vehicles","property"]).toContain(sub.route.kind);
+ expect(resolveSub(sub,liveCaps).readiness).toBe("available");
+ for(const state of ["off","draft"] as const)expect(resolveSub(sub,{...liveCaps,cars:state,twoWheelers:state,property:state}).macro).toBeUndefined();
+ node.posting_flow="generic";expect(get().route.kind).toBe("none");
+ node.posting_enabled=false;expect(get().route.kind).toBe("none");
+});
+it("rental choosers partition all ten existing rental paths without sale or commercial intake",()=>{
+ const value=structuredClone(fixture);for(const n of value.nodes)if(familySlugs.includes(n.slug)){n.status="live";n.posting_enabled=true;}
+ const properties=parseTaxonomy(value).flatMap(g=>g.subs).filter(n=>n.route.kind==="property");
+ const paths=properties.flatMap(n=>n.route.kind==="property"?n.route.paths:[]);
+ expect(paths).toHaveLength(10);expect(new Set(paths).size).toBe(10);
+ expect(paths.every(p=>p.startsWith("Residential for Rent/")||p.startsWith("PG & Co-living/"))).toBe(true);
+ for(const sub of properties)expect(resolveSub(sub,{...liveCaps,propertyPaths:[]}).macro).toBeUndefined();
+});
+it("unsupported categories stay unavailable even with supplied generic bindings",()=>{
+ const value=structuredClone(fixture);for(const n of value.nodes)if(n.parent_id){n.status="live";n.posting_enabled=true;}
+ const allBindings=Object.fromEntries(value.nodes.map(n=>[n.slug,n.id]));
+ const leaves=parseTaxonomy(value,allBindings).flatMap(g=>g.subs);
+ for(const slug of ["v2-commercial-vehicles","v2-electric-cycles-low-speed-evs","v2-bicycles","v2-other-items","v2-shops-offices","v2-land-plots","v2-warehouses-godowns"])
+  expect(leaves.find(n=>n.id===slug)?.route.kind).toBe("none");
 });
