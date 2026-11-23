@@ -37,3 +37,9 @@ it("preserves rental anti-scam guidance under the canonical property group",()=>
  fireEvent.click(screen.getByRole("button",{name:/^Property/}));
  expect(screen.getByText(/Beware of fake landlords/)).toBeVisible();
 });
+
+it("does not offer obsolete existing posting forms below the category chooser",()=>{
+ render(<MacroCategorySelector catalogue={catalogue} capabilities={capabilities} availability={availability}/>);
+ expect(screen.queryByText("Existing posting options")).toBeNull();
+ expect(screen.queryByText("Existing Accessories")).toBeNull();
+});

@@ -35,3 +35,13 @@ it("Add photos starts preparation only on explicit activation without awaiting t
  const prepare=vi.fn(()=>new Promise<void>(()=>{}));render(<PreListingMediaUploader photos={[]} onChange={vi.fn()} sessionId={id} disabled={false} onReady={async()=>{}} onPrepareSession={prepare}/>);
  const picker=vi.spyOn(screen.getByLabelText("Choose photo files"),"click");expect(prepare).not.toHaveBeenCalled();fireEvent.click(screen.getByRole("button",{name:"Add photos"}));expect(prepare).toHaveBeenCalledOnce();expect(picker).toHaveBeenCalledOnce();expect(m.fetch).not.toHaveBeenCalled();
 });
+
+it("uses general photo privacy guidance for TVs and preserves explicit phone guidance",()=>{
+ const props={photos:[] as PostingPhoto[],onChange:vi.fn(),sessionId:id,disabled:false,onReady:async()=>{}};
+ render(<PreListingMediaUploader {...props} photoLabel="TV"/>);
+ expect(screen.getByText(/Hide names, addresses, phone numbers/)).toBeVisible();
+ expect(screen.queryByText(/IMEI/)).toBeNull();
+ cleanup();
+ render(<PreListingMediaUploader {...props} privacyGuidance="Hide IMEI and serial numbers. Cover names and addresses on bills."/>);
+ expect(screen.getByText(/Hide IMEI and serial numbers/)).toBeVisible();
+});
