@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { LabView } from "@/lib/idv/digilocker-lab";
+import { asObject, decodeJwt, showValue } from "@/lib/idv/digilocker-diagnostic-decode";
 
 const AUTO_CLEAR_MS = 5 * 60 * 1000;
 
-// Stage-only owner tool (English only by design). Shows names, types and verdicts, never values.
+// Stage-only owner tool. Values render only after explicit reveal; no logs, persistence or analytics.
 const OUTCOME_TEXT: Record<LabView["outcome"], string> = {
   VERIFIED: "Signed assurance proven: a signature-verified ID token asserts acr=aadhaar",
   UNCONFIRMED: "Unconfirmed: assurance could not be proven",
@@ -56,11 +57,14 @@ function NameTypeTable({ label, rows, testId }: { label: string; rows: LabView["
 }
 
 export function LabResultView({ result, onClear }: { result: LabView; onClear: () => void }) {
+  const [revealValues, setRevealValues] = useState(false);
   const c = result.checks;
+  const tokenJson = asObject(result.raw?.tokenResponse.json);
+  const decoded = decodeJwt(tokenJson?.["id_token"]);
   return (
     <section aria-labelledby="dl-lab-result" role="status" className="mt-5 rounded-lg border p-4">
       <h2 id="dl-lab-result" className="font-semibold" data-testid="dl-lab-outcome">{OUTCOME_TEXT[result.outcome]}</h2>
-      <p className="mt-1 text-xs">Names, types and verdicts only. No values, tokens or personal data are shown or stored.</p>
+      <p className="mt-1 text-xs">Results are temporary and only visible to this authorized Test user. No identity badge is issued.</p>
       {result.errorCode && <p className="mt-2 break-words text-sm" data-testid="dl-lab-error">{ERROR_TEXT[result.errorCode] ?? "Failed."}</p>}
       <p className="mt-2 text-sm" data-testid="dl-lab-http">Token endpoint status: {result.httpStatusBucket === "none" ? "no response" : result.httpStatusBucket}</p>
 
@@ -86,7 +90,47 @@ export function LabResultView({ result, onClear }: { result: LabView; onClear: (
 
       <NameTypeTable label="Token response fields" rows={result.tokenResponseFields} testId="dl-lab-token-fields" />
       <NameTypeTable label="ID token claims" rows={result.idTokenClaims} testId="dl-lab-claims" />
-      <p className="mt-4 text-xs">Provider login alone does not verify Aadhaar. Only a signature-verified acr=aadhaar claim counts.</p>
+      {result.rawOmitted && <p role="alert" className="mt-4 text-sm">The raw response exceeded the secure one-time display limit and was discarded. The summary is preserved.</p>}
+      {result.raw && (
+        <div className="mt-4 border-t pt-4">
+          <p className="text-sm font-semibold">Sensitive response values</p>
+          <p className="mt-1 text-xs">Includes identity details and bearer tokens. Only reveal privately. Do not copy into chat, screenshots or logs. This view clears when you leave or press Clear result.</p>
+          <button type="button" onClick={() => setRevealValues((v) => !v)}
+            aria-expanded={revealValues}
+            className="mt-2 min-h-11 w-full rounded-lg border px-4 py-2 text-sm font-medium"
+            data-testid="dl-lab-reveal">
+            {revealValues ? "Hide response values" : "Reveal all response values"}
+          </button>
+          {revealValues && (
+            <div className="mt-3 space-y-3" data-testid="dl-lab-raw-values">
+              <div>
+                <h3 className="text-sm font-semibold">Complete token response (JSON, includes tokens)</h3>
+                <pre className="mt-1 max-h-80 overflow-auto whitespace-pre-wrap break-all rounded border p-3 text-xs">{showValue(result.raw.tokenResponse.json)}</pre>
+              </div>
+              {result.raw.tokenResponse.text !== null && (
+                <div>
+                  <h3 className="text-sm font-semibold">Provider response text</h3>
+                  <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all rounded border p-3 text-xs">{result.raw.tokenResponse.text}</pre>
+                </div>
+              )}
+              {decoded && (
+                <>
+                  <div>
+                    <h3 className="text-sm font-semibold">Decoded ID token header</h3>
+                    <pre className="mt-1 max-h-60 overflow-auto whitespace-pre-wrap break-all rounded border p-3 text-xs">{showValue(decoded.header)}</pre>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Decoded ID token claims (actual values)</h3>
+                    <pre className="mt-1 max-h-96 overflow-auto whitespace-pre-wrap break-all rounded border p-3 text-xs" data-testid="dl-lab-claim-values">{showValue(decoded.payload)}</pre>
+                  </div>
+                </>
+              )}
+              {!decoded && tokenJson?.["id_token"] !== undefined && <p className="text-sm">ID token could not be decoded.</p>}
+            </div>
+          )}
+        </div>
+      )}
+      <p className="mt-4 text-xs">Provider login alone does not verify Aadhaar. An absent acr claim cannot prove Aadhaar assurance.</p>
       <button type="button" onClick={onClear} className="mt-4 min-h-11 w-full rounded-lg border px-4 py-2 text-sm font-medium">Clear result</button>
     </section>
   );

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 const getUser = vi.fn();
@@ -18,8 +18,9 @@ import { GET as labCallback } from "@/app/api/idv/digilocker/lab/callback/route"
 import { POST as labStart } from "@/app/api/idv/digilocker/lab/start/route";
 import { GET as primaryCallback } from "@/app/api/idv/digilocker/callback/route";
 import {
-  LAB_CALLBACK_PATH, LAB_REDIRECT_URI, LAB_RESULT_COOKIE, LAB_STATE_COOKIE, consumeLabResult, isDigiLockerLabEnabled,
-  isLabAuthorizeUrl, openLabResult, sanitizeLabResult, sealLabResult, type LabView,
+  LAB_CALLBACK_PATH, LAB_REDIRECT_URI, LAB_RESULT_COOKIE, LAB_RESULT_COOKIE_NAMES, LAB_STATE_COOKIE,
+  consumeLabResult, isDigiLockerLabEnabled, isLabAuthorizeUrl, openLabResult, sanitizeLabResult, sealLabResult,
+  splitSealedLab, type LabView,
 } from "@/lib/idv/digilocker-lab";
 import { NextRequest } from "next/server";
 import { createElement } from "react";
@@ -61,9 +62,26 @@ const RESULT: LabView = {
   presence: { digilockerid: "present", eaadhaar: "absent", masked_aadhaar: "present", name: "invalid", dob: "null", gender: "empty" },
 };
 const OK = { success: true, flow: "lab", result: RESULT };
+const RAW_ID_TOKEN = `${B64({ alg: "RS256", kid: "test" })}.${B64({
+  iss: "https://digilocker.meripehchaan.gov.in", sub: SENTINEL,
+  masked_aadhaar: "XXXXXXXX1234", pan_number: "ABCDE1234F", birthdate: "1990-01-01",
+})}.sig`;
+const RAW_RESULT: LabView = {
+  ...RESULT,
+  raw: {
+    tokenResponse: {
+      httpStatus: 200, contentType: "application/json",
+      json: { access_token: "bearer-SENTINEL", refresh_token: "refresh-SENTINEL", id_token: RAW_ID_TOKEN, token_type: "Bearer", expires_in: 3600, consent_valid_till: 1800000000 },
+      text: null,
+    },
+  },
+};
 const rawResultCookie = (r: Response) => {
-  const raw = r.headers.getSetCookie().find((c) => c.startsWith(`${LAB_RESULT_COOKIE}=`));
-  return raw ? decodeURIComponent(raw.split(";")[0].slice(LAB_RESULT_COOKIE.length + 1)) : undefined;
+  const parts = LAB_RESULT_COOKIE_NAMES.map((name) => {
+    const raw = r.headers.getSetCookie().find((c) => c.startsWith(`${name}=`));
+    return raw ? decodeURIComponent(raw.split(";")[0].slice(name.length + 1)) : "";
+  });
+  return parts.join("") || undefined;
 };
 
 beforeEach(() => {
@@ -246,16 +264,48 @@ describe("Sealing and display", () => {
     expect(openLabResult(sealed, BIND, 1_000_000 + 61_000)).toBeNull();
     expect(openLabResult(sealed.slice(0, -2) + "AA", BIND, 1_000_000)).toBeNull();
     expect(sanitizeLabResult({ ...RESULT, sub: SENTINEL }).errorCode).toBe("INVALID_RESULT");
+    expect(openLabResult(sealLabResult(RAW_RESULT, BIND, 1_000_000)!, { userId: "other", sessionId: "s1" }, 1_000_000)).toBeNull();
   });
-  it("renders names, types and verdicts only: no values, tokens, JSON or copy/download controls", () => {
-    const html = renderToStaticMarkup(createElement(LabResultView, { result: RESULT, onClear: () => {} }));
-    expect(html).toContain("access_token");
-    expect(html).toContain("present but invalid");
-    expect(html).toContain("present but null");
-    expect(html).toContain("present but empty");
-    expect(html).not.toMatch(/<pre|<code|download|clipboard|Bearer|eyJ/i);
+  it("the default view hides raw tokens and personal values until explicit reveal", () => {
+    const html = renderToStaticMarkup(createElement(LabResultView, { result: RAW_RESULT, onClear: () => {} }));
+    expect(html).toContain("Reveal all response values");
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('data-testid="dl-lab-raw-values"');
+    for (const value of [SENTINEL, "ABCDE1234F", "XXXXXXXX1234", "bearer-SENTINEL", "refresh-SENTINEL", RAW_ID_TOKEN]) {
+      expect(html).not.toContain(value);
+    }
     const failed = renderToStaticMarkup(createElement(LabResultView, { result: sanitizeLabResult({ bad: SENTINEL }), onClear: () => {} }));
     expect(failed).not.toContain("SENTINEL");
     expect(failed).toContain("did not match the expected format");
+  });
+
+  it("seals complete authorized values in separate, bounded, one-time Test cookies", async () => {
+    signedIn();
+    edge({ success: true, flow: "lab", result: RAW_RESULT });
+    const returned = await labCallback(cb(`code=abc&state=${STATE}`, labCookie()));
+    const sealed = rawResultCookie(returned)!;
+    expect(sealed).not.toContain("bearer-SENTINEL");
+    expect(openLabResult(sealed, BIND)).toEqual(RAW_RESULT);
+    for (const n of LAB_RESULT_COOKIE_NAMES) {
+      const cookie = returned.headers.getSetCookie().find((c) => c.startsWith(`${n}=`));
+      if (cookie) expect(cookie.length).toBeLessThan(3900);
+    }
+    const chunks = splitSealedLab(sealed);
+    for (let i = 0; i < chunks.length; i++) jar.set(LAB_RESULT_COOKIE_NAMES[i], chunks[i]);
+    expect(await consumeLabResult()).toEqual(RAW_RESULT);
+    expect(await consumeLabResult()).toBeNull();
+    expect(jar.size).toBe(0);
+  });
+
+  it("drops oversized raw values entirely while preserving verdict and field names", () => {
+    const huge: LabView = { ...RAW_RESULT, raw: {
+      tokenResponse: { ...RAW_RESULT.raw!.tokenResponse, json: {
+        id_token: randomBytes(21000).toString("hex"), access_token: randomBytes(21000).toString("hex"),
+      } },
+    } };
+    const sealed = sealLabResult(huge, BIND, 1_000_000)!;
+    const opened = openLabResult(sealed, BIND, 1_000_000)!;
+    expect(opened).toMatchObject({ outcome: RESULT.outcome, rawOmitted: true, idTokenClaims: RESULT.idTokenClaims });
+    expect(opened.raw).toBeUndefined();
   });
 });

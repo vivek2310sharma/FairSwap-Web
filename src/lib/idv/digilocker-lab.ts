@@ -2,6 +2,7 @@ import "server-only";
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
+import { deflateRawSync, inflateRawSync } from "node:zlib";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { NO_STORE_HEADERS, getEdgeFunctionsBaseUrl, getSupabasePublicApiKey } from "@/lib/idv/server-helpers";
@@ -9,17 +10,21 @@ import { DIGILOCKER_AUTHORIZE_ORIGIN, STATE_PATTERN } from "@/lib/idv/digilocker
 
 // STAGE-ONLY DigiLocker Identity Lab. A SECOND Authpartner with its own callback, cookies and sealing key.
 // It never issues or displays a FairSwap badge, links an identity or touches the primary verification flow.
-// The Backend removes tokens and personal data BEFORE responding; this module only accepts a strictly defined,
-// value-free contract (every schema is .strict(): an unexpected field fails the whole response closed).
+// Test-only allowlisted responses can carry raw signed-identity data. They are
+// AES-GCM sealed to the tester/session, never logged or persisted and only
+// injected into the DOM following an explicit reveal. All shapes remain strict.
 
 export const LAB_PAGE_PATH = "/account/verification/digilocker-lab";
 export const LAB_CALLBACK_PATH = "/api/idv/digilocker/lab/callback";
 export const LAB_REDIRECT_URI = `https://fairswap-web-git-staging-fairswap.vercel.app${LAB_CALLBACK_PATH}`;
 export const LAB_STATE_COOKIE = "__Host-fs_dl_lab";
 export const LAB_RESULT_COOKIE = "__Host-fs_dl_lab_result";
+export const LAB_RESULT_COOKIE_NAMES = [LAB_RESULT_COOKIE, `${LAB_RESULT_COOKIE}_1`, `${LAB_RESULT_COOKIE}_2`] as const;
+const COOKIE_CHUNK_CHARS = 3600;
 const LAB_STATE_TTL_S = 300;
 const LAB_RESULT_TTL_S = 60;
-const MAX_SEALED_CHARS = 3800; // one cookie; the sanitized result is small, an oversized one fails closed
+const MAX_SEALED_CHARS = COOKIE_CHUNK_CHARS * LAB_RESULT_COOKIE_NAMES.length;
+const MAX_INFLATED_BYTES = 256 * 1024;
 const TEST_SUPABASE_URL = "https://wpppxlnbzqynvhpeuavd.supabase.co";
 const MIN_KEY_LENGTH = 32;
 
@@ -66,6 +71,13 @@ export const labResultSchema = z.object({
   presence: z.object({
     digilockerid: presence, eaadhaar: presence, masked_aadhaar: presence, name: presence, dob: presence, gender: presence,
   }).strict(),
+  raw: z.object({
+    tokenResponse: z.object({
+      httpStatus: z.number().int().min(200).max(299),
+      contentType: z.string().max(200).nullable(), json: z.unknown(), text: z.string().max(4000).nullable(),
+    }).strict(),
+  }).strict().optional(),
+  rawOmitted: z.boolean().optional(),
 }).strict();
 export type LabView = z.infer<typeof labResultSchema>;
 
@@ -128,30 +140,43 @@ async function currentBinding(): Promise<LabBinding | null> {
   return { token, userId: userData.user.id, sessionId: claims.session_id };
 }
 
-// ---- Sealed result cookie: AES-256-GCM, user+session bound, 60 s, single read. Holds ONLY the sanitized result. ----
+// ---- Sealed result cookies: AES-256-GCM+deflate, user+session bound, 60 s, single read. ----
 const payloadSchema = z.object({
-  v: z.literal(1), u: z.string().min(1), s: z.string().min(1), exp: z.number().int(), jti: z.string().regex(/^[0-9a-f]{32}$/), r: z.unknown(),
+  v: z.literal(2), u: z.string().min(1), s: z.string().min(1), exp: z.number().int(), jti: z.string().regex(/^[0-9a-f]{32}$/), r: z.unknown(),
 }).strict();
-const encKey = (key: string) => createHmac("sha256", key).update("fs:dl:lab:result:enc:v1").digest();
+const encKey = (key: string) => createHmac("sha256", key).update("fs:dl:lab:result:enc:v2").digest();
 
-export function sealLabResult(view: LabView, bind: Pick<LabBinding, "userId" | "sessionId">, nowMs = Date.now()): string | null {
+function sealPayload(view: LabView, bind: Pick<LabBinding, "userId" | "sessionId">, nowMs: number): string | null {
   const key = labKey();
   if (!key) return null;
-  const plain = Buffer.from(JSON.stringify({
-    v: 1, u: bind.userId, s: bind.sessionId, exp: Math.floor(nowMs / 1000) + LAB_RESULT_TTL_S, jti: randomBytes(16).toString("hex"), r: view,
-  }));
+  const plain = deflateRawSync(Buffer.from(JSON.stringify({
+    v: 2, u: bind.userId, s: bind.sessionId, exp: Math.floor(nowMs / 1000) + LAB_RESULT_TTL_S, jti: randomBytes(16).toString("hex"), r: view,
+  })));
   const iv = randomBytes(12);
   const c = createCipheriv("aes-256-gcm", encKey(key), iv);
   const ct = Buffer.concat([c.update(plain), c.final()]);
-  const sealed = `v1.${iv.toString("base64url")}.${Buffer.concat([ct, c.getAuthTag()]).toString("base64url")}`;
-  return sealed.length <= MAX_SEALED_CHARS ? sealed : null;
+  return `v2.${iv.toString("base64url")}.${Buffer.concat([ct, c.getAuthTag()]).toString("base64url")}`;
+}
+
+/** Full signed result if it fits; otherwise drop the entire raw payload, never truncate it. */
+export function sealLabResult(view: LabView, bind: Pick<LabBinding, "userId" | "sessionId">, nowMs = Date.now()): string | null {
+  const full = sealPayload(view, bind, nowMs);
+  if (full && full.length <= MAX_SEALED_CHARS) return full;
+  const reduced = sealPayload({ ...view, raw: undefined, rawOmitted: true }, bind, nowMs);
+  return reduced && reduced.length <= MAX_SEALED_CHARS ? reduced : null;
+}
+
+export function splitSealedLab(sealed: string): string[] {
+  const parts: string[] = [];
+  for (let i = 0; i < sealed.length; i += COOKIE_CHUNK_CHARS) parts.push(sealed.slice(i, i + COOKIE_CHUNK_CHARS));
+  return parts;
 }
 
 export function openLabResult(value: string | undefined, bind: Pick<LabBinding, "userId" | "sessionId">, nowMs = Date.now()): LabView | null {
   const key = labKey();
   if (!key || !value || value.length > MAX_SEALED_CHARS) return null;
   const [ver, ivB64, dataB64, extra] = value.split(".");
-  if (ver !== "v1" || !ivB64 || !dataB64 || extra !== undefined) return null;
+  if (ver !== "v2" || !ivB64 || !dataB64 || extra !== undefined) return null;
   let parsed: z.infer<typeof payloadSchema>;
   try {
     const iv = Buffer.from(ivB64, "base64url");
@@ -160,7 +185,7 @@ export function openLabResult(value: string | undefined, bind: Pick<LabBinding, 
     const d = createDecipheriv("aes-256-gcm", encKey(key), iv);
     d.setAuthTag(data.subarray(data.length - 16));
     const plain = Buffer.concat([d.update(data.subarray(0, data.length - 16)), d.final()]);
-    const p = payloadSchema.safeParse(JSON.parse(plain.toString("utf8")));
+    const p = payloadSchema.safeParse(JSON.parse(inflateRawSync(plain, { maxOutputLength: MAX_INFLATED_BYTES }).toString("utf8")));
     if (!p.success) return null;
     parsed = p.data;
   } catch {
@@ -176,11 +201,11 @@ export function openLabResult(value: string | undefined, bind: Pick<LabBinding, 
 export async function consumeLabResult(): Promise<LabView | null> {
   if (!isDigiLockerLabEnabled()) return null;
   const jar = await cookies();
-  const value = jar.get(LAB_RESULT_COOKIE)?.value;
-  if (!value) return null;
-  jar.set(LAB_RESULT_COOKIE, "", cookieOpts(0));
+  const parts = LAB_RESULT_COOKIE_NAMES.map((n) => jar.get(n)?.value);
+  for (const n of LAB_RESULT_COOKIE_NAMES) jar.set(n, "", cookieOpts(0));
+  if (!parts[0]) return null;
   const bind = await currentBinding();
-  return bind ? openLabResult(value, bind) : null;
+  return bind ? openLabResult(parts.filter((p): p is string => typeof p === "string").join(""), bind) : null;
 }
 
 async function callEdge(token: string, body: unknown): Promise<{ status: number; data: unknown } | null> {
@@ -219,7 +244,7 @@ export async function startLab(): Promise<NextResponse> {
   const res = json({ success: true, redirectUrl: ok.data.redirectUrl }, 200);
   // SameSite=Lax: the callback is a top-level cross-site GET. Only sha256(state) is stored.
   res.cookies.set(LAB_STATE_COOKIE, sha256(state), cookieOpts(LAB_STATE_TTL_S));
-  res.cookies.set(LAB_RESULT_COOKIE, "", cookieOpts(0));
+  for (const n of LAB_RESULT_COOKIE_NAMES) res.cookies.set(n, "", cookieOpts(0));
   return res;
 }
 
@@ -245,7 +270,10 @@ export async function handleLabCallback(req: NextRequest): Promise<NextResponse>
     res.headers.set("Referrer-Policy", "no-referrer");
     res.cookies.set(LAB_STATE_COOKIE, "", cookieOpts(0));
     const sealed = bind && view !== "signin" ? sealLabResult(view, bind) ?? sealLabResult(failedView("RESPONSE_TOO_LARGE"), bind) : null;
-    res.cookies.set(LAB_RESULT_COOKIE, sealed ?? "", cookieOpts(sealed ? LAB_RESULT_TTL_S : 0));
+    const chunks = sealed ? splitSealedLab(sealed) : [];
+    LAB_RESULT_COOKIE_NAMES.forEach((n, i) =>
+      res.cookies.set(n, chunks[i] ?? "", cookieOpts(chunks[i] ? LAB_RESULT_TTL_S : 0))
+    );
     return res;
   };
 
