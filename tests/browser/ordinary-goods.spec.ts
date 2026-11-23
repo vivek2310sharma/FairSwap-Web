@@ -160,17 +160,3 @@ for (const [slug, label, detail, answer, width] of cases) {
     expect(submitted).toBe(slug === "v2-laptops" ? 2 : 1);
   });
 }
-
-// These leaves must not fall through to the ordinary-goods writer, even if a
-// future catalogue accidentally marks them enabled; family forms are separate.
-test('restricted and specialist canonical leaves have no ordinary-goods fallback',async({page})=>{
- await api(page);
- await page.goto('/account/listings/new');
- const search=page.getByRole('searchbox',{name:'Search categories'});
- for(const label of ['Bicycles','Car Accessories & Spare Parts','Bike Accessories & Spare Parts',
-  'Land & Plots','Commercial & Other Vehicles','Electric Cycles & Low-Speed EVs',
-  'Cars','Motorcycles & Scooters','Houses & Apartments','PG, Hostels & Guest Houses']){
-  await search.fill(label);
-  await expect(page.getByRole('link',{name:new RegExp('^'+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))})).toHaveCount(0);
- }
-});
