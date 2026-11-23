@@ -15,6 +15,7 @@ const HOME_GROUPS: { title: string; links: FooterLink[] }[] = [
   { title: "Support", links: [
     { label: "Help Centre", href: HELP_CENTRE_URL },
     { label: "In-Person Safety Tips", href: "/safety" },
+    { label: "About Us", href: "/about" },
     { label: "Contact Us", href: "https://help.fairswap.in/en/contact" },
     { label: "support@fairswap.in", href: "mailto:support@fairswap.in" },
     { label: "WhatsApp Support: +91 7877966996", href: "https://wa.me/917877966996", external: true },
@@ -140,6 +141,11 @@ export function Footer({ variant = "default" }: { variant?: "default" | "home" }
               <li>
                 <Link href="/safety" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
                   In-Person Safety Tips
+                </Link>
+              </li>
+              <li>
+                <Link href="/about" className="hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-action-500 rounded-sm">
+                  About Us
                 </Link>
               </li>
               <li>
