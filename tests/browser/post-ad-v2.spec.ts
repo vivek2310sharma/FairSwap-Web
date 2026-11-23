@@ -276,9 +276,10 @@ for (const failure of ['malformed', 'error'] as const) {
   await expect(page.getByRole('link',{name:/Projectors/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/Projectors/})).toHaveCount(0);
   await expect(page.getByText('Existing posting options',{exact:true})).toHaveCount(0);
+  // The dedicated accessories route remains supported independently of taxonomy.
   await page.goto('/account/listings/new?posting=mobile-accessories');
-  await expect(page).toHaveURL(/\/account\/listings\/new$/);
-  await expect(page.getByRole('status')).toContainText('Categories are temporarily unavailable');
+  await expect(page).toHaveURL(/posting=mobile-accessories/);
+  await expect(page.getByRole('button',{name:'Add photos',exact:true})).toBeVisible();
   expect(fixture.calls).toHaveLength(0);
   expect(fixture.submits()).toBe(0);
  });
