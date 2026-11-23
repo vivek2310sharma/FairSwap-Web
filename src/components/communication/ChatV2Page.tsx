@@ -5,6 +5,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getIdentityGate } from "@/lib/idv/gate-server";
 import { readInbox, readMessages } from "@/lib/chat-v2/server";
 import { chatHref, inboxRequestSchema, uuid, timestamp, type ChatError } from "@/lib/chat-v2/contracts";
 import { chatCopy } from "@/lib/chat-v2/copy";
@@ -65,7 +66,8 @@ export async function ChatV2Page({ conversationId, searchParams }: { conversatio
     if ("error" in details) thread = <ChatV2Failure error={details.error} />;
     else {
       const messages = await readMessages({ conversationId });
-      thread = messages.error ? <ChatV2Failure error={messages.error} /> : <ChatV2Thread key={`${auth.data.user.id}:${conversationId}`} conversation={details.conversation} initial={messages.data} currentUserId={auth.data.user.id} isBlockedInitial={details.blocked} />;
+      const identityRequired = !messages.error && !details.blocked && (await getIdentityGate(db)) === "required";
+      thread = messages.error ? <ChatV2Failure error={messages.error} /> : <ChatV2Thread key={`${auth.data.user.id}:${conversationId}`} conversation={details.conversation} initial={messages.data} currentUserId={auth.data.user.id} isBlockedInitial={details.blocked} identityRequired={identityRequired} />;
     }
   }
   return <main className="min-w-0 flex-1 bg-surface/20 px-0 py-2 sm:px-4 sm:py-4">

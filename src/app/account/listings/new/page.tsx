@@ -18,6 +18,8 @@ import MobilePhoneForm from "@/components/listings/MobilePhoneForm";
 import { loadMobileCatalogue } from "@/lib/listings/mobiles/server";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { needsIdentityVerification } from "@/lib/idv/gate-server";
+import { IdentityRequiredScreen } from "@/components/idv/IdentityRequiredScreen";
 import ListingForm from "@/components/listings/ListingForm";
 import {isPropertyEnabled,loadPropertyReferences} from '@/lib/listings/property/server';
 import { sanitizeRedirectPath } from "@/lib/security/redirect";
@@ -75,6 +77,11 @@ export default async function NewListingPage({
     );
     const signInQuery = new URLSearchParams({ next });
     redirect(`/auth/sign-in?${signInQuery.toString()}`);
+  }
+
+  // UX preflight only; database triggers enforce the gate on every write.
+  if (await needsIdentityVerification(supabase)) {
+    return <main id="posting-content"><IdentityRequiredScreen context="post" returnTo="/account/listings/new" /></main>;
   }
 
   const integrationEnabled = isGoodsPostAdEnabled();

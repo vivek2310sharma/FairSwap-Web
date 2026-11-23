@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { createClient } from "@/lib/supabase/server";
+import { getIdentityGate } from "@/lib/idv/gate-server";
 import { ChatThread } from "@/components/communication/ChatThread";
 import type { Metadata } from "next";
 import { type Conversation, type Message } from "@/types/communication";
@@ -94,6 +95,9 @@ export default async function ConversationPage({
     }
   }
 
+  // Preserve conversation reads; disallow sending until DigiLocker verification.
+  const identityRequired = !isBlocked && (await getIdentityGate(supabase)) === "required";
+
   // Fetch profiles safely
   const userIdsToFetch = [convData.buyer_id, convData.seller_id].filter(Boolean) as string[];
   const { data: profileRows } = userIdsToFetch.length > 0
@@ -153,6 +157,7 @@ export default async function ConversationPage({
               initialMessages={initialMessages}
               currentUserId={userId}
               isBlockedInitial={isBlocked}
+              identityRequired={identityRequired}
             />
           </div>
         </div>

@@ -80,6 +80,24 @@ export async function GET() {
       // Fallback to attempt status if RPC lookup fails
     }
 
+    // Authoritative DigiLocker (signed-identity) check. Fail closed: the badge and a
+    // "verified" status are only reported when the backend explicitly confirms it.
+    let digilockerVerified = false;
+    try {
+      const { data: access, error: accessError } = await supabase.rpc("get_my_marketplace_access");
+      digilockerVerified =
+        !accessError &&
+        !!access &&
+        typeof access === "object" &&
+        (access as Record<string, unknown>).digilocker_verified === true;
+    } catch {
+      digilockerVerified = false;
+    }
+    if (!digilockerVerified) {
+      badgeIssued = false;
+      if (effectiveStatus === "verified") effectiveStatus = "not_started";
+    }
+
     // Also check attempt expiration if attempt itself had expiresAt and status was not yet finalized
     if (data.expiresAt) {
       const attemptExpiry = new Date(data.expiresAt).getTime();

@@ -1,0 +1,1 @@
+The authenticated media API uses `needsIdentityVerification` only as a UX preflight. The Supabase RLS/RPC/trigger is always authoritative. When the identity gate is ON, unverified users receive HTTP 403 `IDENTITY_VERIFICATION_REQUIRED` instead of a generic media failure. This applies to the Production listing media endpoints already using the shared `mediaApiError` contract.

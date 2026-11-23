@@ -1,4 +1,6 @@
 import "server-only";
+import { identityErrorResponse, IdentityVerificationRequiredError } from "@/lib/idv/gate-server";
+import { isIdentityRequired } from "@/lib/idv/gate";
 import { z } from "zod";
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -47,6 +49,7 @@ export async function sessionCall(client: SupabaseClient, session_id: string, op
   return parsed.data;
 }
 function sessionRpcError(error: {code?:string;message?:string}) {
+  if (isIdentityRequired(error)) return new IdentityVerificationRequiredError();
   // Only known constants/legacy messages may cross the RPC boundary. Never echo SQL.
   if (error.message === "UPLOAD_SESSION_LIMIT" || error.message === "Too many upload sessions") return new PostingSessionError("UPLOAD_SESSION_LIMIT");
   if (error.message === "UPLOAD_SESSION_EXPIRED" || error.message === "Upload session expired" || error.message === "Upload session is expiring; start a new posting") return new PostingSessionError("UPLOAD_SESSION_EXPIRED");
@@ -82,6 +85,7 @@ export async function acquireDraftSession(client: SupabaseClient, owner: string,
   return sessionCall(client,nonce,"create");
 }
 export function postingError(error: unknown, status = 400) {
+  const identity = identityErrorResponse(error); if (identity) return identity;
   if (error instanceof PostingSessionError) return Response.json({error:error.message,code:error.code},{status:sessionErrors[error.code].status,headers:{"Cache-Control":"private, no-store"}});
   const message = error instanceof Error && /^(Mobile posting|Request origin|Posting is temporarily|Sign in|Current policy|An active|Upload in progress|Session unavailable)/.test(error.message) ? error.message : "Could not complete the request. Your saved details are safe; please retry.";
   return Response.json({error:message},{status,headers:{"Cache-Control":"private, no-store"}});
