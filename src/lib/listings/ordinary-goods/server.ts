@@ -48,6 +48,10 @@ export function goodsError(error: unknown) {
     ORDINARY_GOODS_INVALID_MEDIA: "Upload all selected photos before submitting.",
     ORDINARY_GOODS_FROZEN_CONFLICT: "A submission is in progress with different details. Reopen your saved draft.",
     ORDINARY_GOODS_CONTRACT_UNAVAILABLE: "This category or form version is unavailable.",
+    PET_REHOMING_FREE_ONLY: "Pets on FairSwap are for adoption and rehoming only and must be free.",
+    PET_REHOMING_COMMERCIAL_FORBIDDEN: "Remove commercial sales, breeding offers or payment requests.",
+    PET_REHOMING_SPECIES_FORBIDDEN: "Only permitted domestic companion animals may be rehomed.",
+    PROPERTY_PRIVATE_OR_UNVERIFIED_CONTENT: "Remove private address details and unverified ownership claims.",
   };
   return Response.json({ error: (typeof message === "string" && Object.hasOwn(messages, message) ? messages[message] : null) ??
     "Could not complete this request. Check your account and try again." }, { status: 422, headers: goodsHeaders });
