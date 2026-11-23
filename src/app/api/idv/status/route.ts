@@ -66,8 +66,10 @@ export async function GET() {
 
         if (rec.status === "revoked") {
           effectiveStatus = "revoked";
+          badgeIssued = false;
         } else if (rec.status === "expired") {
           effectiveStatus = "expired";
+          badgeIssued = false;
         } else if (validUntil) {
           const expiresTime = new Date(validUntil).getTime();
           if (Number.isFinite(expiresTime) && expiresTime <= Date.now()) {
@@ -78,6 +80,24 @@ export async function GET() {
       }
     } catch {
       // Fallback to attempt status if RPC lookup fails
+    }
+
+    // Authoritative DigiLocker (Aadhaar-assured) check. Fail closed: the badge and a
+    // "verified" status are only reported when the backend explicitly confirms it.
+    let digilockerVerified = false;
+    try {
+      const { data: access, error: accessError } = await supabase.rpc("get_my_marketplace_access");
+      digilockerVerified =
+        !accessError &&
+        !!access &&
+        typeof access === "object" &&
+        (access as Record<string, unknown>).digilocker_verified === true;
+    } catch {
+      digilockerVerified = false;
+    }
+    if (!digilockerVerified) {
+      badgeIssued = false;
+      if (effectiveStatus === "verified") effectiveStatus = "not_started";
     }
 
     // Also check attempt expiration if attempt itself had expiresAt and status was not yet finalized
