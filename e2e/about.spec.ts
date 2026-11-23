@@ -14,10 +14,10 @@ const roster = [
   ["Nikhil", "QA Tester"],
 ];
 
-const linkedInProfiles = [
-  "https://www.linkedin.com/in/vivek2310sharma/",
-  "https://www.linkedin.com/in/sourabh-sharma-6622071aa/",
-  "https://www.linkedin.com/in/raghav-marwah-72b46b13a/",
+const founderProfiles = [
+  { name: "Vivek", photo: "vivek.webp", linkedIn: "https://www.linkedin.com/in/vivek2310sharma/" },
+  { name: "Sourabh", photo: "raghav.webp", linkedIn: "https://www.linkedin.com/in/sourabh-sharma-6622071aa/" },
+  { name: "Raghav", photo: "sourabh.webp", linkedIn: "https://www.linkedin.com/in/raghav-marwah-72b46b13a/" },
 ];
 
 test("About is public and presents the team in accessible reading order", async ({ page }) => {
@@ -34,6 +34,11 @@ test("About is public and presents the team in accessible reading order", async 
     "Meet Our Founders",
     "Leadership",
     "The Team Behind FairSwap",
+  ]);
+  const story = main.getByRole("region", { name: "Our Story and Mission" });
+  await expect(story.locator("p")).toHaveText([
+    "FairSwap is building a safer, more trustworthy way to buy and sell locally in India. Our approach prioritises data privacy, account security and accountability, with identity verification in mind and one genuine account per user as a design goal.",
+    "Our mission is to make local transactions simpler and safer. AI-assisted moderation is part of our approach to spotting potential fraud, spam and unsafe activity.",
   ]);
   await expect(main.getByRole("heading", { level: 3 })).toHaveText(roster.map(([name]) => name));
   const cards = main.getByRole("listitem");
@@ -53,14 +58,22 @@ test("the three founder portraits load and link to the supplied LinkedIn profile
   await expect(main.getByRole("img")).toHaveCount(3);
   await expect(page.locator('a[href*="linkedin.com"]')).toHaveCount(3);
 
-  for (const [index, [name]] of roster.slice(0, 3).entries()) {
-    const portrait = main.getByRole("img", { name: `Portrait of ${name}` });
+  const cards = main.getByRole("region", { name: "Meet Our Founders" }).getByRole("listitem");
+  await expect(cards.getByRole("heading")).toHaveText(founderProfiles.map(({ name }) => name));
+  for (const [index, { name, photo, linkedIn }] of founderProfiles.entries()) {
+    const card = cards.nth(index);
+    const portrait = card.getByRole("img", { name: `Portrait of ${name}` });
     await portrait.scrollIntoViewIfNeeded();
     await expect(portrait).toBeVisible();
-    await expect(portrait).toHaveAttribute("src", new RegExp(`%2Fimages%2Fteam%2F${name.toLowerCase()}\\.webp`));
+    const src = await portrait.getAttribute("src");
+    expect(new URL(src!, page.url()).searchParams.get("url")).toBe(`/images/team/${photo}`);
+    const frame = portrait.locator("..");
+    await expect(frame).toHaveCSS("aspect-ratio", "1 / 1");
+    await expect(frame).toHaveCSS("overflow", "hidden");
+    await expect(card).toHaveCSS("border-radius", await cards.first().evaluate((element) => getComputedStyle(element).borderRadius));
     await expect(portrait).toHaveJSProperty("complete", true);
     await expect.poll(() => portrait.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
-    await expect(main.getByRole("link", { name: `${name} on LinkedIn` })).toHaveAttribute("href", linkedInProfiles[index]);
+    await expect(card.getByRole("link", { name: `${name} on LinkedIn` })).toHaveAttribute("href", linkedIn);
   }
 });
 
