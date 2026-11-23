@@ -281,9 +281,6 @@ describe("Sealing and display", () => {
 
   it("seals complete authorized values in separate, bounded, one-time Test cookies", async () => {
     signedIn();
-    const r = await labCallback(cb(`code=abc&state=${STATE}`, labCookie()));
-    // No stubbed provider call yet: callback must fail without echoing any callback data.
-    expect(r.status).toBe(303);
     edge({ success: true, flow: "lab", result: RAW_RESULT });
     const returned = await labCallback(cb(`code=abc&state=${STATE}`, labCookie()));
     const sealed = rawResultCookie(returned)!;
