@@ -100,7 +100,8 @@ export function isLabAuthorizeUrl(raw: unknown): raw is string {
     return u.protocol === "https:" && u.origin === DIGILOCKER_AUTHORIZE_ORIGIN && !u.username && !u.password &&
       /^\/public\/oauth2\/[12]\/authorize$/.test(u.pathname) &&
       STATE_PATTERN.test(q.get("state") ?? "") && q.get("response_type") === "code" &&
-      q.get("scope") === "avs" && q.get("acr") === "aadhaar" && q.get("code_challenge_method") === "S256" &&
+      q.get("scope") === "avs" && !q.has("acr") && !q.has("nonce") &&
+      q.get("code_challenge_method") === "S256" &&
       (q.get("code_challenge") ?? "").length > 0 && q.get("redirect_uri") === LAB_REDIRECT_URI;
   } catch {
     return false;
