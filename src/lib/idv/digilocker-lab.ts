@@ -98,9 +98,10 @@ export function isLabAuthorizeUrl(raw: unknown): raw is string {
     const u = new URL(raw);
     const q = u.searchParams;
     return u.protocol === "https:" && u.origin === DIGILOCKER_AUTHORIZE_ORIGIN && !u.username && !u.password &&
-      /^\/public\/oauth2\/[12]\/authorize$/.test(u.pathname) &&
+      u.pathname === "/public/oauth2/1/authorize" &&
       STATE_PATTERN.test(q.get("state") ?? "") && q.get("response_type") === "code" &&
-      q.get("scope") === "avs" && !q.has("acr") && !q.has("nonce") &&
+      q.getAll("scope").length === 1 && q.get("scope") === "openid" && !q.has("acr") &&
+      /^[A-Za-z0-9_-]{43}$/.test(q.get("nonce") ?? "") &&
       q.get("code_challenge_method") === "S256" &&
       (q.get("code_challenge") ?? "").length > 0 && q.get("redirect_uri") === LAB_REDIRECT_URI;
   } catch {
