@@ -25,7 +25,15 @@ await edit('src/app/layout.tsx',s=>s.replace('import { Manrope, Noto_Sans_Devana
 await fs.writeFile(path.join(fixture,'src/components/providers/AuthProvider.tsx'),'"use client"; export function AuthProvider({children}:{children:React.ReactNode}){return children} export function useAuth(){return {user:{id:"11111111-1111-4111-8111-111111111111"},isLoading:false,unreadMessagesCount:0,unreadNotificationsCount:0,refreshUnreadCounts:async()=>{},signOut:async()=>{}}}');
 const id='11111111-1111-4111-8111-111111111111',brand='22222222-2222-4222-8222-222222222222',model='33333333-3333-4333-8333-333333333333',city='55555555-5555-4555-8555-555555555555';
 const catalogue={version:2,revision:'automated-fixture',listing_category_id:id,selection:{category:'mobiles',subcategory:'mobile-phones',version:2},enabled:true,brands:[{id:brand,name:'Apple',aliases:['iPhone'],sort_order:1}],models:[{id:model,brand_id:brand,name:'iPhone 15',aliases:[],older_group:false,other:false,sort_order:1}]};
-// Reuse the approved test-only taxonomy; only the phone specialist is enabled here.
+// Reuse the approved taxonomy. Family readiness is controlled only by fixture cookies.
+const families={};
+for(const [family,prefix] of [['cars','car'],['two-wheeler','vehicle'],['property','property']]){
+ const definition=JSON.parse(await fs.readFile(path.join(repo,`src/lib/listings/${family}/v1.json`),'utf8'));
+ const version=`80000000-0000-4000-8000-${prefix==='car'?'000000000001':prefix==='vehicle'?'000000000002':'000000000003'}`;
+ families[`${prefix}_contract_versions`]=[{id:version,new_assignment_enabled:true}];
+ families[`${prefix}_category_contracts`]=definition.paths.map((p,i)=>({category_id:`${prefix==='car'?'81000000':prefix==='vehicle'?'82000000':'83000000'}-0000-4000-8000-${String(i+1).padStart(12,'0')}`,version_id:version,source_path:p.path,fields:p.fields,definition:p,display_order:i,categories:{id:`${prefix==='car'?'81000000':prefix==='vehicle'?'82000000':'83000000'}-0000-4000-8000-${String(i+1).padStart(12,'0')}`,name:p.path[2],is_active:true,new_listing_enabled:true}}));
+}
+
 const taxonomy=JSON.parse(await fs.readFile(path.join(repo,'tests/unit/taxonomy-v2-fixture.json'),'utf8'));
 for(const node of taxonomy.nodes){
  if(node.parent_id!==null){
@@ -38,6 +46,8 @@ for(const node of taxonomy.nodes){
 await fs.writeFile(path.join(fixture,'src/lib/supabase/server.ts'),`import {cookies} from "next/headers";
 const catalogue=${JSON.stringify(catalogue)};
 const taxonomy=${JSON.stringify(taxonomy)};
+const families=${JSON.stringify(families)};
+const familySlugs=['v2-cars','v2-motorcycles-scooters','v2-houses-apartments','v2-pg-hostels-guest-houses','v2-flatmates-shared-rooms'];
 export async function createClient(){
  const c=await cookies();
  return {
@@ -46,20 +56,22 @@ export async function createClient(){
    if(name==='get_category_catalogue_v2'){
     const failure=c.get('fixture-taxonomy')?.value;
     if(failure==='error')return {data:null,error:{message:'Fixture taxonomy unavailable'}};
-    return {data:failure==='malformed'?{...taxonomy,nodes:taxonomy.nodes.slice(1)}:taxonomy,error:null};
+    const tree=structuredClone(taxonomy);if(['ready','contracts'].includes(c.get('fixture-family')?.value??''))for(const n of tree.nodes)if(familySlugs.includes(n.slug)){n.status='live';n.posting_enabled=true;}
+    return {data:failure==='malformed'?{...tree,nodes:tree.nodes.slice(1)}:tree,error:null};
    }
    if(name==='posting_v2_catalogue')return {data:catalogue,error:null};
    if(name==='accessories_v1_catalogue')return {data:{version:1,revision:'accessories-v1',enabled:true,listing_category_id:'${id}'},error:null};
    if(name==='tablets_v1_catalogue'||name==='wearables_v1_catalogue')return {data:null,error:null};
    return {data:null,error:{message:'Unmocked fixture RPC'}};
   },
-  from:(table:string)=>{const data=table==='cities'?[{id:'${city}',name:'Bengaluru',state:'Karnataka',is_active:true}]:table==='categories'?[{id:'${id}',name:'Electronics',slug:'electronics',macro_category:'goods',is_active:true,new_listing_enabled:true,sort_order:1}]:[];const q:any={select:()=>q,eq:()=>q,in:()=>q,order:()=>q,then:(resolve:any)=>Promise.resolve({data,error:null}).then(resolve)};return q}
+  from:(table:string)=>{const data=table in families?(c.get('fixture-family')?.value==='contracts'?[]:families[table]):table==='posting_category_definitions'?[{listing_category_id:catalogue.listing_category_id,enabled:true}]:table==='tablet_release_v1'?[]:table==='cities'?[{id:'${city}',name:'Bengaluru',state:'Karnataka',is_active:true}]:table==='categories'?[{id:'${id}',name:'Electronics',slug:'electronics',macro_category:'goods',is_active:true,new_listing_enabled:true,sort_order:1}]:[];const q:any={select:()=>q,eq:()=>q,in:()=>q,order:()=>q,maybeSingle:async()=>({data:data[0]??null,error:null}),single:async()=>({data:data[0]??null,error:null}),then:(resolve:any)=>Promise.resolve({data,error:null}).then(resolve)};return q}
  }
 }`);
 await edit('src/lib/listings/mobiles/server.ts',s=>s.replace(/export function mobilesEnabled\(\) \{[^}]*\}/,'export function mobilesEnabled() { return true; }'));
 await edit('src/lib/listings/post-ad-server.ts',s=>s.replace(/export function isGoodsPostAdEnabled\(\) \{[^}]*\}/,'export function isGoodsPostAdEnabled() { return true; }'));
-await edit('src/lib/listings/two-wheeler/server.ts',s=>s.replace(/export function isTwoWheelerEnabled\(\) \{[^}]*\}/,'export function isTwoWheelerEnabled(){return false}').replace(/export function isCarsEnabled\(\) \{[^}]*\}/,'export function isCarsEnabled(){return false}'));
-await edit('src/lib/listings/property/server.ts',s=>s.replace(/export const isPropertyEnabled=.*?;/,'export const isPropertyEnabled=()=>false;'));
+await edit('src/lib/listings/two-wheeler/server.ts',s=>s.replace(/export function isTwoWheelerEnabled\(\) \{[^}]*\}/,'export function isTwoWheelerEnabled(){return true}').replace(/export function isCarsEnabled\(\) \{[^}]*\}/,'export function isCarsEnabled(){return true}'));
+await edit('src/lib/listings/property/server.ts',s=>s.replace(/export const isPropertyEnabled=.*?;/,'export const isPropertyEnabled=()=>true;'));
+await edit('src/lib/listings/test-runtime.ts',s=>s.replace(/(export function isVerifiedProductionFamilyLaunchEnvironment\([\s\S]*?\): boolean \{)/,'$1\n return true;'));
 await fs.writeFile(path.join(fixture,'src/app/account/listings/[id]/edit/page.tsx'),'export default function Confirm(){return <h1>Submitted for review</h1>}');
 await fs.writeFile(path.join(fixture,'playwright.config.ts'),`import base from ${JSON.stringify(path.join(repo,'tests/browser/post-ad-v2.config.ts'))};export default {...base,testDir:${JSON.stringify(path.join(repo,'tests/browser'))},use:{...base.use,baseURL:'http://127.0.0.1:${port}'}};`);
 const log=await fs.open(path.join(fixture,'next.log'),'w');

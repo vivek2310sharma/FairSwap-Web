@@ -306,3 +306,31 @@ for (const width of [390, 1440]) {
   await expect(page.getByRole('link',{name:/Mobile Phones/})).toHaveAttribute('href','/account/listings/new?posting=mobile-phones');
  });
 }
+
+for(const [slug,label,count,prefix] of [
+ ['v2-cars','Cars',9,'81000000'],['v2-motorcycles-scooters','Motorcycles & Scooters',9,'82000000'],
+ ['v2-houses-apartments','Houses & Apartments',5,'83000000'],
+ ['v2-pg-hostels-guest-houses','PG, Hostels & Guest Houses',4,'83000000'],
+ ['v2-flatmates-shared-rooms','Flatmates & Shared Rooms',1,'83000000'],
+] as const)test(`canonical family chooser: ${slug} uses eligible existing contracts`,async({page,context,baseURL})=>{
+ await api(page);await context.addCookies([{name:'fixture-family',value:'ready',url:baseURL!}]);
+ await page.goto('/account/listings/new');await page.getByRole('searchbox',{name:'Search categories'}).fill(label);
+ const link=page.getByRole('link',{name:new RegExp('^'+label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))});
+ await expect(link).toHaveAttribute('href',`/account/listings/new?category=${slug}`);await link.click();
+ const category=page.getByLabel('Category *',{exact:true});await expect(category).toBeVisible();
+ const ids=await category.locator('option').evaluateAll(options=>options.map(o=>(o as HTMLOptionElement).value).filter(Boolean));
+ expect(ids).toHaveLength(count);expect(ids.every(id=>id.startsWith(prefix))).toBe(true);
+ await category.selectOption(ids[0]);
+ await expect(page.getByRole('button',{name:'Save as Draft',exact:true})).toBeVisible();
+ if(prefix==='83000000'){
+  await expect(page.getByText(/Beware of fake landlords/)).toBeVisible();
+  expect((await category.allTextContents()).join(' ')).not.toMatch(/Sale|Office|Land|Warehouse/);
+ }
+});
+for(const readiness of ['blocked','contracts'] as const)test(`canonical family chooser fails closed: ${readiness}`,async({page,context,baseURL})=>{
+ await api(page);await context.addCookies([{name:'fixture-family',value:readiness,url:baseURL!}]);
+ await page.goto('/account/listings/new');await page.getByRole('searchbox',{name:'Search categories'}).fill('Cars');
+ await expect(page.getByRole('link',{name:'Cars',exact:true})).toHaveCount(0);
+ await page.goto('/account/listings/new?category=v2-cars');await expect(page.getByRole('heading',{name:'This category isn’t available right now'})).toBeVisible();
+ await expect(page.getByLabel('Category *',{exact:true})).toHaveCount(0);
+});

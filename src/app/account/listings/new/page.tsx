@@ -1,6 +1,9 @@
 import { CANONICAL_POSTING_PATH, resolveCreationQuery } from "@/lib/listings/canonical-posting-route";
 import { loadGoodsBindings, loadGoodsDefinition } from "@/lib/listings/ordinary-goods/server";
 import { loadTaxonomy } from "@/lib/listings/taxonomy-v2-server";
+import { carsV1 } from "@/lib/listings/cars/contract";
+import { twoWheelerV1 } from "@/lib/listings/two-wheeler/contract";
+import { propertyV1 } from "@/lib/listings/property/contract";
 import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import styles from "@/components/listings/posting/Posting.module.css";
@@ -33,6 +36,16 @@ import {
 } from "@/lib/maintenance/seller-writes";
 
 export const metadata: Metadata = { title: "Post an ad | FairSwap.in" };
+
+// Filter loaded references against the existing specialist forms; canonical IDs
+// and unsupported paths/fields never enter a specialist write payload.
+function eligible<T extends {path:string[];fields:string[];is_active:boolean;new_listing_enabled:boolean}>(
+  references: {categories:T[];error?:string} | undefined,
+  definition: {paths:{path:string[];fields:string[]}[]},
+): T[] {
+  return !references || references.error ? [] : references.categories.filter(c => c.is_active && c.new_listing_enabled &&
+    definition.paths.some(p => JSON.stringify(p.path) === JSON.stringify(c.path) && JSON.stringify(p.fields) === JSON.stringify(c.fields)));
+}
 
 export default async function NewListingPage({
   searchParams,
@@ -72,6 +85,35 @@ export default async function NewListingPage({
 
     const catalogue = await loadTaxonomy(supabase, loadGoodsBindings(supabase));
     const selected = catalogue?.flatMap(group => group.subs).find(node => node.id === choice.slug);
+    if (integrationEnabled && (selected?.route.kind === "vehicles" || selected?.route.kind === "property")) {
+      const route = selected.route;
+      const testSubmission = isVerifiedSubmissionTestEnvironment(process.env);
+      const submission = {
+        cars: testSubmission || isVerifiedProductionFamilyLaunchEnvironment(process.env,"cars"),
+        twoWheelers: testSubmission || isVerifiedProductionFamilyLaunchEnvironment(process.env,"two-wheelers"),
+        property: testSubmission || isVerifiedProductionFamilyLaunchEnvironment(process.env,"property"),
+      };
+      const ready = route.kind === "property" ? submission.property : route.family === "cars" ? submission.cars : submission.twoWheelers;
+      const typed = supabase as SupabaseClient<Database>;
+      const vehicleReferences = ready && route.kind === "vehicles" ? await loadVehicleReferences(typed,undefined,route.family) : undefined;
+      const propertyReferences = ready && route.kind === "property" ? await loadPropertyReferences(typed) : undefined;
+      const vehicleCategories = eligible(vehicleReferences,route.kind === "vehicles" && route.family === "cars" ? carsV1 : twoWheelerV1);
+      const propertyCategories = route.kind === "property" ? eligible(propertyReferences,propertyV1).filter(c=>route.paths.includes(c.path.slice(1).join("/"))) : [];
+      const back = <Link className={styles.back} href={CANONICAL_POSTING_PATH}><ArrowLeft size={18} aria-hidden="true"/> Categories</Link>;
+      if (!ready || !(vehicleCategories.length || propertyCategories.length))
+        return <main id="posting-content" className={styles.journey}>{back}<h1>This category isn’t available right now</h1></main>;
+      const locationRequest=loadPostAdLocations(supabase);
+      const [references,locations]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),locationRequest]);
+      if (locations.status !== "ready" || !locations.cities.length)
+        return <main id="posting-content" className={styles.journey}>{back}<p role="alert">We couldn’t load your area options. Please try again shortly.</p></main>;
+      return <main id="posting-content" className={styles.journey}>{back}
+        <GoodsPostAdEntry canonicalCategory={choice.slug} catalogue={catalogue} references={references} locations={locations}
+          vehicles={vehicleReferences ? {...vehicleReferences,categories:vehicleCategories} : undefined}
+          property={propertyReferences ? {...propertyReferences,categories:propertyCategories} : undefined}
+          submission={submission} isMaintenanceActive={isMaintenanceActive}
+          maintenanceMessage={isMaintenanceActive ? SELLER_WRITE_MAINTENANCE_MESSAGE : undefined}/>
+      </main>;
+    }
     const definition = selected?.route.kind === "ordinary-goods"
       ? await loadGoodsDefinition(supabase, choice.slug).catch(() => null)
       : null;
@@ -129,10 +171,13 @@ export default async function NewListingPage({
   if (integrationEnabled) {
     const typed=supabase as SupabaseClient<Database>;
     const locationRequest=loadPostAdLocations(supabase);
-    const [references,tw,cars,property,locations,catalogue]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest,loadTaxonomy(supabase,loadGoodsBindings(supabase).then(goods => ({
+    const [references,twRaw,carsRaw,propertyRaw,locations,catalogue]=await Promise.all([loadGoodsReferences(supabase,undefined,locationRequest),isTwoWheelerEnabled()?loadVehicleReferences(typed):undefined,isCarsEnabled()?loadVehicleReferences(typed,undefined,"cars"):undefined,isPropertyEnabled()?loadPropertyReferences(typed):undefined,locationRequest,loadTaxonomy(supabase,loadGoodsBindings(supabase).then(goods => ({
       ...goods, "specialist:phone":mobileCatalogue?.listing_category_id,
       "specialist:tablet":tabletCatalogue?.listing_category_id,"specialist:wearable":wearableCatalogue?.listing_category_id,
     })))]);
+    const tw=twRaw?{...twRaw,categories:eligible(twRaw,twoWheelerV1)}:undefined;
+    const cars=carsRaw?{...carsRaw,categories:eligible(carsRaw,carsV1)}:undefined;
+    const property=propertyRaw?{...propertyRaw,categories:eligible(propertyRaw,propertyV1)}:undefined;
     // Each vehicle family is judged on its own loader result; a failing family is dropped
     // so it can neither block nor enable the other. No healthy family => no vehicle form.
     const healthy=(v?:{categories:unknown[];error?:string})=>!!v&&!v.error&&v.categories.length>0;
