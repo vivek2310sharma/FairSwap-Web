@@ -13,10 +13,11 @@ export type PostingPhoto = {
     url?: string;
     error?: string;
 };
-export default function PreListingMediaUploader({ photos, onChange, sessionId, disabled, onReady, ensureSession, onPrepareSession, onSessionError, guidance = "Front, back, screen on, sides and any wear.", photoLabel = "Phone", mediaBase = "/api/post-ad/sessions", locale = "en" }: {
+export default function PreListingMediaUploader({ photos, onChange, sessionId, disabled, onReady, ensureSession, onPrepareSession, onSessionError, guidance = "Front, back, screen on, sides and any wear.", privacyGuidance = "Hide names, addresses, phone numbers and other personal details visible in photos.", photoLabel = "Phone", mediaBase = "/api/post-ad/sessions", locale = "en" }: {
     mediaBase?: string;
     photoLabel?: string;
     guidance?: string;
+    privacyGuidance?: string;
     locale?: PostingLocale;
     photos: PostingPhoto[];
     onChange: (photos: PostingPhoto[]) => void;
@@ -104,7 +105,7 @@ export default function PreListingMediaUploader({ photos, onChange, sessionId, d
                 setBusy(false);
             }
         }}/></div>
-  <p className={styles.muted}>Hide IMEI and serial numbers. Cover names and addresses on bills.</p>
+  <p className={styles.muted}>{privacyGuidance}</p>
   <ul className={styles.photoGrid}>{photos.map((p, i) => <li key={p.id}>
    <PostingPhotoImage photo={p} alt={`${photoLabel} photo ${i + 1}`}/>
    <p role="status">{i === 0 ? "Cover · " : ""}{t(p.state === "ready" ? "Ready" : p.state === "failed" ? "Upload failed" : p.state === "uploading" ? "Uploading…" : "Ready to upload")}</p>
