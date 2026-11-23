@@ -27,6 +27,7 @@ export const digiLockerCopy = {
     results: {
       denied: "You did not give permission in DigiLocker, so nothing was verified. You can try again.",
       already_linked: "This DigiLocker account is already linked to another FairSwap account. Contact support to recover your account.",
+      different_identity: "Your FairSwap account is linked to a different DigiLocker identity. Contact support if you need to change it.",
       unavailable: "We could not verify this account. Contact support if you need help.",
       expired: "This verification session expired or was already used. Please start again.",
       provider_error: "DigiLocker did not respond in time. Please try again in a few minutes.",
