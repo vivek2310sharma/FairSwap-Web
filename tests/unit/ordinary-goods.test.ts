@@ -5,7 +5,7 @@ import { goodsDefinition, parseGoodsPrice, selectedGoodsSubmission } from "@/lib
 import { FAMILY_CHOOSER_ROUTES } from "@/lib/listings/post-ad-category-catalogue";
 import { parseTaxonomy } from "@/lib/listings/taxonomy-v2";
 
-const unavailable = ["v2-commercial-vehicles","v2-electric-cycles-low-speed-evs","v2-bicycles","v2-other-items","v2-shops-offices","v2-land-plots","v2-warehouses-godowns"];
+const unavailable: string[] = [];
 const goods = fixture.nodes.filter(n => isOrdinaryGoodsSlug(n.slug));
 const definition = goodsDefinition.parse({
   slug: "v2-laptops", category_id: goods.find(n => n.slug === "v2-laptops")?.id, revision: 1,
@@ -22,8 +22,8 @@ const payload = { slug, category_id, revision, session_id, title, description, c
 const schema = selectedGoodsSubmission(definition);
 
 describe("Ordinary Goods taxonomy", () => {
-  it("scopes the release to thirteen groups and exactly 58 leaves", () => {
-    expect(goods).toHaveLength(58);
+  it("scopes the release to thirteen groups and exactly 60 leaves", () => {
+    expect(goods).toHaveLength(60);
     expect(new Set(goods.map(n => n.parent_id)).size).toBe(13);
   });
 
@@ -72,7 +72,7 @@ it.each([
 });
 
 
-it.each(["v2-cars", "v2-motorcycles-scooters", "v2-commercial-vehicles", "v2-electric-cycles-low-speed-evs"])(
+it.each(["v2-cars", "v2-motorcycles-scooters"])(
   "rejects otherwise valid submissions for draft-only %s",
   slug => {
     const category_id = goods.find(node => node.slug === slug)!.id;
@@ -83,6 +83,92 @@ it.each(["v2-cars", "v2-motorcycles-scooters", "v2-commercial-vehicles", "v2-ele
       .toContain("This vehicle can only be saved as a draft.");
   },
 );
+
+it.each(["v2-commercial-vehicles", "v2-electric-cycles-low-speed-evs"])(
+  "permits valid submissions for launched non-draft %s",
+  slug => {
+    const category_id = goods.find(node => node.slug === slug)!.id;
+    const contract = goodsDefinition.parse({ ...definition, slug, category_id });
+    const result = selectedGoodsSubmission(contract).safeParse({ ...payload, slug, category_id });
+    expect(result.success).toBe(true);
+  },
+);
+
+describe("Pet adoption/rehoming contract", () => {
+  const dogId = goods.find(node => node.slug === "v2-dogs")!.id;
+  const dogContract = goodsDefinition.parse({
+    slug: "v2-dogs", category_id: dogId, revision: 1, risk: "general",
+    fields: [
+      { key: "pet_type", label: "Pet type", required: true, kind: "text" },
+      { key: "age_months", label: "Age (months)", required: true, kind: "number", min: 1, max: 240 },
+      { key: "gender", label: "Gender", required: true, kind: "text", choices: ["Male", "Female"] },
+      { key: "breed", label: "Breed", required: true, kind: "text" },
+      { key: "vaccinated", label: "Vaccinated", required: true, kind: "text", choices: ["Yes", "No", "Partially"] },
+      { key: "neutered", label: "Neutered / Spayed", required: false, kind: "text", choices: ["Yes", "No"] },
+    ],
+  });
+  const dogSchema = selectedGoodsSubmission(dogContract);
+  const validPet = {
+    ...payload, slug: "v2-dogs", category_id: dogId, price_type: "free", price_paise: 0,
+    title: "Friendly indie dog for adoption", description: "Healthy and playful dog looking for a caring home.",
+    answers: { pet_type: "Dog", age_months: 18, gender: "Male", breed: "Indie", vaccinated: "Yes", neutered: "Yes",
+      safety_confirmed: true, power_safe: true, defects: "" },
+  };
+
+  it("accepts valid free pet adoption submission", () => {
+    expect(dogSchema.safeParse(validPet).success).toBe(true);
+  });
+
+  it("rejects non-free price for pet adoption", () => {
+    expect(dogSchema.safeParse({ ...validPet, price_type: "fixed", price_paise: 500000 }).success).toBe(false);
+    expect(dogSchema.safeParse({ ...validPet, price_paise: 100 }).success).toBe(false);
+  });
+
+  it.each([
+    "Puppies for sale at reasonable price",
+    "Champion bloodline breeder fee Rs 10000",
+    "Exotic python snake also available",
+    "Wild falcon bird",
+  ])("rejects commercial sale or exotic species: %s", description => {
+    expect(dogSchema.safeParse({ ...validPet, description }).success).toBe(false);
+  });
+});
+
+describe("Commercial property contract", () => {
+  const shopId = goods.find(node => node.slug === "v2-shops-offices")!.id;
+  const shopContract = goodsDefinition.parse({
+    slug: "v2-shops-offices", category_id: shopId, revision: 1, risk: "general",
+    fields: [
+      { key: "property_type", label: "Property type", required: true, kind: "text", choices: ["Shop", "Office", "Showroom", "Commercial Space"] },
+      { key: "carpet_area_sqft", label: "Carpet area (sq ft)", required: true, kind: "number", min: 10, max: 500000 },
+      { key: "offer", label: "Offer", required: true, kind: "text", choices: ["Rent", "Sale"] },
+      { key: "amount_paise", label: "Rent or price amount", required: true, kind: "number", min: 100, max: 1000000000000 },
+      { key: "deposit_paise", label: "Security deposit", required: false, kind: "number", min: 0, max: 1000000000000 },
+      { key: "charges_paise", label: "Maintenance charges", required: false, kind: "number", min: 0, max: 1000000000000 },
+    ],
+  });
+  const shopSchema = selectedGoodsSubmission(shopContract);
+  const validShop = {
+    ...payload, slug: "v2-shops-offices", category_id: shopId, condition: null, price_type: null, price_paise: null,
+    title: "Prime retail shop in commercial hub", description: "Corner unit suitable for pharmacy or clinic.",
+    answers: { property_type: "Shop", carpet_area_sqft: 450, offer: "Rent", amount_paise: 2500000, deposit_paise: 10000000, charges_paise: 200000,
+      safety_confirmed: true, power_safe: true, defects: "" },
+  };
+
+  it("accepts valid commercial property listing", () => {
+    expect(shopSchema.safeParse(validShop).success).toBe(true);
+  });
+
+  it.each([
+    "Shop no 42 Commercial Plaza",
+    "Office number 301 Sector 18",
+    "Plot # 105 Main Road",
+    "RERA approved guaranteed clear title",
+    "Verified owner direct deal",
+  ])("rejects private address or unverified claim: %s", text => {
+    expect(shopSchema.safeParse({ ...validShop, description: text }).success).toBe(false);
+  });
+});
 
 // Field rows mirror Backend V3 migration 20261119092042_ordinary_goods_v3.sql (pinned 58531d2).
 const pilot = {
@@ -146,10 +232,9 @@ it("Tables & Chairs enforces its bounded optional quantity", () => {
   expect([run(0), run(101), run("4"), run(Number.NaN), run(Infinity)]).toEqual([false, false, false, false, false]);
 });
 
-it("preserves all 43 reviewed Goods routes and their existing category IDs",()=>{
- const reviewed=goods.filter(n=>!Object.hasOwn(FAMILY_CHOOSER_ROUTES,n.slug)&&!unavailable.includes(n.slug)&&
-  !["v2-car-accessories-parts","v2-bike-accessories-parts","v2-baby-gear-car-seats"].includes(n.slug));
- expect(reviewed).toHaveLength(43);
+it("preserves all 55 reviewed Goods routes and their existing category IDs",()=>{
+ const reviewed=goods.filter(n=>!Object.hasOwn(FAMILY_CHOOSER_ROUTES,n.slug));
+ expect(reviewed).toHaveLength(55);
  const tree=structuredClone(fixture);
  for(const node of tree.nodes)if(reviewed.some(n=>n.slug===node.slug)){node.status="live";node.posting_enabled=true;}
  const catalogue=parseTaxonomy(tree,Object.fromEntries(reviewed.map(n=>[n.slug,n.id]))).flatMap(g=>g.subs);

@@ -69,8 +69,8 @@ it("requires the existing authenticated posting boundary before parsing any cont
 });
 
 
-it.each(["v2-cars", "v2-motorcycles-scooters", "v2-commercial-vehicles", "v2-electric-cycles-low-speed-evs"])(
-  "denies submission for %s before any freeze, photo copy or submit RPC",
+it.each(["v2-cars", "v2-motorcycles-scooters"])(
+  "keeps specialist %s draft-only before freeze, photo copy or submit RPC",
   async selected => {
     stubs.rpc.mockResolvedValueOnce({ error: null, data: { slug: selected, category_id: category, revision: 1,
       risk: "general", fields: [{ key: "brand", label: "Make", kind: "text", required: true }] } });
@@ -79,6 +79,41 @@ it.each(["v2-cars", "v2-motorcycles-scooters", "v2-commercial-vehicles", "v2-ele
     expect(response.status).toBe(409);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
     expect(await response.json()).toMatchObject({ code: "REGULATED_VEHICLE_DRAFT_ONLY" });
+    expect(stubs.rpc.mock.calls.map(([name]) => name)).toEqual(["ordinary_goods_v3"]);
+    expect(stubs.promote).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["v2-commercial-vehicles", "v2-electric-cycles-low-speed-evs"])(
+  "submits reviewed %s only with a valid category-bound payload and prepared session",
+  async selected => {
+    stubs.rpc.mockResolvedValueOnce({ error: null, data: { slug: selected, category_id: category, revision: 1,
+      risk: "general", fields: [{ key: "brand", label: "Make", kind: "text", required: true }] } });
+    const scoped = { ...payload, slug: selected,
+      answers: { brand: "Example", safety_confirmed: true, power_safe: true, defects: "" } };
+    const response = await request(scoped, selected);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(stubs.rpc.mock.calls.map(([name]) => name)).toEqual([
+      "ordinary_goods_v3", "ordinary_goods_prepare_v3", "ordinary_goods_submit_v3",
+    ]);
+    expect(stubs.rpc.mock.calls.slice(1)).toEqual([
+      ["ordinary_goods_prepare_v3", { payload: scoped }],
+      ["ordinary_goods_submit_v3", { payload: scoped }],
+    ]);
+    expect(stubs.promote).toHaveBeenCalledOnce();
+    expect(stubs.promote.mock.invocationCallOrder[0]).toBeLessThan(stubs.rpc.mock.invocationCallOrder[2]);
+  },
+);
+
+it.each(["v2-commercial-vehicles", "v2-electric-cycles-low-speed-evs"])(
+  "rejects spoofed %s payloads before freeze, media or submit RPC",
+  async selected => {
+    stubs.rpc.mockResolvedValueOnce({ error: null, data: { slug: selected, category_id: category, revision: 1,
+      risk: "general", fields: [{ key: "brand", label: "Make", kind: "text", required: true }] } });
+    const response = await request({ ...payload, slug: selected, category_id: owner,
+      answers: { brand: "Example", safety_confirmed: true, power_safe: true, defects: "" } }, selected);
+    expect(response.status).toBe(422);
     expect(stubs.rpc.mock.calls.map(([name]) => name)).toEqual(["ordinary_goods_v3"]);
     expect(stubs.promote).not.toHaveBeenCalled();
   },

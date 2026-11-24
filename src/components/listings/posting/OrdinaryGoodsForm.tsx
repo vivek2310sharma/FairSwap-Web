@@ -1,6 +1,6 @@
 "use client";
 
-import { isPropertyIntakeSlug, isRegulatedVehicleDraftSlug, isSpecialistVehicleDraftSlug } from "@/lib/listings/ordinary-goods/categories";
+import { isPetRehomingSlug, isPropertyIntakeSlug, isSpecialistVehicleDraftSlug } from "@/lib/listings/ordinary-goods/categories";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
@@ -153,9 +153,11 @@ export default function OrdinaryGoodsForm({ definition, label, ownerId, cities, 
     } catch (e) { setError(e instanceof Error ? e.message : "Photo session unavailable."); return null; }
   }
 
-  const draftOnly = isRegulatedVehicleDraftSlug(definition.slug);
+  const draftOnly = isSpecialistVehicleDraftSlug(definition.slug);
   const property = isPropertyIntakeSlug(definition.slug);
-  const labels = property ? propertyLabels : itemLabels;
+  const isPet = isPetRehomingSlug(definition.slug);
+  const petLabels = ["Photos", "Details", "Health & Care", "Terms", "Location"] as const;
+  const labels = property ? propertyLabels : isPet ? petLabels : itemLabels;
   const sale = draft.fields.offer === "Sale";
   const termsKeys = ["offer", "amount_paise", "deposit_paise", "charges_paise"];
   const detailsFields = definition.fields.filter(f => !property || !termsKeys.includes(f.key));
@@ -170,18 +172,18 @@ export default function OrdinaryGoodsForm({ definition, label, ownerId, cities, 
   }));
   const answers = { ...fields, defects: draft.defects.trim(), safety_confirmed: draft.safety,
     power_safe: draft.power };
-  const paise = draft.giveaway ? 0 : parseGoodsPrice(draft.price);
-  const details = { title: draft.title, description: draft.description, condition: property ? "good" : draft.condition };
+  const paise = (draft.giveaway || isPet) ? 0 : parseGoodsPrice(draft.price);
+  const details = { title: draft.title, description: draft.description, condition: (property || isPet) ? "good" : draft.condition };
   const { area, ...postal } = draft.location;
   const validations = [
     photos.length && photos.every(p => p.state === "ready") && draft.session ? "" : "Upload all selected photos, including at least one photo.",
     goodsAnswers({ ...definition, fields: detailsFields }).safeParse(Object.fromEntries(
       Object.entries(fields).filter(([key]) => detailsFields.some(f => f.key === key)))).success ? "" : "Complete required details and check numerical ranges.",
     goodsDetails.safeParse(details).success && draft.safety && draft.power &&
-      (!["fair", "poor"].includes(draft.condition) || draft.defects.trim().length >= 5)
-      ? "" : property ? "Complete the property description and declarations." : "Choose a condition, describe wear or faults and complete the safety declarations.",
+      (property || isPet || !["fair", "poor"].includes(draft.condition) || draft.defects.trim().length >= 5)
+      ? "" : property ? "Complete the property description and declarations." : isPet ? "Complete the pet description and rehoming declarations." : "Choose a condition, describe wear or faults and complete the safety declarations.",
     property ? (goodsAnswers(definition).safeParse(fields).success ? "" : "Complete the property terms with valid INR amounts.") :
-      paise === null ? "Enter a selling price from ₹1 to ₹10,00,000." : "",
+      isPet ? "" : paise === null ? "Enter a selling price from ₹1 to ₹10,00,000." : "",
     goodsLocation.safeParse(postal).success ? "" : "Choose a city and locality for the PIN code.",
   ];
   const firstInvalid = validations.findIndex(Boolean);
@@ -198,9 +200,9 @@ export default function OrdinaryGoodsForm({ definition, label, ownerId, cities, 
   async function submit() {
     if (draftOnly || lock.current || disabled) return;
     const value = frozen ?? {
-      ...details, ...postal, condition: property ? null : details.condition, slug: definition.slug, category_id: definition.category_id, revision: definition.revision,
-      session_id: draft.session, answers, price_type: property ? null : draft.giveaway ? "free" : draft.negotiable ? "negotiable" : "fixed",
-      price_paise: property ? null : paise, media_ids: photos.map(p => p.id),
+      ...details, ...postal, condition: (property || isPet) ? null : details.condition, slug: definition.slug, category_id: definition.category_id, revision: definition.revision,
+      session_id: draft.session, answers, price_type: property ? null : (draft.giveaway || isPet) ? "free" : draft.negotiable ? "negotiable" : "fixed",
+      price_paise: property ? null : (draft.giveaway || isPet) ? 0 : paise, media_ids: photos.map(p => p.id),
     };
     const parsed = selectedGoodsSubmission(definition).safeParse(value);
     if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
@@ -262,6 +264,7 @@ export default function OrdinaryGoodsForm({ definition, label, ownerId, cities, 
         {step === 0 && definition.slug === "v2-bicycles" && <p>Only unpowered pedal bicycles are accepted.</p>}
         {step === 0 && (definition.slug === "v2-car-accessories-parts" || definition.slug === "v2-bike-accessories-parts") &&
           <p>Only the listed non-safety-critical accessories are accepted.</p>}
+        {step === 0 && isPet && <p>Show the pet in a comfortable home environment. Commercial breeding facilities, cages, and sales tags are prohibited.</p>}
         {draftOnly && <p role="status">Draft only. {isSpecialistVehicleDraftSlug(definition.slug)
           ? "Submission requires independent verification of registration, registered ownership and authority to transfer."
           : "Submission requires independent verification of vehicle eligibility."} Keep registration numbers, certificates and personal details out of the draft and photos.</p>}
@@ -276,16 +279,16 @@ export default function OrdinaryGoodsForm({ definition, label, ownerId, cities, 
               step="any" maxLength={100} required={f.required} value={draft.fields[f.key] ?? ""}
               onChange={e => update("fields", { ...draft.fields, [f.key]: e.target.value })}/>}</label>)}
         </section>}
-        {step === 2 && <section className={styles.card} aria-label="Condition and safety"><h2>{property ? "Property description and authority" : "Condition and description"}</h2>
-          {!property && <label>Condition<select value={draft.condition} onChange={e => update("condition", e.target.value)}>
+        {step === 2 && <section className={styles.card} aria-label="Condition and safety"><h2>{property ? "Property description and authority" : isPet ? "Pet description and health" : "Condition and description"}</h2>
+          {!property && !isPet && <label>Condition<select value={draft.condition} onChange={e => update("condition", e.target.value)}>
             <option value="">Choose condition</option>{Object.entries(conditions).map(([key, value]) => <option key={key} value={key}>{value}</option>)}</select></label>}
           <label>Title<input maxLength={120} value={draft.title} onChange={e => update("title", e.target.value)}/></label>
           <label>Description<textarea maxLength={2000} value={draft.description} onChange={e => update("description", e.target.value)}/></label>
-          <label>Known faults or wear<textarea maxLength={500} value={draft.defects} onChange={e => update("defects", e.target.value)}/></label>
+          <label>{isPet ? "Health, temperament or special needs" : "Known faults or wear"}<textarea maxLength={500} value={draft.defects} onChange={e => update("defects", e.target.value)}/></label>
           <label className="flex items-start gap-3"><input type="checkbox" style={{ width: 20, minHeight: 20 }} checked={draft.safety}
-            onChange={e => update("safety", e.target.checked)}/>{property ? "I have authority to make this offer and have disclosed material restrictions." : "I own this item and have checked that it is allowed, safe to use and free of known recalls."}</label>
+            onChange={e => update("safety", e.target.checked)}/>{property ? "I have authority to make this offer and have disclosed material restrictions." : isPet ? "I confirm this pet is a legal domestic companion, up-to-date on essential vaccinations and care, and being rehomed without fee or breeding." : "I own this item and have checked that it is allowed, safe to use and free of known recalls."}</label>
           <label className="flex items-start gap-3"><input type="checkbox" style={{ width: 20, minHeight: 20 }}
-            checked={draft.power} onChange={e => update("power", e.target.checked)}/>{property ? "My listing and photos omit private addresses, personal details and documents." : definition.risk === "general"
+            checked={draft.power} onChange={e => update("power", e.target.checked)}/>{property ? "My listing and photos omit private addresses, personal details and documents." : isPet ? "My listing and photos omit private addresses, personal contact details, breeder tags and payment requests." : definition.risk === "general"
               ? "If this item uses power, I checked that its wiring and batteries are free of damage, overheating, swelling and leaks."
               : "I checked for unsafe wiring, overheating and damaged, swollen or leaking batteries. None apply to this item."}</label>
         </section>}
@@ -296,6 +299,9 @@ export default function OrdinaryGoodsForm({ definition, label, ownerId, cities, 
           </select></label>
           {[[ "amount_paise", sale ? "Sale price (₹)" : "Monthly rent (₹)"], ...(!sale ? [["deposit_paise", "Deposit (₹)"], ["charges_paise", "Monthly charges (₹)"]] : [])].map(([key, name]) =>
             <label key={key}>{name}<input inputMode="decimal" value={draft.fields[key] ?? ""} onChange={e => update("fields", { ...draft.fields, [key]: e.target.value })}/></label>)}
+          </> : isPet ? <><h2>Adoption &amp; Rehoming</h2>
+          <p>Pets on FairSwap are for adoption and rehoming only. Selling, adoption fees, breeding, and commercial transfers are strictly prohibited.</p>
+          <p className={styles.notice}>Free Adoption (₹0)</p>
           </> : <><h2>Sell or give away</h2>
           <div className={styles.choices}><button type="button" className={styles.button} aria-pressed={!draft.giveaway} onClick={() => update("giveaway", false)}>Sell</button>
             <button type="button" className={styles.button} aria-pressed={draft.giveaway} onClick={() => update("giveaway", true)}>Give away</button></div>
@@ -303,15 +309,15 @@ export default function OrdinaryGoodsForm({ definition, label, ownerId, cities, 
             <label className="flex items-center gap-3"><input type="checkbox" style={{ width: 20, minHeight: 20 }}
               checked={draft.negotiable} onChange={e => update("negotiable", e.target.checked)}/>Negotiable</label></>}</>}
         </section>}
-        <section className={styles.card} style={{ display: step === 4 ? undefined : "none" }} aria-label="Location"><h2>{property ? "Property locality" : "Where can buyers meet you?"}</h2>{property && <p>Share only the locality. Leave unit numbers, documents, landlord details and contact information out of the ad and photos.</p>}
+        <section className={styles.card} style={{ display: step === 4 ? undefined : "none" }} aria-label="Location"><h2>{property ? "Property locality" : isPet ? "Where can adopters meet you?" : "Where can buyers meet you?"}</h2>{property && <p>Share only the locality. Leave unit numbers, documents, landlord details and contact information out of the ad and photos.</p>}
           {loaded && <PincodeLocationPicker cities={cities} hideLandmark onResolvedChange={setLocation}
             initialPinCode={draft.location.pin_code} initialCityId={draft.location.city_id} initialLocalityId={draft.location.locality_id}/>}
         </section>
         {step === REVIEW_STEP && <PostingWizardReview labels={labels} onNavigate={navigate}>Use FairSwap chat. Never pay in advance, scan a QR code to receive money or share an OTP or UPI PIN.</PostingWizardReview>}
       </fieldset>
     </div><MobileBuyerPreview title={draft.title} emptyTitle={label} description={[draft.description, draft.defects].filter(Boolean).join("\n")}
-      photos={photos} area={area} price={property ? (typeof fields.amount_paise === "number" ? `₹${(fields.amount_paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${sale ? "" : " / month"}` : "Property terms") : draft.giveaway ? "Free" : paise === null ? "Your price" : `₹${(paise / 100).toLocaleString("en-IN")}`}
-      facts={[conditions[draft.condition as keyof typeof conditions] ?? "", ...detailsFields.flatMap(f => draft.fields[f.key] ? [`${f.label}: ${draft.fields[f.key]}`] : []),
+      photos={photos} area={area} price={property ? (typeof fields.amount_paise === "number" ? `₹${(fields.amount_paise / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${sale ? "" : " / month"}` : "Property terms") : isPet ? "Free Adoption" : draft.giveaway ? "Free" : paise === null ? "Your price" : `₹${(paise / 100).toLocaleString("en-IN")}`}
+      facts={[isPet ? "Adoption" : conditions[draft.condition as keyof typeof conditions] ?? "", ...detailsFields.flatMap(f => draft.fields[f.key] ? [`${f.label}: ${draft.fields[f.key]}`] : []),
         ...(property && !sale ? [["Deposit", fields.deposit_paise], ["Monthly charges", fields.charges_paise]]
           .flatMap(([name, value]) => typeof value === "number" ? [`${name}: ₹${(value / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`] : []) : [])]}/>
     </div>
