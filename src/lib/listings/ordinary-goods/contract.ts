@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { phoneRiskSignals } from "../mobiles/contract";
-import { isOrdinaryGoodsSlug, isPropertyIntakeSlug, isRegulatedVehicleDraftSlug } from "./categories";
+import { isOrdinaryGoodsSlug, isPetRehomingSlug, isPropertyIntakeSlug, isSpecialistVehicleDraftSlug } from "./categories";
 
 export const uuid = z.string().uuid();
 export const goodsSlug = z.string().refine(isOrdinaryGoodsSlug);
@@ -55,6 +55,12 @@ export function goodsTextAllowed(values: unknown[]) {
     !/(https?:\/\/|www\.|scan.{0,25}qr|upi\s+pin|share.{0,15}otp|\b(firearms?|ammunition|explosives?|narcotics?|counterfeit|stolen|recalled|vape|prescription|ivory|pesticide|fireworks?|liquor)\b|live\s+(?:animals?|dogs?|cats?|fish)|pupp(?:y|ies).{0,15}for sale|child.{0,10}car seats?|swollen.{0,15}batter|batter.{0,15}swollen|exposed.{0,15}wir|electric.{0,15}shock|leak.{0,15}batter)/i.test(value);
 }
 
+export function petTextAllowed(values: unknown[]) {
+  const value = values.filter(v => typeof v === "string").join(" ").normalize("NFKC");
+  return !phoneRiskSignals(value).length &&
+    !/(https?:\/\/|www\.|scan.{0,25}qr|upi\s+pin|share.{0,15}otp|\b(firearms?|ammunition|explosives?|narcotics?|counterfeit|stolen|recalled|vape|prescription|ivory|pesticide|fireworks?|liquor)\b|swollen.{0,15}batter|batter.{0,15}swollen|exposed.{0,15}wir|electric.{0,15}shock|leak.{0,15}batter|\b(sale|selling|sell|price|rs\.?|inr|rupees?|cost|fee|charge|breeder|breeding|stud|litter|kennel|puppies for sale|dogs for sale|cats for sale)\b|\b(monkey|snake|reptile|tortoise|turtle|parrot|parakeet|owl|falcon|eagle|wildlife|cites|scheduled|exotic|leopard|tiger|bear|deer)\b)/i.test(value);
+}
+
 export function selectedGoodsSubmission(def: GoodsDefinition) {
   const answers = goodsAnswers(def).extend({
     safety_confirmed: z.literal(true), defects: z.string().trim().max(500),
@@ -62,25 +68,35 @@ export function selectedGoodsSubmission(def: GoodsDefinition) {
   });
   return goodsSubmission.extend({ answers }).superRefine((value, ctx) => {
     function issue(path: string, message: string) { ctx.addIssue({ code: "custom", path: [path], message }); }
-    if (isRegulatedVehicleDraftSlug(def.slug)) issue("slug", "This vehicle can only be saved as a draft.");
+    if (isSpecialistVehicleDraftSlug(def.slug)) issue("slug", "This vehicle can only be saved as a draft.");
     if (value.slug !== def.slug || value.category_id !== def.category_id || value.revision !== def.revision) issue("slug", "Category details changed. Open the category again.");
     if (isPropertyIntakeSlug(def.slug)) {
       if (value.condition !== null || value.price_type !== null || value.price_paise !== null) issue("price_paise", "Use the property terms.");
       const terms = value.answers as Record<string, unknown>;
       if (["amount_paise", "deposit_paise", "charges_paise"].some(key => !Number.isSafeInteger(terms[key]))) issue("answers", "Enter exact property amounts.");
       if (terms.offer === "Sale" && (terms.deposit_paise !== 0 || terms.charges_paise !== 0)) issue("answers", "Sale offers cannot include a deposit or monthly charge.");
-      if (/verified owner|verified landlord|(flat|unit|door|house)\s*(no[.]?|number|#)\s*[a-z0-9]+|aadhaar|aadhar|advance.{0,25}(rent|deposit|payment)|payment.{0,25}(before|upfront)/i.test(
+      if (/verified owner|verified landlord|verified seller|direct owner|title verified|government approved|rera approved|(flat|unit|door|house|shop|office|plot|godown|warehouse|building|survey|khasra|khata|gala)\s*(no[.]?|number|#)\s*[a-z0-9]+|aadhaar|aadhar|advance.{0,25}(rent|deposit|payment)|payment.{0,25}(before|upfront)/i.test(
         [value.title, value.description, ...Object.values(value.answers)].join(" ").normalize("NFKC"))) issue("description", "Remove private address or identity details and verification or payment claims.");
+    } else if (isPetRehomingSlug(def.slug)) {
+      if (value.price_type !== "free" || value.price_paise !== 0) {
+        issue("price_paise", "Pets on FairSwap are for adoption and rehoming only and must be free.");
+      }
     } else if (value.condition === null || value.price_type === null || value.price_paise === null ||
       (value.price_type === "free" ? value.price_paise !== 0 : value.price_paise < 100)) {
       issue("price_paise", "Enter a selling price of at least ₹1 or choose Give Away.");
     }
-    if (["fair", "poor"].includes(value.condition ?? "") && String(value.answers.defects).length < 5) issue("answers", "Describe the faults or wear.");
+    if (!isPetRehomingSlug(def.slug) && ["fair", "poor"].includes(value.condition ?? "") && String(value.answers.defects).length < 5) issue("answers", "Describe the faults or wear.");
     if (value.slug === "v2-bicycles" && /electric|battery|throttle|engine|motor[ -]?assist|conversion kit|e[- ]?bike|e[- ]?cycle/i.test(
       [value.title, value.description, ...Object.values(value.answers)].join(" ").normalize("NFKC"))) {
       issue("description", "Only unpowered pedal bicycles belong in this category.");
     }
-    if (!goodsTextAllowed([value.title, value.description, ...Object.values(value.answers)])) issue("description", "Remove prohibited products, unsafe items and contact or payment requests.");
+    if (isPetRehomingSlug(def.slug)) {
+      if (!petTextAllowed([value.title, value.description, ...Object.values(value.answers)])) {
+        issue("description", "Remove commercial sales, breeding offers, prohibited species or payment requests.");
+      }
+    } else if (!goodsTextAllowed([value.title, value.description, ...Object.values(value.answers)])) {
+      issue("description", "Remove prohibited products, unsafe items and contact or payment requests.");
+    }
   });
 }
 

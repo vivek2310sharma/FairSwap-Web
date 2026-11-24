@@ -47,10 +47,11 @@ it("rental choosers partition all ten existing rental paths without sale or comm
  expect(paths.every(p=>p.startsWith("Residential for Rent/")||p.startsWith("PG & Co-living/"))).toBe(true);
  for(const sub of properties)expect(resolveSub(sub,{...liveCaps,propertyPaths:[]}).macro).toBeUndefined();
 });
-it("unsupported categories stay unavailable even with supplied generic bindings",()=>{
- const value=structuredClone(fixture);for(const n of value.nodes)if(n.parent_id){n.status="live";n.posting_enabled=true;}
- const allBindings=Object.fromEntries(value.nodes.map(n=>[n.slug,n.id]));
- const leaves=parseTaxonomy(value,allBindings).flatMap(g=>g.subs);
- for(const slug of ["v2-commercial-vehicles","v2-electric-cycles-low-speed-evs","v2-bicycles","v2-other-items","v2-shops-offices","v2-land-plots","v2-warehouses-godowns"])
+it("disabled categories and coming-soon service/job roots stay unavailable",()=>{
+ const value=structuredClone(fixture);
+ const leaves=parseTaxonomy(value,bindings).flatMap(g=>g.subs);
+ for(const slug of ["v2-commercial-vehicles","v2-electric-cycles-low-speed-evs","v2-bicycles","v2-other-items","v2-shops-offices","v2-land-plots","v2-warehouses-godowns","v2-dogs","v2-other-pets"])
   expect(leaves.find(n=>n.id===slug)?.route.kind).toBe("none");
+ for(const slug of ["v2-services","v2-jobs"])
+  expect(value.nodes.find(n=>n.slug===slug)?.status).toBe("coming_soon");
 });
