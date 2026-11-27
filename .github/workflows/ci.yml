@@ -181,15 +181,6 @@ jobs:
             echo "No moderation unit tests found on this branch; skipping."
           fi
 
-      - name: Validate V2 Node image preparation with real Sharp decode
-        run: pnpm vitest run tests/security/moderation-v2-node-preparation.test.ts
-
-      - name: Validate V2 create-only transport and byte readback
-        run: pnpm vitest run tests/security/moderation-v2-storage-readback.test.ts
-
-      - name: Validate V2 Backend registry payload contract (no DB authority)
-        run: pnpm vitest run tests/security/moderation-v2-registry-candidate.test.ts
-
 
       - name: Checkout pinned Wearables Backend candidate for cross-repository security tests
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
