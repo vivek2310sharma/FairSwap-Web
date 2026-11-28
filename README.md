@@ -24,7 +24,7 @@
 | Environment | Git branch | Web app | Supabase |
 | --- | --- | --- | --- |
 | Controlled Production pilot | `main` | https://fairswap.in | `FairSwapProd` (`kriuhwppxgxsyyrbjsau`) |
-| Shared staging / testing | `staging` | https://fair-swap-git-staging-fairswap.vercel.app | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) |
+| Shared staging / testing | `staging` | https://fairswap-web-git-staging-fairswap.vercel.app | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) |
 | Short-lived feature branches | Branch from `staging` | Protected Vercel previews | Test-only when explicitly configured |
 
 Production and staging are **not meant to have identical commits or features at all times**. Staging incorporates current Production history plus development-only tests and features. Production releases require explicit review and acceptance; a merge does not authorize remote Supabase mutations. The controlled pilot is operational, but **wider public launch is not certified** by a successful deployment.
