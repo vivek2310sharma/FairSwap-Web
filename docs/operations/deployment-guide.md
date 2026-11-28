@@ -23,7 +23,7 @@ FairSwap is a Next.js (App Router) classifieds platform powered by Supabase (Pos
 * **Authentication & Session Assurance**: Supabase GoTrue Auth with RFC 6238 TOTP AAL2 Multi-Factor Authentication for staff roles
 * **Hosting Platforms / Branch Model**:
   * **Production**: `main` -> Vercel Production -> `https://fairswap.in` -> Supabase `FairSwapProd` (`kriuhwppxgxsyyrbjsau`).
-  * **Shared Staging**: `staging` -> stable Vercel Preview `https://fair-swap-git-staging-fairswap.vercel.app` -> Supabase `FairSwapTest` (`wpppxlnbzqynvhpeuavd`). The stable staging domain is explicitly shareable with testers; other previews remain protected by default.
+  * **Shared Staging**: `staging` -> stable Vercel Preview `https://fairswap-web-git-staging-fairswap.vercel.app` -> Supabase `FairSwapTest` (`wpppxlnbzqynvhpeuavd`). The stable staging domain is explicitly shareable with testers; other previews remain protected by default.
   * **Feature Development**: short-lived feature/fix branches start from current `staging`, use Vercel Preview and `FairSwapTest`, then merge accepted work back into `staging` for shared verification before production promotion.
   * **Production Hotfixes**: an explicitly authorized urgent production fix may branch from `main`, but the resulting `main` change must be reconciled back into `staging` promptly.
   * Only `main` and `staging` are permanent branches. Retire merged short-lived branches after checking linked local worktrees.
@@ -57,7 +57,7 @@ FairSwap is a Next.js (App Router) classifieds platform powered by Supabase (Pos
 | Environment | Git/Vercel target | Supabase project | `NEXT_PUBLIC_SITE_URL` |
 |---|---|---|---|
 | Production | `main` / Vercel Production / `https://fairswap.in` | `FairSwapProd` (`kriuhwppxgxsyyrbjsau`) | `https://fairswap.in` |
-| Shared staging | `staging` / stable Vercel Preview | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) | `https://fair-swap-git-staging-fairswap.vercel.app` |
+| Shared staging | `staging` / stable Vercel Preview | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) | `https://fairswap-web-git-staging-fairswap.vercel.app` |
 | Feature previews | short-lived feature/fix branch / Vercel Preview | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) | Configure a branch-appropriate callback only when an Auth flow must be exercised directly on that preview; otherwise validate Auth on shared staging. |
 
 ### Secret Management Rules
@@ -145,7 +145,7 @@ The worker is located at `supabase/functions/process-email-outbox/index.ts`. Req
 **2. Custom Edge Function secrets** (configured per environment via `supabase secrets set`):
 - `RESEND_API_KEY`: API key for outbound dispatch via Resend.
 - `EMAIL_FROM`: Sender identity (e.g. `FairSwap <notifications@auth.fairswap.in>`).
-- `SITE_URL`: Application canonical origin (e.g. `https://fairswap.in` in production; `https://fair-swap-git-staging-fairswap.vercel.app` in staging).
+- `SITE_URL`: Application canonical origin (e.g. `https://fairswap.in` in production; `https://fairswap-web-git-staging-fairswap.vercel.app` in staging).
 - `EMAIL_WORKER_SECRET`: Dedicated authorization secret used exclusively to authenticate webhook and batch runner invocations.
 
 > [!NOTE]

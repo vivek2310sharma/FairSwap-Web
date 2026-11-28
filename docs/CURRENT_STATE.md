@@ -25,7 +25,7 @@ Optimize customer Web UX for **mobile, low bandwidth and modest Android hardware
 
 | Boundary | `main` / Production | `staging` / Test |
 | --- | --- | --- |
-| Web | https://fairswap.in | https://fair-swap-git-staging-fairswap.vercel.app |
+| Web | https://fairswap.in | https://fairswap-web-git-staging-fairswap.vercel.app |
 | Supabase | `FairSwapProd` (`kriuhwppxgxsyyrbjsau`) | `FairSwapTest` (`wpppxlnbzqynvhpeuavd`) |
 | Data & credentials | Live, highly restricted | Test data and permitted synthetic fixtures |
 | Releases | Only accepted production changes | Integrated development work including Test-only utilities |
