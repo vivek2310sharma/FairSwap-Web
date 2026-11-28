@@ -27,7 +27,7 @@ Historical or superseded — do **not** follow as instructions: `FAIRSWAP_SPEC.m
 | Branch | Environment | URL | Supabase project |
 |---|---|---|---|
 | `main` | Production (controlled pilot) | https://fairswap.in | FairSwapProd `kriuhwppxgxsyyrbjsau` |
-| `staging` | Test | https://fair-swap-git-staging-fairswap.vercel.app | FairSwapTest `wpppxlnbzqynvhpeuavd` |
+| `staging` | Test | https://fairswap-web-git-staging-fairswap.vercel.app | FairSwapTest `wpppxlnbzqynvhpeuavd` |
 
 - `main` and `staging` are the only permanent branches and intentionally diverge. `staging` carries Test-only code (for example S1 email capture) that must never reach `main`. Never merge `staging` wholesale into `main`, and never merge Test-only code to "equalize" the branches.
 - Feature work: branch from up-to-date `staging` (`git pull --ff-only`), prefix `feat/ fix/ security/ docs/ test/ chore/`, open one focused PR into `staging`. Use a worktree for concurrent agents.
